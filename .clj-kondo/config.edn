@@ -1,0 +1,4 @@
+{:skip-comments true
+ :lint-as {geni.core/-> clojure.core/->
+           geni.core/->> clojure.core/->>}}
+
