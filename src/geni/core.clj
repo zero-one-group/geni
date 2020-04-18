@@ -1,27 +1,27 @@
 (ns geni.core
-  (:refer-clojure :exclude [map
-                            filter
-                            take
-                            concat
-                            cast
-                            when
-                            drop
-                            second
-                            distinct
-                            *
-                            /
-                            not
-                            partition-by
-                            group-by
-                            min
-                            max
-                            <=
-                            <
-                            >=
-                            >
+  (:refer-clojure :exclude [*
                             +
                             -
-                            count])
+                            /
+                            <
+                            <=
+                            >
+                            >=
+                            cast
+                            concat
+                            count
+                            distinct
+                            drop
+                            filter
+                            group-by
+                            map
+                            max
+                            min
+                            not
+                            partition-by
+                            second
+                            take
+                            when])
   (:import
     (scala.collection JavaConversions Map)
     (org.apache.spark.sql SparkSession)
@@ -73,9 +73,7 @@
           :or   {num-rows 20
                  truncate 0
                  vertical false}} options]
-     (-> dataframe
-                      (.showString num-rows truncate vertical)
-                      println))))
+     (-> dataframe (.showString num-rows truncate vertical) println))))
 
 (defn show-vertical
   ([dataframe] (show dataframe {:vertical true}))
@@ -203,7 +201,7 @@
 (defn when
   ([condition if-expr] (functions/when condition (->column if-expr)))
   ([condition if-expr else-expr]
-   (.otherwise (when condition if-expr) (->column else-expr))))
+   (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
 (defn coalesce [& exprs]
   (functions/coalesce (->col-array exprs)))
@@ -247,13 +245,14 @@
 
 (defn concat [& exprs] (functions/concat (->col-array exprs)))
 
-(defn agg-all [dataframe name->col]
-  (let [agg-cols (clojure.core/map name->col (column-names dataframe))]
+(defn agg-all [dataframe agg-fn]
+  (let [agg-cols (clojure.core/map agg-fn (column-names dataframe))]
     (apply agg dataframe agg-cols)))
 
 (defn sample
   ([dataframe fraction] (.sample dataframe fraction))
-  ([dataframe fraction with-replacement] (.sample dataframe with-replacement fraction)))
+  ([dataframe fraction with-replacement]
+   (.sample dataframe with-replacement fraction)))
 
 (defn union [left-df right-df] (.union left-df right-df))
 
@@ -289,10 +288,11 @@
       (.setLogLevel context "ERROR")
       session)))
 
-
 (defonce dataframe
   (delay
-    (cache (read-parquet! @spark "test/resources/melbourne_housing_snapshot.parquet"))))
+    (cache (read-parquet!
+             @spark
+             "test/resources/melbourne_housing_snapshot.parquet"))))
 
 (comment
 
