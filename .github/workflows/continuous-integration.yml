@@ -16,7 +16,8 @@ jobs:
       - name: lint
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: sh -c "clj-kondo --lint src test"
+          entrypoint: clj-kondo
+          args: --lint src test
   #coverage:
     #runs-on: ubuntu-latest
     #steps:
