@@ -18,11 +18,12 @@ jobs:
         with:
           entrypoint: clj-kondo
           args: --lint src test
-  #coverage:
-    #runs-on: ubuntu-latest
-    #steps:
-      #- uses: actions/checkout@v2
-      #- name: coverage
-        #uses: docker://zeroonetechnology/geni:latest
-        #with:
-          #entrypoint: lein cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: coverage
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: lein 
+          args: cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'
