@@ -9,19 +9,27 @@ on:
       - develop
 
 jobs:
-  lint:
+  debug:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: lint
+      - name: debug
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: clj-kondo --lint src test
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: coverage
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: lein cloverage --fail-threshold 90 --ns-exclude-regex zero-one.fxl.specs | perl -pe 's/\e\[?.*?[\@-~]//g'
+          entrypoint: ls
+  #lint:
+    #runs-on: ubuntu-latest
+    #steps:
+      #- uses: actions/checkout@v2
+      #- name: lint
+        #uses: docker://zeroonetechnology/geni:latest
+        #with:
+          #entrypoint: clj-kondo --lint src test
+  #coverage:
+    #runs-on: ubuntu-latest
+    #steps:
+      #- uses: actions/checkout@v2
+      #- name: coverage
+        #uses: docker://zeroonetechnology/geni:latest
+        #with:
+          #entrypoint: lein cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'
