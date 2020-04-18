@@ -9,6 +9,28 @@ on:
       - develop
 
 jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: unit-tests
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: lein
+          args: midje
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: coverage
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: sh
+          args: -c "lein cloverage --fail-threshold 90 --codecov"
+      - uses: codecov/codecov-action@v1
+        with:
+         file: target/coverage/codecov.json
+         fail_ci_if_error: true
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -18,16 +40,3 @@ jobs:
         with:
           entrypoint: clj-kondo
           args: --lint src test
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: coverage
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: sh 
-          args: -c "lein cloverage --fail-threshold 90 --codecov"
-      - uses: codecov/codecov-action@v1
-        with:
-         file: target/coverage/codecov.json
-         fail_ci_if_error: true
