@@ -22,6 +22,17 @@ Add the following to your `project.clj` dependency:
 
 [![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](http://clojars.org/zero.one/geni)
 
+You would also need to add Spark as provided dependencies. For instance, have the following key-value pair for the `:profiles` map:
+
+```clojure
+:provided
+{:dependencies [[org.apache.spark/spark-core_2.12 "2.4.5"]
+                [org.apache.spark/spark-hive_2.12 "2.4.5"]
+                [org.apache.spark/spark-mllib_2.12 "2.4.5"]
+                [org.apache.spark/spark-sql_2.12 "2.4.5"]
+                [org.apache.spark/spark-streaming_2.12 "2.4.5"]]}
+```
+
 # License
 
 Copyright 2020 Zero One Group.
