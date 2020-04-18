@@ -1,0 +1,33 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: lint
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: clj-kondo
+          args: --lint src test
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: coverage
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: sh 
+          args: -c "lein cloverage --fail-threshold 90 --codecov"
+      - uses: codecov/codecov-action@v1
+        with:
+         file: target/coverage/codecov.json
+         fail_ci_if_error: true
