@@ -1,14 +1,12 @@
 <img src="logo/geni.png" width="250px">
 
-[![pipeline status](https://gitlab.com/zero-one-open-source/geni/badges/develop/pipeline.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
-[![coverage report](https://gitlab.com/zero-one-open-source/geni/badges/develop/coverage.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
+[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
+[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet!
 
 See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
-
-[[_TOC_]]
 
 # Introduction
 
