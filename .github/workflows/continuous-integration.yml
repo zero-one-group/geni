@@ -29,5 +29,5 @@ jobs:
           args: -c "lein cloverage --fail-threshold 90 --codecov"
       - uses: codecov/codecov-action@v1
         with:
-         file: target/coverage/codecov.jsion
+         file: target/coverage/codecov.json
          fail_ci_if_error: true
