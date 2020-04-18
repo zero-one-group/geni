@@ -1,6 +1,9 @@
 <img src="logo/geni.png" width="250px">
 
-[![pipeline status](https://gitlab.com/zero-one-open-source/geni/badges/develop/pipeline.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
+
+![](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)
+
+<!--[![pipeline status](https://gitlab.com/zero-one-open-source/geni/badges/develop/pipeline.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)-->
 [![coverage report](https://gitlab.com/zero-one-open-source/geni/badges/develop/coverage.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
 

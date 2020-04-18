@@ -26,4 +26,8 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: sh 
-          args: -c "lein cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'"
+          args: -c "lein cloverage --fail-threshold 90 --codecov"
+      - uses: codecov/codecov-action@v1
+        with:
+         file: target/coverage/codecov.jsion
+         fail_ci_if_error: true
