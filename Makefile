@@ -12,17 +12,19 @@ repl: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		lein repl
 
-unit-tests: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		lein midje
-
 autotest: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		lein midje :autotest
 
-coverage:
+docker-push: build
+	docker push $(DOCKERNAME)
+
+coverage: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		lein cloverage --fail-threshold 90
 
-docker-push:
-	docker push $(DOCKERNAME)
+lint: build
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+		clj-kondo --lint src test --cache false
+
+ci: coverage lint

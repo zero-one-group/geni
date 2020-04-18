@@ -2,7 +2,7 @@
 
 [![pipeline status](https://gitlab.com/zero-one-open-source/geni/badges/develop/pipeline.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
 [![coverage report](https://gitlab.com/zero-one-open-source/geni/badges/develop/coverage.svg)](https://gitlab.com/zero-one-open-source/geni/-/commits/develop)
-<!--[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)-->
+[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet!
 
@@ -20,7 +20,7 @@ Note that `geni` wraps Apache Spark 2.4.5, which uses Scala 2.12, which has [inc
 
 Add the following to your `project.clj` dependency:
 
-<!--[![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](http://clojars.org/zero.one/geni)-->
+[![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](http://clojars.org/zero.one/geni)
 
 # License
 
