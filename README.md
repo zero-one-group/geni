@@ -16,9 +16,9 @@ See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://git
 
 This question is probably not directed at the choice of Spark, because it is fairly easy to justify choosing Spark due to its maturity, speed and pleasant API. Rather, why wrap Spark in Clojure when you can use Spark natively in Scala or its popular Python API, PySpark?
 
-Clojure is an excellent programming language for data wrangling due to its particular focus on fast feedbacks - most notably through its REPL. Being hosted on the JVM, Clojure interoperates well with Java (and thus Scala) libaries. However, although Spark's API is pleasant to use in Scala, it becomes quite clunky in Clojure.
+Clojure is an excellent programming language for data wrangling due to its particular focus on fast feedbacks - most notably through its REPL. Being hosted on the JVM, Clojure interoperates well with Java (and thus Scala) libaries. However, Spark's pleasant API in Scala becomes quite clunky in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
 
-An example of a nuisance is having to wrap column names inside a Java array of Spark columns:
+An example of such nuisance is having to wrap column names inside a Java array of Spark columns:
 
 ```clojure
 (-> dataframe
@@ -44,16 +44,17 @@ Geni aims to provide a Spark interface that plays nice with Clojure's threading 
     show)
 ```
 
-Another example is having to deal with Scala sequences:
+Another inconvenience is having to deal with Scala sequences:
 
 ```clojure
 (->> (.collect dataframe) ;; .collect returns an array of Spark rows
-     (map #(into
-             []
-             (JavaConversions/seqAsJavaList (.. % toSeq))))) ;; returns a lazy seq of vectors
+     (map
+       #(JavaConversions/seqAsJavaList
+       (.. % toSeq))))    ;; returns a seq of seqs
+                          ;; must zip into map to recover row-like maps
 ```
 
-with Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
+In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
 # Installation
 
@@ -73,6 +74,13 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.spark/spark-sql_2.12 "2.4.5"]
                 [org.apache.spark/spark-streaming_2.12 "2.4.5"]]}
 ```
+
+# Future Work
+
+Features:
+- Setup on GCP's Dataproc + guide.
+- Better coverage of Spark SQL functions and Dataset API.
+- Make a start on MLlib.
 
 # License
 
