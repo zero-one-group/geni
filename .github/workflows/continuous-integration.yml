@@ -9,22 +9,14 @@ on:
       - develop
 
 jobs:
-  debug:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: debug
+      - name: lint
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: ls
-  #lint:
-    #runs-on: ubuntu-latest
-    #steps:
-      #- uses: actions/checkout@v2
-      #- name: lint
-        #uses: docker://zeroonetechnology/geni:latest
-        #with:
-          #entrypoint: clj-kondo --lint src test
+          entrypoint: sh -c "clj-kondo --lint src test"
   #coverage:
     #runs-on: ubuntu-latest
     #steps:
