@@ -25,5 +25,5 @@ jobs:
       - name: coverage
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: lein 
-          args: cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'
+          entrypoint: sh 
+          args: -c "cloverage --fail-threshold 90 | perl -pe 's/\e\[?.*?[\@-~]//g'"
