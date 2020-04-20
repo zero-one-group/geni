@@ -7,6 +7,7 @@
                             <=
                             >
                             >=
+                            alias
                             cast
                             concat
                             count
@@ -39,9 +40,21 @@
 (defn ->scala-seq [coll]
   (JavaConversions/asScalaBuffer (seq coll)))
 
+(defn scala-tuple->vec [p]
+  (->> (.productArity p)
+       (range)
+       (clojure.core/map #(.productElement p %))
+       (into [])))
+
 (defn read-parquet! [spark-session path]
   (.. spark-session
       read
+      (parquet path)))
+
+(defn write-parquet! [dataframe path]
+  (.. dataframe
+      write
+      (mode "overwrite")
       (parquet path)))
 
 (defn write-csv! [dataframe path]
@@ -59,12 +72,15 @@
       (option "header" "true")
       (load path)))
 
-(defmulti ->column class)
-(defmethod ->column org.apache.spark.sql.Column [x] x)
-(defmethod ->column java.lang.String [x] (functions/col x))
+(defmulti col class)
+(defmethod col org.apache.spark.sql.Column [x] x)
+(defmethod col java.lang.String [x] (functions/col x))
 (defn ->col-array [columns]
-  (->> columns (clojure.core/map ->column) (into-array Column)))
-(def col ->column)
+  (->> columns (clojure.core/map col) (into-array Column)))
+(def ->column col)
+
+;; TODO: add tests
+(defn explain [dataframe] (.explain dataframe))
 
 (defn show
   ([dataframe] (show dataframe {}))
@@ -94,8 +110,14 @@
 (defn order-by [dataframe & exprs]
   (.orderBy dataframe (->col-array exprs)))
 
-(defn column-names [dataframe]
+;; TODO: add test
+(defn dtypes [dataframe]
+  (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
+    (into {} (clojure.core/map scala-tuple->vec dtypes-as-tuples))))
+
+(defn columns [dataframe]
   (-> dataframe .columns seq))
+(def column-names columns)
 
 (defn rename-columns [dataframe rename-map]
   (reduce
@@ -115,6 +137,7 @@
 
 (defn filter [dataframe expr]
   (.filter dataframe expr))
+(def where filter)
 
 (defn describe [dataframe & column-names]
   (.describe dataframe (into-array java.lang.String column-names)))
@@ -127,16 +150,18 @@
   ([grouped expr values] (.pivot grouped (->column expr) (->scala-seq values))))
 
 (defn agg [dataframe & exprs]
-  (let [[head & tail] (clojure.core/map ->column exprs)]
+  (let [[head & tail] (clojure.core/map ->column (flatten exprs))]
     (.agg dataframe head (into-array Column tail))))
 
 (defn cache [dataframe] (.cache dataframe))
+(defn persist [dataframe] (.persist dataframe)) ;; TODO: test
 
 (defn as [column new-name] (.as column new-name))
+(def alias as)
 (defn cast [expr new-type] (.cast (->column expr) new-type))
-(defn ->date-col [expr date-format]
+(defn to-date [expr date-format]
   (functions/to_date (->column expr) date-format))
-(def to-date ->date-col)
+(def ->date-col to-date)
 
 (defn md5 [expr] (functions/md5 (->column expr)))
 (defn sha1 [expr] (functions/sha1 (->column expr)))
@@ -179,6 +204,7 @@
 (defn stddev [expr] (functions/stddev expr))
 (defn variance [expr] (functions/variance expr))
 (defn mean [expr] (functions/mean expr))
+(def avg mean)
 (defn sum [expr] (functions/sum expr))
 
 (defn + [left right] (.plus (->column left) (->column right)))
@@ -196,8 +222,7 @@
 (defn null-count [expr]
   (-> expr null? (cast "int") sum (as (str "null_count(" expr ")"))))
 
-(defn isin [expr coll]
-  (.isin (->column expr) (->scala-seq coll)))
+(defn isin [expr coll] (.isin (->column expr) (->scala-seq coll)))
 
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
 
@@ -206,7 +231,8 @@
 (defn explode [expr] (functions/explode (->column expr)))
 
 (defn when
-  ([condition if-expr] (functions/when condition (->column if-expr)))
+  ([condition if-expr]
+   (functions/when condition (->column if-expr)))
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
@@ -306,5 +332,31 @@
   (-> @dataframe count)
 
   (-> @dataframe print-schema)
+
+  (-> @dataframe (.summary (into-array java.lang.String ["Suburb"])))
+
+  (-> @dataframe
+      (group-by "SellerG")
+      (agg [(count "*") (mean "Price")])
+      ;(agg
+        ;(count "*")
+        ;(mean "Price"))
+      show)
+
+
+  ;; TODO:
+  ;; Dataset: unionByName, sortWithinPartitions, repartition, repartitionByRange
+  ;; dropDuplicates, except, intersect, coalesce, summary, first, crossJoin
+
+  ;; TODO:
+  ;; SQL: add_months, date_add (+ add_days), date_diff, months_between, next_day
+  ;; current_timestamp, current_date, last_day, weekofyear
+  ;; ceil, floor, exp, log, round
+  ;; covar_samp (+ covar),
+  ;; sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh
+  ;; format_string, lower (upper), lpad (rpad), ltrim (rtrim), regexp_replace, trim
+  ;; kurtosis, skewness
+  ;; rand, randn
+  ;; spark_partition_id
 
   0)

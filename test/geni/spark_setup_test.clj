@@ -36,3 +36,13 @@
   (let [write-df (-> @dataframe (g/select "Suburb" "SellerG") (g/limit 5))
         read-df  (write-then-read-csv! write-df)]
     (g/collect write-df) => (g/collect read-df)))
+
+(defn write-then-read-parquet [dataframe]
+  (let [temp-file (create-temp-file! ".parquet")]
+    (g/write-parquet! dataframe temp-file)
+    (g/read-parquet! @g/spark temp-file)))
+
+(fact "Can read and write parquet"
+  (let [write-df (-> @dataframe (g/select "Method" "Type") (g/limit 5))
+        read-df  (write-then-read-parquet write-df)]
+    (g/collect write-df) => (g/collect read-df)))

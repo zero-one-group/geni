@@ -50,8 +50,9 @@
                     (g/limit n-rows)
                     (g/agg
                       (g/count (g/->column "BuildingArea"))
-                      (g/null-rate "BuildingArea")
-                      (g/null-count "BuildingArea")
+                      (list
+                        (g/null-rate "BuildingArea")
+                        (g/null-count "BuildingArea"))
                       (g/min "Price")
                       (g/sum "Price")
                       (g/mean "Price")
