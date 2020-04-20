@@ -122,6 +122,10 @@
 (defn group-by [dataframe & exprs]
   (.groupBy dataframe (->col-array exprs)))
 
+(defn pivot
+  ([grouped expr] (.pivot grouped (->column expr)))
+  ([grouped expr values] (.pivot grouped (->column expr) (->scala-seq values))))
+
 (defn agg [dataframe & exprs]
   (let [[head & tail] (clojure.core/map ->column exprs)]
     (.agg dataframe head (into-array Column tail))))
@@ -155,6 +159,9 @@
 (defn hour [expr] (functions/hour (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
 (defn second [expr] (functions/second (->column expr)))
+
+(defn format-number [expr decimal-places]
+  (functions/format_number (->column expr) decimal-places))
 
 (defn asc [expr] (.asc (->column expr)))
 (defn desc [expr] (.desc (->column expr)))

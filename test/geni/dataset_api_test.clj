@@ -5,6 +5,22 @@
     [geni.core :as g :refer [dataframe]]
     [midje.sweet :refer [facts fact =>]]))
 
+(facts "On pivot"
+  (fact "pivot should return the expected cols"
+    (let [pivotted (-> @dataframe
+                       (g/limit 20)
+                       (g/group-by "SellerG")
+                       (g/pivot "Method")
+                       (g/agg (-> (g/count "*") (g/as "n"))))]
+      (-> pivotted g/column-names set) => #{"SellerG" "PI" "S" "SP" "VB"}))
+  (fact "pivot should be able to specify pivot columns"
+    (let [pivotted (-> @dataframe
+                       (g/limit 20)
+                       (g/group-by "SellerG")
+                       (g/pivot "Method" ["SP" "VB" "XYZ"])
+                       (g/agg (-> (g/count "*") (g/as "n"))))]
+      (-> pivotted g/column-names set) => #{"SellerG" "SP" "VB" "XYZ"})))
+
 (facts "On when"
   (fact "when null and coalesce should be equivalent"
     (-> @dataframe
