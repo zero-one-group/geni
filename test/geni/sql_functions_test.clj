@@ -6,6 +6,13 @@
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(facts "On format number"
+  (fact "should format number correctly"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select (g/format-number (g/lit 1234.56789) 2))
+        g/collect-vals) => [["1,234.57"]]))
+
 (fact "On arithmetic functions"
   (-> @dataframe
       (g/limit 1)
@@ -29,7 +36,13 @@
       (g/limit 1)
       (g/select
         (g/+ (g/lit 1) (g/lit 1)))
-      g/collect-vals) => [[2]])
+      g/collect-vals) => [[2]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/with-column "two" (g/lit 2))
+      (g/with-column "three" (g/lit 3))
+      (g/select (g/pow "two" "three"))
+      g/collect-vals) => [[8.0]])
 
 (facts "On group-by + agg functions"
   (let [n-rows  20
