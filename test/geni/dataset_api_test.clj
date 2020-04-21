@@ -43,7 +43,14 @@
                             (g/sort-within-partitions "Method")
                             g/collect-vals)]
       (= sorted sorted-within) => false
-      (set sorted) => (set sorted-within))))
+      (set sorted) => (set sorted-within)))
+  (fact "coalesce should reduce the number of partitions"
+    (-> @dataframe
+        (g/limit 10)
+        (g/repartition 5)
+        (.coalesce 2)
+        g/partitions
+        count) => 2))
 
 (fact "On dtypes"
   (-> @dataframe g/dtypes) => (fn [x] (= (x "Suburb") "StringType")))
@@ -78,7 +85,10 @@
 (facts "On actions"
   (fact "take and take-vals work"
     (count (g/take @dataframe 5)) => 5
-    (count (g/take-vals @dataframe 10)) => 10))
+    (count (g/take-vals @dataframe 10)) => 10)
+  (fact "first works"
+    (-> @dataframe (g/select "Method") g/first) => {"Method" "S"}
+    (-> @dataframe (g/select "Method") g/first-val) => ["S"]))
 
 (facts "On drop"
   (fact "dropped columns should no longer exist"
@@ -88,7 +98,33 @@
                                g/column-names
                                set)]
       (clojure.set/subset? columns-to-drop original-columns) => true
-      (clojure.set/intersection columns-to-drop dropped-columns) => empty?)))
+      (clojure.set/intersection columns-to-drop dropped-columns) => empty?))
+  (fact "drop duplicates without arg should not drop everything"
+    (-> @dataframe
+        (g/limit 10)
+        (g/select "Method" "SellerG")
+        g/drop-duplicates
+        g/count) => 6)
+  (fact "drop duplicates can be called with columns"
+    (-> @dataframe
+        (g/limit 10)
+        (g/select "Method" "SellerG")
+        (g/drop-duplicates "SellerG")
+        g/count) => 3))
+
+(facts "On except and intercept"
+  (let [other (g/limit @dataframe 1)]
+    (fact "except should exclude the row"
+      (-> @dataframe
+          (g/limit 10)
+          (g/except other)
+          g/count) => 9)
+    (fact "except then intercept should be empty"
+      (-> @dataframe
+          (g/limit 10)
+          (g/except other)
+          (g/intersect other)
+          g/empty?) => true)))
 
 (facts "On union"
   (fact "Union should double the rows preserve distinctness"
@@ -128,16 +164,24 @@
         g/column-names) => ["Type" "Price"]))
 
 (facts "On join"
-  (let [df         (-> @dataframe (g/limit 30))
-        n-listings (-> df
-                     (g/group-by "Suburb")
-                     (g/agg (g/as (g/count "*") "n_listings")))]
-    (-> df (g/join n-listings "Suburb") g/column-names set)
-    => #(contains? % "n_listings")
-    (-> df (g/join n-listings "Suburb" "inner") g/column-names set)
-    => #(contains? % "n_listings")
-    (-> df (g/join n-listings ["Suburb"] "inner") g/column-names set)
-    => #(contains? % "n_listings")))
+  (fact "normal join works as expected"
+    (let [df         (-> @dataframe (g/limit 30))
+          n-listings (-> df
+                       (g/group-by "Suburb")
+                       (g/agg (g/as (g/count "*") "n_listings")))]
+      (-> df (g/join n-listings "Suburb") g/column-names set)
+      => #(contains? % "n_listings")
+      (-> df (g/join n-listings "Suburb" "inner") g/column-names set)
+      => #(contains? % "n_listings")
+      (-> df (g/join n-listings ["Suburb"] "inner") g/column-names set)
+      => #(contains? % "n_listings")))
+  (fact "cross-join works as expected"
+    (-> @dataframe
+        (g/limit 3)
+        (g/select "Suburb")
+        (g/cross-join (-> @dataframe (g/limit 3) (g/select "Method")))
+        g/count) => 9))
+
 
 (facts "On filter"
   (let [df (-> @dataframe (g/limit 20) (g/select "SellerG"))]
@@ -192,10 +236,16 @@
     (.. df storageLevel useMemory) => true))
 
 (facts "On describe"
-  (fact "should have the right shape"
+  (fact "describe should have the right shape"
     (let [summary (-> @dataframe (g/limit 10) (g/describe "Price"))]
       (g/column-names summary) => ["summary" "Price"]
-      (map #(% "summary") (g/collect summary)) => ["count" "mean" "stddev" "min" "max"])))
+      (map #(% "summary") (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
+  (fact "summary should only pick some stats"
+    (-> @dataframe
+        (g/limit 2)
+        (g/select "Rooms")
+        (g/summary "count" "min")
+        g/collect-vals) => [["count" "2"] ["min" "2"]]))
 
 (facts "On group-by and agg"
   (fact "should have the right shape"

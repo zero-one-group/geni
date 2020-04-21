@@ -13,7 +13,9 @@
                             count
                             distinct
                             drop
+                            empty?
                             filter
+                            first
                             group-by
                             map
                             max
@@ -25,8 +27,8 @@
                             when])
   (:import
     (scala.collection JavaConversions Map)
-    (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql Column functions)
+    (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
@@ -79,7 +81,6 @@
   (->> columns (clojure.core/map col) (into-array Column)))
 (def ->column col)
 
-;; TODO: add tests
 (defn explain [dataframe] (.explain dataframe))
 
 (defn show
@@ -97,6 +98,8 @@
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
+
+(defn empty? [dataframe] (.isEmpty dataframe))
 
 (defn repartition [dataframe & args]
   (let [args          (flatten args)
@@ -146,6 +149,13 @@
 
 (defn drop [dataframe & col-names]
   (.drop dataframe (into-array java.lang.String col-names)))
+(defn drop-duplicates [dataframe & col-names]
+  (if (clojure.core/empty? col-names)
+    (.dropDuplicates dataframe)
+    (.dropDuplicates dataframe (into-array java.lang.String col-names))))
+
+(defn except [dataframe other] (.except dataframe other))
+(defn intersect [dataframe other] (.intersect dataframe other))
 
 (defn === [left-expr right-expr]
   (.equalTo (->column left-expr) (->column right-expr)))
@@ -156,6 +166,8 @@
 
 (defn describe [dataframe & column-names]
   (.describe dataframe (into-array java.lang.String column-names)))
+(defn summary [dataframe & stat-names]
+  (.summary dataframe (into-array java.lang.String stat-names)))
 
 (defn group-by [dataframe & exprs]
   (.groupBy dataframe (->col-array exprs)))
@@ -251,8 +263,11 @@
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
-(defn coalesce [& exprs]
+(defmulti coalesce class)
+(defmethod coalesce org.apache.spark.sql.Column [& exprs]
   (functions/coalesce (->col-array exprs)))
+(defmethod coalesce org.apache.spark.sql.Dataset [dataframe n-partitions]
+  (.coalesce dataframe n-partitions))
 
 (defn new-window []
   (Window/partitionBy (->col-array [])))
@@ -320,11 +335,16 @@
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
 
+(defn first [dataframe] (-> dataframe (take 1) clojure.core/first))
+(defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
+
 (defn join
   ([left right join-cols] (join left right join-cols "inner"))
   ([left right join-cols join-type]
    (let [join-cols (if (string? join-cols) [join-cols] join-cols)]
      (.join left right (->scala-seq join-cols) join-type))))
+
+(defn cross-join [left right] (.crossJoin left right))
 
 (defonce spark
   (delay
@@ -348,10 +368,6 @@
   (-> @dataframe count)
 
   (-> @dataframe print-schema)
-
-  ;; TODO:
-  ;; Dataset:
-  ;; dropDuplicates, except, intersect, coalesce, summary, first, crossJoin
 
   ;; TODO:
   ;; SQL: add_months, date_add (+ add_days), date_diff, months_between, next_day
