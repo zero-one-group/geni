@@ -128,10 +128,10 @@
 
 (facts "On union"
   (fact "Union should double the rows preserve distinctness"
-    (let [df      (-> @dataframe (g/limit 10))
+    (let [df      (-> @dataframe (g/limit 3))
           unioned (g/union df df)]
-      (g/count unioned) => 20
-      (-> unioned g/distinct g/count) => 10))
+      (g/count unioned) => 6
+      (-> unioned g/distinct g/count) => 3))
   (fact "Union by name should line up the names"
     (let [df1 (-> @dataframe (g/limit 1) (g/select "Suburb" "SellerG"))
           df2 (-> @dataframe (g/limit 1) (g/select "SellerG" "Suburb"))]
@@ -267,12 +267,11 @@
         count) => 3)
   (fact "works with nested data structure"
     (let [agged    (-> @dataframe
-                       (g/limit 50)
+                       (g/limit 20)
                        (g/group-by "SellerG")
                        (g/agg
                          (-> (g/collect-list "Suburb") (g/as "suburbs_list"))
                          (-> (g/collect-set "Suburb") (g/as "suburbs_set"))))
           exploded (g/with-column agged "exploded" (g/explode "suburbs_list"))]
-      (g/count agged) => #(< % 50)
-      (g/count exploded) => 50)))
-
+      (g/count agged) => #(< % 20)
+      (g/count exploded) => 20)))

@@ -27,7 +27,7 @@
                             when])
   (:import
     (scala.collection JavaConversions Map)
-    (org.apache.spark.sql Column functions)
+    (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
@@ -263,10 +263,10 @@
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
-(defmulti coalesce class)
-(defmethod coalesce org.apache.spark.sql.Column [& exprs]
+(defmulti coalesce (fn [head & _] (class head)))
+(defmethod coalesce Column [& exprs]
   (functions/coalesce (->col-array exprs)))
-(defmethod coalesce org.apache.spark.sql.Dataset [dataframe n-partitions]
+(defmethod coalesce Dataset [dataframe n-partitions]
   (.coalesce dataframe n-partitions))
 
 (defn new-window []

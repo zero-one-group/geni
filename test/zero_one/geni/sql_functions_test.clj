@@ -73,16 +73,16 @@
       (let [std-dev  (summary "stddev_samp(Price)")
             variance (summary "var_samp(Price)")]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
-    (fact "count and count distinct should be similar"
+    (fact "count distinct and approx count distinct should be similar"
       (-> @dataframe
-          (g/limit 100)
+          (g/limit 60)
           (g/agg
             (-> (g/count-distinct "SellerG"))
             (-> (g/approx-count-distinct "SellerG")))
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05)
       (-> @dataframe
-          (g/limit 100)
+          (g/limit 60)
           (g/agg
             (g/count-distinct "SellerG")
             (g/approx-count-distinct "SellerG" 0.1))
