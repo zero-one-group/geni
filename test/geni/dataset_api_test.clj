@@ -5,6 +5,49 @@
     [geni.core :as g :refer [dataframe]]
     [midje.sweet :refer [facts fact =>]]))
 
+(facts "On repartition"
+  (fact "able to repartition by a number"
+    (-> @dataframe
+        (g/limit 2)
+        (g/repartition 2)
+        g/partitions
+        count) => 2)
+  (fact "able to repartition by columns"
+    (-> @dataframe
+        (g/limit 2)
+        (g/repartition "Suburb" "SellerG")
+        g/partitions
+        count) => #(< 1 %))
+  (fact "able to repartition by number and columns"
+    (-> @dataframe
+        (g/limit 2)
+        (g/repartition 10 "Suburb" "SellerG")
+        g/partitions
+        count) => 10)
+  (fact "able to repartition by number and columns"
+    (-> @dataframe
+        (g/limit 10)
+        (g/repartition-by-range 3 "Suburb" "SellerG")
+        g/partitions
+        count) => 3)
+  (fact "sort within partitions is differnt to sort"
+    (let [sorted  (-> @dataframe
+                      (g/limit 10)
+                      (g/select "Method" "SellerG")
+                      (g/order-by "Method")
+                      g/collect-vals)
+          sorted-within (-> @dataframe
+                            (g/limit 10)
+                            (g/select "Method" "SellerG")
+                            (g/repartition 2 "SellerG")
+                            (g/sort-within-partitions "Method")
+                            g/collect-vals)]
+      (= sorted sorted-within) => false
+      (set sorted) => (set sorted-within))))
+
+(fact "On dtypes"
+  (-> @dataframe g/dtypes) => (fn [x] (= (x "Suburb") "StringType")))
+
 (facts "On pivot"
   (fact "pivot should return the expected cols"
     (let [pivotted (-> @dataframe
@@ -52,7 +95,11 @@
     (let [df      (-> @dataframe (g/limit 10))
           unioned (g/union df df)]
       (g/count unioned) => 20
-      (-> unioned g/distinct g/count) => 10)))
+      (-> unioned g/distinct g/count) => 10))
+  (fact "Union by name should line up the names"
+    (let [df1 (-> @dataframe (g/limit 1) (g/select "Suburb" "SellerG"))
+          df2 (-> @dataframe (g/limit 1) (g/select "SellerG" "Suburb"))]
+      (-> df1 (g/union-by-name df2) g/distinct g/count)) => 1))
 
 (facts "On sample"
   (let [df          (-> @dataframe (g/limit 50))
@@ -140,6 +187,8 @@
 (facts "On caching"
   (fact "should keeps data in memory")
   (let [df (-> @dataframe (g/limit 2) g/cache)]
+    (.. df storageLevel useMemory) => true)
+  (let [df (-> @dataframe (g/limit 2) g/persist)]
     (.. df storageLevel useMemory) => true))
 
 (facts "On describe"

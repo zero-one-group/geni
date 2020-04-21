@@ -98,6 +98,22 @@
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
 
+(defn repartition [dataframe & args]
+  (let [args          (flatten args)
+        [head & tail] (flatten args)]
+    (if (int? head)
+      (.repartition dataframe head (->col-array tail))
+      (.repartition dataframe (->col-array args)))))
+(defn repartition-by-range [dataframe & args]
+  (let [args          (flatten args)
+        [head & tail] (flatten args)]
+    (if (int? head)
+      (.repartitionByRange dataframe head (->col-array tail))
+      (.repartitionByRange dataframe (->col-array args)))))
+(defn sort-within-partitions [dataframe & exprs]
+  (.sortWithinPartitions dataframe (->col-array exprs)))
+(defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
+
 (defn distinct [dataframe]
   (.distinct dataframe))
 
@@ -110,7 +126,6 @@
 (defn order-by [dataframe & exprs]
   (.orderBy dataframe (->col-array exprs)))
 
-;; TODO: add test
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
     (into {} (clojure.core/map scala-tuple->vec dtypes-as-tuples))))
@@ -154,7 +169,7 @@
     (.agg dataframe head (into-array Column tail))))
 
 (defn cache [dataframe] (.cache dataframe))
-(defn persist [dataframe] (.persist dataframe)) ;; TODO: test
+(defn persist [dataframe] (.persist dataframe))
 
 (defn as [column new-name] (.as column new-name))
 (def alias as)
@@ -288,6 +303,7 @@
    (.sample dataframe with-replacement fraction)))
 
 (defn union [left-df right-df] (.union left-df right-df))
+(defn union-by-name [left-df right-df] (.unionByName left-df right-df))
 
 (defn collect [dataframe]
   (let [spark-rows (.collect dataframe)
@@ -333,19 +349,8 @@
 
   (-> @dataframe print-schema)
 
-  (-> @dataframe (.summary (into-array java.lang.String ["Suburb"])))
-
-  (-> @dataframe
-      (group-by "SellerG")
-      (agg [(count "*") (mean "Price")])
-      ;(agg
-        ;(count "*")
-        ;(mean "Price"))
-      show)
-
-
   ;; TODO:
-  ;; Dataset: unionByName, sortWithinPartitions, repartition, repartitionByRange
+  ;; Dataset:
   ;; dropDuplicates, except, intersect, coalesce, summary, first, crossJoin
 
   ;; TODO:
