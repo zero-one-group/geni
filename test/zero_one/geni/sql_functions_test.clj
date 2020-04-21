@@ -1,8 +1,8 @@
-(ns geni.sql-functions-test
+(ns zero-one.geni.sql-functions-test
   (:require
     [clojure.string]
-    [geni.core :as g :refer [dataframe]]
-    [midje.sweet :refer [facts fact =>]])
+    [midje.sweet :refer [facts fact =>]]
+    [zero-one.geni.core :as g :refer [dataframe]])
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 

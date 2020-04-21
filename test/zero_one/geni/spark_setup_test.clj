@@ -1,9 +1,9 @@
-(ns geni.spark-setup-test
+(ns zero-one.geni.spark-setup-test
   (:require
     [clojure.java.io :as io]
     [clojure.string]
-    [geni.core :as g :refer [dataframe]]
-    [midje.sweet :refer [fact =>]])
+    [midje.sweet :refer [fact =>]]
+    [zero-one.geni.core :as g :refer [dataframe]])
   (:import
     [java.io File]
     (org.apache.spark.sql Dataset SparkSession)))

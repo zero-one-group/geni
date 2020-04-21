@@ -1,9 +1,9 @@
-(ns geni.dataset-api-test
+(ns zero-one.geni.dataset-api-test
   (:require
     [clojure.set]
     [clojure.string]
-    [geni.core :as g :refer [dataframe]]
-    [midje.sweet :refer [facts fact =>]]))
+    [midje.sweet :refer [facts fact =>]]
+    [zero-one.geni.core :as g :refer [dataframe]]))
 
 (facts "On repartition"
   (fact "able to repartition by a number"
@@ -88,7 +88,7 @@
     (count (g/take-vals @dataframe 10)) => 10)
   (fact "first works"
     (-> @dataframe (g/select "Method") g/first) => {"Method" "S"}
-    (-> @dataframe (g/select "Method") g/first-val) => ["S"]))
+    (-> @dataframe (g/select "Method") g/first-vals) => ["S"]))
 
 (facts "On drop"
   (fact "dropped columns should no longer exist"

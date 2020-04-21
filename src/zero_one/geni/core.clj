@@ -1,4 +1,4 @@
-(ns geni.core
+(ns zero-one.geni.core
   (:refer-clojure :exclude [*
                             +
                             -
@@ -379,5 +379,8 @@
   ;; kurtosis, skewness
   ;; rand, randn
   ;; spark_partition_id
+
+  ;; TODO: fix namespace to have zero-one in it
+  ;; TODO: lein template for geni
 
   0)
