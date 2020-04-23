@@ -214,6 +214,22 @@
 
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
+(defn format-string [fmt exprs]
+  (functions/format_string fmt (->col-array exprs)))
+(defn lower [expr] (functions/lower (->column expr)))
+(defn upper [expr] (functions/upper (->column expr)))
+(defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
+(defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
+(defn ltrim [expr] (functions/ltrim (->column expr)))
+(defn rtrim [expr] (functions/rtrim (->column expr)))
+(defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
+(defn regexp-replace [expr pattern-expr replacement-expr]
+  (functions/regexp_replace
+    (->column expr)
+    (->column pattern-expr)
+    (->column replacement-expr)))
+(defn regexp-extract [expr regex idx]
+  (functions/regexp_extract (->column expr) regex idx))
 
 (defn asc [expr] (.asc (->column expr)))
 (defn desc [expr] (.desc (->column expr)))
@@ -296,6 +312,7 @@
 
 (defn over [column window-spec] (.over column window-spec))
 
+(defn spark-partition-id [] (functions/spark-partition-id))
 (defn row-number [] (functions/row_number))
 
 (defn count-distinct [& exprs]
@@ -346,16 +363,25 @@
 
 (defn cross-join [left right] (.crossJoin left right))
 
+(defn create-spark-session [{:keys [app-name master configs log-level]
+                             :or   {app-name  "Geni App"
+                                    master    "local[*]"
+                                    configs   {}
+                                    log-level "ERROR"}}]
+  (let [unconfigured (.. (SparkSession/builder)
+                         (appName app-name)
+                         (master master))
+        configured   (reduce
+                       (fn [s [k v]] (.config s k v))
+                       unconfigured
+                       configs)
+        session      (.getOrCreate configured)
+        context      (.sparkContext session)]
+    (.setLogLevel context log-level)
+    session))
+
 (defonce spark
-  (delay
-    (let [session (.. (SparkSession/builder)
-                      (appName "Simple app")
-                      (master "local[*]")
-                      (config "spark.testing.memory" "2147480000")
-                      getOrCreate)
-          context (.sparkContext session)]
-      (.setLogLevel context "ERROR")
-      session)))
+  (delay (create-spark-session {"spark.testing.memory" "2147480000"})))
 
 (defonce dataframe
   (delay
@@ -373,14 +399,9 @@
   ;; SQL: add_months, date_add (+ add_days), date_diff, months_between, next_day
   ;; current_timestamp, current_date, last_day, weekofyear
   ;; ceil, floor, exp, log, round
-  ;; covar_samp (+ covar),
+  ;; covar_samp (+ covar), kurtosis, skewness, rand, randn
   ;; sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh
-  ;; format_string, lower (upper), lpad (rpad), ltrim (rtrim), regexp_replace, trim
-  ;; kurtosis, skewness
-  ;; rand, randn
-  ;; spark_partition_id
 
-  ;; TODO: fix namespace to have zero-one in it
   ;; TODO: lein template for geni
 
   0)

@@ -6,12 +6,40 @@
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
-(facts "On format number"
+(fact "On partition ID"
+  (-> @dataframe
+      (g/limit 10)
+      (g/repartition 3)
+      (g/select (g/spark-partition-id))
+      g/collect-vals
+      flatten
+      distinct
+      count) => 3)
+
+(facts "On formatting"
   (fact "should format number correctly"
     (-> @dataframe
         (g/limit 1)
         (g/select (g/format-number (g/lit 1234.56789) 2))
-        g/collect-vals) => [["1,234.57"]]))
+        g/collect-vals) => [["1,234.57"]])
+  (fact "should format strings correctly"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (g/format-string "(Rooms=%d, SellerG=%s)" ["Rooms" "SellerG"])
+          (g/concat (g/lower "SellerG") (g/lit "-") (g/upper "Suburb"))
+          (-> (g/lit "1") (g/lpad 3 "0") (g/rpad 5 "."))
+          (-> (g/lit "0") (g/lpad 3 " ") (g/rpad 5 " ") g/ltrim g/rtrim)
+          (-> (g/lit "x") (g/lpad 3 "_") (g/rpad 5 "_") (g/trim "_"))
+          (-> (g/lit "abcdefghi") (g/regexp-replace (g/lit "fgh") (g/lit "XYZ")))
+          (-> "Regionname" (g/regexp-extract "(.*) (.*)" 2)))
+        g/collect-vals) => [["(Rooms=2, SellerG=Biggin)"
+                             "biggin-ABBOTSFORD"
+                             "001.."
+                             "0"
+                             "x"
+                             "abcdeXYZi"
+                             "Metropolitan"]]))
 
 (fact "On arithmetic functions"
   (-> @dataframe
