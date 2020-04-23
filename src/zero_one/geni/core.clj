@@ -27,6 +27,7 @@
                             when])
   (:import
     (scala.collection JavaConversions Map)
+    (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
@@ -81,7 +82,7 @@
   (->> columns (clojure.core/map col) (into-array Column)))
 (def ->column col)
 
-(defn explain [dataframe] (.explain dataframe))
+(defn explain [dataframe] (.explain dataframe)) ;; TODO: test
 
 (defn show
   ([dataframe] (show dataframe {}))
@@ -112,7 +113,7 @@
         [head & tail] (flatten args)]
     (if (int? head)
       (.repartitionByRange dataframe head (->col-array tail))
-      (.repartitionByRange dataframe (->col-array args)))))
+      (.repartitionByRange dataframe (->col-array args))))) ;; TODO: test
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
 (defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
@@ -281,9 +282,9 @@
 
 (defmulti coalesce (fn [head & _] (class head)))
 (defmethod coalesce Column [& exprs]
-  (functions/coalesce (->col-array exprs)))
+  (functions/coalesce (->col-array exprs))) ;; TODO: test
 (defmethod coalesce Dataset [dataframe n-partitions]
-  (.coalesce dataframe n-partitions))
+  (.coalesce dataframe n-partitions)) ;; TODO: test
 
 (defn new-window []
   (Window/partitionBy (->col-array [])))
@@ -372,7 +373,7 @@
                          (appName app-name)
                          (master master))
         configured   (reduce
-                       (fn [s [k v]] (.config s k v))
+                       (fn [s [k v]] (.config s k v)) ;; TODO: test
                        unconfigured
                        configs)
         session      (.getOrCreate configured)
