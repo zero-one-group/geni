@@ -26,11 +26,12 @@
                             take
                             when])
   (:import
-    (scala.collection JavaConversions Map)
-    (org.apache.spark.api.java JavaSparkContext)
+    (java.io ByteArrayOutputStream)
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
-    (org.apache.spark.sql.expressions Window)))
+    (org.apache.spark.sql.expressions Window)
+    (scala Console Function0)
+    (scala.collection JavaConversions Map)))
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
@@ -48,6 +49,15 @@
        (range)
        (clojure.core/map #(.productElement p %))
        (into [])))
+
+(defn ->scala-function0 [f] (proxy [Function0] [] (apply [] (f))))
+
+(defmacro with-scala-out-str [& body]
+  `(let [out-buffer# (ByteArrayOutputStream.)]
+      (Console/withOut
+        out-buffer#
+        (->scala-function0 (fn [] ~@body)))
+      (.toString out-buffer# "UTF-8")))
 
 (defn read-parquet! [spark-session path]
   (.. spark-session
@@ -113,7 +123,7 @@
         [head & tail] (flatten args)]
     (if (int? head)
       (.repartitionByRange dataframe head (->col-array tail))
-      (.repartitionByRange dataframe (->col-array args))))) ;; TODO: test
+      (.repartitionByRange dataframe (->col-array args)))))
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
 (defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
@@ -281,10 +291,10 @@
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
 (defmulti coalesce (fn [head & _] (class head)))
-(defmethod coalesce Column [& exprs]
-  (functions/coalesce (->col-array exprs))) ;; TODO: test
 (defmethod coalesce Dataset [dataframe n-partitions]
-  (.coalesce dataframe n-partitions)) ;; TODO: test
+  (.coalesce dataframe n-partitions))
+(defmethod coalesce :default [& exprs]
+  (functions/coalesce (->col-array exprs)))
 
 (defn new-window []
   (Window/partitionBy (->col-array [])))
@@ -373,7 +383,7 @@
                          (appName app-name)
                          (master master))
         configured   (reduce
-                       (fn [s [k v]] (.config s k v)) ;; TODO: test
+                       (fn [s [k v]] (.config s k v))
                        unconfigured
                        configs)
         session      (.getOrCreate configured)

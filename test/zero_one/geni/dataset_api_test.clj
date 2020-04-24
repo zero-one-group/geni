@@ -5,6 +5,18 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [dataframe]]))
 
+(facts "On printing functions"
+  (fact "should return nil"
+    (let [n-lines   #(-> % clojure.string/split-lines count)
+          df        (g/select @dataframe "Suburb" "Address")
+          n-columns (-> df g/column-names count)]
+      (n-lines (with-out-str (g/show (g/limit df 3)))) => 7
+      (n-lines (with-out-str (g/show df {:num-rows 3 :vertical true}))) => 10
+      (n-lines (with-out-str (g/show-vertical (g/limit df 3)))) => 9
+      (n-lines (with-out-str (g/show-vertical df {:num-rows 3}))) => 10
+      (n-lines (with-out-str (g/print-schema df))) => (inc n-columns)
+      (n-lines (g/with-scala-out-str (g/explain df))) => #(< 1 %))))
+
 (facts "On repartition"
   (fact "able to repartition by a number"
     (-> @dataframe
@@ -24,7 +36,13 @@
         (g/repartition 10 "Suburb" "SellerG")
         g/partitions
         count) => 10)
-  (fact "able to repartition by number and columns"
+  (fact "able to repartition by range by columns"
+    (-> @dataframe
+        (g/limit 8)
+        (g/repartition-by-range "Suburb" "SellerG")
+        g/partitions
+        count) => 4)
+  (fact "able to repartition by range by number and columns"
     (-> @dataframe
         (g/limit 10)
         (g/repartition-by-range 3 "Suburb" "SellerG")
@@ -48,7 +66,7 @@
     (-> @dataframe
         (g/limit 10)
         (g/repartition 5)
-        (.coalesce 2)
+        (g/coalesce 2)
         g/partitions
         count) => 2))
 
@@ -80,7 +98,8 @@
         (g/with-column "y"
           (g/coalesce "BuildingArea" (g/lit -999)))
         (g/select (g/=== "x" "y"))
-        g/collect-vals) => #(every? identity (flatten %))))
+        g/collect-vals
+        flatten) => #(every? identity %)))
 
 (facts "On actions"
   (fact "take and take-vals work"
@@ -145,17 +164,6 @@
       (-> without-rep g/distinct g/count) => (g/count without-rep))
     (fact "Sampling with replacement should have less unique rows"
       (-> with-rep g/distinct g/count) => #(< % 40))))
-
-(facts "On printing functions"
-  (fact "should return nil"
-    (let [n-lines   #(-> % clojure.string/split-lines count)
-          df        (g/select @dataframe "Suburb" "Address")
-          n-columns (-> df g/column-names count)]
-      (n-lines (with-out-str (g/show (g/limit df 3)))) => 7
-      (n-lines (with-out-str (g/show df {:num-rows 3 :vertical true}))) => 10
-      (n-lines (with-out-str (g/show-vertical (g/limit df 3)))) => 9
-      (n-lines (with-out-str (g/show-vertical df {:num-rows 3}))) => 10
-      (n-lines (with-out-str (g/print-schema df))) => (inc n-columns))))
 
 (facts "On select"
   (fact "should drop unselected columns"

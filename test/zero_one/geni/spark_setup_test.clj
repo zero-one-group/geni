@@ -9,6 +9,7 @@
     (org.apache.spark.sql Dataset SparkSession)))
 
 (fact "Test spark session and dataframe"
+  (g/create-spark-session {}) => #(instance? SparkSession %)
   @g/spark => #(instance? SparkSession %)
   @g/dataframe => #(instance? Dataset %)
   (-> @g/spark .conf .getAll g/scala-map->map) => #(= (% "spark.master") "local[*]"))
