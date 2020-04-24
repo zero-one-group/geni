@@ -27,7 +27,7 @@ An example of such nuisance is having to wrap column names inside a Java array o
       (.as (functions/mean "Price") "mean")
       (into-array Column [(.as (functions/stddev "Price") "std")
                           (.as (functions/min "Price") "min")
-                          (.as (functions/max "Price") "max")])))
+                          (.as (functions/max "Price") "max")]))
     .show)
 ```
 
@@ -56,6 +56,16 @@ Another inconvenience is having to deal with Scala sequences:
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
+# Quick Start
+
+Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
+
+```bash
+lein new geni <project-name>
+```
+
+Step into the directory, and run the command `lein run`!
+
 # Installation
 
 Note that `geni` wraps Apache Spark 2.4.5, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
@@ -78,8 +88,9 @@ You would also need to add Spark as provided dependencies. For instance, have th
 # Future Work
 
 Features:
+- Clojure docs.
+- Data-driven, Hiccup-like query.
 - Setup on GCP's Dataproc + guide.
-- Better coverage of Spark SQL functions and Dataset API.
 - Make a start on MLlib.
 
 # License

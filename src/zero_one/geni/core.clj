@@ -403,6 +403,7 @@
   ;; covar_samp (+ covar), kurtosis, skewness, rand, randn
   ;; sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh
 
-  ;; TODO: lein template for geni
+  ;; TODO: Clojure docs
+  ;; TODO: data-driven query
 
   0)
