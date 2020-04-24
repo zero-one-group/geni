@@ -50,7 +50,8 @@
        (clojure.core/map #(.productElement p %))
        (into [])))
 
-(defn ->scala-function0 [f] (proxy [Function0] [] (apply [] (f))))
+(defn ->scala-function0 [f]
+  (reify Function0 (apply [this] (f))))
 
 (defmacro with-scala-out-str [& body]
   `(let [out-buffer# (ByteArrayOutputStream.)]
