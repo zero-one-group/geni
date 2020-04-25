@@ -393,7 +393,7 @@
     session))
 
 (defonce spark
-  (delay (create-spark-session {"spark.testing.memory" "2147480000"})))
+  (delay (create-spark-session {:configs {"spark.testing.memory" "2147480000"}})))
 
 (defonce dataframe
   (delay

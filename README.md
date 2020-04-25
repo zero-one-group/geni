@@ -122,3 +122,9 @@ Features:
 Copyright 2020 Zero One Group.
 
 geni is licensed under Apache License v2.0.
+
+# Mentions
+
+Some code was taken from:
+
+* [finagle-clojure](https://github.com/finagle/finagle-clojure): especially in terms of Scala interop.
