@@ -1,6 +1,6 @@
 (defproject zero.one/geni "0.0.1-SNAPSHOT"
   :description "A Clojure library that wraps Apache Spark"
-  :url "https://gitlab.com/zero-one-open-source/geni"
+  :url "https://github.com/zero-one-group/geni"
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[org.clojure/clojure "1.10.1"]]
@@ -14,4 +14,4 @@
                                   [midje "1.9.9"]]
                    :plugins [[lein-cloverage "1.1.2"]
                              [lein-midje "3.2.1"]]}}
-  :repl-options {:init-ns geni.core})
+  :repl-options {:init-ns zero-one.geni.core})

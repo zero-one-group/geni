@@ -93,7 +93,7 @@
   (->> columns (clojure.core/map col) (into-array Column)))
 (def ->column col)
 
-(defn explain [dataframe] (.explain dataframe)) ;; TODO: test
+(defn explain [dataframe] (.explain dataframe))
 
 (defn show
   ([dataframe] (show dataframe {}))

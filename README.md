@@ -89,9 +89,33 @@ You would also need to add Spark as provided dependencies. For instance, have th
 
 Features:
 - Clojure docs.
-- Data-driven, Hiccup-like query.
 - Setup on GCP's Dataproc + guide.
 - Make a start on MLlib.
+- Data-driven, Hiccup-style queries.
+
+#### Data-Driven Hiccup-Style Queries
+
+``` clojure
+;; Should be able to express all queries with just vectors
+(g/query
+  dataframe
+  [:limit 60]
+  [:group-by "Suburb"]
+  [:agg
+   [:count "*"]
+   [:count-distinct "SellerG"]]
+  [:collect-vals])
+
+;; Should be able to mix well with vanilla Geni
+(-> dataframe
+    (g/limit 60)
+    (g/query
+      [:group-by "Suburb"]
+       [:agg
+        [:count "*"]
+        [:count-distinct "SellerG"]])
+    g/collect-vals)
+```
 
 # License
 
