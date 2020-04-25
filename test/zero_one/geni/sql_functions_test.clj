@@ -232,6 +232,35 @@
         set) => #{1 2}))
 
 (facts "On time functions"
+  (fact "correct time arithmetic"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
+          (-> (g/next-day (g/lit "2020-02-01") "Sunday") (g/cast "string"))
+          (-> (g/lit "2020-03-02") (g/date-add 10) (g/date-sub 3) (g/cast "string"))
+          (-> (g/date-format (g/lit "2019-02-09") "yyyy~MM~dd") (g/cast "string"))
+          (-> (g/lit "2020-02-05") (g/add-months 3) (g/cast "string"))
+          (g/week-of-year (g/lit "2020-04-30"))
+          (g/round (g/date-diff (g/lit "2020-05-23") (g/lit "2020-04-30")))
+          (g/round (g/months-between (g/lit "2020-01-23") (g/lit "2020-04-30"))))
+        g/collect-vals) => [["2020-05-31"
+                             "2020-02-02"
+                             "2020-03-09"
+                             "2019~02~09"
+                             "2020-05-05"
+                             18
+                             23
+                             -3.0]])
+  (fact "correct current times"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (g/cast (g/current-timestamp) "string")
+          (g/cast (g/current-date) "string"))
+        g/collect-vals
+        flatten) => #(and (clojure.string/includes? (first %) ":")
+                          (not (clojure.string/includes? (second %) ":"))))
   (fact "correct time comparisons"
     (-> @dataframe
         (g/limit 3)

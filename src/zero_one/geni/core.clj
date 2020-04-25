@@ -196,9 +196,6 @@
 (defn as [column new-name] (.as column new-name))
 (def alias as)
 (defn cast [expr new-type] (.cast (->column expr) new-type))
-(defn to-date [expr date-format]
-  (functions/to_date (->column expr) date-format))
-(def ->date-col to-date)
 
 (defn md5 [expr] (functions/md5 (->column expr)))
 (defn sha1 [expr] (functions/sha1 (->column expr)))
@@ -213,14 +210,37 @@
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
   ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
+(defn current-timestamp [] (functions/current_timestamp))
+(defn current-date [] (functions/current_date))
 (defn year [expr] (functions/year (->column expr)))
 (defn month [expr] (functions/month (->column expr)))
+(defn week-of-year [expr] (functions/weekofyear (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
 (defn day-of-month [expr] (functions/dayofmonth (->column expr)))
 (defn day-of-week [expr] (functions/dayofweek (->column expr)))
+(defn last-day [expr] (functions/last_day (->column expr)))
 (defn hour [expr] (functions/hour (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
 (defn second [expr] (functions/second (->column expr)))
+
+(defn to-date [expr date-format]
+  (functions/to_date (->column expr) date-format))
+(def ->date-col to-date)
+(defn add-months [expr months]
+  (functions/add_months (->column expr) months))
+(defn months-between [l-expr r-expr]
+  (functions/months_between (->column l-expr) (->column r-expr)))
+(defn next-day [expr day-of-week]
+  (functions/next_day (->column expr) day-of-week))
+(defn date-add [expr days]
+  (functions/date_add (->column expr) days))
+(defn date-sub [expr days]
+  (functions/date_sub (->column expr) days))
+(defn datediff [l-expr r-expr]
+  (functions/datediff (->column l-expr) (->column r-expr)))
+(def date-diff datediff)
+(defn date-format [expr date-fmt]
+  (functions/date_format (->column expr) date-fmt))
 
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
@@ -440,10 +460,6 @@
   (-> @dataframe count)
 
   (-> @dataframe print-schema)
-
-  ;; TODO:
-  ;; SQL: add_months, date_add (+ add_days), date_diff, months_between, next_day
-  ;; current_timestamp, current_date, last_day, weekofyear
 
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
