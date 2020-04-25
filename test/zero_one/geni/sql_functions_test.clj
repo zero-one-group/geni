@@ -6,6 +6,33 @@
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On comparison and boolean functions"
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/< (g/lit 1))
+        (g/< (g/lit 1) (g/lit 2) (g/lit 3))
+        (g/<= (g/lit 1) (g/lit 1) (g/lit 1))
+        (g/> (g/lit 1) (g/lit 2) (g/lit 3))
+        (g/>= (g/lit 1) (g/lit 0.99) (g/lit 1.01))
+        (g/&& (g/lit true) (g/lit false))
+        (g/|| (g/lit true) (g/lit false)))
+      g/collect-vals) => [[true true true false false false true]])
+
+(fact "On trig functions"
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
+        (g/- (g// g/pi (g/lit 2))
+             (g/acos (g/lit 1))
+             (g/asin (g/lit 1)))
+        (g/+ (g/atan (g/lit 2)) (g/atan (g/lit -2)))
+        (g/- (g// (g/sinh (g/lit 1)) (g/cosh (g/lit 1)))
+             (g/tanh (g/lit 1))))
+      g/collect-vals
+      flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
+
 (fact "On partition ID"
   (-> @dataframe
       (g/limit 10)
@@ -70,7 +97,11 @@
       (g/with-column "two" (g/lit 2))
       (g/with-column "three" (g/lit 3))
       (g/select (g/pow "two" "three"))
-      g/collect-vals) => [[8.0]])
+      g/collect-vals) => [[8.0]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/select (g/+) (g/*))
+      g/collect-vals) => [[0 1]])
 
 (facts "On group-by + agg functions"
   (let [n-rows  20
