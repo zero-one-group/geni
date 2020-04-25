@@ -1,17 +1,100 @@
-(ns geni.sql-functions-test
+(ns zero-one.geni.sql-functions-test
   (:require
     [clojure.string]
-    [geni.core :as g :refer [dataframe]]
-    [midje.sweet :refer [facts fact =>]])
+    [midje.sweet :refer [facts fact =>]]
+    [zero-one.geni.core :as g :refer [dataframe]])
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
-(facts "On format number"
+(fact "On random functions"
+  (-> @dataframe
+      (g/limit 20)
+      (g/select
+        (-> (g/randn 0) (g/as "norm"))
+        (-> (g/rand 0) (g/as "unif")))
+      (g/agg
+        (g/round (g/skewness "norm"))
+        (g/round (g/kurtosis "unif"))
+        (g/round (g/covar "unif" "norm")))
+      g/collect-vals) => [[0.0 -1.0 0.0]]
+  (-> @dataframe
+      (g/limit 10)
+      (g/select
+        (-> (g/randn) (g/as "norm"))
+        (-> (g/rand) (g/as "unif")))
+      (g/agg
+        (g/variance "norm")
+        (g/variance "unif"))
+      g/collect-vals
+      flatten) => #(every? pos? %))
+
+(fact "On comparison and boolean functions"
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/&&)
+        (g/||))
+      g/collect-vals) => [[true false]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/< (g/lit 1))
+        (g/< (g/lit 1) (g/lit 2) (g/lit 3))
+        (g/<= (g/lit 1) (g/lit 1) (g/lit 1))
+        (g/> (g/lit 1) (g/lit 2) (g/lit 3))
+        (g/>= (g/lit 1) (g/lit 0.99) (g/lit 1.01))
+        (g/&& (g/lit true) (g/lit false))
+        (g/|| (g/lit true) (g/lit false)))
+      g/collect-vals) => [[true true true false false false true]])
+
+(fact "On trig functions"
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
+        (g/- (g// g/pi (g/lit 2))
+             (g/acos (g/lit 1))
+             (g/asin (g/lit 1)))
+        (g/+ (g/atan (g/lit 2)) (g/atan (g/lit -2)))
+        (g/- (g// (g/sinh (g/lit 1)) (g/cosh (g/lit 1)))
+             (g/tanh (g/lit 1))))
+      g/collect-vals
+      flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
+
+(fact "On partition ID"
+  (-> @dataframe
+      (g/limit 10)
+      (g/repartition 3)
+      (g/select (g/spark-partition-id))
+      g/collect-vals
+      flatten
+      distinct
+      count) => 3)
+
+(facts "On formatting"
   (fact "should format number correctly"
     (-> @dataframe
         (g/limit 1)
         (g/select (g/format-number (g/lit 1234.56789) 2))
-        g/collect-vals) => [["1,234.57"]]))
+        g/collect-vals) => [["1,234.57"]])
+  (fact "should format strings correctly"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (g/format-string "(Rooms=%d, SellerG=%s)" ["Rooms" "SellerG"])
+          (g/concat (g/lower "SellerG") (g/lit "-") (g/upper "Suburb"))
+          (-> (g/lit "1") (g/lpad 3 "0") (g/rpad 5 "."))
+          (-> (g/lit "0") (g/lpad 3 " ") (g/rpad 5 " ") g/ltrim g/rtrim)
+          (-> (g/lit "x") (g/lpad 3 "_") (g/rpad 5 "_") (g/trim "_"))
+          (-> (g/lit "abcdefghi") (g/regexp-replace (g/lit "fgh") (g/lit "XYZ")))
+          (-> "Regionname" (g/regexp-extract "(.*) (.*)" 2)))
+        g/collect-vals) => [["(Rooms=2, SellerG=Biggin)"
+                             "biggin-ABBOTSFORD"
+                             "001.."
+                             "0"
+                             "x"
+                             "abcdeXYZi"
+                             "Metropolitan"]]))
 
 (fact "On arithmetic functions"
   (-> @dataframe
@@ -42,7 +125,20 @@
       (g/with-column "two" (g/lit 2))
       (g/with-column "three" (g/lit 3))
       (g/select (g/pow "two" "three"))
-      g/collect-vals) => [[8.0]])
+      g/collect-vals) => [[8.0]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/select (g/+) (g/*))
+      g/collect-vals) => [[0 1]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/=== (g/ceil (g/lit 1.23))
+             (g/floor (g/lit 2.34))
+             (g/round (g/lit 2.49))
+             (g/round (g/lit 1.51)))
+        (g/log (g/exp (g/lit 1))))
+      g/collect-vals) => [[true 1.0]])
 
 (facts "On group-by + agg functions"
   (let [n-rows  20
@@ -50,8 +146,9 @@
                     (g/limit n-rows)
                     (g/agg
                       (g/count (g/->column "BuildingArea"))
-                      (g/null-rate "BuildingArea")
-                      (g/null-count "BuildingArea")
+                      (list
+                        (g/null-rate "BuildingArea")
+                        (g/null-count "BuildingArea"))
                       (g/min "Price")
                       (g/sum "Price")
                       (g/mean "Price")
@@ -72,16 +169,16 @@
       (let [std-dev  (summary "stddev_samp(Price)")
             variance (summary "var_samp(Price)")]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
-    (fact "count and count distinct should be similar"
+    (fact "count distinct and approx count distinct should be similar"
       (-> @dataframe
-          (g/limit 100)
+          (g/limit 60)
           (g/agg
             (-> (g/count-distinct "SellerG"))
             (-> (g/approx-count-distinct "SellerG")))
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05)
       (-> @dataframe
-          (g/limit 100)
+          (g/limit 60)
           (g/agg
             (g/count-distinct "SellerG")
             (g/approx-count-distinct "SellerG" 0.1))
@@ -135,6 +232,35 @@
         set) => #{1 2}))
 
 (facts "On time functions"
+  (fact "correct time arithmetic"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
+          (-> (g/next-day (g/lit "2020-02-01") "Sunday") (g/cast "string"))
+          (-> (g/lit "2020-03-02") (g/date-add 10) (g/date-sub 3) (g/cast "string"))
+          (-> (g/date-format (g/lit "2019-02-09") "yyyy~MM~dd") (g/cast "string"))
+          (-> (g/lit "2020-02-05") (g/add-months 3) (g/cast "string"))
+          (g/week-of-year (g/lit "2020-04-30"))
+          (g/round (g/date-diff (g/lit "2020-05-23") (g/lit "2020-04-30")))
+          (g/round (g/months-between (g/lit "2020-01-23") (g/lit "2020-04-30"))))
+        g/collect-vals) => [["2020-05-31"
+                             "2020-02-02"
+                             "2020-03-09"
+                             "2019~02~09"
+                             "2020-05-05"
+                             18
+                             23
+                             -3.0]])
+  (fact "correct current times"
+    (-> @dataframe
+        (g/limit 1)
+        (g/select
+          (g/cast (g/current-timestamp) "string")
+          (g/cast (g/current-date) "string"))
+        g/collect-vals
+        flatten) => #(and (clojure.string/includes? (first %) ":")
+                          (not (clojure.string/includes? (second %) ":"))))
   (fact "correct time comparisons"
     (-> @dataframe
         (g/limit 3)

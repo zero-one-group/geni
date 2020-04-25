@@ -1,9 +1,9 @@
-(ns geni.spark-setup-test
+(ns zero-one.geni.spark-setup-test
   (:require
     [clojure.java.io :as io]
     [clojure.string]
-    [geni.core :as g :refer [dataframe]]
-    [midje.sweet :refer [fact =>]])
+    [midje.sweet :refer [fact =>]]
+    [zero-one.geni.core :as g :refer [dataframe]])
   (:import
     [java.io File]
     (org.apache.spark.sql Dataset SparkSession)))
@@ -35,4 +35,14 @@
 (fact "Can read and write csv"
   (let [write-df (-> @dataframe (g/select "Suburb" "SellerG") (g/limit 5))
         read-df  (write-then-read-csv! write-df)]
+    (g/collect write-df) => (g/collect read-df)))
+
+(defn write-then-read-parquet [dataframe]
+  (let [temp-file (create-temp-file! ".parquet")]
+    (g/write-parquet! dataframe temp-file)
+    (g/read-parquet! @g/spark temp-file)))
+
+(fact "Can read and write parquet"
+  (let [write-df (-> @dataframe (g/select "Method" "Type") (g/limit 5))
+        read-df  (write-then-read-parquet write-df)]
     (g/collect write-df) => (g/collect read-df)))

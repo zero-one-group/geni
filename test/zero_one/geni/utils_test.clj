@@ -1,8 +1,8 @@
-(ns geni.utils-test
+(ns zero-one.geni.utils-test
   (:require
     [clojure.string]
-    [geni.core :as g]
-    [midje.sweet :refer [facts fact =>]]))
+    [midje.sweet :refer [facts fact =>]]
+    [zero-one.geni.core :as g]))
 
 (facts "On ensure-coll"
   (fact "should not change collections"

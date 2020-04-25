@@ -14,4 +14,4 @@
                                   [midje "1.9.9"]]
                    :plugins [[lein-cloverage "1.1.2"]
                              [lein-midje "3.2.1"]]}}
-  :repl-options {:init-ns geni.core})
+  :repl-options {:init-ns zero-one.geni.core})
