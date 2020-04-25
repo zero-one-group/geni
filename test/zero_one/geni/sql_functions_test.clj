@@ -6,7 +6,35 @@
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On random functions"
+  (-> @dataframe
+      (g/limit 20)
+      (g/select
+        (-> (g/randn 0) (g/as "norm"))
+        (-> (g/rand 0) (g/as "unif")))
+      (g/agg
+        (g/round (g/skewness "norm"))
+        (g/round (g/kurtosis "unif"))
+        (g/round (g/covar "unif" "norm")))
+      g/collect-vals) => [[0.0 -1.0 0.0]]
+  (-> @dataframe
+      (g/limit 10)
+      (g/select
+        (-> (g/randn) (g/as "norm"))
+        (-> (g/rand) (g/as "unif")))
+      (g/agg
+        (g/variance "norm")
+        (g/variance "unif"))
+      g/collect-vals
+      flatten) => #(every? pos? %))
+
 (fact "On comparison and boolean functions"
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/&&)
+        (g/||))
+      g/collect-vals) => [[true false]]
   (-> @dataframe
       (g/limit 1)
       (g/select
@@ -101,7 +129,16 @@
   (-> @dataframe
       (g/limit 1)
       (g/select (g/+) (g/*))
-      g/collect-vals) => [[0 1]])
+      g/collect-vals) => [[0 1]]
+  (-> @dataframe
+      (g/limit 1)
+      (g/select
+        (g/=== (g/ceil (g/lit 1.23))
+             (g/floor (g/lit 2.34))
+             (g/round (g/lit 2.49))
+             (g/round (g/lit 1.51)))
+        (g/log (g/exp (g/lit 1))))
+      g/collect-vals) => [[true 1.0]])
 
 (facts "On group-by + agg functions"
   (let [n-rows  20

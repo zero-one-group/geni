@@ -22,6 +22,7 @@
                             min
                             not
                             partition-by
+                            rand
                             second
                             take
                             when])
@@ -169,9 +170,6 @@
 (defn except [dataframe other] (.except dataframe other))
 (defn intersect [dataframe other] (.intersect dataframe other))
 
-(defn === [left-expr right-expr]
-  (.equalTo (->column left-expr) (->column right-expr)))
-
 (defn filter [dataframe expr]
   (.filter dataframe expr))
 (def where filter)
@@ -254,9 +252,20 @@
 (defn mean [expr] (functions/mean expr))
 (def avg mean)
 (defn sum [expr] (functions/sum expr))
+(defn skewness [expr] (functions/skewness expr))
+(defn kurtosis [expr] (functions/kurtosis expr))
+(defn covar [l-expr r-expr] (functions/covar_samp (->column l-expr) (->column r-expr)))
+
+(defn randn
+  ([] (functions/randn))
+  ([seed] (functions/randn seed)))
+(defn rand
+  ([] (functions/rand))
+  ([seed] (functions/rand seed)))
 
 (defn not [expr] (functions/not (->column expr)))
 (defn log [expr] (functions/log (->column expr)))
+(defn exp [expr] (functions/exp (->column expr)))
 (defn sqr [expr] (.multiply (->column expr) (->column expr)))
 (defn sqrt [expr] (functions/sqrt (->column expr)))
 (defn pow [base exponent] (functions/pow (->column base) exponent))
@@ -271,17 +280,20 @@
 (defn sinh [expr] (functions/sinh (->column expr)))
 (defn cosh [expr] (functions/cosh (->column expr)))
 (defn tanh [expr] (functions/tanh (->column expr)))
+(defn ceil [expr] (functions/ceil (->column expr)))
+(defn floor [expr] (functions/floor (->column expr)))
+(defn round [expr] (functions/round (->column expr)))
 (def pi (lit Math/PI))
 
-(defn && [l-expr r-expr] (.and (->column l-expr) (->column r-expr)))
-(defn || [l-expr r-expr] (.or (->column l-expr) (->column r-expr)))
+(defn && [& exprs] (reduce #(.and (->column %1) (->column %2)) (lit true) exprs))
+(defn || [& exprs] (reduce #(.or (->column %1) (->column %2)) (lit false) exprs))
 
 (defn + [& exprs] (reduce #(.plus (->column %1) (->column %2)) (lit 0) exprs))
 (defn - [& exprs] (reduce #(.minus (->column %1) (->column %2)) exprs))
 (defn * [& exprs] (reduce #(.multiply (->column %1) (->column %2)) (lit 1) exprs))
 (defn / [& exprs] (reduce #(.divide (->column %1) (->column %2)) exprs))
-(defn compare-columns [compare-fn expr0 & exprs]
-  (let [exprs (-> exprs (conj expr0))]
+(defn compare-columns [compare-fn expr-0 & exprs]
+  (let [exprs (-> exprs (conj expr-0))]
     (reduce
       (fn [acc-col [l-expr r-expr]]
         (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
@@ -291,6 +303,7 @@
 (def <= (partial compare-columns #(.leq %1 %2)))
 (def > (partial compare-columns #(.gt %1 %2)))
 (def >= (partial compare-columns #(.geq %1 %2)))
+(def === (partial compare-columns #(.equalTo %1 %2)))
 
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
@@ -428,23 +441,9 @@
 
   (-> @dataframe print-schema)
 
-  (-> @dataframe
-      (limit 1)
-      (select
-        (< (lit 1))
-        (< (lit 1) (lit 2) (lit 3))
-        (<= (lit 1) (lit 1) (lit 1))
-        (> (lit 1) (lit 2) (lit 3))
-        (>= (lit 1) (lit 0.99) (lit 1.01))
-        (&& (lit true) (lit false))
-        (|| (lit true) (lit false)))
-      collect-vals)
-
   ;; TODO:
   ;; SQL: add_months, date_add (+ add_days), date_diff, months_between, next_day
   ;; current_timestamp, current_date, last_day, weekofyear
-  ;; ceil, floor, exp, log, round
-  ;; covar_samp (+ covar), kurtosis, skewness, rand, randn
 
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
