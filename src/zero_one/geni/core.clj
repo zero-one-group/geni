@@ -511,6 +511,22 @@
        (DataTypes/createStructField "b" DataTypes/DoubleType false)
        (DataTypes/createStructField "c" DataTypes/StringType false)]))
 
+  ;; TODO: put in another namespace
+  ;; TODO: DF creation should be easy
+  (map->dataset
+    {:a [1 4]
+     :b [2.0 5.0]
+     :c ["a" "b"]})
+
+  (records->dataset
+    [{:a 1 :b 2.0 :c "a"}
+     {:a 4 :b 5.0 :c "b"}])
+
+  (table->dataset
+    [[1 2.0 "a"]
+     [4 5.0 "b"]]
+    [:a :b :c])
+
   (show
     (.createDataFrame
       @spark
