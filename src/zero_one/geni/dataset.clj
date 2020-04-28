@@ -32,14 +32,15 @@
   (DataTypes/createStructType
     (mapv infer-struct-field col-names values)))
 
+(defn first-non-nil [values]
+  (first (filter identity values)))
+
 (defn transpose [xs]
   (apply map list xs))
 
-;; TODO: add test
-;; TODO: implement better schema inference.
 (defn map->dataset [spark map-of-values]
   (let [col-names  (map name (keys map-of-values))
-        values     (map first (vals map-of-values))
+        values     (map first-non-nil (vals map-of-values))
         row-values (-> map-of-values vals transpose)
         rows       (->java-list (map ->row row-values))
         schema     (infer-schema col-names values)]
@@ -52,7 +53,7 @@
     (delay (g/create-spark-session {:configs {"spark.testing.memory" "2147480000"}})))
 
   (def map-of-values
-    {:a [1 4]
+    {:a [nil 4]
      :b [2.0 5.0]
      :c ["a" "b"]})
 
@@ -72,6 +73,5 @@
     [[1 2.0 "a"]
      [4 5.0 "b"]]
     [:a :b :c])
-
 
   true)
