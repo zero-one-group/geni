@@ -38,40 +38,34 @@
 (defn transpose [xs]
   (apply map list xs))
 
-(defn map->dataset [spark map-of-values]
-  (let [col-names  (map name (keys map-of-values))
-        values     (map first-non-nil (vals map-of-values))
-        row-values (-> map-of-values vals transpose)
-        rows       (->java-list (map ->row row-values))
-        schema     (infer-schema col-names values)]
+(defn table->dataset [spark table col-names]
+  (let [col-names (map name col-names)
+        values    (map first-non-nil (transpose table))
+        rows      (->java-list (map ->row table))
+        schema    (infer-schema col-names values)]
     (.createDataFrame spark rows schema)))
 
+(defn map->dataset [spark map-of-values]
+  (let [table     (transpose (vals map-of-values))
+        col-names (keys map-of-values)]
+    (table->dataset spark table col-names)))
+
+(defn conj-record [map-of-values record]
+  (let [col-names (keys map-of-values)]
+    (reduce
+      (fn [acc-map col-name]
+        (update acc-map col-name #(conj % (get record col-name))))
+      map-of-values
+      col-names)))
+
+(defn records->dataset [spark records]
+  (let [col-names     (-> (map keys records) flatten distinct)
+        map-of-values (reduce
+                        conj-record
+                        (zipmap col-names (repeat []))
+                        records)]
+    (map->dataset spark map-of-values)))
+
 (comment
-
-  (require '[zero-one.geni.core :as g])
-  (defonce spark
-    (delay (g/create-spark-session {:configs {"spark.testing.memory" "2147480000"}})))
-
-  (def map-of-values
-    {:a [nil 4]
-     :b [2.0 5.0]
-     :c ["a" "b"]})
-
-  (g/print-schema
-    (map->dataset
-      @spark
-      map-of-values))
-
-  ;; TODO: DF creation should be easy
-  (records->dataset
-    spark
-    [{:a 1 :b 2.0 :c "a"}
-     {:a 4 :b 5.0 :c "b"}])
-
-  (table->dataset
-    spark
-    [[1 2.0 "a"]
-     [4 5.0 "b"]]
-    [:a :b :c])
 
   true)
