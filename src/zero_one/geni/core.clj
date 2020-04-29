@@ -469,25 +469,9 @@
       (Correlation/corr "feature")
       collect-vals)
 
-  ;; TODO: think about the general mllib interface in Clojure
-
+  ;; TODO: handle collect-vals with DenseVector and SparseVector?
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
-
-  (def estimator
-    (pipeline
-      (tokenizer {:input-col "text" :output-col "words"})
-      (hashing-tf {:num-features 1000 :input-col "words" :output-col "features"})
-      (logistic-regression {:max-iter 10 :reg-param 0.001})))
-
-  (def transformer
-    (fit train-dataframe estimator))
-
-  (-> test-dataframe
-      (transform transformer)
-      (select "probability" "prediction")
-      show)
-
   (require '[clojure.reflect :as r])
   (->> (r/reflect @spark)
        :members
@@ -495,42 +479,5 @@
        (mapv :parameter-types)
        (mapv println)
        pprint)
-
-
-  (import '(org.apache.spark.sql Row RowFactory))
-  (import '(org.apache.spark.sql.types DataTypes))
-
-  (defn create-row [seq] (RowFactory/create (into-array Object seq)))
-
-  (def rows
-    (java.util.ArrayList. [(create-row [1 2.0 "a"]) (create-row [4 5.0 "b"])]))
-
-  (def schema
-    (DataTypes/createStructType
-      [(DataTypes/createStructField "a" DataTypes/LongType false)
-       (DataTypes/createStructField "b" DataTypes/DoubleType false)
-       (DataTypes/createStructField "c" DataTypes/StringType false)]))
-
-  ;; TODO: put in another namespace
-  ;; TODO: DF creation should be easy
-  (map->dataset
-    {:a [1 4]
-     :b [2.0 5.0]
-     :c ["a" "b"]})
-
-  (records->dataset
-    [{:a 1 :b 2.0 :c "a"}
-     {:a 4 :b 5.0 :c "b"}])
-
-  (table->dataset
-    [[1 2.0 "a"]
-     [4 5.0 "b"]]
-    [:a :b :c])
-
-  (show
-    (.createDataFrame
-      @spark
-      rows
-      schema))
 
   0)
