@@ -91,6 +91,7 @@ Features:
 - Clojure docs.
 - Setup on GCP's Dataproc + guide.
 - Make a start on MLlib.
+- Make a start on RDD support.
 - Data-driven, Hiccup-style queries.
 
 #### Data-Driven Hiccup-Style Queries
