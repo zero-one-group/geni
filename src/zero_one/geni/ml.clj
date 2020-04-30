@@ -39,6 +39,8 @@
        [9.0 0.0 1.0  0.0]]
       [:a :b :c :d]))
 
+  (->> dataset g/dtypes)
+
   (def estimator
     (pipeline
       (tokenizer {:input-col "text" :output-col "words"})

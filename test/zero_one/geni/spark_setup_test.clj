@@ -3,7 +3,8 @@
     [clojure.java.io :as io]
     [clojure.string]
     [midje.sweet :refer [fact =>]]
-    [zero-one.geni.core :as g :refer [dataframe]])
+    [zero-one.geni.core :as g :refer [dataframe]]
+    [zero-one.geni.scala :as scala])
   (:import
     [java.io File]
     (org.apache.spark.sql Dataset SparkSession)))
@@ -11,7 +12,7 @@
 (fact "Test spark session and dataframe"
   @g/spark => #(instance? SparkSession %)
   @g/dataframe => #(instance? Dataset %)
-  (-> @g/spark .conf .getAll g/scala-map->map) => #(= (% "spark.master") "local[*]"))
+  (-> @g/spark .conf .getAll scala/scala-map->map) => #(= (% "spark.master") "local[*]"))
 
 (fact "Test primary key is the product of address, date and seller"
   (-> @dataframe

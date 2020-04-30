@@ -5,17 +5,27 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]))
 
-(def dataset
-  (ds/table->dataset
-    @spark
-    [[1.0 0.0 -2.0 0.0]
-     [4.0 5.0 0.0  3.0]
-     [6.0 7.0 0.0  8.0]
-     [9.0 0.0 1.0  0.0]]
-    [:a :b :c :d]))
+(facts "On hypothesis testing"
+  (let [dataset (ds/table->dataset
+                   @spark
+                   [[0.0 [0.5 10.0]]
+                    [0.0 [1.5 20.0]]
+                    [1.0 [1.5 30.0]]
+                    [0.0 [3.5 30.0]]
+                    [0.0 [3.5 40.0]]
+                    [1.0 [3.5 40.0]]]
+                   [:label :features])]
+    (nil? dataset) => false))
 
-(facts "On basic statistics"
-  (let [v-assembler (ml/vector-assembler
+(facts "On correlation"
+  (let [dataset     (ds/table->dataset
+                       @spark
+                       [[1.0 0.0 -2.0 0.0]
+                        [4.0 5.0 0.0  3.0]
+                        [6.0 7.0 0.0  8.0]
+                        [9.0 0.0 1.0  0.0]]
+                       [:a :b :c :d])
+        v-assembler (ml/vector-assembler
                       {:input-cols ["a" "b" "c" "d"] :output-col "features"})
         features-df (-> dataset
                         (ml/transform v-assembler)

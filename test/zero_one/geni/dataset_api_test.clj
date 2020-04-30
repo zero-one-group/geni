@@ -3,7 +3,8 @@
     [clojure.set]
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g :refer [dataframe]]))
+    [zero-one.geni.core :as g :refer [dataframe]]
+    [zero-one.geni.scala :as scala]))
 
 (facts "On printing functions"
   (fact "should return nil"
@@ -15,7 +16,7 @@
       (n-lines (with-out-str (g/show-vertical (g/limit df 3)))) => 9
       (n-lines (with-out-str (g/show-vertical df {:num-rows 3}))) => 10
       (n-lines (with-out-str (g/print-schema df))) => (inc n-columns)
-      (n-lines (g/with-scala-out-str (g/explain df))) => #(< 1 %))))
+      (n-lines (scala/with-scala-out-str (g/explain df))) => #(< 1 %))))
 
 (facts "On repartition"
   (fact "able to repartition by a number"

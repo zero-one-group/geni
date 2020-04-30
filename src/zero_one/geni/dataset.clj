@@ -1,26 +1,30 @@
 (ns zero-one.geni.dataset
+  (:require
+    [zero-one.geni.scala :as scala])
   (:import
     (org.apache.spark.sql RowFactory)
-    (org.apache.spark.sql.types DataTypes)))
+    (org.apache.spark.sql.types DataTypes)
+    (org.apache.spark.ml.linalg VectorUDT)))
 
 (defn ->row [coll]
-  (RowFactory/create (into-array Object coll)))
+  (RowFactory/create (into-array Object (map scala/->scala-coll coll))))
 
 (defn ->java-list [coll]
   (java.util.ArrayList. coll))
 
 (def java-type->spark-type
-  {java.lang.Boolean  DataTypes/BooleanType
-   java.lang.Byte     DataTypes/ByteType
-   java.lang.Double   DataTypes/DoubleType
-   java.lang.Float    DataTypes/FloatType
-   java.lang.Integer  DataTypes/IntegerType
-   java.lang.Long     DataTypes/LongType
-   java.lang.Short    DataTypes/ShortType
-   java.lang.String   DataTypes/StringType
-   java.sql.Timestamp DataTypes/TimestampType
-   java.util.Date     DataTypes/DateType
-   nil                DataTypes/NullType})
+  {java.lang.Boolean             DataTypes/BooleanType
+   java.lang.Byte                DataTypes/ByteType
+   java.lang.Double              DataTypes/DoubleType
+   java.lang.Float               DataTypes/FloatType
+   java.lang.Integer             DataTypes/IntegerType
+   java.lang.Long                DataTypes/LongType
+   java.lang.Short               DataTypes/ShortType
+   java.lang.String              DataTypes/StringType
+   java.sql.Timestamp            DataTypes/TimestampType
+   java.util.Date                DataTypes/DateType
+   nil                           DataTypes/NullType
+   clojure.lang.PersistentVector (VectorUDT.)})
 
 (defn infer-struct-field [col-name value]
   (let [default-type DataTypes/BinaryType
@@ -39,7 +43,8 @@
   (apply map list xs))
 
 (defn table->dataset [spark table col-names]
-  (let [col-names (map name col-names)
+  (let [
+        col-names (map name col-names)
         values    (map first-non-nil (transpose table))
         rows      (->java-list (map ->row table))
         schema    (infer-schema col-names values)]
@@ -67,5 +72,4 @@
     (map->dataset spark map-of-values)))
 
 (comment
-
   true)

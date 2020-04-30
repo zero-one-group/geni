@@ -26,40 +26,14 @@
                             second
                             take
                             when])
+  (:require
+    [zero-one.geni.scala :as scala])
   (:import
-    (java.io ByteArrayOutputStream)
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
-    (org.apache.spark.sql.expressions Window)
-    (scala Console Function0)
-    (scala.collection JavaConversions Map)))
+    (org.apache.spark.sql.expressions Window)))
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
-
-(defn scala-seq->vec [scala-seq]
-  (into [] (JavaConversions/seqAsJavaList scala-seq)))
-
-(defn scala-map->map [^Map m]
-  (into {} (JavaConversions/mapAsJavaMap m)))
-
-(defn ->scala-seq [coll]
-  (JavaConversions/asScalaBuffer (seq coll)))
-
-(defn scala-tuple->vec [p]
-  (->> (.productArity p)
-       (range)
-       (clojure.core/map #(.productElement p %))
-       (into [])))
-
-(defn ->scala-function0 [f]
-  (reify Function0 (apply [this] (f))))
-
-(defmacro with-scala-out-str [& body]
-  `(let [out-buffer# (ByteArrayOutputStream.)]
-      (Console/withOut
-        out-buffer#
-        (->scala-function0 (fn [] ~@body)))
-      (.toString out-buffer# "UTF-8")))
 
 (defn read-parquet! [spark-session path]
   (.. spark-session
@@ -144,7 +118,7 @@
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
-    (into {} (clojure.core/map scala-tuple->vec dtypes-as-tuples))))
+    (into {} (clojure.core/map scala/scala-tuple->vec dtypes-as-tuples))))
 
 (defn columns [dataframe]
   (-> dataframe .columns seq))
@@ -184,7 +158,7 @@
 
 (defn pivot
   ([grouped expr] (.pivot grouped (->column expr)))
-  ([grouped expr values] (.pivot grouped (->column expr) (->scala-seq values))))
+  ([grouped expr values] (.pivot grouped (->column expr) (scala/->scala-seq values))))
 
 (defn agg [dataframe & exprs]
   (let [[head & tail] (clojure.core/map ->column (flatten exprs))]
@@ -331,7 +305,7 @@
 (defn null-count [expr]
   (-> expr null? (cast "int") sum (as (str "null_count(" expr ")"))))
 
-(defn isin [expr coll] (.isin (->column expr) (->scala-seq coll)))
+(defn isin [expr coll] (.isin (->column expr) (scala/->scala-seq coll)))
 
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
 
@@ -410,7 +384,7 @@
       (into {} (clojure.core/map
                  vector
                  col-names
-                 (-> row .toSeq scala-seq->vec))))))
+                 (-> row .toSeq scala/scala-seq->vec))))))
 
 (defn collect-vals [dataframe]
   (mapv #(into [] (vals %)) (collect dataframe)))
@@ -425,7 +399,7 @@
   ([left right join-cols] (join left right join-cols "inner"))
   ([left right join-cols join-type]
    (let [join-cols (if (string? join-cols) [join-cols] join-cols)]
-     (.join left right (->scala-seq join-cols) join-type))))
+     (.join left right (scala/->scala-seq join-cols) join-type))))
 
 (defn cross-join [left right] (.crossJoin left right))
 
