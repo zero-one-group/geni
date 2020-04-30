@@ -15,7 +15,12 @@
                     [0.0 [3.5 40.0]]
                     [1.0 [3.5 40.0]]]
                    [:label :features])]
-    (nil? dataset) => false))
+    (fact "able to do chi-squared test"
+      (-> dataset
+          (ml/chi-square-test "features" "label")
+          g/first-vals
+          first
+          ml/vector->seq) => #(every? double? %))))
 
 (facts "On correlation"
   (let [dataset     (ds/table->dataset

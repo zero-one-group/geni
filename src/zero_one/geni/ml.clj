@@ -1,7 +1,8 @@
 (ns zero-one.geni.ml
   (:import
     (org.apache.spark.ml.feature VectorAssembler)
-    (org.apache.spark.ml.stat Correlation)))
+    (org.apache.spark.ml.stat ChiSquareTest
+                              Correlation)))
 
 (defn transform [dataframe transformer]
   (.transform transformer dataframe))
@@ -13,6 +14,9 @@
 
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))
+
+(defn chi-square-test [dataframe features-col label-col]
+  (ChiSquareTest/test dataframe features-col label-col))
 
 (defn vector->seq [spark-vector]
   (-> spark-vector .values seq))
