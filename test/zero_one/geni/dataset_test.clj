@@ -1,5 +1,6 @@
 (ns zero-one.geni.dataset-test
   (:require
+    [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds])
@@ -21,7 +22,17 @@
   (fact "should create the right null column"
     (let [dataset (ds/map->dataset @spark {:a [1 4]
                                            :b [nil nil]})]
-      (g/collect-vals dataset) => [[1 nil] [4 nil]])))
+      (g/collect-vals dataset) => [[1 nil] [4 nil]]))
+  (let [dataset (ds/table->dataset
+                   @spark
+                   [[0.0 [0.5 10.0]]
+                    [0.0 [1.5 20.0]]
+                    [1.0 [1.5 30.0]]
+                    [0.0 [3.5 30.0]]
+                    [0.0 [3.5 40.0]]
+                    [1.0 [3.5 40.0]]]
+                   [:label :features])]
+    ((g/dtypes dataset) "features") => #(includes? % "Vector")))
 
 (facts "On records->dataset"
   (fact "should create the right dataset"
