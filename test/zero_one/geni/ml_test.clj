@@ -1,9 +1,35 @@
 (ns zero-one.geni.ml-test
   (:require
+    [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]))
+
+(facts "On pipeline"
+  (fact "should be able to fit the example stages"
+    (let [dataset     (ds/table->dataset
+                        @g/spark
+                        [[0, "a b c d e spark", 1.0]
+                         [1, "b d", 0.0]
+                         [2, "spark f g h", 1.0],
+                         [3, "hadoop mapreduce", 0.0]]
+                        [:id :text :label])
+          estimator   (ml/pipeline
+                        (ml/tokenizer {:input-col "text"
+                                       :output-col "words"})
+                        (ml/hashing-tf {:num-features 1000
+                                        :input-col "words"
+                                        :output-col "features"})
+                        (ml/logistic-regression {:max-iter 10
+                                                 :reg-param 0.001}))
+          transformer (ml/fit dataset estimator)
+          dtypes      (-> dataset
+                          (ml/transform transformer)
+                          (g/select "probability" "prediction")
+                          g/dtypes)]
+      (dtypes "probability") => #(includes? % "Vector")
+      (dtypes "prediction") => "DoubleType")))
 
 (facts "On hypothesis testing"
   (let [dataset (ds/table->dataset
@@ -49,3 +75,19 @@
         (count corr-matrix) => 4
         (count (first corr-matrix)) => 4
         (every? double? (flatten corr-matrix)) => true))))
+
+(fact "On param extraction"
+  (ml/params (ml/logistic-regression {})) => {:max-iter 100,
+                                              :family "auto",
+                                              :tol 1.0E-6,
+                                              :raw-prediction-col "rawPrediction",
+                                              :elastic-net-param 0.0,
+                                              :reg-param 0.0,
+                                              :aggregation-depth 2,
+                                              :threshold 0.5,
+                                              :fit-intercept true,
+                                              :label-col "label",
+                                              :standardization true,
+                                              :probability-col "probability",
+                                              :prediction-col "prediction",
+                                              :features-col "features"})

@@ -435,14 +435,6 @@
 
   (-> @dataframe print-schema)
 
-  (import '(org.apache.spark.ml.feature VectorAssembler))
-  (-> (VectorAssembler.)
-      (.setInputCols (into-array java.lang.String ["Price" "Rooms"]))
-      (.setOutputCol "feature")
-      (.transform @dataframe)
-      (Correlation/corr "feature")
-      collect-vals)
-
   ;; TODO: handle collect-vals with DenseVector and SparseVector?
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
