@@ -6,23 +6,110 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml])
   (:import
-    (org.apache.spark.ml.feature CountVectorizer
+    (org.apache.spark.ml.feature Binarizer
+                                 Bucketizer
+                                 BucketedRandomProjectionLSH
+                                 CountVectorizer
+                                 DCT
+                                 ElementwiseProduct
                                  FeatureHasher
-                                 NGram)))
+                                 HashingTF
+                                 IDF
+                                 Imputer
+                                 IndexToString
+                                 Interaction
+                                 MaxAbsScaler
+                                 MinHashLSH
+                                 MinMaxScaler
+                                 NGram
+                                 Normalizer
+                                 OneHotEncoderEstimator
+                                 PCA
+                                 PolynomialExpansion
+                                 QuantileDiscretizer
+                                 SQLTransformer
+                                 StandardScaler
+                                 StringIndexer
+                                 Tokenizer
+                                 VectorAssembler
+                                 VectorIndexer
+                                 VectorSizeHint
+                                 Word2Vec)))
 
-(facts "On instantiation"
-  (fact "can instantiate CountVectorizer"
-    (ml/count-vectorizer
-      {:input-col "words"
-       :output-col "features"}) => #(instance? CountVectorizer %))
-  (fact "can instantiate FeatureHasher"
-    (ml/feature-hasher
-      {:input-cols ["real" "bool" "stringNum" "string"]
-       :output-col "features"}) => #(instance? FeatureHasher %))
-  (fact "can instantiate NGram"
-    (ml/n-gram
-      {:input-col "words"
-       :output-col "features"}) => #(instance? NGram %)))
+(fact "On instantiation"
+  (ml/tokenizer
+    {:input-col "sentence"
+     :output-col "words"}) => #(instance? Tokenizer %)
+  (ml/hashing-tf
+    {:input-col "words"
+     :output-col "rawFeatures"}) => #(instance? HashingTF %)
+  (ml/word2vec
+    {:vector-size 3
+     :min-count 0
+     :input-col "text"
+     :output-col "result"}) => #(instance? Word2Vec %)
+  (ml/count-vectorizer
+    {:input-col "words"
+     :output-col "features"}) => #(instance? CountVectorizer %)
+  (ml/feature-hasher
+    {:input-cols ["real" "bool" "stringNum" "string"]
+     :output-col "features"}) => #(instance? FeatureHasher %)
+  (ml/n-gram
+    {:input-col "words"
+     :output-col "features"}) => #(instance? NGram %)
+  (ml/binariser
+    {:threshold 0.5
+     :input-col "feature"
+     :output-col "binarized_feature"}) => #(instance? Binarizer %)
+  (ml/pca
+    {:k 3
+     :input-col "features"
+     :output-col "pcaFeatures"}) => #(= ((ml/params %) :k) 3)
+  (ml/pca
+    {:input-col "features"
+     :output-col "pcaFeatures"}) => #(instance? PCA %)
+  (ml/polynomial-expansion
+    {:degree 3
+     :input-col "features"
+     :output-col "polyFeatures"}) => #(instance? PolynomialExpansion %)
+  (ml/dct
+    {:inverse false
+     :input-col "features"
+     :output-col "dctFeatures"}) => #(instance? DCT %)
+  (ml/string-indexer
+    {:inverse false
+     :input-col "features"
+     :output-col "dctFeatures"}) => #(instance? StringIndexer %)
+  (ml/index-to-string
+    {:input-col "category"
+     :output-col "categoryIndex"}) => #(instance? IndexToString %)
+  (ml/one-hot-encoder
+    {:input-cols ["categoryIndex1" "categoryIndex2"]
+     :output-cols ["categoryVec1" "categoryVec2"]})
+  => #(instance? OneHotEncoderEstimator %)
+  (ml/vector-indexer
+    {:max-categories 10
+     :input-col "features"
+     :output-col "indexed"}) => #(instance? VectorIndexer %)
+  (ml/interaction
+    {:input-cols ["id2" "id3" "id4"]
+     :output-col "indexed"}) => #(instance? Interaction %)
+  (ml/normaliser
+    {:p 1.0
+     :input-col "features"
+     :output-col "normFeatures"}) => #(instance? Normalizer %)
+  (ml/standard-scaler
+    {:with-std true
+     :with-mean false
+     :input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? StandardScaler %)
+  (ml/min-max-scaler
+    {:input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? MinMaxScaler %)
+  (ml/max-abs-scaler
+    {:input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %))
+;; TODO: bucketiser
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"

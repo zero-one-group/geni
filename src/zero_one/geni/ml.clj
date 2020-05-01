@@ -8,15 +8,18 @@
     (org.apache.spark.ml.classification LogisticRegression)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
+                                 BucketedRandomProjectionLSH
                                  CountVectorizer
                                  DCT
                                  ElementwiseProduct
                                  FeatureHasher
                                  HashingTF
                                  IDF
+                                 Imputer
                                  IndexToString
                                  Interaction
                                  MaxAbsScaler
+                                 MinHashLSH
                                  MinMaxScaler
                                  NGram
                                  Normalizer
@@ -68,8 +71,9 @@
       (.setOutputCol output-col)))
 (def binarizer binariser)
 
-(defn pca [{:keys [input-col output-col]}]
+(defn pca [{:keys [k input-col output-col]}]
   (-> (PCA.)
+      (cond-> k (.setK k))
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
@@ -102,13 +106,13 @@
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
-(defn one-hot-encoder [{:keys [drop-last handle-invalid input-col output-col]
+(defn one-hot-encoder [{:keys [drop-last handle-invalid input-cols output-cols]
                         :or   {drop-last true handle-invalid "error"}}]
   (-> (OneHotEncoderEstimator.)
       (.setDropLast drop-last)
       (.setHandleInvalid handle-invalid)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+      (.setInputCols (into-array java.lang.String input-cols))
+      (.setOutputCols (into-array java.lang.String output-cols))))
 (def one-hot-encoder-estimator one-hot-encoder)
 
 (defn vector-indexer [{:keys [max-categories handle-invalid input-col output-col]
@@ -195,8 +199,31 @@
       (.setOutputCol output-col)))
 (def quantile-discretizer quantile-discretiser)
 
-;; TODO
-(params (Imputer.))
+(defn imputer [{:keys [missing-value strategy input-cols output-cols]
+                :or   {missing-value ##NaN strategy "mean"}}]
+  (-> (Imputer.)
+      (.setMissingValue missing-value)
+      (.setStrategy strategy)
+      (.setInputCols (into-array java.lang.String input-cols))
+      (.setOutputCols (into-array java.lang.String output-cols))))
+
+(defn bucketed-random-projection-lsh
+  [{:keys [bucket-length num-hash-tables seed input-col output-col]
+    :or   {num-hash-tables 1 seed 772209414}}]
+  (-> (BucketedRandomProjectionLSH.)
+      (.setBucketLength bucket-length)
+      (.setNumHashTables num-hash-tables)
+      (.setSeed seed)
+      (.setInputCol input-col)
+      (.setOutputCol output-col)))
+
+(defn min-hash-lsh [{:keys [num-hash-tables seed input-col output-col]
+                     :or   {num-hash-tables 1 seed 772209414}}]
+  (-> (MinHashLSH.)
+      (.setNumHashTables num-hash-tables)
+      (.setSeed seed)
+      (.setInputCol input-col)
+      (.setOutputCol output-col)))
 
 (defn count-vectoriser [{:keys [vocab-size
                                 min-df
@@ -349,5 +376,10 @@
 
   (params (CountVectorizer.))
 
+  (require '[clojure.reflect :as r])
+  (->> (r/reflect (Tokenizer.))
+       :members
+       (mapv :name)
+       (mapv println))
 
   true)
