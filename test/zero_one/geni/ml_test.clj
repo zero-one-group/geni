@@ -14,7 +14,6 @@
                                  ElementwiseProduct
                                  FeatureHasher
                                  HashingTF
-                                 IDF
                                  Imputer
                                  IndexToString
                                  Interaction
@@ -31,7 +30,6 @@
                                  StandardScaler
                                  StringIndexer
                                  Tokenizer
-                                 VectorAssembler
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)))
