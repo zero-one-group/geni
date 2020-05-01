@@ -4,7 +4,139 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.ml :as ml]))
+    [zero-one.geni.ml :as ml])
+  (:import
+    (org.apache.spark.ml.feature Binarizer
+                                 Bucketizer
+                                 BucketedRandomProjectionLSH
+                                 CountVectorizer
+                                 DCT
+                                 ElementwiseProduct
+                                 FeatureHasher
+                                 HashingTF
+                                 Imputer
+                                 IndexToString
+                                 Interaction
+                                 MaxAbsScaler
+                                 MinHashLSH
+                                 MinMaxScaler
+                                 NGram
+                                 Normalizer
+                                 OneHotEncoderEstimator
+                                 PCA
+                                 PolynomialExpansion
+                                 QuantileDiscretizer
+                                 SQLTransformer
+                                 StandardScaler
+                                 StringIndexer
+                                 Tokenizer
+                                 VectorIndexer
+                                 VectorSizeHint
+                                 Word2Vec)))
+
+(fact "On instantiation"
+  (ml/tokenizer
+    {:input-col "sentence"
+     :output-col "words"}) => #(instance? Tokenizer %)
+  (ml/hashing-tf
+    {:input-col "words"
+     :output-col "rawFeatures"}) => #(instance? HashingTF %)
+  (ml/word2vec
+    {:vector-size 3
+     :min-count 0
+     :input-col "text"
+     :output-col "result"}) => #(instance? Word2Vec %)
+  (ml/count-vectorizer
+    {:input-col "words"
+     :output-col "features"}) => #(instance? CountVectorizer %)
+  (ml/feature-hasher
+    {:input-cols ["real" "bool" "stringNum" "string"]
+     :output-col "features"}) => #(instance? FeatureHasher %)
+  (ml/n-gram
+    {:input-col "words"
+     :output-col "features"}) => #(instance? NGram %)
+  (ml/binariser
+    {:threshold 0.5
+     :input-col "feature"
+     :output-col "binarized_feature"}) => #(instance? Binarizer %)
+  (ml/pca
+    {:k 3
+     :input-col "features"
+     :output-col "pcaFeatures"}) => #(= ((ml/params %) :k) 3)
+  (ml/pca
+    {:input-col "features"
+     :output-col "pcaFeatures"}) => #(instance? PCA %)
+  (ml/polynomial-expansion
+    {:degree 3
+     :input-col "features"
+     :output-col "polyFeatures"}) => #(instance? PolynomialExpansion %)
+  (ml/dct
+    {:inverse false
+     :input-col "features"
+     :output-col "dctFeatures"}) => #(instance? DCT %)
+  (ml/string-indexer
+    {:inverse false
+     :input-col "features"
+     :output-col "dctFeatures"}) => #(instance? StringIndexer %)
+  (ml/index-to-string
+    {:input-col "category"
+     :output-col "categoryIndex"}) => #(instance? IndexToString %)
+  (ml/one-hot-encoder
+    {:input-cols ["categoryIndex1" "categoryIndex2"]
+     :output-cols ["categoryVec1" "categoryVec2"]})
+  => #(instance? OneHotEncoderEstimator %)
+  (ml/vector-indexer
+    {:max-categories 10
+     :input-col "features"
+     :output-col "indexed"}) => #(instance? VectorIndexer %)
+  (ml/interaction
+    {:input-cols ["id2" "id3" "id4"]
+     :output-col "indexed"}) => #(instance? Interaction %)
+  (ml/normaliser
+    {:p 1.0
+     :input-col "features"
+     :output-col "normFeatures"}) => #(instance? Normalizer %)
+  (ml/standard-scaler
+    {:with-std true
+     :with-mean false
+     :input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? StandardScaler %)
+  (ml/min-max-scaler
+    {:input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? MinMaxScaler %)
+  (ml/max-abs-scaler
+    {:input-col "features"
+     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %)
+  (ml/bucketiser ;; TODO: add splits
+    {:input-col "features"
+     :output-col "bucketedFeatures"}) => #(instance? Bucketizer %)
+  (ml/elementwise-product
+    {:scaling-vec [0.0 1.0 2.0]
+     :input-col "features"
+     :output-col "bucketedFeatures"}) => #(instance? ElementwiseProduct %)
+  (ml/sql-transformer
+    {:statement "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__"})
+  => #(instance? SQLTransformer %)
+  (ml/vector-size-hint
+    {:handle-invalid "skip"
+     :size 3
+     :input-col "userFeatures"}) => #(instance? VectorSizeHint %)
+  (ml/quantile-discretiser
+    {:num-buckets 3
+     :input-col "hour"
+     :output-col "result"}) => #(instance? QuantileDiscretizer %)
+  (ml/imputer
+    {:input-cols ["a" "b"]
+     :output-cols ["out_a" "out_b"]}) => #(instance? Imputer %)
+  (ml/bucketed-random-projection-lsh
+    {:bucket-length 2.0
+     :num-hash-tables 3
+     :input-col "features"
+     :output-col "hashes"}) => #(instance? BucketedRandomProjectionLSH %)
+  (ml/min-hash-lsh
+    {:num-hash-tables 5
+     :input-col "features"
+     :output-col "hashes"}) => #(instance? MinHashLSH %))
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"
@@ -29,7 +161,54 @@
                           (g/select "probability" "prediction")
                           g/dtypes)]
       (dtypes "probability") => #(includes? % "Vector")
-      (dtypes "prediction") => "DoubleType")))
+      (dtypes "prediction") => "DoubleType"))
+  (fact "should be able to fit the idf example"
+    (let [dataset     (ds/table->dataset
+                        @g/spark
+                        [[0.0 "Hi I heard about Spark"]
+                         [0.0 "I wish Java could use case classes"]
+                         [1.0 "Logistic regression models are neat"]]
+                        [:label :sentence])
+          estimator   (ml/pipeline
+                        (ml/tokenizer {:input-col "sentence"
+                                       :output-col "words"})
+                        (ml/hashing-tf {:num-features 20
+                                        :input-col "words"
+                                        :output-col "raw-features"})
+                        (ml/idf {:input-col "raw-features"
+                                 :output-col "features"}))
+          transformer (ml/fit dataset estimator)
+          transformed (-> dataset
+                          (ml/transform transformer)
+                          (g/select "features"))]
+      (->> transformed
+           g/collect-vals
+           flatten
+           (map ml/vector->seq)
+           flatten) => #(every? double? %)))
+  (fact "should be able to fit the word2vec example"
+    (let [dataset     (ds/table->dataset
+                        @g/spark
+                        [["Hi I heard about Spark"]
+                         ["I wish Java could use case classes"]
+                         ["Logistic regression models are neat"]]
+                        [:sentence])
+          estimator   (ml/pipeline
+                        (ml/tokenizer {:input-col "sentence"
+                                       :output-col "text"})
+                        (ml/word2vec {:vector-size 3
+                                      :min-count 0
+                                      :input-col "text"
+                                      :output-col "result"}))
+          transformer (ml/fit dataset estimator)
+          transformed (-> dataset
+                          (ml/transform transformer)
+                          (g/select "result"))]
+      (->> transformed
+           g/collect-vals
+           flatten
+           (map ml/vector->seq)
+           flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
   (let [dataset (ds/table->dataset
