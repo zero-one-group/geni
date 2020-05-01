@@ -108,8 +108,37 @@
      :output-col "scaledFeatures"}) => #(instance? MinMaxScaler %)
   (ml/max-abs-scaler
     {:input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %))
-;; TODO: bucketiser
+     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %)
+  (ml/bucketiser ;; TODO: add splits
+    {:input-col "features"
+     :output-col "bucketedFeatures"}) => #(instance? Bucketizer %)
+  (ml/elementwise-product
+    {:scaling-vec [0.0 1.0 2.0]
+     :input-col "features"
+     :output-col "bucketedFeatures"}) => #(instance? ElementwiseProduct %)
+  (ml/sql-transformer
+    {:statement "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__"})
+  => #(instance? SQLTransformer %)
+  (ml/vector-size-hint
+    {:handle-invalid "skip"
+     :size 3
+     :input-col "userFeatures"}) => #(instance? VectorSizeHint %)
+  (ml/quantile-discretiser
+    {:num-buckets 3
+     :input-col "hour"
+     :output-col "result"}) => #(instance? QuantileDiscretizer %)
+  (ml/imputer
+    {:input-cols ["a" "b"]
+     :output-cols ["out_a" "out_b"]}) => #(instance? Imputer %)
+  (ml/bucketed-random-projection-lsh
+    {:bucket-length 2.0
+     :num-hash-tables 3
+     :input-col "features"
+     :output-col "hashes"}) => #(instance? BucketedRandomProjectionLSH %)
+  (ml/min-hash-lsh
+    {:num-hash-tables 5
+     :input-col "features"
+     :output-col "hashes"}) => #(instance? MinHashLSH %))
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"

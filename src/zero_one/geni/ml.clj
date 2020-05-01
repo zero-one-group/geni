@@ -1,4 +1,5 @@
 (ns zero-one.geni.ml
+  (:refer-clojure :exclude [Double])
   (:require
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
@@ -44,8 +45,10 @@
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe features-col label-col))
 
-(defn vector-assembler [{:keys [input-cols output-col]}]
+(defn vector-assembler [{:keys [handle-invalid input-cols output-col]
+                         :or   {handle-invalid "error"}}]
   (-> (VectorAssembler.)
+      (.setHandleInvalid handle-invalid)
       (.setInputCols (into-array java.lang.String input-cols))
       (.setOutputCol output-col)))
 
@@ -157,17 +160,18 @@
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
-(defn bucketiser [{:keys [handle-invalid input-col output-col]
+(defn bucketiser [{:keys [splits handle-invalid input-col output-col]
                    :or   {handle-invalid "error"}}]
   (-> (Bucketizer.)
+      (cond-> splits (.setSplits (into-array java.lang.Double splits)))
       (.setHandleInvalid handle-invalid)
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 (def bucketizer bucketiser)
 
-;; TODO: set scalingvec
-(defn elementwise-product [{:keys [input-col output-col]}]
+(defn elementwise-product [{:keys [scaling-vec input-col output-col]}]
   (-> (ElementwiseProduct.)
+      (cond-> scaling-vec (.setScalingVec (scala/->scala-coll scaling-vec)))
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
@@ -175,13 +179,12 @@
   (-> (SQLTransformer.)
       (.setStatement statement)))
 
-(defn vector-size-hint [{:keys [handle-invalid size input-col output-col]
+(defn vector-size-hint [{:keys [handle-invalid size input-col]
                          :or   {handle-invalid "error"}}]
   (-> (VectorSizeHint.)
       (.setHandleInvalid handle-invalid)
       (.setSize size)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+      (.setInputCol input-col)))
 
 (defn quantile-discretiser [{:keys [handle-invalid
                                     num-buckets
@@ -372,14 +375,5 @@
 
   (require '[zero-one.geni.core :as g])
   (require '[zero-one.geni.dataset :as ds])
-
-
-  (params (CountVectorizer.))
-
-  (require '[clojure.reflect :as r])
-  (->> (r/reflect (Tokenizer.))
-       :members
-       (mapv :name)
-       (mapv println))
 
   true)
