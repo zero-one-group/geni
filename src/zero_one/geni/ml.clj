@@ -6,9 +6,11 @@
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.classification LogisticRegression)
-    (org.apache.spark.ml.feature HashingTF
+    (org.apache.spark.ml.feature IDF
+                                 HashingTF
                                  Tokenizer
-                                 VectorAssembler)
+                                 VectorAssembler
+                                 Word2Vec)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
 
@@ -23,6 +25,13 @@
       (.setInputCols (into-array java.lang.String input-cols))
       (.setOutputCol output-col)))
 
+(defn idf [{:keys [min-doc-freq input-col output-col]
+            :or   {min-doc-freq 0}}]
+  (-> (IDF.)
+      (.setMinDocFreq min-doc-freq)
+      (.setInputCol input-col)
+      (.setOutputCol output-col)))
+
 (defn tokeniser [{:keys [input-col output-col]}]
   (-> (Tokenizer.)
       (.setInputCol input-col)
@@ -34,6 +43,38 @@
   (-> (HashingTF.)
       (.setBinary binary)
       (.setNumFeatures num-features)
+      (.setInputCol input-col)
+      (.setOutputCol output-col)))
+
+(defn word2vec [{:keys [max-iter
+                        step-size
+                        window-size
+                        max-sentence-length
+                        num-partitions
+                        seed
+                        vector-size
+                        min-count
+                        input-col
+                        output-col]
+                 :or   {max-iter 1,
+                        step-size 0.025,
+                        window-size 5,
+                        max-sentence-length 1000,
+                        num-partitions 1,
+                        seed -1961189076,
+                        vector-size 100,
+                        min-count 5
+                        input-col "sentence"
+                        output-col "features"}}]
+  (-> (Word2Vec.)
+      (.setMaxIter max-iter)
+      (.setStepSize step-size)
+      (.setWindowSize window-size)
+      (.setMaxSentenceLength max-sentence-length)
+      (.setNumPartitions num-partitions)
+      (.setSeed seed)
+      (.setVectorSize vector-size)
+      (.setMinCount min-count)
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
@@ -110,5 +151,6 @@
 
   (require '[zero-one.geni.core :as g])
   (require '[zero-one.geni.dataset :as ds])
+
 
   true)

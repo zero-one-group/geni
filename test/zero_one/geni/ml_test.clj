@@ -29,7 +29,54 @@
                           (g/select "probability" "prediction")
                           g/dtypes)]
       (dtypes "probability") => #(includes? % "Vector")
-      (dtypes "prediction") => "DoubleType")))
+      (dtypes "prediction") => "DoubleType"))
+  (fact "should be able to fit the idf example"
+    (let [dataset     (ds/table->dataset
+                        @g/spark
+                        [[0.0 "Hi I heard about Spark"]
+                         [0.0 "I wish Java could use case classes"]
+                         [1.0 "Logistic regression models are neat"]]
+                        [:label :sentence])
+          estimator   (ml/pipeline
+                        (ml/tokenizer {:input-col "sentence"
+                                       :output-col "words"})
+                        (ml/hashing-tf {:num-features 20
+                                        :input-col "words"
+                                        :output-col "raw-features"})
+                        (ml/idf {:input-col "raw-features"
+                                 :output-col "features"}))
+          transformer (ml/fit dataset estimator)
+          transformed (-> dataset
+                          (ml/transform transformer)
+                          (g/select "features"))]
+      (->> transformed
+           g/collect-vals
+           flatten
+           (map ml/vector->seq)
+           flatten) => #(every? double? %)))
+  (fact "should be able to fit the word2vec example"
+    (let [dataset     (ds/table->dataset
+                        @g/spark
+                        [["Hi I heard about Spark"]
+                         ["I wish Java could use case classes"]
+                         ["Logistic regression models are neat"]]
+                        [:sentence])
+          estimator   (ml/pipeline
+                        (ml/tokenizer {:input-col "sentence"
+                                       :output-col "text"})
+                        (ml/word2vec {:vector-size 3
+                                      :min-count 0
+                                      :input-col "text"
+                                      :output-col "result"}))
+          transformer (ml/fit dataset estimator)
+          transformed (-> dataset
+                          (ml/transform transformer)
+                          (g/select "result"))]
+      (->> transformed
+           g/collect-vals
+           flatten
+           (map ml/vector->seq)
+           flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
   (let [dataset (ds/table->dataset

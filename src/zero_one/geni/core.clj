@@ -435,6 +435,9 @@
 
   (-> @dataframe print-schema)
 
+
+  ;; TODO: keywordize dtypes, collect
+
   ;; TODO: handle collect-vals with DenseVector and SparseVector?
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
