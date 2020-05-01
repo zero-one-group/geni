@@ -4,7 +4,25 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.ml :as ml]))
+    [zero-one.geni.ml :as ml])
+  (:import
+    (org.apache.spark.ml.feature CountVectorizer
+                                 FeatureHasher
+                                 NGram)))
+
+(facts "On instantiation"
+  (fact "can instantiate CountVectorizer"
+    (ml/count-vectorizer
+      {:input-col "words"
+       :output-col "features"}) => #(instance? CountVectorizer %))
+  (fact "can instantiate FeatureHasher"
+    (ml/feature-hasher
+      {:input-cols ["real" "bool" "stringNum" "string"]
+       :output-col "features"}) => #(instance? FeatureHasher %))
+  (fact "can instantiate NGram"
+    (ml/n-gram
+      {:input-col "words"
+       :output-col "features"}) => #(instance? NGram %)))
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"
