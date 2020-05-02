@@ -6,7 +6,8 @@
     [zero-one.geni.scala :as scala])
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
-    (org.apache.spark.ml.classification LogisticRegression)
+    (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        LogisticRegression)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
@@ -163,7 +164,7 @@
 (defn bucketiser [{:keys [splits handle-invalid input-col output-col]
                    :or   {handle-invalid "error"}}]
   (-> (Bucketizer.)
-      (cond-> splits (.setSplits (into-array java.lang.Double splits)))
+      (cond-> splits (.setSplits (double-array splits)))
       (.setHandleInvalid handle-invalid)
       (.setInputCol input-col)
       (.setOutputCol output-col)))
@@ -346,6 +347,51 @@
       (.setPredictionCol prediction-col)
       (.setFeaturesCol features-col)))
 
+(defn decision-tree-classifier
+  [{:keys [max-bins
+           min-info-gain
+           impurity
+           raw-prediction-col
+           cache-node-ids
+           seed
+           label-col
+           checkpoint-interval
+           probability-col
+           max-depth
+           max-memory-in-mb
+           prediction-col
+           features-col
+           min-instances-per-node]
+    :or   {max-bins 32,
+           min-info-gain 0.0,
+           impurity "gini",
+           raw-prediction-col "rawPrediction",
+           cache-node-ids false,
+           seed 159147643,
+           label-col "label",
+           checkpoint-interval 10,
+           probability-col "probability",
+           max-depth 5,
+           max-memory-in-mb 256,
+           prediction-col "prediction",
+           features-col "features",
+           min-instances-per-node 1}}]
+  (-> (DecisionTreeClassifier.)
+      (.setMaxBins max-bins)
+      (.setMinInfoGain min-info-gain)
+      (.setImpurity impurity)
+      (.setCacheNodeIds cache-node-ids)
+      (.setSeed seed)
+      (.setCheckpointInterval checkpoint-interval)
+      (.setMaxDepth max-depth)
+      (.setMaxMemoryInMB max-memory-in-mb)
+      (.setMinInstancesPerNode min-instances-per-node)
+      (.setFeaturesCol features-col)
+      (.setLabelCol label-col)
+      (.setRawPredictionCol raw-prediction-col)
+      (.setProbabilityCol probability-col)
+      (.setPredictionCol prediction-col)))
+
 (defn pipeline [& stages]
   (-> (Pipeline.)
       (.setStages (into-array PipelineStage stages))))
@@ -375,5 +421,27 @@
 
   (require '[zero-one.geni.core :as g])
   (require '[zero-one.geni.dataset :as ds])
+
+  (import '(org.apache.spark.ml.classification DecisionTreeClassifier))
+
+  (defonce libsvm-df
+    (-> @g/spark
+        .read
+        (.format "libsvm")
+        (.load "test/resources/sample_libsvm_data.txt")))
+
+  (def train-val-dfs
+    (g/random-split libsvm-df [0.7 0.3]))
+
+  (-> (DecisionTreeClassifier.)
+      params)
+
+  (java.util.ArrayList. coll)
+
+
+  (use 'zero-one.geni.ml :reload)
+
+  (use '[clojure.tools.namespace.repl :only (refresh)])
+  (refresh)
 
   true)

@@ -6,6 +6,7 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml])
   (:import
+    (org.apache.spark.ml.classification DecisionTreeClassifier)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
@@ -51,8 +52,10 @@
      (ml/vector->seq (.coefficientMatrix model)) => #(every? double? %)
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
-
 (fact "On instantiation"
+  (ml/decision-tree-classifier
+    {:label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
   (ml/tokenizer
     {:input-col "sentence"
      :output-col "words"}) => #(instance? Tokenizer %)
@@ -125,8 +128,9 @@
   (ml/max-abs-scaler
     {:input-col "features"
      :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %)
-  (ml/bucketiser ;; TODO: add splits
-    {:input-col "features"
+  (ml/bucketiser
+    {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]
+     :input-col "features"
      :output-col "bucketedFeatures"}) => #(instance? Bucketizer %)
   (ml/elementwise-product
     {:scaling-vec [0.0 1.0 2.0]
