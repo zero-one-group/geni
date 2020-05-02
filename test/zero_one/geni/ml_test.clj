@@ -34,6 +34,24 @@
                                  VectorSizeHint
                                  Word2Vec)))
 
+(defonce libsvm-df
+  (-> @g/spark
+      .read
+      (.format "libsvm")
+      (.load "test/resources/sample_libsvm_data.txt")))
+
+(facts "On classification"
+  (fact "trainable logistic regression"
+    (let [estimator (ml/logistic-regression
+                      {:max-iter 10
+                       :reg-param 0.3
+                       :elastic-net-param 0.8
+                       :family "multinomial"})
+          model (ml/fit libsvm-df estimator)]
+     (ml/vector->seq (.coefficientMatrix model)) => #(every? double? %)
+     (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
+
+
 (fact "On instantiation"
   (ml/tokenizer
     {:input-col "sentence"
