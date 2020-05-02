@@ -7,7 +7,8 @@
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.classification DecisionTreeClassifier
-                                        LogisticRegression)
+                                        LogisticRegression
+                                        RandomForestClassifier)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
@@ -392,6 +393,60 @@
       (.setProbabilityCol probability-col)
       (.setPredictionCol prediction-col)))
 
+(defn random-forest-classifier
+  [{:keys [max-bins
+           subsampling-rate
+           min-info-gain
+           impurity
+           raw-prediction-col
+           cache-node-ids
+           seed
+           label-col
+           feature-subset-strategy
+           checkpoint-interval
+           probability-col
+           max-depth
+           max-memory-in-mb
+           prediction-col
+           features-col
+           min-instances-per-node
+           num-trees]
+    :or   {max-bins 32,
+           subsampling-rate 1.0,
+           min-info-gain 0.0,
+           impurity "gini",
+           raw-prediction-col "rawPrediction",
+           cache-node-ids false,
+           seed 207336481,
+           label-col "label",
+           feature-subset-strategy "auto",
+           checkpoint-interval 10,
+           probability-col "probability",
+           max-depth 5,
+           max-memory-in-mb 256,
+           prediction-col "prediction",
+           features-col "features",
+           min-instances-per-node 1,
+           num-trees 20}}]
+  (-> (RandomForestClassifier.)
+      (.setMaxBins max-bins)
+      (.setSubsamplingRate subsampling-rate)
+      (.setMinInfoGain min-info-gain)
+      (.setImpurity impurity)
+      (.setCacheNodeIds cache-node-ids)
+      (.setSeed seed)
+      (.setFeatureSubsetStrategy feature-subset-strategy)
+      (.setCheckpointInterval checkpoint-interval)
+      (.setMaxDepth max-depth)
+      (.setMaxMemoryInMB max-memory-in-mb)
+      (.setMinInstancesPerNode min-instances-per-node)
+      (.setNumTrees num-trees)
+      (.setFeaturesCol features-col)
+      (.setLabelCol label-col)
+      (.setRawPredictionCol raw-prediction-col)
+      (.setProbabilityCol probability-col)
+      (.setPredictionCol prediction-col)))
+
 (defn pipeline [& stages]
   (-> (Pipeline.)
       (.setStages (into-array PipelineStage stages))))
@@ -433,7 +488,7 @@
   (def train-val-dfs
     (g/random-split libsvm-df [0.7 0.3]))
 
-  (-> (DecisionTreeClassifier.)
+  (-> (RandomForestClassifier.)
       params)
 
   (java.util.ArrayList. coll)

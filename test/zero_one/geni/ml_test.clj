@@ -6,7 +6,8 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml])
   (:import
-    (org.apache.spark.ml.classification DecisionTreeClassifier)
+    (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        RandomForestClassifier)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
@@ -53,6 +54,10 @@
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation"
+  (ml/random-forest-classifier
+    {:num-trees 12
+     :label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
   (ml/decision-tree-classifier
     {:label-col "indexedLabel"
      :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
