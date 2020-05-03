@@ -86,6 +86,9 @@
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
 
+(defn random-split [dataframe weights]
+  (.randomSplit dataframe (double-array weights)))
+
 (defn empty? [dataframe] (.isEmpty dataframe))
 
 (defn repartition [dataframe & args]

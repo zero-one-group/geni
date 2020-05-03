@@ -6,6 +6,13 @@
     [zero-one.geni.core :as g :refer [dataframe]]
     [zero-one.geni.scala :as scala]))
 
+(fact "On random-split"
+  (let [[train-df val-df] (-> @dataframe
+                              (g/limit 50)
+                              (g/random-split [90 10]))]
+    (< (g/count val-df)
+       (g/count train-df)) => true))
+
 (facts "On printing functions"
   (fact "should return nil"
     (let [n-lines   #(-> % clojure.string/split-lines count)
