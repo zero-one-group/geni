@@ -7,6 +7,11 @@
     [zero-one.geni.ml :as ml])
   (:import
     (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        GBTClassifier
+                                        LinearSVC
+                                        MultilayerPerceptronClassifier
+                                        NaiveBayes
+                                        OneVsRest
                                         RandomForestClassifier)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
@@ -36,6 +41,7 @@
                                  VectorSizeHint
                                  Word2Vec)))
 
+;; TODO: put all data into one namespace
 (defonce libsvm-df
   (-> @g/spark
       .read
@@ -45,7 +51,8 @@
 (facts "On classification"
   (fact "trainable logistic regression"
     (let [estimator (ml/logistic-regression
-                      {:max-iter 10
+                      {:thresholds [0.0]
+                       :max-iter 10
                        :reg-param 0.3
                        :elastic-net-param 0.8
                        :family "multinomial"})
@@ -54,10 +61,53 @@
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation"
+  (ml/naive-bayes {}) => #(instance? NaiveBayes %)
+  (ml/naive-bayes {:thresholds [0.0 0.1]}) => #(instance? NaiveBayes %)
+  (let [classifier (ml/logistic-regression {:max-iter 10 :tol 1e-6})]
+    (ml/one-vs-rest {:weight-col "weights"}) => #(instance? OneVsRest %)
+    (ml/one-vs-rest {:classifier classifier}) => #(instance? OneVsRest %))
+  (ml/linear-svc
+    {:reg-param 0.1
+     :standardization false
+     :max-iter 10}) => #(instance? LinearSVC %)
+  (ml/linear-svc
+    {:reg-param 0.1
+     :standardisation true
+     :max-iter 10}) => #(instance? LinearSVC %)
+  (ml/mlp-classifier
+    {:block-size 128
+     :seed 1234
+     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
+  (ml/mlp-classifier
+    {:layers [4 5 4 3]
+     :thresholds []
+     :block-size 128
+     :seed 1234
+     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
+  (ml/gbt-classifier
+    {:thresholds []
+     :max-iter 10
+     :feature-subset-strategy "auto"
+     :label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
+  (ml/gbt-classifier
+    {:max-iter 10
+     :feature-subset-strategy "auto"
+     :label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
+  (ml/random-forest-classifier
+    {:thresholds [0.0]
+     :num-trees 12
+     :label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
   (ml/random-forest-classifier
     {:num-trees 12
      :label-col "indexedLabel"
      :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
+  (ml/decision-tree-classifier
+    {:thresholds [0.0]
+     :label-col "indexedLabel"
+     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
   (ml/decision-tree-classifier
     {:label-col "indexedLabel"
      :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
