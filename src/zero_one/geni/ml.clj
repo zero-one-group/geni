@@ -1,9 +1,12 @@
+;; TODO: MulticlassClassificationEvaluator
 (ns zero-one.geni.ml
   (:refer-clojure :exclude [Double])
   (:require
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.ml-regression]
+    [zero-one.geni.scala :as scala]
+    [zero-one.geni.utils :refer [export-symbols]])
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.classification DecisionTreeClassifier
@@ -45,6 +48,14 @@
                                  Word2Vec)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
+
+(export-symbols
+  zero-one.geni.ml-regression
+  decision-tree-regressor
+  generalised-linear-regression
+  generalized-linear-regression
+  glm
+  linear-regression)
 
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))
@@ -688,7 +699,7 @@
         (.format "libsvm")
         (.load "test/resources/sample_libsvm_data.txt")))
 
-  (import '(org.apache.spark.ml.classification NaiveBayes))
+  (import '(org.apache.spark.ml.regression LinearRegression))
   (-> (NaiveBayes.)
       params)
 
