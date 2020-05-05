@@ -1,4 +1,3 @@
 {:skip-comments true
- :lint-as {geni.core/-> clojure.core/->
-           geni.core/->> clojure.core/->>}}
+ :lint-as {zero-one.geni.utils/export-symbols clojure.core/declare}}
 

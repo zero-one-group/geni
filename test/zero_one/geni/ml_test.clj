@@ -39,7 +39,14 @@
                                  Tokenizer
                                  VectorIndexer
                                  VectorSizeHint
-                                 Word2Vec)))
+                                 Word2Vec)
+    (org.apache.spark.ml.regression AFTSurvivalRegression
+                                    DecisionTreeRegressor
+                                    GBTRegressor
+                                    GeneralizedLinearRegression
+                                    IsotonicRegression
+                                    LinearRegression
+                                    RandomForestRegressor)))
 
 ;; TODO: put all data into one namespace
 (defonce libsvm-df
@@ -60,7 +67,19 @@
      (ml/vector->seq (.coefficientMatrix model)) => #(every? double? %)
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
-(fact "On instantiation"
+(fact "On instantiation - regression"
+  (ml/isotonic-regression {}) => #(instance? IsotonicRegression %)
+  (ml/aft-survival-regression {}) => #(instance? AFTSurvivalRegression %)
+  (ml/gbt-regressor {}) => #(instance? GBTRegressor %)
+  (ml/random-forest-regressor {}) => #(instance? RandomForestRegressor %)
+  (ml/decision-tree-regressor {:variance-col "abc"})
+  => #(instance? DecisionTreeRegressor %)
+  (ml/decision-tree-regressor {}) => #(instance? DecisionTreeRegressor %)
+  (ml/glm {}) => #(instance? GeneralizedLinearRegression %)
+  (ml/linear-regression {:standardisation true}) => #(instance? LinearRegression %)
+  (ml/linear-regression {}) => #(instance? LinearRegression %))
+
+(fact "On instantiation - classification"
   (ml/naive-bayes {}) => #(instance? NaiveBayes %)
   (ml/naive-bayes {:thresholds [0.0 0.1]}) => #(instance? NaiveBayes %)
   (let [classifier (ml/logistic-regression {:max-iter 10 :tol 1e-6})]
@@ -110,7 +129,9 @@
      :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
   (ml/decision-tree-classifier
     {:label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
+     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %))
+
+(fact "On instantiation - features"
   (ml/tokenizer
     {:input-col "sentence"
      :output-col "words"}) => #(instance? Tokenizer %)
