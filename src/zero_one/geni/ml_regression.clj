@@ -254,6 +254,7 @@
          features-col "features"}}]
   (-> (AFTSurvivalRegression.)
       (.setMaxIter max-iter)
+      (.setTol tol)
       (.setQuantileProbabilities (double-array quantile-probabilities))
       (.setAggregationDepth aggregation-depth)
       (.setFitIntercept fit-intercept)

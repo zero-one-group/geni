@@ -41,7 +41,7 @@
    pca
    polynomial-expansion
    quantile-discretiser
-   quantile-discretiser
+   quantile-discretizer
    sql-transformer
    standard-scaler
    string-indexer
@@ -61,7 +61,7 @@
    multilayer-perceptron-classifier
    mlp-classifier
    naive-bayes
-   one-vs-rest ;; TODO: MulticlassClassificationEvaluator
+   one-vs-rest
    random-forest-classifier])
 
 (import-vars
