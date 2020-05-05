@@ -40,9 +40,13 @@
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)
-    (org.apache.spark.ml.regression DecisionTreeRegressor
+    (org.apache.spark.ml.regression AFTSurvivalRegression
+                                    DecisionTreeRegressor
+                                    GBTRegressor
                                     GeneralizedLinearRegression
-                                    LinearRegression)))
+                                    IsotonicRegression
+                                    LinearRegression
+                                    RandomForestRegressor)))
 
 ;; TODO: put all data into one namespace
 (defonce libsvm-df
@@ -64,6 +68,10 @@
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation - regression"
+  (ml/isotonic-regression {}) => #(instance? IsotonicRegression %)
+  (ml/aft-survival-regression {}) => #(instance? AFTSurvivalRegression %)
+  (ml/gbt-regressor {}) => #(instance? GBTRegressor %)
+  (ml/random-forest-regressor {}) => #(instance? RandomForestRegressor %)
   (ml/decision-tree-regressor {:variance-col "abc"})
   => #(instance? DecisionTreeRegressor %)
   (ml/decision-tree-regressor {}) => #(instance? DecisionTreeRegressor %)
