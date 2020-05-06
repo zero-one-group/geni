@@ -32,135 +32,94 @@
                                  VectorSizeHint
                                  Word2Vec)))
 
-(defn vector-assembler [{:keys [handle-invalid input-cols output-col]
-                         :or   {handle-invalid "error"}}]
-  (-> (VectorAssembler.)
-      (.setHandleInvalid handle-invalid)
-      (.setInputCols (into-array java.lang.String input-cols))
-      (.setOutputCol output-col)))
+(defn vector-assembler [params]
+  (let [defaults {:handle-invalid "error"}
+        props    (merge defaults params)]
+    (interop/instantiate VectorAssembler props)))
 
-(defn feature-hasher [{:keys [num-features input-cols output-col]
-                       :or   {num-features 262144}}]
-  (-> (FeatureHasher.)
-      (.setNumFeatures num-features)
-      (.setInputCols (into-array java.lang.String input-cols))
-      (.setOutputCol output-col)))
+(defn feature-hasher [params]
+  (let [defaults {:num-features 262144}
+        props    (merge defaults params)]
+    (interop/instantiate FeatureHasher props)))
 
-(defn n-gram [{:keys [n input-col output-col]
-               :or   {n 2}}]
-  (-> (NGram.)
-      (.setN n)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn n-gram [params]
+  (let [defaults {:n 2}
+        props    (merge defaults params)]
+    (interop/instantiate NGram props)))
 
-(defn binariser [{:keys [threshold input-col output-col]
-                  :or   {threshold 0.5}}]
-  (-> (Binarizer.)
-      (.setThreshold threshold)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn binariser [params]
+  (let [defaults {:threshold 0.5}
+        props    (merge defaults params)]
+    (interop/instantiate Binarizer props)))
 (def binarizer binariser)
 
-(defn pca [{:keys [k input-col output-col]}]
-  (-> (PCA.)
-      (cond-> k (.setK k))
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn pca [params]
+  (interop/instantiate PCA params))
 
-(defn polynomial-expansion [{:keys [degree input-col output-col]
-                             :or   {degree 2}}]
-  (-> (PolynomialExpansion.)
-      (.setDegree degree)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn polynomial-expansion [params]
+  (let [defaults {:degree 2}
+        props    (merge defaults params)]
+    (interop/instantiate PolynomialExpansion props)))
 
-(defn discrete-cosine-transform [{:keys [inverse input-col output-col]
-                                  :or   {inverse false}}]
-  (-> (DCT.)
-      (.setInverse inverse)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn discrete-cosine-transform [params]
+  (let [defaults {:inverse false}
+        props    (merge defaults params)]
+    (interop/instantiate DCT props)))
 (def dct discrete-cosine-transform)
 
-(defn string-indexer [{:keys [handle-invalid string-order-type input-col output-col]
-                       :or   {handle-invalid "error"
-                              string-order-type "frequencyDesc"}}]
-  (-> (StringIndexer.)
-      (.setHandleInvalid handle-invalid)
-      (.setStringOrderType string-order-type)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn string-indexer [params]
+  (let [defaults {:handle-invalid "error"
+                  :string-order-type "frequencyDesc"}
+        props    (merge defaults params)]
+    (interop/instantiate StringIndexer props)))
 
-(defn index-to-string [{:keys [input-col output-col]}]
-  (-> (IndexToString.)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn index-to-string [params]
+  (interop/instantiate IndexToString params))
 
-(defn one-hot-encoder [{:keys [drop-last handle-invalid input-cols output-cols]
-                        :or   {drop-last true handle-invalid "error"}}]
-  (-> (OneHotEncoderEstimator.)
-      (.setDropLast drop-last)
-      (.setHandleInvalid handle-invalid)
-      (.setInputCols (into-array java.lang.String input-cols))
-      (.setOutputCols (into-array java.lang.String output-cols))))
+(defn one-hot-encoder [params]
+  (let [defaults {:drop-last true :handle-invalid "error"}
+        props    (merge defaults params)]
+    (interop/instantiate OneHotEncoderEstimator props)))
 (def one-hot-encoder-estimator one-hot-encoder)
 
-(defn vector-indexer [{:keys [max-categories handle-invalid input-col output-col]
-                       :or   {max-categories 20 handle-invalid "error"}}]
-  (-> (VectorIndexer.)
-      (.setMaxCategories max-categories)
-      (.setHandleInvalid handle-invalid)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn vector-indexer [params]
+  (let [defaults {:max-categories 20 :handle-invalid "error"}
+        props    (merge defaults params)]
+    (interop/instantiate VectorIndexer props)))
 
-(defn interaction [{:keys [input-cols output-col]}]
-  (-> (Interaction.)
-      (.setInputCols (into-array java.lang.String input-cols))
-      (.setOutputCol output-col)))
+(defn interaction [params]
+  (interop/instantiate Interaction params))
 
-(defn normaliser [{:keys [p input-col output-col]
-                   :or   {p 2.0}}]
-  (-> (Normalizer.)
-      (.setP p)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn normaliser [params]
+  (let [defaults {:p 2.0}
+        props    (merge defaults params)]
+    (interop/instantiate Normalizer props)))
 (def normalizer normaliser)
 
-(defn standard-scaler [{:keys [with-std with-mean input-col output-col]
-                        :or   {with-std true with-mean false}}]
-  (-> (StandardScaler.)
-      (.setWithStd with-std)
-      (.setWithMean with-mean)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn standard-scaler [params]
+  (let [defaults {:with-std true :with-mean false}
+        props    (merge defaults params)]
+    (interop/instantiate StandardScaler props)))
 
-(defn min-max-scaler [{:keys [min max input-col output-col]
-                       :or   {min 0.0 max 1.0}}]
-  (-> (MinMaxScaler.)
-      (.setMin min)
-      (.setMax max)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn min-max-scaler [params]
+  (let [defaults {:min 0.0 :max 1.0}
+        props    (merge defaults params)]
+    (interop/instantiate MinMaxScaler props)))
 
-(defn max-abs-scaler [{:keys [input-col output-col]}]
-  (-> (MaxAbsScaler.)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn max-abs-scaler [params]
+  (interop/instantiate MaxAbsScaler params))
 
-(defn bucketiser [{:keys [splits handle-invalid input-col output-col]
-                   :or   {handle-invalid "error"}}]
-  (-> (Bucketizer.)
-      (cond-> splits (.setSplits (double-array splits)))
-      (.setHandleInvalid handle-invalid)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn bucketiser [params]
+  (let [defaults {:handle-invalid "error"}
+        props    (merge defaults params)]
+    (interop/instantiate Bucketizer props)))
 (def bucketizer bucketiser)
 
-(defn elementwise-product [{:keys [scaling-vec input-col output-col]}]
-  (-> (ElementwiseProduct.)
-      (cond-> scaling-vec (.setScalingVec (interop/->scala-coll scaling-vec)))
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn elementwise-product [params]
+  (let [params (if (:scaling-vec params)
+                 (update params :scaling-vec interop/->scala-coll)
+                 params)]
+    (interop/instantiate ElementwiseProduct params)))
 
 (defn sql-transformer [{:keys [statement]}]
   (-> (SQLTransformer.)

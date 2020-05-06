@@ -38,6 +38,7 @@
                                  StandardScaler
                                  StringIndexer
                                  Tokenizer
+                                 VectorAssembler
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)
@@ -49,6 +50,7 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
+;; TODO: address ml/params returns of non-Clojure data structures
 ;; TODO: put all data into one namespace
 (defonce libsvm-df
   (-> @g/spark
@@ -156,6 +158,114 @@
   => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
+  (ml/params (ml/vector-assembler {:handle-invalid "skip"}))
+  => #(= (:handle-invalid %) "skip")
+
+  (ml/vector-assembler {})
+  => #(instance? VectorAssembler %)
+
+  (ml/params (ml/feature-hasher {:input-cols ["real" "bool" "stringNum" "string"]}))
+  => #(= (seq (:input-cols %)) ["real" "bool" "stringNum" "string"])
+
+  (ml/feature-hasher {})
+  => #(instance? FeatureHasher %)
+
+  (ml/params (ml/n-gram {:input-col "words"}))
+  => #(= (:input-col %) "words")
+
+  (ml/n-gram {})
+  => #(instance? NGram %)
+
+  (ml/params (ml/binariser {:threshold 0.5}))
+  => #(= (:threshold %) 0.5)
+
+  (ml/binarizer {})
+  => #(instance? Binarizer %)
+
+  (ml/params (ml/pca {:k 3}))
+  => #(= (:k %) 3)
+
+  (ml/pca {})
+  => #(instance? PCA %)
+
+  (ml/params (ml/polynomial-expansion {:degree 3}))
+  => #(= (:degree %) 3)
+
+  (ml/polynomial-expansion {})
+  => #(instance? PolynomialExpansion %)
+
+  (ml/params (ml/dct {:inverse true}))
+  => #(= (:inverse %) true)
+
+  (ml/dct {})
+  => #(instance? DCT %)
+
+  (ml/params (ml/string-indexer {:handle-invalid "skip"}))
+  => #(= (:handle-invalid %) "skip")
+
+  (ml/string-indexer {})
+  => #(instance? StringIndexer %)
+
+  (ml/params (ml/index-to-string {:output-col "categoryIndex"}))
+  => #(= (:output-col %) "categoryIndex")
+
+  (ml/index-to-string {})
+  => #(instance? IndexToString %)
+
+  (ml/params (ml/one-hot-encoder {:input-cols ["categoryIndex1" "categoryIndex2"]}))
+  => #(= (seq (:input-cols %)) ["categoryIndex1" "categoryIndex2"])
+
+  (ml/one-hot-encoder {})
+  => #(instance? OneHotEncoderEstimator %)
+
+  (ml/params (ml/vector-indexer {:max-categories 10}))
+  => #(= (:max-categories %) 10)
+
+  (ml/vector-indexer {})
+  => #(instance? VectorIndexer %)
+
+  (ml/params (ml/interaction {:output-col "indexed"}))
+  => #(= (:output-col %) "indexed")
+
+  (ml/interaction {})
+  => #(instance? Interaction %)
+
+  (ml/params (ml/normaliser {:p 1.0}))
+  => #(= (:p %) 1.0)
+
+  (ml/normalizer {})
+  => #(instance? Normalizer %)
+
+  (ml/params (ml/standard-scaler {:input-col "abcdef"}))
+  => #(= (:input-col %) "abcdef")
+
+  (ml/standard-scaler {})
+  => #(instance? StandardScaler %)
+
+  (ml/params (ml/min-max-scaler {:min -9999}))
+  => #(= (:min %) -9999.0)
+
+  (ml/min-max-scaler {})
+  => #(instance? MinMaxScaler %)
+
+  (ml/params (ml/max-abs-scaler {:output-col "xyz"}))
+  => #(= (:output-col %) "xyz")
+
+  (ml/max-abs-scaler {})
+  => #(instance? MaxAbsScaler %)
+
+  (ml/params (ml/bucketiser {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]}))
+  => #(= (seq (:splits %)) [-999.9 -0.5 -0.3 0.0 0.2 999.9])
+
+  (ml/bucketiser {})
+  => #(instance? Bucketizer %)
+
+  (ml/params (ml/elementwise-product {:scaling-vec [0.0 1.0 2.0]}))
+  => #(= (ml/vector->seq (:scaling-vec %)) [0.0 1.0 2.0])
+
+  (ml/elementwise-product {})
+  => #(instance? ElementwiseProduct %)
+
   (ml/tokenizer
     {:input-col "sentence"
      :output-col "words"}) => #(instance? Tokenizer %)
@@ -170,72 +280,6 @@
   (ml/count-vectorizer
     {:input-col "words"
      :output-col "features"}) => #(instance? CountVectorizer %)
-  (ml/feature-hasher
-    {:input-cols ["real" "bool" "stringNum" "string"]
-     :output-col "features"}) => #(instance? FeatureHasher %)
-  (ml/n-gram
-    {:input-col "words"
-     :output-col "features"}) => #(instance? NGram %)
-  (ml/binariser
-    {:threshold 0.5
-     :input-col "feature"
-     :output-col "binarized_feature"}) => #(instance? Binarizer %)
-  (ml/pca
-    {:k 3
-     :input-col "features"
-     :output-col "pcaFeatures"}) => #(= ((ml/params %) :k) 3)
-  (ml/pca
-    {:input-col "features"
-     :output-col "pcaFeatures"}) => #(instance? PCA %)
-  (ml/polynomial-expansion
-    {:degree 3
-     :input-col "features"
-     :output-col "polyFeatures"}) => #(instance? PolynomialExpansion %)
-  (ml/dct
-    {:inverse false
-     :input-col "features"
-     :output-col "dctFeatures"}) => #(instance? DCT %)
-  (ml/string-indexer
-    {:inverse false
-     :input-col "features"
-     :output-col "dctFeatures"}) => #(instance? StringIndexer %)
-  (ml/index-to-string
-    {:input-col "category"
-     :output-col "categoryIndex"}) => #(instance? IndexToString %)
-  (ml/one-hot-encoder
-    {:input-cols ["categoryIndex1" "categoryIndex2"]
-     :output-cols ["categoryVec1" "categoryVec2"]})
-  => #(instance? OneHotEncoderEstimator %)
-  (ml/vector-indexer
-    {:max-categories 10
-     :input-col "features"
-     :output-col "indexed"}) => #(instance? VectorIndexer %)
-  (ml/interaction
-    {:input-cols ["id2" "id3" "id4"]
-     :output-col "indexed"}) => #(instance? Interaction %)
-  (ml/normaliser
-    {:p 1.0
-     :input-col "features"
-     :output-col "normFeatures"}) => #(instance? Normalizer %)
-  (ml/standard-scaler
-    {:with-std true
-     :with-mean false
-     :input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? StandardScaler %)
-  (ml/min-max-scaler
-    {:input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? MinMaxScaler %)
-  (ml/max-abs-scaler
-    {:input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %)
-  (ml/bucketiser
-    {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]
-     :input-col "features"
-     :output-col "bucketedFeatures"}) => #(instance? Bucketizer %)
-  (ml/elementwise-product
-    {:scaling-vec [0.0 1.0 2.0]
-     :input-col "features"
-     :output-col "bucketedFeatures"}) => #(instance? ElementwiseProduct %)
   (ml/sql-transformer
     {:statement "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__"})
   => #(instance? SQLTransformer %)

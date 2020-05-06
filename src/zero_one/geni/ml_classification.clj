@@ -111,6 +111,7 @@
                   :solver             "l-bfgs"}
         props    (merge defaults params)]
     (interop/instantiate MultilayerPerceptronClassifier props)))
+(def multilayer-perceptron-classifier)
 
 (defn linear-svc [params]
   (let [defaults {:max-iter           100,

@@ -36,6 +36,7 @@
    min-max-scaler
    n-gram
    normaliser
+   normalizer
    one-hot-encoder
    one-hot-encoder-estimator
    pca
@@ -122,5 +123,9 @@
         (.load "test/resources/sample_libsvm_data.txt")))
 
   (g/print-schema libsvm-df)
+
+  (import '(org.apache.spark.ml.feature VectorAssembler))
+  (-> (VectorAssembler.)
+      params)
 
   true)
