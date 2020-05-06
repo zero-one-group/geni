@@ -123,13 +123,17 @@
 
   (g/print-schema libsvm-df)
 
-  (import '(org.apache.spark.ml.regression IsotonicRegression))
   (-> (IsotonicRegression.)
       params)
 
-  (use 'zero-one.geni.ml :reload)
-
-  (use '[clojure.tools.namespace.repl :only (refresh)])
-  (refresh)
+  (def methods (.getMethods IsotonicRegression))
+  (def set-isotonic
+    (->> methods
+         (filter
+           (fn [^java.lang.reflect.Method m]
+             (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes m)))
+                  (re-find #"^set[A-Z]" (.getName m)))))
+         first))
+  (params (.invoke set-isotonic (IsotonicRegression.) (into-array Object [false])))
 
   true)
