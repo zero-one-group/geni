@@ -9,6 +9,7 @@
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
                                         LinearSVC
+                                        LogisticRegression
                                         MultilayerPerceptronClassifier
                                         NaiveBayes
                                         OneVsRest
@@ -58,7 +59,7 @@
 (facts "On classification"
   (fact "trainable logistic regression"
     (let [estimator (ml/logistic-regression
-                      {:thresholds [0.0]
+                      {:thresholds [0.0 1.0]
                        :max-iter 10
                        :reg-param 0.3
                        :elastic-net-param 0.8
@@ -111,56 +112,48 @@
   => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
-  (ml/naive-bayes {}) => #(instance? NaiveBayes %)
-  (ml/naive-bayes {:thresholds [0.0 0.1]}) => #(instance? NaiveBayes %)
+  (ml/params (ml/naive-bayes {:thresholds [0.0 0.1]}))
+  => #(= (seq (:thresholds %)) [0.0 0.1])
+
+  (ml/naive-bayes {})
+  => #(instance? NaiveBayes %)
+
   (let [classifier (ml/logistic-regression {:max-iter 10 :tol 1e-6})]
-    (ml/one-vs-rest {:weight-col "weights"}) => #(instance? OneVsRest %)
-    (ml/one-vs-rest {:classifier classifier}) => #(instance? OneVsRest %))
-  (ml/linear-svc
-    {:reg-param 0.1
-     :standardization false
-     :max-iter 10}) => #(instance? LinearSVC %)
-  (ml/linear-svc
-    {:reg-param 0.1
-     :standardisation true
-     :max-iter 10}) => #(instance? LinearSVC %)
-  (ml/mlp-classifier
-    {:block-size 128
-     :seed 1234
-     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
-  (ml/mlp-classifier
-    {:layers [4 5 4 3]
-     :thresholds []
-     :block-size 128
-     :seed 1234
-     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
-  (ml/gbt-classifier
-    {:thresholds []
-     :max-iter 10
-     :feature-subset-strategy "auto"
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
-  (ml/gbt-classifier
-    {:max-iter 10
-     :feature-subset-strategy "auto"
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
-  (ml/random-forest-classifier
-    {:thresholds [0.0]
-     :num-trees 12
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
-  (ml/random-forest-classifier
-    {:num-trees 12
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
-  (ml/decision-tree-classifier
-    {:thresholds [0.0]
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
-  (ml/decision-tree-classifier
-    {:label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %))
+    (ml/params (ml/one-vs-rest {:classifier classifier}))
+    => #(instance? LogisticRegression (:classifier %)))
+
+  (ml/one-vs-rest {})
+  => #(instance? OneVsRest %)
+
+  (ml/params (ml/linear-svc {:standardisation false}))
+  => #(= (:standardization %) false)
+
+  (ml/linear-svc {})
+  => #(instance? LinearSVC %)
+
+  (ml/params (ml/mlp-classifier {:layers [1 2 3]}))
+  => #(= (seq (:layers %)) [1 2 3])
+
+  (ml/mlp-classifier {})
+  => #(instance? MultilayerPerceptronClassifier %)
+
+  (ml/params (ml/gbt-classifier {:feature-subset-strategy "auto"}))
+  => #(= (:feature-subset-strategy %) "auto")
+
+  (ml/gbt-classifier {})
+  => #(instance? GBTClassifier %)
+
+  (ml/params (ml/random-forest-classifier {:num-trees 12}))
+  => #(= (:num-trees %) 12)
+
+  (ml/random-forest-classifier {})
+  => #(instance? RandomForestClassifier %)
+
+  (ml/params (ml/decision-tree-classifier {:thresholds [0.0]}))
+  => #(= (seq (:thresholds %)) [0.0])
+
+  (ml/decision-tree-classifier {})
+  => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
   (ml/tokenizer
