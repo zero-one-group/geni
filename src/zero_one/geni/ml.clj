@@ -7,7 +7,7 @@
     [zero-one.geni.ml-classification]
     [zero-one.geni.ml-feature]
     [zero-one.geni.ml-regression]
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
@@ -93,7 +93,7 @@
   (.transform transformer dataframe))
 
 (defn params [stage]
-  (let [param-pairs (-> stage .extractParamMap .toSeq scala/scala-seq->vec)
+  (let [param-pairs (-> stage .extractParamMap .toSeq interop/scala-seq->vec)
         unpack-pair (fn [p] [(-> p .param .name ->kebab-case) (.value p)])]
     (->> param-pairs
          (map unpack-pair)

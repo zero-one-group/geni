@@ -1,6 +1,6 @@
 (ns zero-one.geni.ml-feature
   (:require
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
@@ -158,7 +158,7 @@
 
 (defn elementwise-product [{:keys [scaling-vec input-col output-col]}]
   (-> (ElementwiseProduct.)
-      (cond-> scaling-vec (.setScalingVec (scala/->scala-coll scaling-vec)))
+      (cond-> scaling-vec (.setScalingVec (interop/->scala-coll scaling-vec)))
       (.setInputCol input-col)
       (.setOutputCol output-col)))
 
