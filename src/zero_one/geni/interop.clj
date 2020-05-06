@@ -27,3 +27,14 @@
 
 (defn set-value [^java.lang.reflect.Method method instance value]
   (.invoke method instance (into-array [(j/to-java (setter-type method) value)])))
+
+(defn instantiate
+  ([^Class cls props]
+   (let [setters  (setters-map cls)
+         instance (.newInstance cls)]
+     (reduce
+       (fn [_ [k v]]
+         (when-let [setter (setters k)]
+           (set-value setter instance v)))
+       instance
+       props))))

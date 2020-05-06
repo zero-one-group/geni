@@ -68,16 +68,47 @@
      (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation - regression"
-  (ml/isotonic-regression {}) => #(instance? IsotonicRegression %)
-  (ml/aft-survival-regression {}) => #(instance? AFTSurvivalRegression %)
-  (ml/gbt-regressor {}) => #(instance? GBTRegressor %)
-  (ml/random-forest-regressor {}) => #(instance? RandomForestRegressor %)
-  (ml/decision-tree-regressor {:variance-col "abc"})
+  (ml/params (ml/isotonic-regression {:label-col "ABC"}))
+  => #(= (:label-col %) "ABC")
+
+  (ml/isotonic-regression {})
+  => #(instance? IsotonicRegression %)
+
+  (ml/params (ml/aft-survival-regression {:quantile-probabilities [0.005 0.995]}))
+  => #(= (seq (:quantile-probabilities %)) [0.005 0.995])
+
+  (ml/aft-survival-regression {})
+  => #(instance? AFTSurvivalRegression %)
+
+  (ml/params (ml/gbt-regressor {:max-bins 128}))
+  => #(= (:max-bins %) 128)
+
+  (ml/gbt-regressor {})
+  => #(instance? GBTRegressor %)
+
+  (ml/params (ml/random-forest-regressor {:prediction-col "xyz"}))
+  => #(= (:prediction-col %) "xyz")
+
+  (ml/random-forest-regressor {})
+  => #(instance? RandomForestRegressor %)
+
+  (ml/params (ml/decision-tree-regressor {:variance-col "abc"}))
+  => #(= (:variance-col %) "abc")
+
+  (ml/decision-tree-regressor {})
   => #(instance? DecisionTreeRegressor %)
-  (ml/decision-tree-regressor {}) => #(instance? DecisionTreeRegressor %)
-  (ml/glm {}) => #(instance? GeneralizedLinearRegression %)
-  (ml/linear-regression {:standardisation true}) => #(instance? LinearRegression %)
-  (ml/linear-regression {}) => #(instance? LinearRegression %))
+
+  (ml/params (ml/glm {:reg-param 1.0}))
+  => #(= (:reg-param %) 1.0)
+
+  (ml/glm {})
+  => #(instance? GeneralizedLinearRegression %)
+
+  (ml/params (ml/linear-regression {:standardisation false}))
+  => #(= (:standardization %) false)
+
+  (ml/linear-regression {})
+  => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
   (ml/naive-bayes {}) => #(instance? NaiveBayes %)

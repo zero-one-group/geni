@@ -123,32 +123,4 @@
 
   (g/print-schema libsvm-df)
 
-  (-> (IsotonicRegression.)
-      params)
-
-  (require '[clojure.java.data :as j])
-  (require '[zero-one.geni.interop :as interop])
-  (def setters (interop/setters-map LinearRegression))
-
-
-  (set-value (setters :max-iter) (LinearRegression.) 1)
-
-  (def method (:max-iter setters))
-
-  (setter-type method)
-
-  (j/to-java (setter-type method) 1)
-
-  (j/to-java java.lang.Integer  1)
-
-  (params (.invoke (setters :max-iter) (LinearRegression.) (into-array [(int 1)])))
-
-  (.getParameterTypes (setters :max-iter))
-
-  (->> LinearRegression
-       .getMethods
-       (filter interop/setter?))
-
-  (params (.invoke set-isotonic (IsotonicRegression.) (into-array Object [false])))
-
   true)
