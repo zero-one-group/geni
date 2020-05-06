@@ -1,4 +1,6 @@
 (ns zero-one.geni.ml-regression
+  (:require
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
@@ -53,6 +55,31 @@
         (.setFeaturesCol features-col)
         (.setLabelCol label-col)
         (.setPredictionCol prediction-col))))
+
+(defn linear-regression [params]
+  (let [defaults {:max-iter 100,
+                  :tol 1.0E-6,
+                  :elastic-net-param 0.0,
+                  :reg-param 0.0,
+                  :aggregation-depth 2,
+                  :fit-intercept true,
+                  :label-col "label",
+                  :standardization true,
+                  :epsilon 1.35,
+                  :loss "squaredError",
+                  :prediction-col "prediction",
+                  :features-col "features",
+                  :solver "auto"}
+        params    (-> defaults
+                      (merge params))
+        setters   (interop/setters-map LinearRegression)
+        stage     (LinearRegression.)]
+    (reduce
+      (fn [_ [setter-keyword value]]
+        (when-let [setter (setters setter-keyword)]
+          (interop/set-value setter stage value)))
+      stage
+      params)))
 
 (defn generalised-linear-regression
   [{:keys [max-iter
