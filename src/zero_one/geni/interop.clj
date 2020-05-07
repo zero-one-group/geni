@@ -7,7 +7,7 @@
     (java.io ByteArrayOutputStream)
     (org.apache.spark.ml.linalg DenseVector Vectors)
     (scala Console Function0)
-    (scala.collection JavaConversions Map Seq)))
+    (scala.collection JavaConversions Map)))
 
 (defn scala-seq->vec [scala-seq]
   (into [] (JavaConversions/seqAsJavaList scala-seq)))
