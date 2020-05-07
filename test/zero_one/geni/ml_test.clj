@@ -266,6 +266,50 @@
   (ml/elementwise-product {})
   => #(instance? ElementwiseProduct %)
 
+  (ml/params (ml/sql-transformer {:statement "SELECT *, (v1 + v2)"}))
+  => #(= (:statement %) "SELECT *, (v1 + v2)")
+
+  (ml/sql-transformer {})
+  => #(instance? SQLTransformer %)
+
+  (ml/params (ml/vector-size-hint {:size 3}))
+  => #(= (:size %) 3)
+
+  (ml/vector-size-hint {})
+  => #(instance? VectorSizeHint %)
+
+  (ml/params (ml/quantile-discretiser {:num-buckets 3}))
+  => #(= (:num-buckets %) 3)
+
+  (ml/quantile-discretizer {})
+  => #(instance? QuantileDiscretizer %)
+
+  (ml/params (ml/imputer {:input-cols ["a" "b"]}))
+  => #(= (seq (:input-cols %)) ["a" "b"])
+
+  (ml/imputer {})
+  => #(instance? Imputer %)
+
+  (ml/params (ml/bucketed-random-projection-lsh {:bucket-length 2.0}))
+  => #(= (:bucket-length %) 2.0)
+
+  (ml/bucketed-random-projection-lsh {})
+  => #(instance? BucketedRandomProjectionLSH %)
+
+  (ml/params (ml/min-hash-lsh {:num-hash-tables 55}))
+  => #(= (:num-hash-tables %) 55)
+
+  (ml/min-hash-lsh {})
+  => #(instance? MinHashLSH %)
+
+  (ml/params (ml/count-vectoriser {:min-df 2.0 :min-tf 3.0 :max-df 4.0}))
+  => #(and (= (:min-df %) 2.0)
+           (= (:min-tf %) 3.0)
+           (= (:max-df %) 4.0))
+
+  (ml/count-vectorizer {})
+  => #(instance? CountVectorizer %)
+
   (ml/tokenizer
     {:input-col "sentence"
      :output-col "words"}) => #(instance? Tokenizer %)
@@ -276,33 +320,7 @@
     {:vector-size 3
      :min-count 0
      :input-col "text"
-     :output-col "result"}) => #(instance? Word2Vec %)
-  (ml/count-vectorizer
-    {:input-col "words"
-     :output-col "features"}) => #(instance? CountVectorizer %)
-  (ml/sql-transformer
-    {:statement "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__"})
-  => #(instance? SQLTransformer %)
-  (ml/vector-size-hint
-    {:handle-invalid "skip"
-     :size 3
-     :input-col "userFeatures"}) => #(instance? VectorSizeHint %)
-  (ml/quantile-discretiser
-    {:num-buckets 3
-     :input-col "hour"
-     :output-col "result"}) => #(instance? QuantileDiscretizer %)
-  (ml/imputer
-    {:input-cols ["a" "b"]
-     :output-cols ["out_a" "out_b"]}) => #(instance? Imputer %)
-  (ml/bucketed-random-projection-lsh
-    {:bucket-length 2.0
-     :num-hash-tables 3
-     :input-col "features"
-     :output-col "hashes"}) => #(instance? BucketedRandomProjectionLSH %)
-  (ml/min-hash-lsh
-    {:num-hash-tables 5
-     :input-col "features"
-     :output-col "hashes"}) => #(instance? MinHashLSH %))
+     :output-col "result"}) => #(instance? Word2Vec %))
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"

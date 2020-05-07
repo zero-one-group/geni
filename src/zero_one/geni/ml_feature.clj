@@ -121,80 +121,48 @@
                  params)]
     (interop/instantiate ElementwiseProduct params)))
 
-(defn sql-transformer [{:keys [statement]}]
-  (-> (SQLTransformer.)
-      (.setStatement statement)))
+(defn sql-transformer [params]
+  (interop/instantiate SQLTransformer params))
 
-(defn vector-size-hint [{:keys [handle-invalid size input-col]
-                         :or   {handle-invalid "error"}}]
-  (-> (VectorSizeHint.)
-      (.setHandleInvalid handle-invalid)
-      (.setSize size)
-      (.setInputCol input-col)))
+(defn vector-size-hint [params]
+  (let [defaults {:handle-invalid "error"}
+        props    (merge defaults params)]
+    (interop/instantiate VectorSizeHint props)))
 
-(defn quantile-discretiser [{:keys [handle-invalid
-                                    num-buckets
-                                    relative-error
-                                    input-col
-                                    output-col]
-                             :or   {handle-invalid "error"
-                                    num-buckets 2
-                                    relative-error 0.001}}]
-  (-> (QuantileDiscretizer.)
-      (.setHandleInvalid handle-invalid)
-      (.setNumBuckets num-buckets)
-      (.setRelativeError relative-error)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn quantile-discretiser [params]
+  (let [defaults {:handle-invalid "error"
+                  :num-buckets    2
+                  :relative-error 0.001}
+        props    (merge defaults params)]
+    (interop/instantiate QuantileDiscretizer props)))
 (def quantile-discretizer quantile-discretiser)
 
-(defn imputer [{:keys [missing-value strategy input-cols output-cols]
-                :or   {missing-value ##NaN strategy "mean"}}]
-  (-> (Imputer.)
-      (.setMissingValue missing-value)
-      (.setStrategy strategy)
-      (.setInputCols (into-array java.lang.String input-cols))
-      (.setOutputCols (into-array java.lang.String output-cols))))
+(defn imputer [params]
+  (let [defaults {:missing-value ##NaN
+                  :strategy      "mean"}
+        props    (merge defaults params)]
+    (interop/instantiate Imputer props)))
 
-(defn bucketed-random-projection-lsh
-  [{:keys [bucket-length num-hash-tables seed input-col output-col]
-    :or   {num-hash-tables 1 seed 772209414}}]
-  (-> (BucketedRandomProjectionLSH.)
-      (.setBucketLength bucket-length)
-      (.setNumHashTables num-hash-tables)
-      (.setSeed seed)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn bucketed-random-projection-lsh [params]
+  (let [defaults {:num-hash-tables 1
+                  :seed            772209414}
+        props    (merge defaults params)]
+    (interop/instantiate BucketedRandomProjectionLSH props)))
 
-(defn min-hash-lsh [{:keys [num-hash-tables seed input-col output-col]
-                     :or   {num-hash-tables 1 seed 772209414}}]
-  (-> (MinHashLSH.)
-      (.setNumHashTables num-hash-tables)
-      (.setSeed seed)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn min-hash-lsh [params]
+  (let [defaults {:num-hash-tables 1
+                  :seed            772209414}
+        props    (merge defaults params)]
+    (interop/instantiate MinHashLSH props)))
 
-(defn count-vectoriser [{:keys [vocab-size
-                                min-df
-                                min-tf
-                                binary
-                                max-df
-                                input-col
-                                output-col]
-                         :or {vocab-size 262144,
-                              min-df 1.0,
-                              min-tf 1.0,
-                              binary false,
-                              max-df 9.223372036854776E18}}]
-  (-> (CountVectorizer.)
-      (.setVocabSize vocab-size)
-      (.setMinDF min-df)
-      (.setMinTF min-tf)
-      (.setBinary binary)
-      (.setMaxDF max-df)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
-
+(defn count-vectoriser [params]
+  (let [defaults {:vocab-size 262144,
+                  :min-df     1.0,
+                  :min-tf     1.0,
+                  :binary     false,
+                  :max-df     9.223372036854776E18}
+        props    (merge defaults params)]
+    (interop/instantiate CountVectorizer props)))
 (def count-vectorizer count-vectoriser)
 
 (defn idf [{:keys [min-doc-freq input-col output-col]
