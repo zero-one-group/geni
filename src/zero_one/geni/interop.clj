@@ -7,7 +7,7 @@
     (java.io ByteArrayOutputStream)
     (org.apache.spark.ml.linalg DenseVector Vectors)
     (scala Console Function0)
-    (scala.collection JavaConversions Map)))
+    (scala.collection JavaConversions Map Seq)))
 
 (defn scala-seq->vec [scala-seq]
   (into [] (JavaConversions/seqAsJavaList scala-seq)))
@@ -79,8 +79,13 @@
 (defn setter-type [^java.lang.reflect.Method method]
   (get (.getParameterTypes method) 0))
 
+(defn ->java [^Class cls value]
+  (if (= cls scala.collection.Seq)
+    (->scala-seq value)
+    (j/to-java cls value)))
+
 (defn set-value [^java.lang.reflect.Method method instance value]
-  (.invoke method instance (into-array [(j/to-java (setter-type method) value)])))
+  (.invoke method instance (into-array [(->java (setter-type method) value)])))
 
 (defn instantiate
   ([^Class cls props]

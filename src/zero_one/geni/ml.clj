@@ -122,10 +122,24 @@
   (defn dense-vector? [value]
     (instance? DenseVector value))
 
-  (import '(org.apache.spark.ml.feature Imputer))
-  (-> (elementwise-product {:scaling-vec [0.0 1.0]})
-      params
-      :scaling-vec
-      dense-vector?)
+  (-> (feature-hasher
+        {:input-cols (interop/->scala-seq ["real" "bool" "stringNum" "string"])}))
+      ;params
+      ;:scaling-vec
+      ;dense-vector?)
+
+
+  (require '[clojure.java.data :as j])
+
+  (def method (:input-cols (interop/setters-map FeatureHasher)))
+
+  (= (interop/setter-type method) scala.collection.Seq)
+
+  (j/to-java)
+
+
+  (import '(org.apache.spark.ml.feature FeatureHasher))
+  (-> (FeatureHasher.)
+      (.setInputCols (into-array java.lang.String ["real" "bool" "stringNum" "string"])))
 
   true)
