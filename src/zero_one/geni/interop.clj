@@ -5,7 +5,7 @@
     [clojure.string :refer [replace-first]])
   (:import
     (java.io ByteArrayOutputStream)
-    (org.apache.spark.ml.linalg Vectors)
+    (org.apache.spark.ml.linalg DenseVector Vectors)
     (scala Console Function0)
     (scala.collection JavaConversions Map)))
 
@@ -40,6 +40,23 @@
       (Vectors/dense head (->scala-seq tail)))
     value))
 
+(defn array? [value] (.isArray (class value)))
+
+(defn dense-vector? [value]
+  (instance? DenseVector value))
+
+(defn vector->seq [spark-vector]
+  (-> spark-vector .values seq))
+
+(defn matrix->seqs [matrix]
+  (let [n-cols (.numCols matrix)]
+    (->> matrix .values seq (partition n-cols))))
+
+(defn ->clojure [value]
+  (cond
+    (array? value)         (seq value)
+    (dense-vector? value)  (vector->seq value)
+    :else                  value))
 
 (defn setter? [^java.lang.reflect.Method method]
   (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))

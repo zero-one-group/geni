@@ -4,7 +4,8 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.ml :as ml])
+    [zero-one.geni.ml :as ml]
+    [zero-one.geni.interop :refer [vector->seq matrix->seqs]])
   (:import
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
@@ -68,8 +69,8 @@
                        :elastic-net-param 0.8
                        :family "multinomial"})
           model (ml/fit libsvm-df estimator)]
-     (ml/vector->seq (.coefficientMatrix model)) => #(every? double? %)
-     (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
+     (vector->seq (.coefficientMatrix model)) => #(every? double? %)
+     (vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation - regression"
   (ml/params (ml/isotonic-regression {:label-col "ABC"}))
@@ -78,7 +79,7 @@
   => #(instance? IsotonicRegression %)
 
   (ml/params (ml/aft-survival-regression {:quantile-probabilities [0.005 0.995]}))
-  => #(= (seq (:quantile-probabilities %)) [0.005 0.995])
+  => #(= (:quantile-probabilities %) [0.005 0.995])
   (ml/aft-survival-regression {})
   => #(instance? AFTSurvivalRegression %)
 
@@ -109,7 +110,7 @@
 
 (fact "On instantiation - classification"
   (ml/params (ml/naive-bayes {:thresholds [0.0 0.1]}))
-  => #(= (seq (:thresholds %)) [0.0 0.1])
+  => #(= (:thresholds %) [0.0 0.1])
   (ml/naive-bayes {})
   => #(instance? NaiveBayes %)
 
@@ -125,7 +126,7 @@
   => #(instance? LinearSVC %)
 
   (ml/params (ml/mlp-classifier {:layers [1 2 3]}))
-  => #(= (seq (:layers %)) [1 2 3])
+  => #(= (:layers %) [1 2 3])
   (ml/mlp-classifier {})
   => #(instance? MultilayerPerceptronClassifier %)
 
@@ -140,7 +141,7 @@
   => #(instance? RandomForestClassifier %)
 
   (ml/params (ml/decision-tree-classifier {:thresholds [0.0]}))
-  => #(= (seq (:thresholds %)) [0.0])
+  => #(= (:thresholds %) [0.0])
   (ml/decision-tree-classifier {})
   => #(instance? DecisionTreeClassifier %))
 
@@ -151,7 +152,7 @@
   => #(instance? VectorAssembler %)
 
   (ml/params (ml/feature-hasher {:input-cols ["real" "bool" "stringNum" "string"]}))
-  => #(= (seq (:input-cols %)) ["real" "bool" "stringNum" "string"])
+  => #(= (:input-cols %) ["real" "bool" "stringNum" "string"])
   (ml/feature-hasher {})
   => #(instance? FeatureHasher %)
 
@@ -191,7 +192,7 @@
   => #(instance? IndexToString %)
 
   (ml/params (ml/one-hot-encoder {:input-cols ["categoryIndex1" "categoryIndex2"]}))
-  => #(= (seq (:input-cols %)) ["categoryIndex1" "categoryIndex2"])
+  => #(= (:input-cols %) ["categoryIndex1" "categoryIndex2"])
   (ml/one-hot-encoder {})
   => #(instance? OneHotEncoderEstimator %)
 
@@ -226,12 +227,12 @@
   => #(instance? MaxAbsScaler %)
 
   (ml/params (ml/bucketiser {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]}))
-  => #(= (seq (:splits %)) [-999.9 -0.5 -0.3 0.0 0.2 999.9])
+  => #(= (:splits %) [-999.9 -0.5 -0.3 0.0 0.2 999.9])
   (ml/bucketiser {})
   => #(instance? Bucketizer %)
 
   (ml/params (ml/elementwise-product {:scaling-vec [0.0 1.0 2.0]}))
-  => #(= (ml/vector->seq (:scaling-vec %)) [0.0 1.0 2.0])
+  => #(= (:scaling-vec %) [0.0 1.0 2.0])
   (ml/elementwise-product {})
   => #(instance? ElementwiseProduct %)
 
@@ -251,7 +252,7 @@
   => #(instance? QuantileDiscretizer %)
 
   (ml/params (ml/imputer {:input-cols ["a" "b"]}))
-  => #(= (seq (:input-cols %)) ["a" "b"])
+  => #(= (:input-cols %) ["a" "b"])
   (ml/imputer {})
   => #(instance? Imputer %)
 
@@ -338,7 +339,7 @@
       (->> transformed
            g/collect-vals
            flatten
-           (map ml/vector->seq)
+           (map vector->seq)
            flatten) => #(every? double? %)))
   (fact "should be able to fit the word2vec example"
     (let [dataset     (ds/table->dataset
@@ -361,7 +362,7 @@
       (->> transformed
            g/collect-vals
            flatten
-           (map ml/vector->seq)
+           (map vector->seq)
            flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
@@ -379,7 +380,7 @@
           (ml/chi-square-test "features" "label")
           g/first-vals
           first
-          ml/vector->seq) => #(every? double? %))))
+          vector->seq) => #(every? double? %))))
 
 (facts "On correlation"
   (let [dataset     (ds/table->dataset
@@ -398,13 +399,13 @@
       (-> features-df
           g/first-vals
           first
-          ml/vector->seq) => [1.0 0.0 -2.0 0.0])
+          vector->seq) => [1.0 0.0 -2.0 0.0])
     (fact "should be able to calculate correlation"
       (let [corr-matrix (-> features-df
                             (ml/corr "features")
                             g/first-vals
                             first
-                            ml/matrix->seqs)]
+                            matrix->seqs)]
         (count corr-matrix) => 4
         (count (first corr-matrix)) => 4
         (every? double? (flatten corr-matrix)) => true))))

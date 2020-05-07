@@ -69,7 +69,7 @@
   [zero-one.geni.ml-regression
    aft-survival-regression
    decision-tree-regressor
-   gbt-regressor ;; TODO: investigate validationTol
+   gbt-regressor
    generalised-linear-regression
    generalized-linear-regression
    glm
@@ -95,18 +95,12 @@
 
 (defn params [stage]
   (let [param-pairs (-> stage .extractParamMap .toSeq interop/scala-seq->vec)
-        unpack-pair (fn [p] [(-> p .param .name ->kebab-case) (.value p)])]
+        unpack-pair (fn [p]
+                      [(-> p .param .name ->kebab-case) (interop/->clojure (.value p))])]
     (->> param-pairs
          (map unpack-pair)
          (into {})
          keywordize-keys)))
-
-(defn vector->seq [spark-vector]
-  (-> spark-vector .values seq))
-
-(defn matrix->seqs [matrix]
-  (let [n-cols (.numCols matrix)]
-    (->> matrix .values seq (partition n-cols))))
 
 (comment
 
@@ -124,8 +118,14 @@
 
   (g/print-schema libsvm-df)
 
-  (import '(org.apache.spark.ml.feature VectorAssembler))
-  (-> (VectorAssembler.)
-      params)
+  (import '(org.apache.spark.ml.linalg DenseVector))
+  (defn dense-vector? [value]
+    (instance? DenseVector value))
+
+  (import '(org.apache.spark.ml.feature Imputer))
+  (-> (elementwise-product {:scaling-vec [0.0 1.0]})
+      params
+      :scaling-vec
+      dense-vector?)
 
   true)
