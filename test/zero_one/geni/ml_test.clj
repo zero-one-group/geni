@@ -52,7 +52,6 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
-;; TODO: address ml/params returns of non-Clojure data structures
 ;; TODO: put all data into one namespace
 (defonce libsvm-df
   (-> @g/spark
