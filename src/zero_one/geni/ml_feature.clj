@@ -165,53 +165,30 @@
     (interop/instantiate CountVectorizer props)))
 (def count-vectorizer count-vectoriser)
 
-(defn idf [{:keys [min-doc-freq input-col output-col]
-            :or   {min-doc-freq 0}}]
-  (-> (IDF.)
-      (.setMinDocFreq min-doc-freq)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn idf [params]
+  (let [defaults {:min-doc-freq 0}
+        props    (merge defaults params)]
+    (interop/instantiate IDF props)))
 
-(defn tokeniser [{:keys [input-col output-col]}]
-  (-> (Tokenizer.)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn tokeniser [params]
+  (interop/instantiate Tokenizer params))
 (def tokenizer tokeniser)
 
-(defn hashing-tf [{:keys [binary num-features input-col output-col]
-                   :or   {binary false num-features 262144}}]
-  (-> (HashingTF.)
-      (.setBinary binary)
-      (.setNumFeatures num-features)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+(defn hashing-tf [params]
+  (let [defaults {:binary       false
+                  :num-features 262144}
+        props    (merge defaults params)]
+    (interop/instantiate HashingTF props)))
 
-(defn word2vec [{:keys [max-iter
-                        step-size
-                        window-size
-                        max-sentence-length
-                        num-partitions
-                        seed
-                        vector-size
-                        min-count
-                        input-col
-                        output-col]
-                 :or   {max-iter 1,
-                        step-size 0.025,
-                        window-size 5,
-                        max-sentence-length 1000,
-                        num-partitions 1,
-                        seed -1961189076,
-                        vector-size 100,
-                        min-count 5}}]
-  (-> (Word2Vec.)
-      (.setMaxIter max-iter)
-      (.setStepSize step-size)
-      (.setWindowSize window-size)
-      (.setMaxSentenceLength max-sentence-length)
-      (.setNumPartitions num-partitions)
-      (.setSeed seed)
-      (.setVectorSize vector-size)
-      (.setMinCount min-count)
-      (.setInputCol input-col)
-      (.setOutputCol output-col)))
+
+(defn word2vec [params]
+  (let [defaults {:max-iter            1,
+                  :step-size           0.025,
+                  :window-size         5,
+                  :max-sentence-length 1000,
+                  :num-partitions      1,
+                  :seed                -1961189076,
+                  :vector-size         100,
+                  :min-count           5}
+        props    (merge defaults params)]
+    (interop/instantiate Word2Vec props)))
