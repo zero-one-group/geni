@@ -27,7 +27,7 @@
                             take
                             when])
   (:require
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
@@ -121,7 +121,7 @@
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
-    (into {} (clojure.core/map scala/scala-tuple->vec dtypes-as-tuples))))
+    (into {} (clojure.core/map interop/scala-tuple->vec dtypes-as-tuples))))
 
 (defn columns [dataframe]
   (-> dataframe .columns seq))
@@ -161,7 +161,7 @@
 
 (defn pivot
   ([grouped expr] (.pivot grouped (->column expr)))
-  ([grouped expr values] (.pivot grouped (->column expr) (scala/->scala-seq values))))
+  ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
 
 (defn agg [dataframe & exprs]
   (let [[head & tail] (clojure.core/map ->column (flatten exprs))]
@@ -308,7 +308,7 @@
 (defn null-count [expr]
   (-> expr null? (cast "int") sum (as (str "null_count(" expr ")"))))
 
-(defn isin [expr coll] (.isin (->column expr) (scala/->scala-seq coll)))
+(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
 
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
 
@@ -387,7 +387,7 @@
       (into {} (clojure.core/map
                  vector
                  col-names
-                 (-> row .toSeq scala/scala-seq->vec))))))
+                 (-> row .toSeq interop/scala-seq->vec))))))
 
 (defn collect-vals [dataframe]
   (mapv #(into [] (vals %)) (collect dataframe)))
@@ -402,7 +402,7 @@
   ([left right join-cols] (join left right join-cols "inner"))
   ([left right join-cols join-type]
    (let [join-cols (if (string? join-cols) [join-cols] join-cols)]
-     (.join left right (scala/->scala-seq join-cols) join-type))))
+     (.join left right (interop/->scala-seq join-cols) join-type))))
 
 (defn cross-join [left right] (.crossJoin left right))
 

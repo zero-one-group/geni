@@ -7,7 +7,7 @@
     [zero-one.geni.ml-classification]
     [zero-one.geni.ml-feature]
     [zero-one.geni.ml-regression]
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
@@ -36,6 +36,7 @@
    min-max-scaler
    n-gram
    normaliser
+   normalizer
    one-hot-encoder
    one-hot-encoder-estimator
    pca
@@ -68,7 +69,7 @@
   [zero-one.geni.ml-regression
    aft-survival-regression
    decision-tree-regressor
-   gbt-regressor ;; TODO: investigate validationTol
+   gbt-regressor
    generalised-linear-regression
    generalized-linear-regression
    glm
@@ -93,19 +94,13 @@
   (.transform transformer dataframe))
 
 (defn params [stage]
-  (let [param-pairs (-> stage .extractParamMap .toSeq scala/scala-seq->vec)
-        unpack-pair (fn [p] [(-> p .param .name ->kebab-case) (.value p)])]
+  (let [param-pairs (-> stage .extractParamMap .toSeq interop/scala-seq->vec)
+        unpack-pair (fn [p]
+                      [(-> p .param .name ->kebab-case) (interop/->clojure (.value p))])]
     (->> param-pairs
          (map unpack-pair)
          (into {})
          keywordize-keys)))
-
-(defn vector->seq [spark-vector]
-  (-> spark-vector .values seq))
-
-(defn matrix->seqs [matrix]
-  (let [n-cols (.numCols matrix)]
-    (->> matrix .values seq (partition n-cols))))
 
 (comment
 
@@ -123,13 +118,28 @@
 
   (g/print-schema libsvm-df)
 
-  (import '(org.apache.spark.ml.regression IsotonicRegression))
-  (-> (IsotonicRegression.)
-      params)
+  (import '(org.apache.spark.ml.linalg DenseVector))
+  (defn dense-vector? [value]
+    (instance? DenseVector value))
 
-  (use 'zero-one.geni.ml :reload)
+  (-> (feature-hasher
+        {:input-cols (interop/->scala-seq ["real" "bool" "stringNum" "string"])}))
+      ;params
+      ;:scaling-vec
+      ;dense-vector?)
 
-  (use '[clojure.tools.namespace.repl :only (refresh)])
-  (refresh)
+
+  (require '[clojure.java.data :as j])
+
+  (def method (:input-cols (interop/setters-map FeatureHasher)))
+
+  (= (interop/setter-type method) scala.collection.Seq)
+
+  (j/to-java)
+
+
+  (import '(org.apache.spark.ml.feature FeatureHasher))
+  (-> (FeatureHasher.)
+      (.setInputCols (into-array java.lang.String ["real" "bool" "stringNum" "string"])))
 
   true)

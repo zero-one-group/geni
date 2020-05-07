@@ -1,13 +1,13 @@
 (ns zero-one.geni.dataset
   (:require
-    [zero-one.geni.scala :as scala])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql RowFactory)
     (org.apache.spark.sql.types DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
 (defn ->row [coll]
-  (RowFactory/create (into-array Object (map scala/->scala-coll coll))))
+  (RowFactory/create (into-array Object (map interop/->scala-coll coll))))
 
 (defn ->java-list [coll]
   (java.util.ArrayList. coll))

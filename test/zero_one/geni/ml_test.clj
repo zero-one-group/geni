@@ -4,11 +4,13 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g :refer [spark]]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.ml :as ml])
+    [zero-one.geni.ml :as ml]
+    [zero-one.geni.interop :refer [vector->seq matrix->seqs]])
   (:import
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
                                         LinearSVC
+                                        LogisticRegression
                                         MultilayerPerceptronClassifier
                                         NaiveBayes
                                         OneVsRest
@@ -21,6 +23,7 @@
                                  ElementwiseProduct
                                  FeatureHasher
                                  HashingTF
+                                 IDF
                                  Imputer
                                  IndexToString
                                  Interaction
@@ -37,6 +40,7 @@
                                  StandardScaler
                                  StringIndexer
                                  Tokenizer
+                                 VectorAssembler
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)
@@ -58,183 +62,235 @@
 (facts "On classification"
   (fact "trainable logistic regression"
     (let [estimator (ml/logistic-regression
-                      {:thresholds [0.0]
+                      {:thresholds [0.0 1.0]
                        :max-iter 10
                        :reg-param 0.3
                        :elastic-net-param 0.8
                        :family "multinomial"})
           model (ml/fit libsvm-df estimator)]
-     (ml/vector->seq (.coefficientMatrix model)) => #(every? double? %)
-     (ml/vector->seq (.interceptVector model)) => #(every? double? %))))
+     (vector->seq (.coefficientMatrix model)) => #(every? double? %)
+     (vector->seq (.interceptVector model)) => #(every? double? %))))
 
 (fact "On instantiation - regression"
-  (ml/isotonic-regression {}) => #(instance? IsotonicRegression %)
-  (ml/aft-survival-regression {}) => #(instance? AFTSurvivalRegression %)
-  (ml/gbt-regressor {}) => #(instance? GBTRegressor %)
-  (ml/random-forest-regressor {}) => #(instance? RandomForestRegressor %)
-  (ml/decision-tree-regressor {:variance-col "abc"})
+  (ml/params (ml/isotonic-regression {:label-col "ABC"}))
+  => #(= (:label-col %) "ABC")
+  (ml/isotonic-regression {})
+  => #(instance? IsotonicRegression %)
+
+  (ml/params (ml/aft-survival-regression {:quantile-probabilities [0.005 0.995]}))
+  => #(= (:quantile-probabilities %) [0.005 0.995])
+  (ml/aft-survival-regression {})
+  => #(instance? AFTSurvivalRegression %)
+
+  (ml/params (ml/gbt-regressor {:max-bins 128}))
+  => #(= (:max-bins %) 128)
+  (ml/gbt-regressor {})
+  => #(instance? GBTRegressor %)
+
+  (ml/params (ml/random-forest-regressor {:prediction-col "xyz"}))
+  => #(= (:prediction-col %) "xyz")
+  (ml/random-forest-regressor {})
+  => #(instance? RandomForestRegressor %)
+
+  (ml/params (ml/decision-tree-regressor {:variance-col "abc"}))
+  => #(= (:variance-col %) "abc")
+  (ml/decision-tree-regressor {})
   => #(instance? DecisionTreeRegressor %)
-  (ml/decision-tree-regressor {}) => #(instance? DecisionTreeRegressor %)
-  (ml/glm {}) => #(instance? GeneralizedLinearRegression %)
-  (ml/linear-regression {:standardisation true}) => #(instance? LinearRegression %)
-  (ml/linear-regression {}) => #(instance? LinearRegression %))
+
+  (ml/params (ml/glm {:reg-param 1.0}))
+  => #(= (:reg-param %) 1.0)
+  (ml/generalized-linear-regression {})
+  => #(instance? GeneralizedLinearRegression %)
+
+  (ml/params (ml/linear-regression {:standardisation false}))
+  => #(= (:standardization %) false)
+  (ml/linear-regression {})
+  => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
-  (ml/naive-bayes {}) => #(instance? NaiveBayes %)
-  (ml/naive-bayes {:thresholds [0.0 0.1]}) => #(instance? NaiveBayes %)
+  (ml/params (ml/naive-bayes {:thresholds [0.0 0.1]}))
+  => #(= (:thresholds %) [0.0 0.1])
+  (ml/naive-bayes {})
+  => #(instance? NaiveBayes %)
+
   (let [classifier (ml/logistic-regression {:max-iter 10 :tol 1e-6})]
-    (ml/one-vs-rest {:weight-col "weights"}) => #(instance? OneVsRest %)
-    (ml/one-vs-rest {:classifier classifier}) => #(instance? OneVsRest %))
-  (ml/linear-svc
-    {:reg-param 0.1
-     :standardization false
-     :max-iter 10}) => #(instance? LinearSVC %)
-  (ml/linear-svc
-    {:reg-param 0.1
-     :standardisation true
-     :max-iter 10}) => #(instance? LinearSVC %)
-  (ml/mlp-classifier
-    {:block-size 128
-     :seed 1234
-     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
-  (ml/mlp-classifier
-    {:layers [4 5 4 3]
-     :thresholds []
-     :block-size 128
-     :seed 1234
-     :max-iter 100}) => #(instance? MultilayerPerceptronClassifier %)
-  (ml/gbt-classifier
-    {:thresholds []
-     :max-iter 10
-     :feature-subset-strategy "auto"
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
-  (ml/gbt-classifier
-    {:max-iter 10
-     :feature-subset-strategy "auto"
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? GBTClassifier %)
-  (ml/random-forest-classifier
-    {:thresholds [0.0]
-     :num-trees 12
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
-  (ml/random-forest-classifier
-    {:num-trees 12
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? RandomForestClassifier %)
-  (ml/decision-tree-classifier
-    {:thresholds [0.0]
-     :label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %)
-  (ml/decision-tree-classifier
-    {:label-col "indexedLabel"
-     :features-col "indexedFeatures"}) => #(instance? DecisionTreeClassifier %))
+    (ml/params (ml/one-vs-rest {:classifier classifier}))
+    => #(instance? LogisticRegression (:classifier %)))
+  (ml/one-vs-rest {})
+  => #(instance? OneVsRest %)
+
+  (ml/params (ml/linear-svc {:standardisation false}))
+  => #(= (:standardization %) false)
+  (ml/linear-svc {})
+  => #(instance? LinearSVC %)
+
+  (ml/params (ml/mlp-classifier {:layers [1 2 3]}))
+  => #(= (:layers %) [1 2 3])
+  (ml/mlp-classifier {})
+  => #(instance? MultilayerPerceptronClassifier %)
+
+  (ml/params (ml/gbt-classifier {:feature-subset-strategy "auto"}))
+  => #(= (:feature-subset-strategy %) "auto")
+  (ml/gbt-classifier {})
+  => #(instance? GBTClassifier %)
+
+  (ml/params (ml/random-forest-classifier {:num-trees 12}))
+  => #(= (:num-trees %) 12)
+  (ml/random-forest-classifier {})
+  => #(instance? RandomForestClassifier %)
+
+  (ml/params (ml/decision-tree-classifier {:thresholds [0.0]}))
+  => #(= (:thresholds %) [0.0])
+  (ml/decision-tree-classifier {})
+  => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
-  (ml/tokenizer
-    {:input-col "sentence"
-     :output-col "words"}) => #(instance? Tokenizer %)
-  (ml/hashing-tf
-    {:input-col "words"
-     :output-col "rawFeatures"}) => #(instance? HashingTF %)
-  (ml/word2vec
-    {:vector-size 3
-     :min-count 0
-     :input-col "text"
-     :output-col "result"}) => #(instance? Word2Vec %)
-  (ml/count-vectorizer
-    {:input-col "words"
-     :output-col "features"}) => #(instance? CountVectorizer %)
-  (ml/feature-hasher
-    {:input-cols ["real" "bool" "stringNum" "string"]
-     :output-col "features"}) => #(instance? FeatureHasher %)
-  (ml/n-gram
-    {:input-col "words"
-     :output-col "features"}) => #(instance? NGram %)
-  (ml/binariser
-    {:threshold 0.5
-     :input-col "feature"
-     :output-col "binarized_feature"}) => #(instance? Binarizer %)
-  (ml/pca
-    {:k 3
-     :input-col "features"
-     :output-col "pcaFeatures"}) => #(= ((ml/params %) :k) 3)
-  (ml/pca
-    {:input-col "features"
-     :output-col "pcaFeatures"}) => #(instance? PCA %)
-  (ml/polynomial-expansion
-    {:degree 3
-     :input-col "features"
-     :output-col "polyFeatures"}) => #(instance? PolynomialExpansion %)
-  (ml/dct
-    {:inverse false
-     :input-col "features"
-     :output-col "dctFeatures"}) => #(instance? DCT %)
-  (ml/string-indexer
-    {:inverse false
-     :input-col "features"
-     :output-col "dctFeatures"}) => #(instance? StringIndexer %)
-  (ml/index-to-string
-    {:input-col "category"
-     :output-col "categoryIndex"}) => #(instance? IndexToString %)
-  (ml/one-hot-encoder
-    {:input-cols ["categoryIndex1" "categoryIndex2"]
-     :output-cols ["categoryVec1" "categoryVec2"]})
+  (ml/params (ml/vector-assembler {:handle-invalid "skip"}))
+  => #(= (:handle-invalid %) "skip")
+  (ml/vector-assembler {})
+  => #(instance? VectorAssembler %)
+
+  (ml/params (ml/feature-hasher {:input-cols ["real" "bool" "stringNum" "string"]}))
+  => #(= (:input-cols %) ["real" "bool" "stringNum" "string"])
+  (ml/feature-hasher {})
+  => #(instance? FeatureHasher %)
+
+  (ml/params (ml/n-gram {:input-col "words"}))
+  => #(= (:input-col %) "words")
+  (ml/n-gram {})
+  => #(instance? NGram %)
+
+  (ml/params (ml/binariser {:threshold 0.5}))
+  => #(= (:threshold %) 0.5)
+  (ml/binarizer {})
+  => #(instance? Binarizer %)
+
+  (ml/params (ml/pca {:k 3}))
+  => #(= (:k %) 3)
+  (ml/pca {})
+  => #(instance? PCA %)
+
+  (ml/params (ml/polynomial-expansion {:degree 3}))
+  => #(= (:degree %) 3)
+  (ml/polynomial-expansion {})
+  => #(instance? PolynomialExpansion %)
+
+  (ml/params (ml/dct {:inverse true}))
+  => #(= (:inverse %) true)
+  (ml/discrete-cosine-transform {})
+  => #(instance? DCT %)
+
+  (ml/params (ml/string-indexer {:handle-invalid "skip"}))
+  => #(= (:handle-invalid %) "skip")
+  (ml/string-indexer {})
+  => #(instance? StringIndexer %)
+
+  (ml/params (ml/index-to-string {:output-col "categoryIndex"}))
+  => #(= (:output-col %) "categoryIndex")
+  (ml/index-to-string {})
+  => #(instance? IndexToString %)
+
+  (ml/params (ml/one-hot-encoder {:input-cols ["categoryIndex1" "categoryIndex2"]}))
+  => #(= (:input-cols %) ["categoryIndex1" "categoryIndex2"])
+  (ml/one-hot-encoder {})
   => #(instance? OneHotEncoderEstimator %)
-  (ml/vector-indexer
-    {:max-categories 10
-     :input-col "features"
-     :output-col "indexed"}) => #(instance? VectorIndexer %)
-  (ml/interaction
-    {:input-cols ["id2" "id3" "id4"]
-     :output-col "indexed"}) => #(instance? Interaction %)
-  (ml/normaliser
-    {:p 1.0
-     :input-col "features"
-     :output-col "normFeatures"}) => #(instance? Normalizer %)
-  (ml/standard-scaler
-    {:with-std true
-     :with-mean false
-     :input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? StandardScaler %)
-  (ml/min-max-scaler
-    {:input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? MinMaxScaler %)
-  (ml/max-abs-scaler
-    {:input-col "features"
-     :output-col "scaledFeatures"}) => #(instance? MaxAbsScaler %)
-  (ml/bucketiser
-    {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]
-     :input-col "features"
-     :output-col "bucketedFeatures"}) => #(instance? Bucketizer %)
-  (ml/elementwise-product
-    {:scaling-vec [0.0 1.0 2.0]
-     :input-col "features"
-     :output-col "bucketedFeatures"}) => #(instance? ElementwiseProduct %)
-  (ml/sql-transformer
-    {:statement "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__"})
+
+  (ml/params (ml/vector-indexer {:max-categories 10}))
+  => #(= (:max-categories %) 10)
+  (ml/vector-indexer {})
+  => #(instance? VectorIndexer %)
+
+  (ml/params (ml/interaction {:output-col "indexed"}))
+  => #(= (:output-col %) "indexed")
+  (ml/interaction {})
+  => #(instance? Interaction %)
+
+  (ml/params (ml/normaliser {:p 1.0}))
+  => #(= (:p %) 1.0)
+  (ml/normalizer {})
+  => #(instance? Normalizer %)
+
+  (ml/params (ml/standard-scaler {:input-col "abcdef"}))
+  => #(= (:input-col %) "abcdef")
+  (ml/standard-scaler {})
+  => #(instance? StandardScaler %)
+
+  (ml/params (ml/min-max-scaler {:min -9999}))
+  => #(= (:min %) -9999.0)
+  (ml/min-max-scaler {})
+  => #(instance? MinMaxScaler %)
+
+  (ml/params (ml/max-abs-scaler {:output-col "xyz"}))
+  => #(= (:output-col %) "xyz")
+  (ml/max-abs-scaler {})
+  => #(instance? MaxAbsScaler %)
+
+  (ml/params (ml/bucketiser {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]}))
+  => #(= (:splits %) [-999.9 -0.5 -0.3 0.0 0.2 999.9])
+  (ml/bucketiser {})
+  => #(instance? Bucketizer %)
+
+  (ml/params (ml/elementwise-product {:scaling-vec [0.0 1.0 2.0]}))
+  => #(= (:scaling-vec %) [0.0 1.0 2.0])
+  (ml/elementwise-product {})
+  => #(instance? ElementwiseProduct %)
+
+  (ml/params (ml/sql-transformer {:statement "SELECT *, (v1 + v2)"}))
+  => #(= (:statement %) "SELECT *, (v1 + v2)")
+  (ml/sql-transformer {})
   => #(instance? SQLTransformer %)
-  (ml/vector-size-hint
-    {:handle-invalid "skip"
-     :size 3
-     :input-col "userFeatures"}) => #(instance? VectorSizeHint %)
-  (ml/quantile-discretiser
-    {:num-buckets 3
-     :input-col "hour"
-     :output-col "result"}) => #(instance? QuantileDiscretizer %)
-  (ml/imputer
-    {:input-cols ["a" "b"]
-     :output-cols ["out_a" "out_b"]}) => #(instance? Imputer %)
-  (ml/bucketed-random-projection-lsh
-    {:bucket-length 2.0
-     :num-hash-tables 3
-     :input-col "features"
-     :output-col "hashes"}) => #(instance? BucketedRandomProjectionLSH %)
-  (ml/min-hash-lsh
-    {:num-hash-tables 5
-     :input-col "features"
-     :output-col "hashes"}) => #(instance? MinHashLSH %))
+
+  (ml/params (ml/vector-size-hint {:size 3}))
+  => #(= (:size %) 3)
+  (ml/vector-size-hint {})
+  => #(instance? VectorSizeHint %)
+
+  (ml/params (ml/quantile-discretiser {:num-buckets 3}))
+  => #(= (:num-buckets %) 3)
+  (ml/quantile-discretizer {})
+  => #(instance? QuantileDiscretizer %)
+
+  (ml/params (ml/imputer {:input-cols ["a" "b"]}))
+  => #(= (:input-cols %) ["a" "b"])
+  (ml/imputer {})
+  => #(instance? Imputer %)
+
+  (ml/params (ml/bucketed-random-projection-lsh {:bucket-length 2.0}))
+  => #(= (:bucket-length %) 2.0)
+  (ml/bucketed-random-projection-lsh {})
+  => #(instance? BucketedRandomProjectionLSH %)
+
+  (ml/params (ml/min-hash-lsh {:num-hash-tables 55}))
+  => #(= (:num-hash-tables %) 55)
+  (ml/min-hash-lsh {})
+  => #(instance? MinHashLSH %)
+
+  (ml/params (ml/count-vectoriser {:min-df 2.0 :min-tf 3.0 :max-df 4.0}))
+  => #(and (= (:min-df %) 2.0)
+           (= (:min-tf %) 3.0)
+           (= (:max-df %) 4.0))
+  (ml/count-vectorizer {})
+  => #(instance? CountVectorizer %)
+
+  (ml/params (ml/idf {:min-doc-freq 100}))
+  => #(= (:min-doc-freq %) 100)
+  (ml/idf {})
+  => #(instance? IDF %)
+
+  (ml/params (ml/tokeniser {:input-col "sentence"}))
+  => #(= (:input-col %) "sentence")
+  (ml/tokenizer {})
+  => #(instance? Tokenizer %)
+
+  (ml/params (ml/hashing-tf {:output-col "rawFeatures"}))
+  => #(= (:output-col %) "rawFeatures")
+  (ml/hashing-tf {})
+  => #(instance? HashingTF %)
+
+  (ml/params (ml/word2vec {:vector-size 3}))
+  => #(= (:vector-size %) 3)
+  (ml/word2vec {})
+  => #(instance? Word2Vec %))
 
 (facts "On pipeline"
   (fact "should be able to fit the example stages"
@@ -282,7 +338,7 @@
       (->> transformed
            g/collect-vals
            flatten
-           (map ml/vector->seq)
+           (map vector->seq)
            flatten) => #(every? double? %)))
   (fact "should be able to fit the word2vec example"
     (let [dataset     (ds/table->dataset
@@ -305,7 +361,7 @@
       (->> transformed
            g/collect-vals
            flatten
-           (map ml/vector->seq)
+           (map vector->seq)
            flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
@@ -323,7 +379,7 @@
           (ml/chi-square-test "features" "label")
           g/first-vals
           first
-          ml/vector->seq) => #(every? double? %))))
+          vector->seq) => #(every? double? %))))
 
 (facts "On correlation"
   (let [dataset     (ds/table->dataset
@@ -342,13 +398,13 @@
       (-> features-df
           g/first-vals
           first
-          ml/vector->seq) => [1.0 0.0 -2.0 0.0])
+          vector->seq) => [1.0 0.0 -2.0 0.0])
     (fact "should be able to calculate correlation"
       (let [corr-matrix (-> features-df
                             (ml/corr "features")
                             g/first-vals
                             first
-                            ml/matrix->seqs)]
+                            matrix->seqs)]
         (count corr-matrix) => 4
         (count (first corr-matrix)) => 4
         (every? double? (flatten corr-matrix)) => true))))
