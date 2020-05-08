@@ -5,6 +5,7 @@
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
     [zero-one.geni.ml-classification]
+    [zero-one.geni.ml-evaluation]
     [zero-one.geni.ml-feature]
     [zero-one.geni.ml-regression]
     [zero-one.geni.interop :as interop])
@@ -12,6 +13,13 @@
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
+
+(import-vars
+  [zero-one.geni.ml-evaluation
+   binary-classification-evaluator
+   clustering-evaluator
+   multiclass-classification-evaluator
+   regression-evaluator])
 
 (import-vars
   [zero-one.geni.ml-feature
@@ -93,6 +101,9 @@
 (defn transform [dataframe transformer]
   (.transform transformer dataframe))
 
+(defn evaluate [dataframe evaluator]
+  (.evaluate evaluator dataframe))
+
 (defn params [stage]
   (let [param-pairs (-> stage .extractParamMap .toSeq interop/scala-seq->vec)
         unpack-pair (fn [p]
@@ -104,11 +115,8 @@
 
 (comment
 
-  (int-array [1])
-
   (require '[zero-one.geni.core :as g])
   (require '[zero-one.geni.dataset :as ds])
-
 
   (defonce libsvm-df
     (-> @g/spark
@@ -116,7 +124,37 @@
         (.format "libsvm")
         (.load "test/resources/sample_libsvm_data.txt")))
 
+  (import '(org.apache.spark.ml.evaluation RegressionEvaluator))
+  (params (RegressionEvaluator.))
+
+  (defn multiclass-classification-evaluator [params]
+    (let [defaults {:label-col "label"
+                    :metric-name "f1"
+                    :prediction-col "prediction"}
+          props    (merge defaults params)]
+      (interop/instantiate MulticlassClassificationEvaluator props)))
+
+
+  (let [estimator   (logistic-regression
+                      {:max-iter 10
+                       :reg-param 0.3
+                       :elastic-net-param 0.8
+                       :family "multinomial"})
+        model       (fit libsvm-df estimator)
+        predictions (-> libsvm-df
+                        (transform model)
+                        (g/select "prediction" "label" "features"))
+        evaluator   (multiclass-classification-evaluator
+                      {:label-col "label"
+                       :prediction-col "prediction"
+                       :metric-name "accuracy"})
+        accuracy   (evaluate predictions evaluator)]
+    accuracy)
+
   (g/print-schema libsvm-df)
+
+
+  (import '(org.apache.spark.ml.evaluation RegressionEvaluator))
 
   (import '(org.apache.spark.ml.linalg DenseVector))
   (defn dense-vector? [value]

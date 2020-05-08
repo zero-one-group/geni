@@ -15,6 +15,10 @@
                                         NaiveBayes
                                         OneVsRest
                                         RandomForestClassifier)
+    (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
+                                    ClusteringEvaluator
+                                    MulticlassClassificationEvaluator
+                                    RegressionEvaluator)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
@@ -60,16 +64,47 @@
       (.load "test/resources/sample_libsvm_data.txt")))
 
 (facts "On classification"
-  (fact "trainable logistic regression"
-    (let [estimator (ml/logistic-regression
-                      {:thresholds [0.0 1.0]
+  (let [estimator   (ml/logistic-regression
+                      {:thresholds [0.5 1.0]
                        :max-iter 10
                        :reg-param 0.3
                        :elastic-net-param 0.8
                        :family "multinomial"})
-          model (ml/fit libsvm-df estimator)]
+        model       (ml/fit libsvm-df estimator)
+        predictions (-> libsvm-df
+                        (ml/transform model)
+                        (g/select "prediction" "label" "features"))
+        evaluator   (ml/multiclass-classification-evaluator
+                      {:label-col "label"
+                       :prediction-col "prediction"
+                       :metric-name "accuracy"})
+        accuracy   (ml/evaluate predictions evaluator)]
+   (fact "trainable logistic regression"
      (vector->seq (.coefficientMatrix model)) => #(every? double? %)
-     (vector->seq (.interceptVector model)) => #(every? double? %))))
+     (vector->seq (.interceptVector model)) => #(every? double? %))
+   (fact "evaluator works"
+     accuracy => #(<= 0.9 % 1.0))))
+
+(fact "On instantiation - evaluator"
+  (ml/params (ml/binary-classification-evaluator {:raw-prediction-col "xyz"}))
+  => #(= (:raw-prediction-col %) "xyz")
+  (ml/binary-classification-evaluator {})
+  => #(instance? BinaryClassificationEvaluator %)
+
+  (ml/params (ml/clustering-evaluator {:distance-measure "cosine"}))
+  => #(= (:distance-measure %) "cosine")
+  (ml/clustering-evaluator {})
+  => #(instance? ClusteringEvaluator %)
+
+  (ml/params (ml/multiclass-classification-evaluator {:label-col "weightz"}))
+  => #(= (:label-col %) "weightz")
+  (ml/multiclass-classification-evaluator {})
+  => #(instance? MulticlassClassificationEvaluator %)
+
+  (ml/params (ml/regression-evaluator {:metric-name "r2"}))
+  => #(= (:metric-name %) "r2")
+  (ml/regression-evaluator {})
+  => #(instance? RegressionEvaluator %))
 
 (fact "On instantiation - regression"
   (ml/params (ml/isotonic-regression {:label-col "ABC"}))
@@ -108,6 +143,11 @@
   => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
+  (ml/params (ml/logistic-regression {:thresholds [0.0 0.1]}))
+  => #(= (:thresholds %) [0.0 0.1])
+  (ml/logistic-regression {})
+  => #(instance? LogisticRegression %)
+
   (ml/params (ml/naive-bayes {:thresholds [0.0 0.1]}))
   => #(= (:thresholds %) [0.0 0.1])
   (ml/naive-bayes {})
