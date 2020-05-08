@@ -15,6 +15,10 @@
                                         NaiveBayes
                                         OneVsRest
                                         RandomForestClassifier)
+    (org.apache.spark.ml.clustering BisectingKMeans
+                                    GaussianMixture
+                                    KMeans
+                                    LDA)
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
                                     ClusteringEvaluator
                                     MulticlassClassificationEvaluator
@@ -63,6 +67,22 @@
       (.format "libsvm")
       (.load "test/resources/sample_libsvm_data.txt")))
 
+(defonce k-means-df
+  (-> @g/spark
+      .read
+      (.format "libsvm")
+      (.load "test/resources/sample_kmeans_data.txt")))
+
+(facts "On clustering"
+  (let [estimator   (ml/k-means {:k 3})
+        model       (ml/fit k-means-df estimator)
+        predictions (ml/transform k-means-df model)
+        evaluator   (ml/clustering-evaluator {})
+        silhoutte   (ml/evaluate predictions evaluator)]
+    silhoutte => #(<= 0.7 % 1.0)
+    (ml/cluster-centers model) => #(and (every? double? (flatten %))
+                                        (= (count %) 3))))
+
 (facts "On classification"
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
@@ -84,6 +104,27 @@
      (vector->seq (.interceptVector model)) => #(every? double? %))
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
+
+(fact "On instantiation - clustering"
+  (ml/params (ml/gaussian-mixture {:features-col "fts"}))
+  => #(= (:features-col %) "fts")
+  (ml/gmm {})
+  => #(instance? GaussianMixture %)
+
+  (ml/params (ml/bisecting-k-means {:distance-measure "cosine"}))
+  => #(= (:distance-measure %) "cosine")
+  (ml/bisecting-k-means {})
+  => #(instance? BisectingKMeans %)
+
+  (ml/params (ml/lda {:optimizer "em"}))
+  => #(= (:optimizer %) "em")
+  (ml/latent-dirichlet-allocation {})
+  => #(instance? LDA %)
+
+  (ml/params (ml/k-means {:k 123}))
+  => #(= (:k %) 123)
+  (ml/k-means {})
+  => #(instance? KMeans %))
 
 (fact "On instantiation - evaluator"
   (ml/params (ml/binary-classification-evaluator {:raw-prediction-col "xyz"}))
