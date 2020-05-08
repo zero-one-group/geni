@@ -4,7 +4,9 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [camel-snake-kebab "0.4.1"]]
+                 [org.clojure/java.data "1.0.64"]
+                 [camel-snake-kebab "0.4.1"]
+                 [potemkin "0.4.5"]]
   :profiles {:provided
              {:dependencies [[org.apache.spark/spark-core_2.12 "2.4.5"]
                              [org.apache.spark/spark-hive_2.12 "2.4.5"]
