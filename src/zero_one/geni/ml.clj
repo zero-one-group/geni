@@ -5,6 +5,7 @@
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
     [zero-one.geni.ml-classification]
+    [zero-one.geni.ml-clustering]
     [zero-one.geni.ml-evaluation]
     [zero-one.geni.ml-feature]
     [zero-one.geni.ml-regression]
@@ -13,6 +14,16 @@
     (org.apache.spark.ml Pipeline PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
+
+(import-vars
+  [zero-one.geni.ml-clustering
+   bisecting-k-means
+   cluster-centers
+   gaussian-mixture
+   gmm
+   k-means
+   lda
+   latent-dirichlet-allocation])
 
 (import-vars
   [zero-one.geni.ml-evaluation
@@ -124,60 +135,16 @@
         (.format "libsvm")
         (.load "test/resources/sample_libsvm_data.txt")))
 
-  (import '(org.apache.spark.ml.evaluation RegressionEvaluator))
-  (params (RegressionEvaluator.))
+  (defonce k-means-df
+    (-> @g/spark
+        .read
+        (.format "libsvm")
+        (.load "test/resources/sample_kmeans_data.txt")))
+  (g/print-schema k-means-df)
 
-  (defn multiclass-classification-evaluator [params]
-    (let [defaults {:label-col "label"
-                    :metric-name "f1"
-                    :prediction-col "prediction"}
-          props    (merge defaults params)]
-      (interop/instantiate MulticlassClassificationEvaluator props)))
+  (import '(org.apache.spark.ml.clustering GaussianMixture))
+  (params (GaussianMixture.))
 
-
-  (let [estimator   (logistic-regression
-                      {:max-iter 10
-                       :reg-param 0.3
-                       :elastic-net-param 0.8
-                       :family "multinomial"})
-        model       (fit libsvm-df estimator)
-        predictions (-> libsvm-df
-                        (transform model)
-                        (g/select "prediction" "label" "features"))
-        evaluator   (multiclass-classification-evaluator
-                      {:label-col "label"
-                       :prediction-col "prediction"
-                       :metric-name "accuracy"})
-        accuracy   (evaluate predictions evaluator)]
-    accuracy)
-
-  (g/print-schema libsvm-df)
-
-
-  (import '(org.apache.spark.ml.evaluation RegressionEvaluator))
-
-  (import '(org.apache.spark.ml.linalg DenseVector))
-  (defn dense-vector? [value]
-    (instance? DenseVector value))
-
-  (-> (feature-hasher
-        {:input-cols (interop/->scala-seq ["real" "bool" "stringNum" "string"])}))
-      ;params
-      ;:scaling-vec
-      ;dense-vector?)
-
-
-  (require '[clojure.java.data :as j])
-
-  (def method (:input-cols (interop/setters-map FeatureHasher)))
-
-  (= (interop/setter-type method) scala.collection.Seq)
-
-  (j/to-java)
-
-
-  (import '(org.apache.spark.ml.feature FeatureHasher))
-  (-> (FeatureHasher.)
-      (.setInputCols (into-array java.lang.String ["real" "bool" "stringNum" "string"])))
+  (-> (lda {:doc-concentration 0.1}))
 
   true)
