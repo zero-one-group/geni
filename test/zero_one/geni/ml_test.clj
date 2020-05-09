@@ -71,6 +71,16 @@
     (ml/cluster-centers model) => #(and (every? double? (flatten %))
                                         (= (count %) 3))))
 
+(facts "On clustering"
+  (let [estimator   (ml/k-means {:k 3})
+        model       (ml/fit k-means-df estimator)
+        predictions (ml/transform k-means-df model)
+        evaluator   (ml/clustering-evaluator {})
+        silhoutte   (ml/evaluate predictions evaluator)]
+    silhoutte => #(<= 0.7 % 1.0)
+    (ml/cluster-centers model) => #(and (every? double? (flatten %))
+                                        (= (count %) 3))))
+
 (facts "On classification"
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
