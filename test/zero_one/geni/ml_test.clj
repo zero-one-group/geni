@@ -2,10 +2,11 @@
   (:require
     [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g :refer [spark]]
+    [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
+    [zero-one.geni.interop :refer [vector->seq matrix->seqs]]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.interop :refer [vector->seq matrix->seqs]])
+    [zero-one.geni.test-resources :refer [k-means-df libsvm-df spark]])
   (:import
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
@@ -60,18 +61,15 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
-;; TODO: put all data into one namespace
-(defonce libsvm-df
-  (-> @g/spark
-      .read
-      (.format "libsvm")
-      (.load "test/resources/sample_libsvm_data.txt")))
-
-(defonce k-means-df
-  (-> @g/spark
-      .read
-      (.format "libsvm")
-      (.load "test/resources/sample_kmeans_data.txt")))
+(facts "On clustering"
+  (let [estimator   (ml/k-means {:k 3})
+        model       (ml/fit k-means-df estimator)
+        predictions (ml/transform k-means-df model)
+        evaluator   (ml/clustering-evaluator {})
+        silhoutte   (ml/evaluate predictions evaluator)]
+    silhoutte => #(<= 0.7 % 1.0)
+    (ml/cluster-centers model) => #(and (every? double? (flatten %))
+                                        (= (count %) 3))))
 
 (facts "On clustering"
   (let [estimator   (ml/k-means {:k 3})
@@ -376,7 +374,7 @@
 (facts "On pipeline"
   (fact "should be able to fit the example stages"
     (let [dataset     (ds/table->dataset
-                        @g/spark
+                        spark
                         [[0, "a b c d e spark", 1.0]
                          [1, "b d", 0.0]
                          [2, "spark f g h", 1.0],
@@ -399,7 +397,7 @@
       (dtypes "prediction") => "DoubleType"))
   (fact "should be able to fit the idf example"
     (let [dataset     (ds/table->dataset
-                        @g/spark
+                        spark
                         [[0.0 "Hi I heard about Spark"]
                          [0.0 "I wish Java could use case classes"]
                          [1.0 "Logistic regression models are neat"]]
@@ -423,7 +421,7 @@
            flatten) => #(every? double? %)))
   (fact "should be able to fit the word2vec example"
     (let [dataset     (ds/table->dataset
-                        @g/spark
+                        spark
                         [["Hi I heard about Spark"]
                          ["I wish Java could use case classes"]
                          ["Logistic regression models are neat"]]
@@ -447,7 +445,7 @@
 
 (facts "On hypothesis testing"
   (let [dataset (ds/table->dataset
-                   @spark
+                   spark
                    [[0.0 [0.5 10.0]]
                     [0.0 [1.5 20.0]]
                     [1.0 [1.5 30.0]]
@@ -464,7 +462,7 @@
 
 (facts "On correlation"
   (let [dataset     (ds/table->dataset
-                       @spark
+                       spark
                        [[1.0 0.0 -2.0 0.0]
                         [4.0 5.0 0.0  3.0]
                         [6.0 7.0 0.0  8.0]

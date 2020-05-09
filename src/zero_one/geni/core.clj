@@ -33,6 +33,9 @@
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
+
+;; TODO: keywordize dtypes, collect
+;; TODO: handle collect-vals with DenseVector and SparseVector?
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
 (defn read-parquet! [spark-session path]
@@ -423,25 +426,12 @@
     (.setLogLevel context log-level)
     session))
 
-(defonce spark
-  (delay (create-spark-session {:configs {"spark.testing.memory" "2147480000"}})))
-
-(defonce dataframe
-  (delay
-    (cache (read-parquet!
-             @spark
-             "test/resources/melbourne_housing_snapshot.parquet"))))
-
 (comment
 
-  (-> @dataframe count)
+  (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
+  (-> melbourne-df count)
+  (-> melbourne-df print-schema)
 
-  (-> @dataframe print-schema)
-
-
-  ;; TODO: keywordize dtypes, collect
-
-  ;; TODO: handle collect-vals with DenseVector and SparseVector?
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
   (require '[clojure.reflect :as r])
