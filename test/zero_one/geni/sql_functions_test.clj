@@ -2,12 +2,13 @@
   (:require
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g :refer [dataframe]])
+    [zero-one.geni.core :as g]
+    [zero-one.geni.test-resources :refer [melbourne-df]])
   (:import
     (org.apache.spark.sql.expressions WindowSpec)))
 
 (fact "On random functions"
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 20)
       (g/select
         (-> (g/randn 0) (g/as "norm"))
@@ -17,7 +18,7 @@
         (g/round (g/kurtosis "unif"))
         (g/round (g/covar "unif" "norm")))
       g/collect-vals) => [[0.0 -1.0 0.0]]
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 10)
       (g/select
         (-> (g/randn) (g/as "norm"))
@@ -29,13 +30,13 @@
       flatten) => #(every? pos? %))
 
 (fact "On comparison and boolean functions"
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (g/&&)
         (g/||))
       g/collect-vals) => [[true false]]
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (g/< (g/lit 1))
@@ -48,7 +49,7 @@
       g/collect-vals) => [[true true true false false false true]])
 
 (fact "On trig functions"
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
@@ -57,12 +58,15 @@
              (g/asin (g/lit 1)))
         (g/+ (g/atan (g/lit 2)) (g/atan (g/lit -2)))
         (g/- (g// (g/sinh (g/lit 1)) (g/cosh (g/lit 1)))
-             (g/tanh (g/lit 1))))
+             (g/tanh (g/lit 1)))
+        (g/+ (-> 3 g/lit g/sin g/sqr)
+             (-> 3 g/lit g/cos g/sqr)
+             (g/lit -1)))
       g/collect-vals
       flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
 
 (fact "On partition ID"
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 10)
       (g/repartition 3)
       (g/select (g/spark-partition-id))
@@ -73,12 +77,12 @@
 
 (facts "On formatting"
   (fact "should format number correctly"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 1)
         (g/select (g/format-number (g/lit 1234.56789) 2))
         g/collect-vals) => [["1,234.57"]])
   (fact "should format strings correctly"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 1)
         (g/select
           (g/format-string "(Rooms=%d, SellerG=%s)" ["Rooms" "SellerG"])
@@ -97,7 +101,7 @@
                              "Metropolitan"]]))
 
 (fact "On arithmetic functions"
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (-> (g/* (g/log "Price") (g/lit 0.5)))
@@ -108,29 +112,29 @@
       first
       distinct
       count) => 1
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select "Price" (-> (g/abs (g/negate "Price"))))
       g/collect-vals
       first
       distinct
       count) => 1
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (g/+ (g/lit 1) (g/lit 1)))
       g/collect-vals) => [[2]]
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/with-column "two" (g/lit 2))
       (g/with-column "three" (g/lit 3))
       (g/select (g/pow "two" "three"))
       g/collect-vals) => [[8.0]]
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select (g/+) (g/*))
       g/collect-vals) => [[0 1]]
-  (-> @dataframe
+  (-> melbourne-df
       (g/limit 1)
       (g/select
         (g/=== (g/ceil (g/lit 1.23))
@@ -142,7 +146,7 @@
 
 (facts "On group-by + agg functions"
   (let [n-rows  20
-        summary (-> @dataframe
+        summary (-> melbourne-df
                     (g/limit n-rows)
                     (g/agg
                       (g/count (g/->column "BuildingArea"))
@@ -170,14 +174,14 @@
             variance (summary "var_samp(Price)")]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
     (fact "count distinct and approx count distinct should be similar"
-      (-> @dataframe
+      (-> melbourne-df
           (g/limit 60)
           (g/agg
             (-> (g/count-distinct "SellerG"))
             (-> (g/approx-count-distinct "SellerG")))
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05)
-      (-> @dataframe
+      (-> melbourne-df
           (g/limit 60)
           (g/agg
             (g/count-distinct "SellerG")
@@ -188,7 +192,7 @@
 (facts "On windowing"
   (fact "can instantiate empty WindowSpec"
     (g/window {}) => #(instance? WindowSpec %))
-  (let [records    (-> @dataframe
+  (let [records    (-> melbourne-df
                        (g/limit 10)
                        (g/select
                          "SellerG"
@@ -207,7 +211,7 @@
     => (fn [pairs] (every? #(< (first %) (second %)) pairs))
     (map #(% "row-num") records) => [1 2 3])
   (fact "count rows last week"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
         (g/select
@@ -219,7 +223,7 @@
         flatten
         set) => #{1 2 3})
   (fact "count rows in the last two rows"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
         (g/select
@@ -233,7 +237,7 @@
 
 (facts "On time functions"
   (fact "correct time arithmetic"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 1)
         (g/select
           (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
@@ -253,7 +257,7 @@
                              23
                              -3.0]])
   (fact "correct current times"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 1)
         (g/select
           (g/cast (g/current-timestamp) "string")
@@ -262,7 +266,7 @@
         flatten) => #(and (clojure.string/includes? (first %) ":")
                           (not (clojure.string/includes? (second %) ":"))))
   (fact "correct time comparisons"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 3)
         (g/select
           (-> (g/unix-timestamp) (g/as "now"))
@@ -278,7 +282,7 @@
         g/collect-vals) => #(every? identity (flatten %)))
   (fact "correct time extraction"
     (let [date (g/lit "1930-12-30 13:15:05")]
-      (-> @dataframe
+      (-> melbourne-df
           (g/limit 1)
           (g/select
             (-> (g/year date) (g/as "year"))
@@ -300,14 +304,14 @@
                      "year" 1930})))
 
 (fact "hashing should give unique rows"
-  (let [df        (g/limit @dataframe 10)
+  (let [df        (g/limit melbourne-df 10)
         n-sellers (-> df (g/select "SellerG") g/distinct g/count)]
     (-> df (g/select (g/md5 "SellerG")) g/distinct g/count) => n-sellers
     (-> df (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
     (-> df (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
 
 (fact "correct substring"
-  (-> @g/dataframe
+  (-> melbourne-df
       (g/limit 10)
       (g/select (g/substring "Suburb" 3 4))
       g/distinct

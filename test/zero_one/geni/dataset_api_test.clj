@@ -3,11 +3,12 @@
     [clojure.set]
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g :refer [dataframe]]
-    [zero-one.geni.interop :as interop]))
+    [zero-one.geni.core :as g]
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.test-resources :refer [melbourne-df]]))
 
 (fact "On random-split"
-  (let [[train-df val-df] (-> @dataframe
+  (let [[train-df val-df] (-> melbourne-df
                               (g/limit 50)
                               (g/random-split [90 10]))]
     (< (g/count val-df)
@@ -16,7 +17,7 @@
 (facts "On printing functions"
   (fact "should return nil"
     (let [n-lines   #(-> % clojure.string/split-lines count)
-          df        (g/select @dataframe "Suburb" "Address")
+          df        (g/select melbourne-df "Suburb" "Address")
           n-columns (-> df g/column-names count)]
       (n-lines (with-out-str (g/show (g/limit df 3)))) => 7
       (n-lines (with-out-str (g/show df {:num-rows 3 :vertical true}))) => 10
@@ -27,42 +28,42 @@
 
 (facts "On repartition"
   (fact "able to repartition by a number"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 2)
         (g/repartition 2)
         g/partitions
         count) => 2)
   (fact "able to repartition by columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 2)
         (g/repartition "Suburb" "SellerG")
         g/partitions
         count) => #(< 1 %))
   (fact "able to repartition by number and columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 2)
         (g/repartition 10 "Suburb" "SellerG")
         g/partitions
         count) => 10)
   (fact "able to repartition by range by columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 8)
         (g/repartition-by-range "Suburb" "SellerG")
         g/partitions
         count) => 4)
   (fact "able to repartition by range by number and columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/repartition-by-range 3 "Suburb" "SellerG")
         g/partitions
         count) => 3)
   (fact "sort within partitions is differnt to sort"
-    (let [sorted  (-> @dataframe
+    (let [sorted  (-> melbourne-df
                       (g/limit 10)
                       (g/select "Method" "SellerG")
                       (g/order-by "Method")
                       g/collect-vals)
-          sorted-within (-> @dataframe
+          sorted-within (-> melbourne-df
                             (g/limit 10)
                             (g/select "Method" "SellerG")
                             (g/repartition 2 "SellerG")
@@ -71,7 +72,7 @@
       (= sorted sorted-within) => false
       (set sorted) => (set sorted-within)))
   (fact "coalesce should reduce the number of partitions"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/repartition 5)
         (g/coalesce 2)
@@ -79,18 +80,18 @@
         count) => 2))
 
 (fact "On dtypes"
-  (-> @dataframe g/dtypes) => (fn [x] (= (x "Suburb") "StringType")))
+  (-> melbourne-df g/dtypes) => (fn [x] (= (x "Suburb") "StringType")))
 
 (facts "On pivot"
   (fact "pivot should return the expected cols"
-    (let [pivotted (-> @dataframe
+    (let [pivotted (-> melbourne-df
                        (g/limit 20)
                        (g/group-by "SellerG")
                        (g/pivot "Method")
                        (g/agg (-> (g/count "*") (g/as "n"))))]
       (-> pivotted g/column-names set) => #{"SellerG" "PI" "S" "SP" "VB"}))
   (fact "pivot should be able to specify pivot columns"
-    (let [pivotted (-> @dataframe
+    (let [pivotted (-> melbourne-df
                        (g/limit 20)
                        (g/group-by "SellerG")
                        (g/pivot "Method" ["SP" "VB" "XYZ"])
@@ -99,7 +100,7 @@
 
 (facts "On when"
   (fact "when null and coalesce should be equivalent"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 20)
         (g/with-column "x"
           (g/when (g/null? "BuildingArea") (g/lit -999) "BuildingArea"))
@@ -111,43 +112,43 @@
 
 (facts "On actions"
   (fact "take and take-vals work"
-    (count (g/take @dataframe 5)) => 5
-    (count (g/take-vals @dataframe 10)) => 10)
+    (count (g/take melbourne-df 5)) => 5
+    (count (g/take-vals melbourne-df 10)) => 10)
   (fact "first works"
-    (-> @dataframe (g/select "Method") g/first) => {"Method" "S"}
-    (-> @dataframe (g/select "Method") g/first-vals) => ["S"]))
+    (-> melbourne-df (g/select "Method") g/first) => {"Method" "S"}
+    (-> melbourne-df (g/select "Method") g/first-vals) => ["S"]))
 
 (facts "On drop"
   (fact "dropped columns should no longer exist"
-    (let [original-columns (-> @dataframe g/column-names set)
+    (let [original-columns (-> melbourne-df g/column-names set)
           columns-to-drop  #{"Suburb" "Price" "YearBuilt"}
-          dropped-columns  (-> (apply g/drop @dataframe columns-to-drop)
+          dropped-columns  (-> (apply g/drop melbourne-df columns-to-drop)
                                g/column-names
                                set)]
       (clojure.set/subset? columns-to-drop original-columns) => true
       (clojure.set/intersection columns-to-drop dropped-columns) => empty?))
   (fact "drop duplicates without arg should not drop everything"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/select "Method" "SellerG")
         g/drop-duplicates
         g/count) => 6)
   (fact "drop duplicates can be called with columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 10)
         (g/select "Method" "SellerG")
         (g/drop-duplicates "SellerG")
         g/count) => 3))
 
 (facts "On except and intercept"
-  (let [other (g/limit @dataframe 1)]
+  (let [other (g/limit melbourne-df 1)]
     (fact "except should exclude the row"
-      (-> @dataframe
+      (-> melbourne-df
           (g/limit 10)
           (g/except other)
           g/count) => 9)
     (fact "except then intercept should be empty"
-      (-> @dataframe
+      (-> melbourne-df
           (g/limit 10)
           (g/except other)
           (g/intersect other)
@@ -155,17 +156,17 @@
 
 (facts "On union"
   (fact "Union should double the rows preserve distinctness"
-    (let [df      (-> @dataframe (g/limit 3))
+    (let [df      (-> melbourne-df (g/limit 3))
           unioned (g/union df df)]
       (g/count unioned) => 6
       (-> unioned g/distinct g/count) => 3))
   (fact "Union by name should line up the names"
-    (let [df1 (-> @dataframe (g/limit 1) (g/select "Suburb" "SellerG"))
-          df2 (-> @dataframe (g/limit 1) (g/select "SellerG" "Suburb"))]
+    (let [df1 (-> melbourne-df (g/limit 1) (g/select "Suburb" "SellerG"))
+          df2 (-> melbourne-df (g/limit 1) (g/select "SellerG" "Suburb"))]
       (-> df1 (g/union-by-name df2) g/distinct g/count)) => 1))
 
 (facts "On sample"
-  (let [df          (-> @dataframe (g/limit 50))
+  (let [df          (-> melbourne-df (g/limit 50))
         with-rep    (g/sample df 0.8 true)
         without-rep (g/sample df 0.8)]
     (fact "Sampling without replacement should have all unique rows"
@@ -175,13 +176,13 @@
 
 (facts "On select"
   (fact "should drop unselected columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/select "Type" "Price")
         g/column-names) => ["Type" "Price"]))
 
 (facts "On join"
   (fact "normal join works as expected"
-    (let [df         (-> @dataframe (g/limit 30))
+    (let [df         (-> melbourne-df (g/limit 30))
           n-listings (-> df
                        (g/group-by "Suburb")
                        (g/agg (g/as (g/count "*") "n_listings")))]
@@ -192,15 +193,15 @@
       (-> df (g/join n-listings ["Suburb"] "inner") g/column-names set)
       => #(contains? % "n_listings")))
   (fact "cross-join works as expected"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 3)
         (g/select "Suburb")
-        (g/cross-join (-> @dataframe (g/limit 3) (g/select "Method")))
+        (g/cross-join (-> melbourne-df (g/limit 3) (g/select "Method")))
         g/count) => 9))
 
 
 (facts "On filter"
-  (let [df (-> @dataframe (g/limit 20) (g/select "SellerG"))]
+  (let [df (-> melbourne-df (g/limit 20) (g/select "SellerG"))]
     (fact "should correctly filter rows"
       (-> df
           (g/filter (g/=== "SellerG" (g/lit "Biggin")))
@@ -221,7 +222,7 @@
           set) => #(empty? (clojure.set/intersection % #{"Greg" "Collins" "Biggin"})))))
 
 (facts "On order-by"
-  (let [df (-> @dataframe
+  (let [df (-> melbourne-df
               (g/limit 10)
               (g/select (g/as (g/->date-col "Date" "dd/MM/yyyy") "Date")))]
     (fact "should correctly order dates"
@@ -237,7 +238,7 @@
 
 (facts "On rename-columns"
   (fact "the new name should exist and the old name should not"
-    (let [col-names (-> @dataframe
+    (let [col-names (-> melbourne-df
                         (g/rename-columns {"Regionname" "region_name"})
                         g/column-names
                         set)]
@@ -246,18 +247,18 @@
 
 (facts "On caching"
   (fact "should keeps data in memory")
-  (let [df (-> @dataframe (g/limit 2) g/cache)]
+  (let [df (-> melbourne-df (g/limit 2) g/cache)]
     (.. df storageLevel useMemory) => true)
-  (let [df (-> @dataframe (g/limit 2) g/persist)]
+  (let [df (-> melbourne-df (g/limit 2) g/persist)]
     (.. df storageLevel useMemory) => true))
 
 (facts "On describe"
   (fact "describe should have the right shape"
-    (let [summary (-> @dataframe (g/limit 10) (g/describe "Price"))]
+    (let [summary (-> melbourne-df (g/limit 10) (g/describe "Price"))]
       (g/column-names summary) => ["summary" "Price"]
       (map #(% "summary") (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
   (fact "summary should only pick some stats"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 2)
         (g/select "Rooms")
         (g/summary "count" "min")
@@ -265,7 +266,7 @@
 
 (facts "On group-by and agg"
   (fact "should have the right shape"
-    (let [df    (g/limit @dataframe 30)
+    (let [df    (g/limit melbourne-df 30)
           agged (-> df
                     (g/group-by "Type")
                     (g/agg
@@ -274,7 +275,7 @@
       (g/count agged) => (-> df (g/select "Type") g/distinct g/count)
       (g/column-names agged) => ["Type" "n_rows" "max_price"]))
   (fact "agg-all should apply to all columns"
-    (-> @dataframe
+    (-> melbourne-df
         (g/limit 3)
         (g/select "Price" "Regionname" "Car")
         (g/agg-all g/count-distinct)
@@ -282,7 +283,7 @@
         first
         count) => 3)
   (fact "works with nested data structure"
-    (let [agged    (-> @dataframe
+    (let [agged    (-> melbourne-df
                        (g/limit 20)
                        (g/group-by "SellerG")
                        (g/agg

@@ -128,23 +128,12 @@
 
   (require '[zero-one.geni.core :as g])
   (require '[zero-one.geni.dataset :as ds])
+  (require '[zero-one.geni.test-resources :refer [spark libsvm-df k-means-df]])
 
-  (defonce libsvm-df
-    (-> @g/spark
-        .read
-        (.format "libsvm")
-        (.load "test/resources/sample_libsvm_data.txt")))
-
-  (defonce k-means-df
-    (-> @g/spark
-        .read
-        (.format "libsvm")
-        (.load "test/resources/sample_kmeans_data.txt")))
+  (g/print-schema libsvm-df)
   (g/print-schema k-means-df)
 
   (import '(org.apache.spark.ml.clustering GaussianMixture))
   (params (GaussianMixture.))
-
-  (-> (lda {:doc-concentration 0.1}))
 
   true)
