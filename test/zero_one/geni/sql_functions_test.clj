@@ -162,16 +162,18 @@
                     g/collect
                     first)]
     (fact "common SQL functions should work"
-      (summary "avg(Price)") => #(< (summary "min(Price)")
-                                    %
-                                    (summary "max(Price)"))
-      (summary "null_count(BuildingArea)") => (-> (summary "null_rate(BuildingArea)")
-                                                  (* 20)
-                                                  int)
-      (+ (summary "count(BuildingArea)")
-         (summary "null_count(BuildingArea)")) => n-rows
-      (let [std-dev  (summary "stddev_samp(Price)")
-            variance (summary "var_samp(Price)")]
+      (summary (keyword "avg(Price)"))
+      => #(< (summary (keyword "min(Price)"))
+             %
+             (summary (keyword "max(Price)")))
+      (summary (keyword "null_count(BuildingArea)"))
+      => (-> (summary (keyword "null_rate(BuildingArea)"))
+             (* 20)
+             int)
+      (+ (summary (keyword "count(BuildingArea)"))
+         (summary (keyword "null_count(BuildingArea)"))) => n-rows
+      (let [std-dev  (summary (keyword "stddev_samp(Price)"))
+            variance (summary (keyword "var_samp(Price)"))]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
     (fact "count distinct and approx count distinct should be similar"
       (-> melbourne-df
@@ -206,10 +208,10 @@
                              (g/as "row-num")))
                        (g/filter (g/=== "SellerG" (g/lit "Nelson")))
                        g/collect)
-        price-gaps (map #(% "price-gap") records)]
+        price-gaps (map :price-gap records)]
     (map vector price-gaps (rest price-gaps))
     => (fn [pairs] (every? #(< (first %) (second %)) pairs))
-    (map #(% "row-num") records) => [1 2 3])
+    (map :row-num records) => [1 2 3])
   (fact "count rows last week"
     (-> melbourne-df
         (g/limit 10)
@@ -294,14 +296,14 @@
             (-> (g/minute date) (g/as "minute"))
             (-> (g/second date) (g/as "second")))
           g/collect
-          first) => {"day-of-month" 30
-                     "day-of-week" 3
-                     "day-of-year" 364
-                     "hour" 13
-                     "minute" 15
-                     "month" 12
-                     "second" 5
-                     "year" 1930})))
+          first) => {:day-of-month 30
+                     :day-of-week 3
+                     :day-of-year 364
+                     :hour 13
+                     :minute 15
+                     :month 12
+                     :second 5
+                     :year 1930})))
 
 (fact "hashing should give unique rows"
   (let [df        (g/limit melbourne-df 10)

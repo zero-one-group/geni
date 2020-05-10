@@ -2,7 +2,10 @@
   (:require
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g]))
+    [zero-one.geni.core :as g]
+    [zero-one.geni.interop :as interop])
+  (:import
+    (scala.collection Seq)))
 
 (facts "On ensure-coll"
   (fact "should not change collections"
@@ -14,3 +17,7 @@
   (fact "should wrap non-collections in vector"
     (g/ensure-coll 1) => [1]
     (g/ensure-coll "a") => ["a"]))
+
+(fact "On ->java"
+  (let [converted (interop/->java Seq [0 1 2])]
+    converted => #(instance? Seq %)))

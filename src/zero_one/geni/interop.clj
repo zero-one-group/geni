@@ -5,7 +5,10 @@
     [clojure.string :refer [replace-first]])
   (:import
     (java.io ByteArrayOutputStream)
-    (org.apache.spark.ml.linalg DenseVector Vectors)
+    (org.apache.spark.ml.linalg DenseVector
+                                DenseMatrix
+                                SparseVector
+                                Vectors)
     (scala Console Function0)
     (scala.collection JavaConversions Map)))
 
@@ -45,6 +48,12 @@
 (defn dense-vector? [value]
   (instance? DenseVector value))
 
+(defn sparse-vector? [value]
+  (instance? SparseVector value))
+
+(defn dense-matrix? [value]
+  (instance? DenseMatrix value))
+
 (defn vector->seq [spark-vector]
   (-> spark-vector .values seq))
 
@@ -54,9 +63,12 @@
 
 (defn ->clojure [value]
   (cond
-    (array? value)         (seq value)
-    (dense-vector? value)  (vector->seq value)
-    :else                  value))
+    (nil? value)            nil
+    (array? value)          (seq value)
+    (dense-vector? value)   (vector->seq value)
+    (sparse-vector? value)  (vector->seq value)
+    (dense-matrix? value)   (matrix->seqs value)
+    :else                   value))
 
 (defn setter? [^java.lang.reflect.Method method]
   (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))

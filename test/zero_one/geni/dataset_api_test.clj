@@ -80,7 +80,7 @@
         count) => 2))
 
 (fact "On dtypes"
-  (-> melbourne-df g/dtypes) => (fn [x] (= (x "Suburb") "StringType")))
+  (-> melbourne-df g/dtypes :Suburb) => "StringType")
 
 (facts "On pivot"
   (fact "pivot should return the expected cols"
@@ -115,7 +115,7 @@
     (count (g/take melbourne-df 5)) => 5
     (count (g/take-vals melbourne-df 10)) => 10)
   (fact "first works"
-    (-> melbourne-df (g/select "Method") g/first) => {"Method" "S"}
+    (-> melbourne-df (g/select "Method") g/first) => {:Method "S"}
     (-> melbourne-df (g/select "Method") g/first-vals) => ["S"]))
 
 (facts "On drop"
@@ -184,8 +184,8 @@
   (fact "normal join works as expected"
     (let [df         (-> melbourne-df (g/limit 30))
           n-listings (-> df
-                       (g/group-by "Suburb")
-                       (g/agg (g/as (g/count "*") "n_listings")))]
+                         (g/group-by "Suburb")
+                         (g/agg (g/as (g/count "*") "n_listings")))]
       (-> df (g/join n-listings "Suburb") g/column-names set)
       => #(contains? % "n_listings")
       (-> df (g/join n-listings "Suburb" "inner") g/column-names set)
@@ -206,7 +206,7 @@
       (-> df
           (g/filter (g/=== "SellerG" (g/lit "Biggin")))
           g/distinct
-          g/collect) => [{"SellerG" "Biggin"}])
+          g/collect) => [{:SellerG "Biggin"}])
     (fact "should filter correctly with isin"
       (-> df
           (g/filter (g/isin "SellerG" ["Greg" "Collins" "Biggin"]))
@@ -228,13 +228,11 @@
     (fact "should correctly order dates"
       (let [records (-> df (g/order-by (g/desc "Date")) g/collect)
             dates   (map #(str (% "Date")) records)]
-        (map compare dates (rest dates))
-        => (fn [comparisons] (every? #(<= 0 %) comparisons))))
+        (map compare dates (rest dates)) => #(every? (complement neg?) %)))
     (fact "should correctly order dates"
       (let [records (-> df (g/order-by (g/asc "Date")) g/collect)
             dates   (map #(str (% "Date")) records)]
-        (map compare dates (rest dates))
-        => (fn [comparisons] (every? #(<= % 0) comparisons))))))
+        (map compare dates (rest dates)) => #(every? (complement neg?) %)))))
 
 (facts "On rename-columns"
   (fact "the new name should exist and the old name should not"
@@ -256,7 +254,7 @@
   (fact "describe should have the right shape"
     (let [summary (-> melbourne-df (g/limit 10) (g/describe "Price"))]
       (g/column-names summary) => ["summary" "Price"]
-      (map #(% "summary") (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
+      (map :summary (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
   (fact "summary should only pick some stats"
     (-> melbourne-df
         (g/limit 2)

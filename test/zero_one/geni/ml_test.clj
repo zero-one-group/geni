@@ -4,7 +4,7 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.interop :refer [vector->seq matrix->seqs]]
+    [zero-one.geni.interop :refer [vector->seq]]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [k-means-df libsvm-df spark]])
   (:import
@@ -393,8 +393,8 @@
                           (ml/transform transformer)
                           (g/select "probability" "prediction")
                           g/dtypes)]
-      (dtypes "probability") => #(includes? % "Vector")
-      (dtypes "prediction") => "DoubleType"))
+      (:probability dtypes) => #(includes? % "Vector")
+      (:prediction dtypes) => "DoubleType"))
   (fact "should be able to fit the idf example"
     (let [dataset     (ds/table->dataset
                         spark
@@ -414,11 +414,7 @@
           transformed (-> dataset
                           (ml/transform transformer)
                           (g/select "features"))]
-      (->> transformed
-           g/collect-vals
-           flatten
-           (map vector->seq)
-           flatten) => #(every? double? %)))
+      (->> transformed g/collect-vals flatten) => #(every? double? %)))
   (fact "should be able to fit the word2vec example"
     (let [dataset     (ds/table->dataset
                         spark
@@ -437,11 +433,7 @@
           transformed (-> dataset
                           (ml/transform transformer)
                           (g/select "result"))]
-      (->> transformed
-           g/collect-vals
-           flatten
-           (map vector->seq)
-           flatten) => #(every? double? %))))
+      (->> transformed g/collect-vals flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
   (let [dataset (ds/table->dataset
@@ -457,8 +449,7 @@
       (-> dataset
           (ml/chi-square-test "features" "label")
           g/first-vals
-          first
-          vector->seq) => #(every? double? %))))
+          first) => #(every? double? %))))
 
 (facts "On correlation"
   (let [dataset     (ds/table->dataset
@@ -474,16 +465,12 @@
                         (ml/transform v-assembler)
                         (g/select "features"))]
     (fact "should be able to make vectors"
-      (-> features-df
-          g/first-vals
-          first
-          vector->seq) => [1.0 0.0 -2.0 0.0])
+      (-> features-df g/first-vals first) => [1.0 0.0 -2.0 0.0])
     (fact "should be able to calculate correlation"
       (let [corr-matrix (-> features-df
                             (ml/corr "features")
                             g/first-vals
-                            first
-                            matrix->seqs)]
+                            first)]
         (count corr-matrix) => 4
         (count (first corr-matrix)) => 4
         (every? double? (flatten corr-matrix)) => true))))
