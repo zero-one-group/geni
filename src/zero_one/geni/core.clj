@@ -27,15 +27,13 @@
                             take
                             when])
   (:require
+    [clojure.walk :refer [keywordize-keys]]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
-
-;; TODO: keywordize dtypes, collect
-;; TODO: handle collect-vals with DenseVector and SparseVector?
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
 (defn read-parquet! [spark-session path]
@@ -63,6 +61,12 @@
       (format "csv")
       (option "header" "true")
       (load path)))
+
+(defn read-libsvm! [spark-session path]
+  (-> spark-session
+      .read
+      (.format "libsvm")
+      (.load path)))
 
 (defmulti col class)
 (defmethod col org.apache.spark.sql.Column [x] x)
@@ -124,7 +128,10 @@
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
-    (into {} (clojure.core/map interop/scala-tuple->vec dtypes-as-tuples))))
+    (->> dtypes-as-tuples
+         (clojure.core/map interop/scala-tuple->vec)
+         (into {})
+         keywordize-keys)))
 
 (defn columns [dataframe]
   (-> dataframe .columns seq))
@@ -387,13 +394,14 @@
   (let [spark-rows (.collect dataframe)
         col-names  (column-names dataframe)]
     (for [row spark-rows]
-      (into {} (clojure.core/map
-                 vector
-                 col-names
-                 (-> row .toSeq interop/scala-seq->vec))))))
+      (->> (-> row .toSeq interop/scala-seq->vec)
+           (clojure.core/map interop/->clojure)
+           (clojure.core/map vector col-names)
+           (into {})
+           keywordize-keys))))
 
 (defn collect-vals [dataframe]
-  (mapv #(into [] (vals %)) (collect dataframe)))
+  (clojure.core/map vals (collect dataframe)))
 
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
@@ -441,5 +449,4 @@
        (mapv :parameter-types)
        (mapv println)
        pprint)
-
   0)

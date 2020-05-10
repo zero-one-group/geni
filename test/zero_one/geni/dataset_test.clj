@@ -33,7 +33,7 @@
                     [0.0 [3.5 40.0]]
                     [1.0 [3.5 40.0]]]
                    [:label :features])]
-    ((g/dtypes dataset) "features") => #(includes? % "Vector")))
+    (:features (g/dtypes dataset)) => #(includes? % "Vector")))
 
 (facts "On records->dataset"
   (fact "should create the right dataset"

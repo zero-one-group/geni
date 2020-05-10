@@ -8,7 +8,7 @@
                                     LDA)))
 
 (defn cluster-centers [model]
-  (mapv interop/vector->seq (.clusterCenters model)))
+  (map interop/vector->seq (.clusterCenters model)))
 
 (defn bisecting-k-means [params]
   (let [defaults {:distance-measure "euclidean",
