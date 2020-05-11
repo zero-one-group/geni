@@ -53,6 +53,7 @@
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)
+    (org.apache.spark.ml.recommendation ALS)
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
                                     GBTRegressor
@@ -102,6 +103,12 @@
      (vector->seq (.interceptVector model)) => #(every? double? %))
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
+
+(fact "On instantiation - recommendation"
+  (ml/params (ml/als {:num-user-blocks 12345}))
+  => #(= (:num-user-blocks %) 12345)
+  (ml/alternating-least-squares {})
+  => #(instance? ALS %))
 
 (fact "On instantiation - clustering"
   (ml/params (ml/gaussian-mixture {:features-col "fts"}))
