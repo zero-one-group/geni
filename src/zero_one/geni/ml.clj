@@ -8,6 +8,7 @@
     [zero-one.geni.ml-clustering]
     [zero-one.geni.ml-evaluation]
     [zero-one.geni.ml-feature]
+    [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
     [zero-one.geni.interop :as interop])
   (:import
@@ -96,6 +97,17 @@
    linear-regression
    random-forest-regressor])
 
+(import-vars
+  [zero-one.geni.ml-recommendation
+   als
+   alternating-least-squares
+   recommend-for-all-items
+   recommend-for-all-users
+   recommend-for-item-subset
+   recommend-for-user-subset
+   recommend-items
+   recommend-users])
+
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))
 
@@ -133,7 +145,7 @@
   (g/print-schema libsvm-df)
   (g/print-schema k-means-df)
 
-  (import '(org.apache.spark.ml.clustering GaussianMixture))
-  (params (GaussianMixture.))
+  (import '(org.apache.spark.ml.recommendation ALS))
+  (params (ALS.))
 
   true)
