@@ -53,6 +53,8 @@
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)
+    (org.apache.spark.ml.fpm FPGrowth
+                             PrefixSpan)
     (org.apache.spark.ml.recommendation ALS)
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
@@ -103,6 +105,17 @@
      (vector->seq (.interceptVector model)) => #(every? double? %))
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
+
+(fact "On instantiation - FPM"
+  (ml/params (ml/prefix-span {:max-pattern-length 321}))
+  => #(= (:max-pattern-length %) 321)
+  (ml/prefix-span {})
+  => #(instance? PrefixSpan %)
+
+  (ml/params (ml/frequent-pattern-growth {:min-support 0.12345}))
+  => #(= (:min-support %) 0.12345)
+  (ml/fp-growth {})
+  => #(instance? FPGrowth %))
 
 (fact "On instantiation - recommendation"
   (ml/params (ml/als {:num-user-blocks 12345}))

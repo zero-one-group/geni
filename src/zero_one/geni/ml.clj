@@ -86,6 +86,12 @@
    random-forest-classifier])
 
 (import-vars
+  [zero-one.geni.ml-fpm
+   fp-growth
+   frequent-pattern-growth
+   prefix-span])
+
+(import-vars
   [zero-one.geni.ml-regression
    aft-survival-regression
    decision-tree-regressor
@@ -145,7 +151,7 @@
   (g/print-schema libsvm-df)
   (g/print-schema k-means-df)
 
-  (import '(org.apache.spark.ml.recommendation ALS))
-  (params (ALS.))
+  (import '(org.apache.spark.ml.fpm PrefixSpan))
+  (params (PrefixSpan.))
 
   true)
