@@ -8,6 +8,7 @@
     [zero-one.geni.ml-clustering]
     [zero-one.geni.ml-evaluation]
     [zero-one.geni.ml-feature]
+    [zero-one.geni.ml-fpm]
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
     [zero-one.geni.interop :as interop])
