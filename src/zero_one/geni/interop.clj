@@ -74,7 +74,7 @@
 (defn ->clojure [value]
   (cond
     (nil? value)            nil
-    (seq? value)            (map ->clojure value)
+    (coll? value)           (map ->clojure value)
     (array? value)          (map ->clojure (seq value))
     (scala-seq? value)      (map ->clojure (scala-seq->vec value))
     (spark-row? value)      (spark-row->vec value)

@@ -21,3 +21,8 @@
 (fact "On ->java"
   (let [converted (interop/->java Seq [0 1 2])]
     converted => #(instance? Seq %)))
+
+(fact "On ->clojure"
+  (let [data      [(interop/->scala-seq [1 2 3])]
+        converted (interop/->clojure data)]
+    converted => (map interop/->clojure data)))
