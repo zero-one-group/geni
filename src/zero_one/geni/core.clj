@@ -34,7 +34,6 @@
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
-;; TODO: collect nested types
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
 (defn read-parquet! [spark-session path]
