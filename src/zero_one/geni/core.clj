@@ -395,7 +395,8 @@
   (let [spark-rows (.collect dataframe)
         col-names  (column-names dataframe)]
     (for [row spark-rows]
-      (->> (-> row .toSeq interop/scala-seq->vec)
+      (->> row
+           interop/spark-row->vec
            (clojure.core/map interop/->clojure)
            (clojure.core/map vector col-names)
            (into {})
