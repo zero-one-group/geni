@@ -9,8 +9,12 @@
                                 DenseMatrix
                                 SparseVector
                                 Vectors)
+    (org.apache.spark.sql Row)
     (scala Console Function0)
-    (scala.collection JavaConversions Map)))
+    (scala.collection JavaConversions Map Seq)))
+
+(defn scala-seq? [value]
+  (instance? Seq value))
 
 (defn scala-seq->vec [scala-seq]
   (into [] (JavaConversions/seqAsJavaList scala-seq)))
@@ -43,7 +47,13 @@
       (Vectors/dense head (->scala-seq tail)))
     value))
 
+(defn spark-row->vec [row]
+  (-> row .toSeq scala-seq->vec))
+
 (defn array? [value] (.isArray (class value)))
+
+(defn spark-row? [value]
+  (instance? Row value))
 
 (defn dense-vector? [value]
   (instance? DenseVector value))
@@ -64,7 +74,10 @@
 (defn ->clojure [value]
   (cond
     (nil? value)            nil
-    (array? value)          (seq value)
+    (coll? value)           (map ->clojure value)
+    (array? value)          (map ->clojure (seq value))
+    (scala-seq? value)      (map ->clojure (scala-seq->vec value))
+    (spark-row? value)      (spark-row->vec value)
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)

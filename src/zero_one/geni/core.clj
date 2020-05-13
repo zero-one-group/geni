@@ -34,7 +34,6 @@
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
-;; TODO: collect nested types
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
 (defn read-parquet! [spark-session path]
@@ -395,7 +394,8 @@
   (let [spark-rows (.collect dataframe)
         col-names  (column-names dataframe)]
     (for [row spark-rows]
-      (->> (-> row .toSeq interop/scala-seq->vec)
+      (->> row
+           interop/spark-row->vec
            (clojure.core/map interop/->clojure)
            (clojure.core/map vector col-names)
            (into {})
