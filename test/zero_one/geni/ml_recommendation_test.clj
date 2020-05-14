@@ -6,7 +6,7 @@
     [zero-one.geni.test-resources :refer [ratings-df]]))
 
 (facts "On recommendation"
-  (let [estimator   (ml/als {:max-iter   5
+  (let [estimator   (ml/als {:max-iter   1
                              :reg-param  0.01
                              :user-col   "user-id"
                              :item-col   "movie-id"
@@ -21,7 +21,7 @@
         rmse        (ml/evaluate predictions evaluator)
         some-users  (-> ratings-df (g/select "user-id") g/distinct (g/limit 3))
         some-items  (-> ratings-df (g/select "movie-id") g/distinct (g/limit 5))]
-    rmse => #(<= % 0.5)
+    rmse => #(<= % 0.9)
     (let [recommendations (ml/recommend-users model 6)]
       (-> recommendations g/collect-vals flatten) => #(every? number? %)
       (g/column-names recommendations) => ["movie-id" "recommendations"]
