@@ -5,7 +5,68 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [melbourne-df]])
   (:import
+    (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
+
+(fact "On broadcast"
+  (-> melbourne-df g/broadcast) => #(instance? Dataset %))
+
+(fact "On array functions"
+  (-> melbourne-df
+      (g/limit 1)
+      (g/with-column "xs" (g/array [1 2 1]))
+      (g/with-column "ys" (g/array [3 2 1]))
+      (g/with-column "zs" (g/array [(g/lit "x") (g/lit "y")]))
+      (g/select
+        "xs"
+        (g/array-contains "xs" 2)
+        (g/array-distinct "xs")
+        (g/array-except "ys" "xs")
+        (g/array-intersect "ys" "xs")
+        (g/array-join "zs" ",")
+        (g/array-join "zs" "," "-")
+        (g/array-position "xs" 2))
+      g/collect-vals
+      first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2]
+  (-> melbourne-df
+      (g/limit 1)
+      (g/with-column "xs" (g/array [1 2 1]))
+      (g/select
+        (g/array-remove "xs" 1)
+        (g/array-repeat 1 2)
+        (g/array-repeat 2 (g/lit (int 3)))
+        (g/array-sort "xs")
+        (g/arrays-overlap "xs" "xs")
+        (g/arrays-zip ["xs" "xs"])
+        (g/element-at "xs" (int 2)))
+      g/collect-vals
+      first) => [[2] [1 1] [2 2 2] [1 1 2] true [[1 1] [2 2] [1 1]] 2]
+  (-> melbourne-df
+      (g/limit 1)
+      (g/with-column "xs" (g/array [4 5 6 1]))
+      (g/select
+        (g/reverse "xs")
+        (g/size "xs")
+        (g/slice "xs" 2 1)
+        (g/sort-array "xs")
+        (g/sort-array "xs" false)
+        (g/array-min "xs")
+        (g/array-max "xs")
+        (g/array-union "xs" "xs"))
+      g/collect-vals
+      first) => [[1 6 5 4] 4 [5] [1 4 5 6] [6 5 4 1] 1 6 [4 5 6 1]]
+  (-> melbourne-df
+      (g/limit 1)
+      (g/select (g/shuffle (g/array (range 10))))
+      g/collect-vals
+      flatten
+      set) => (set (range 10))
+  (-> melbourne-df
+      (g/limit 1)
+      (g/select (g/flatten (g/array [(g/array (range 10))])))
+      g/collect-vals
+      first
+      first) => (range 10))
 
 (fact "On random functions"
   (-> melbourne-df
@@ -39,13 +100,13 @@
   (-> melbourne-df
       (g/limit 1)
       (g/select
-        (g/< (g/lit 1))
-        (g/< (g/lit 1) (g/lit 2) (g/lit 3))
-        (g/<= (g/lit 1) (g/lit 1) (g/lit 1))
-        (g/> (g/lit 1) (g/lit 2) (g/lit 3))
-        (g/>= (g/lit 1) (g/lit 0.99) (g/lit 1.01))
-        (g/&& (g/lit true) (g/lit false))
-        (g/|| (g/lit true) (g/lit false)))
+        (g/< 1)
+        (g/< 1 2 3)
+        (g/<= 1 1 1)
+        (g/> 1 2 3)
+        (g/>= 1 0.99 1.01)
+        (g/&& true false)
+        (g/|| true false))
       g/collect-vals) => [[true true true false false false true]])
 
 (fact "On trig functions"
@@ -53,15 +114,15 @@
       (g/limit 1)
       (g/select
         (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
-        (g/- (g// g/pi (g/lit 2))
-             (g/acos (g/lit 1))
-             (g/asin (g/lit 1)))
-        (g/+ (g/atan (g/lit 2)) (g/atan (g/lit -2)))
-        (g/- (g// (g/sinh (g/lit 1)) (g/cosh (g/lit 1)))
-             (g/tanh (g/lit 1)))
-        (g/+ (-> 3 g/lit g/sin g/sqr)
-             (-> 3 g/lit g/cos g/sqr)
-             (g/lit -1)))
+        (g/- (g// g/pi 2)
+             (g/acos 1)
+             (g/asin 1))
+        (g/+ (g/atan 2) (g/atan -2))
+        (g/- (g// (g/sinh 1) (g/cosh 1))
+             (g/tanh 1))
+        (g/+ (-> 3 g/sin g/sqr)
+             (-> 3 g/cos g/sqr)
+             -1))
       g/collect-vals
       flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
 
@@ -79,7 +140,7 @@
   (fact "should format number correctly"
     (-> melbourne-df
         (g/limit 1)
-        (g/select (g/format-number (g/lit 1234.56789) 2))
+        (g/select (g/format-number 1234.56789 2))
         g/collect-vals) => [["1,234.57"]])
   (fact "should format strings correctly"
     (-> melbourne-df
@@ -104,8 +165,8 @@
   (-> melbourne-df
       (g/limit 1)
       (g/select
-        (-> (g/* (g/log "Price") (g/lit 0.5)))
-        (-> (g// (g/log "Price") (g/lit 2.0)))
+        (-> (g/* (g/log "Price") 0.5))
+        (-> (g// (g/log "Price") 2.0))
         (-> (g/log (g/sqrt "Price")))
         (-> (g/log (g/pow "Price" 0.5))))
       g/collect-vals
@@ -122,12 +183,12 @@
   (-> melbourne-df
       (g/limit 1)
       (g/select
-        (g/+ (g/lit 1) (g/lit 1)))
+        (g/+ 1 1))
       g/collect-vals) => [[2]]
   (-> melbourne-df
       (g/limit 1)
-      (g/with-column "two" (g/lit 2))
-      (g/with-column "three" (g/lit 3))
+      (g/with-column "two" 2)
+      (g/with-column "three" 3)
       (g/select (g/pow "two" "three"))
       g/collect-vals) => [[8.0]]
   (-> melbourne-df
@@ -137,11 +198,11 @@
   (-> melbourne-df
       (g/limit 1)
       (g/select
-        (g/=== (g/ceil (g/lit 1.23))
-             (g/floor (g/lit 2.34))
-             (g/round (g/lit 2.49))
-             (g/round (g/lit 1.51)))
-        (g/log (g/exp (g/lit 1))))
+        (g/=== (g/ceil 1.23)
+               (g/floor 2.34)
+               (g/round 2.49)
+               (g/round 1.51))
+        (g/log (g/exp 1)))
       g/collect-vals) => [[true 1.0]])
 
 (facts "On group-by + agg functions"

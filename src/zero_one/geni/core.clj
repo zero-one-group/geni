@@ -16,6 +16,7 @@
                             empty?
                             filter
                             first
+                            flatten
                             group-by
                             map
                             max
@@ -23,7 +24,9 @@
                             not
                             partition-by
                             rand
+                            reverse
                             second
+                            shuffle
                             take
                             when])
   (:require
@@ -69,6 +72,7 @@
       (.load path)))
 
 (defmulti col class)
+(defmethod col :default [x] (functions/lit x))
 (defmethod col org.apache.spark.sql.Column [x] x)
 (defmethod col java.lang.String [x] (functions/col x))
 (defn ->col-array [columns]
@@ -99,14 +103,14 @@
 (defn empty? [dataframe] (.isEmpty dataframe))
 
 (defn repartition [dataframe & args]
-  (let [args          (flatten args)
-        [head & tail] (flatten args)]
+  (let [args          (clojure.core/flatten args)
+        [head & tail] (clojure.core/flatten args)]
     (if (int? head)
       (.repartition dataframe head (->col-array tail))
       (.repartition dataframe (->col-array args)))))
 (defn repartition-by-range [dataframe & args]
-  (let [args          (flatten args)
-        [head & tail] (flatten args)]
+  (let [args          (clojure.core/flatten args)
+        [head & tail] (clojure.core/flatten args)]
     (if (int? head)
       (.repartitionByRange dataframe head (->col-array tail))
       (.repartitionByRange dataframe (->col-array args)))))
@@ -174,9 +178,10 @@
   ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
 
 (defn agg [dataframe & exprs]
-  (let [[head & tail] (clojure.core/map ->column (flatten exprs))]
+  (let [[head & tail] (clojure.core/map ->column (clojure.core/flatten exprs))]
     (.agg dataframe head (into-array Column tail))))
 
+(defn broadcast [dataframe] (functions/broadcast dataframe))
 (defn cache [dataframe] (.cache dataframe))
 (defn persist [dataframe] (.persist dataframe))
 
@@ -326,6 +331,57 @@
 (defn collect-set [expr] (functions/collect_set expr))
 (defn explode [expr] (functions/explode (->column expr)))
 
+(defn array-contains [expr value]
+  (functions/array_contains (->column expr) value))
+(defn array-distinct [expr]
+  (functions/array_distinct (->column expr)))
+(defn array-except [left right]
+  (functions/array_except (->column left) (->column right)))
+(defn array-intersect [left right]
+  (functions/array_intersect (->column left) (->column right)))
+(defn array-join
+  ([expr delimiter] (functions/array_join (->column expr) delimiter))
+  ([expr delimiter null-replacement]
+   (functions/array_join (->column expr) delimiter null-replacement)))
+(defn array-max [expr]
+  (functions/array_max (->column expr)))
+(defn array-min [expr]
+  (functions/array_min (->column expr)))
+(defn array-position [expr value]
+  (functions/array_position (->column expr) value))
+(defn array-remove [expr element]
+  (functions/array_remove (->column expr) element))
+(defn array-repeat [left right]
+  (if (nat-int? right)
+    (functions/array_repeat (->column left) right)
+    (functions/array_repeat (->column left) (->column right))))
+(defn array-sort [expr]
+  (functions/array_sort (->column expr)))
+(defn array-union [left right]
+  (functions/array_union (->column left) (->column right)))
+(defn array [exprs]
+  (functions/array (->col-array exprs)))
+(defn arrays-overlap [left right]
+  (functions/arrays_overlap (->column left) (->column right)))
+(defn arrays-zip [exprs]
+  (functions/arrays_zip (->col-array exprs)))
+
+(defn element-at [expr value]
+  (functions/element_at (->column expr) (int value)))
+(defn flatten [expr]
+  (functions/flatten (->column expr)))
+(defn reverse [expr]
+  (functions/reverse (->column expr)))
+(defn shuffle [expr]
+  (functions/shuffle (->column expr)))
+(defn size [expr]
+  (functions/size (->column expr)))
+(defn slice [expr start length]
+  (functions/slice (->column expr) start length))
+(defn sort-array
+  ([expr] (functions/sort_array (->column expr)))
+  ([expr asc] (functions/sort_array (->column expr) asc)))
+
 (defn when
   ([condition if-expr]
    (functions/when condition (->column if-expr)))
@@ -444,10 +500,11 @@
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
   (require '[clojure.reflect :as r])
-  (->> (r/reflect @spark)
+  (->> (r/reflect functions)
        :members
-       (clojure.core/filter #(= (:name %) 'createDataFrame))
-       (mapv :parameter-types)
-       (mapv println)
+       (clojure.core/filter #(= (:name %) 'array_distinct))
+       ;(mapv :parameter-types)
+       ;(mapv println)
        pprint)
+
   0)

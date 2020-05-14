@@ -103,9 +103,9 @@
     (-> melbourne-df
         (g/limit 20)
         (g/with-column "x"
-          (g/when (g/null? "BuildingArea") (g/lit -999) "BuildingArea"))
+          (g/when (g/null? "BuildingArea") -999 "BuildingArea"))
         (g/with-column "y"
-          (g/coalesce "BuildingArea" (g/lit -999)))
+          (g/coalesce "BuildingArea" -999))
         (g/select (g/=== "x" "y"))
         g/collect-vals
         flatten) => #(every? identity %)))
