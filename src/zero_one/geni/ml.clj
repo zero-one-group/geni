@@ -11,6 +11,7 @@
     [zero-one.geni.ml-fpm]
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
+    [zero-one.geni.ml-tuning]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml Pipeline PipelineStage)
@@ -114,6 +115,12 @@
    recommend-for-user-subset
    recommend-items
    recommend-users])
+
+(import-vars
+  [zero-one.geni.ml-tuning
+   param-grid
+   cross-validator
+   train-validation-split])
 
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))

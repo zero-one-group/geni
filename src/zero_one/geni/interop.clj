@@ -87,7 +87,7 @@
   (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
        (re-find #"^set[A-Z]" (.getName method))))
 
-(defn setter-keyword [^java.lang.reflect.Method method]
+(defn method-keyword [^java.lang.reflect.Method method]
   (-> method
       .getName
       (replace-first #"set" "")
@@ -98,7 +98,7 @@
   (->> cls
        .getMethods
        (filter setter?)
-       (map #(vector (setter-keyword %) %))
+       (map #(vector (method-keyword %) %))
        (into {})))
 
 (defn setter-type [^java.lang.reflect.Method method]
@@ -122,3 +122,17 @@
            (set-value setter instance v)))
        instance
        props))))
+
+(defn zero-arity? [^java.lang.reflect.Method method]
+  (= 0 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method))))
+
+(defn fields-map [^Class cls]
+  (->> cls
+       .getMethods
+       (filter zero-arity?)
+       (map #(vector (method-keyword %) %))
+       (into {})))
+
+(defn get-field [instance field-keyword]
+  (let [fields (fields-map (class instance))]
+    (.invoke (fields field-keyword) instance (into-array []))))
