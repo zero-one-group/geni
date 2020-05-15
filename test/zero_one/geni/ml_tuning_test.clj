@@ -3,7 +3,9 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.ml-tuning :as ml-tuning]))
+    [zero-one.geni.ml-tuning :as ml-tuning])
+  (:import
+    (org.apache.spark.ml.tuning CrossValidator)))
 
 (facts "On field reflection"
   (let [stage (ml/hashing-tf {})]
@@ -25,6 +27,8 @@
       (every? #(= (.size %) 3) param-grid) => true)))
 
 (facts "On cross validator"
+  (fact "should be instantiatable"
+    (ml-tuning/cross-validator {}) => #(instance? CrossValidator %))
   (fact "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
           param-grid (ml-tuning/param-grid {log-reg {:reg-param [0.1]}})
@@ -32,5 +36,8 @@
                        {:estimator log-reg
                         :evaluator (ml/binary-classification-evaluator {})
                         :estimator-param-maps param-grid
-                        :num-folds 2
-                        :parallelism 2})])))
+                        :num-folds 222
+                        :parallelism 101})
+          cv-params (ml/params cv)]
+      (:num-folds cv-params) => 222
+      (:parallelism cv-params) => 101)))
