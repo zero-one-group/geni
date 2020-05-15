@@ -2,8 +2,7 @@
   (:require
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.ml-tuning :as ml-tuning])
+    [zero-one.geni.ml :as ml])
   (:import
     (org.apache.spark.ml.tuning CrossValidator
                                 TrainValidationSplit)))
@@ -20,7 +19,7 @@
   (fact "should be able to replicate Spark example."
     (let [hashing-tf (ml/hashing-tf {:input-col "words" :output-col "features"})
           log-reg    (ml/logistic-regression {:max-iter 10})
-          param-grid (ml-tuning/param-grid
+          param-grid (ml/param-grid
                        {hashing-tf {:num-features [10 100 1000]}
                         log-reg    {:reg-param [0.1 0.01] :max-iter [1 2 3]}})]
       param-grid => #(-> % class .isArray)
@@ -29,11 +28,11 @@
 
 (facts "On cross validator"
   (fact "should be instantiatable"
-    (ml-tuning/cross-validator {}) => #(instance? CrossValidator %))
+    (ml/cross-validator {}) => #(instance? CrossValidator %))
   (fact "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
-          param-grid (ml-tuning/param-grid {log-reg {:reg-param [0.1]}})
-          cv         (ml-tuning/cross-validator
+          param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
+          cv         (ml/cross-validator
                        {:estimator log-reg
                         :evaluator (ml/binary-classification-evaluator {})
                         :estimator-param-maps param-grid
@@ -47,12 +46,12 @@
 
 (facts "On train-validation split"
   (fact "should be instantiatable"
-    (ml-tuning/train-validation-split {}) => #(instance? TrainValidationSplit %))
+    (ml/train-validation-split {}) => #(instance? TrainValidationSplit %))
   (fact "should be able to replicate Spark example."
-    (let [split        (ml-tuning/train-validation-split
+    (let [split        (ml/train-validation-split
                          {:estimator (ml/logistic-regression {})
                           :evaluator (ml/binary-classification-evaluator {})
-                          :estimator-param-maps (ml-tuning/param-grid {})
+                          :estimator-param-maps (ml/param-grid {})
                           :seed 888
                           :parallelism 777})
           split-params (ml/params split)]
