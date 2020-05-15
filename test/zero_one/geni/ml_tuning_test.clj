@@ -5,7 +5,8 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.ml-tuning :as ml-tuning])
   (:import
-    (org.apache.spark.ml.tuning CrossValidator)))
+    (org.apache.spark.ml.tuning CrossValidator
+                                TrainValidationSplit)))
 
 (facts "On field reflection"
   (let [stage (ml/hashing-tf {})]
@@ -37,7 +38,23 @@
                         :evaluator (ml/binary-classification-evaluator {})
                         :estimator-param-maps param-grid
                         :num-folds 222
+                        :seed 112233
                         :parallelism 101})
           cv-params (ml/params cv)]
+      (:seed cv-params) => 112233
       (:num-folds cv-params) => 222
       (:parallelism cv-params) => 101)))
+
+(facts "On train-validation split"
+  (fact "should be instantiatable"
+    (ml-tuning/train-validation-split {}) => #(instance? TrainValidationSplit %))
+  (fact "should be able to replicate Spark example."
+    (let [split        (ml-tuning/train-validation-split
+                         {:estimator (ml/logistic-regression {})
+                          :evaluator (ml/binary-classification-evaluator {})
+                          :estimator-param-maps (ml-tuning/param-grid {})
+                          :seed 888
+                          :parallelism 777})
+          split-params (ml/params split)]
+      (:seed split-params) => 888
+      (:parallelism split-params) => 777)))

@@ -2,7 +2,9 @@
   (:require
     [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.tuning CrossValidator ParamGridBuilder)))
+    (org.apache.spark.ml.tuning CrossValidator
+                                ParamGridBuilder
+                                TrainValidationSplit)))
 
 (defn param-grid [grids]
   (let [builder (ParamGridBuilder.)]
@@ -22,5 +24,13 @@
       (cond-> evaluator (.setEvaluator evaluator))
       (cond-> estimator-param-maps (.setEstimatorParamMaps estimator-param-maps))
       (cond-> num-folds (.setNumFolds num-folds))
+      (cond-> seed (.setSeed seed))
+      (cond-> parallelism (.setParallelism parallelism))))
+
+(defn train-validation-split [{:keys [estimator evaluator estimator-param-maps seed parallelism]}]
+  (-> (TrainValidationSplit.)
+      (cond-> estimator (.setEstimator estimator))
+      (cond-> evaluator (.setEvaluator evaluator))
+      (cond-> estimator-param-maps (.setEstimatorParamMaps estimator-param-maps))
       (cond-> seed (.setSeed seed))
       (cond-> parallelism (.setParallelism parallelism))))
