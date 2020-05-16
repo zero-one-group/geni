@@ -1,5 +1,6 @@
 (ns zero-one.geni.ml-test
   (:require
+    [clojure.java.io :as io]
     [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
@@ -8,6 +9,7 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [k-means-df libsvm-df spark]])
   (:import
+    (java.io File)
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
                                         LinearSVC
@@ -19,6 +21,7 @@
     (org.apache.spark.ml.clustering BisectingKMeans
                                     GaussianMixture
                                     KMeans
+                                    KMeansModel
                                     LDA)
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
                                     ClusteringEvaluator
@@ -64,6 +67,10 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
+(defn create-temp-file! [extension]
+  (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
+    (File/createTempFile "temporary" extension temp-dir)))
+
 (facts "On clustering"
   (let [estimator   (ml/k-means {:k 3})
         model       (ml/fit k-means-df estimator)
@@ -72,7 +79,12 @@
         silhoutte   (ml/evaluate predictions evaluator)]
     silhoutte => #(<= 0.7 % 1.0)
     (ml/cluster-centers model) => #(and (every? double? (flatten %))
-                                        (= (count %) 3))))
+                                        (= (count %) 3))
+    (let [temp-file (.toString (create-temp-file! ".xml"))]
+      (slurp temp-file) => ""
+      (ml/write-stage! model temp-file) => nil
+      (slurp temp-file) => #(not= % "")
+      (KMeansModel/load temp-file) => #(instance? KMeansModel %))))
 
 (facts "On clustering"
   (let [estimator   (ml/k-means {:k 3})
