@@ -1,4 +1,4 @@
-(defproject zero.one/geni "0.0.1"
+(defproject zero.one/geni "0.0.2"
   :description "A Clojure library that wraps Apache Spark"
   :url "https://github.com/zero-one-group/geni"
   :license {:name "Apache License"

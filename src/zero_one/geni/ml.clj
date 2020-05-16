@@ -14,7 +14,8 @@
     [zero-one.geni.ml-tuning]
     [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml Pipeline PipelineStage)
+    (org.apache.spark.ml Pipeline
+                         PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
 
@@ -150,6 +151,12 @@
          (into {})
          keywordize-keys)))
 
+(defn write-stage! [model path]
+  (.. model
+      write
+      overwrite
+      (save path)))
+
 (comment
 
   (require '[zero-one.geni.core :as g])
@@ -158,6 +165,25 @@
 
   (g/print-schema libsvm-df)
   (g/print-schema k-means-df)
+
+  (def model
+    (let [estimator   (k-means {:k 3})
+          model       (fit k-means-df estimator)]
+      model))
+
+
+  (.toPMML model "temp.xml")
+
+  (.toPMML model)
+
+  (class model)
+
+  (require '[clojure.reflect :as r])
+  (->> (r/reflect model)
+       :members
+       (mapv :name)
+       sort)
+
 
   (import '(org.apache.spark.ml.fpm PrefixSpan))
   (params (PrefixSpan.))
