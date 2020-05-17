@@ -56,6 +56,8 @@ Another inconvenience is having to deal with Scala sequences:
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
+More examples can be founde [here](examples/README.md)!
+
 # Quick Start
 
 Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:

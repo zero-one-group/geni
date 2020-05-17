@@ -31,6 +31,8 @@
                             when])
   (:require
     [clojure.walk :refer [keywordize-keys]]
+    [potemkin :refer [import-vars]]
+    [zero-one.geni.dataset]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column Dataset functions)
@@ -490,6 +492,16 @@
         context      (.sparkContext session)]
     (.setLogLevel context log-level)
     session))
+
+(import-vars
+  [zero-one.geni.dataset
+   ->row
+   infer-schema
+   infer-struct-field
+   java-type->spark-type
+   map->dataset
+   records->dataset
+   table->dataset])
 
 (comment
 

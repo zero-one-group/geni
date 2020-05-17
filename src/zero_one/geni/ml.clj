@@ -125,6 +125,7 @@
 
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))
+(def correlation corr)
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe features-col label-col))

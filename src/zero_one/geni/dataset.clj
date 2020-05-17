@@ -43,8 +43,7 @@
   (apply map list xs))
 
 (defn table->dataset [spark table col-names]
-  (let [
-        col-names (map name col-names)
+  (let [col-names (map name col-names)
         values    (map first-non-nil (transpose table))
         rows      (->java-list (map ->row table))
         schema    (infer-schema col-names values)]
