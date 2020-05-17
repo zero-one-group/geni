@@ -1,15 +1,23 @@
 # Geni Examples
 
+The examples assume the following required namespaces:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+(require '[zero-one.geni.ml :as ml])
+```
+
+and a spark session, which can be defined as:
+
+```clojure
+(defonce spark (g/create-spark-session {}))
+```
+
 ## Dataframe
 
 ## MLlib
 
-For the following examples, we will assume the following required namespaces:
-
-```
-(require '[zero-one.geni.core :as g])
-(require '[zero-one.geni.ml :as ml])
-```
+The following examples are taken from [Apache Spark's MLlib guide](https://spark.apache.org/docs/latest/ml-guide.html).
 
 ### Correlation
 
