@@ -13,7 +13,15 @@ and a spark session, which can be defined as:
 (defonce spark (g/create-spark-session {}))
 ```
 
+Example datasets can be found in the `test/resources` directory.
+
 ## Dataframe
+
+The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html).
+
+## Text Search (TODO)
+
+## Simple Data Operations (TODO)
 
 ## MLlib
 

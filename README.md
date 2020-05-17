@@ -12,8 +12,6 @@ See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://git
 
 `geni` (*/gɜni/* or "gurney" without the r) is a Clojure library that wraps Apache Spark. The name comes from the Javanese word for fire.
 
-See [examples](examples/README.md).
-
 # Why?
 
 This question is probably not directed at the choice of Spark, because it is fairly easy to justify choosing Spark due to its maturity, speed and pleasant API. Rather, why wrap Spark in Clojure when you can use Spark natively in Scala or its popular Python API, PySpark?
@@ -57,6 +55,8 @@ Another inconvenience is having to deal with Scala sequences:
 ```
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
+
+More examples can be founde [here](examples/README.md)!
 
 # Quick Start
 
