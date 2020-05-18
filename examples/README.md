@@ -17,11 +17,76 @@ Example datasets can be found in the `test/resources` directory.
 
 ## Dataframe
 
-The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html).
+The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html) and [Databricks' examples](https://docs.databricks.com/spark/latest/dataframes-datasets/introduction-to-dataframes-scala.html).
 
-## Text Search (TODO)
+## Text Search
+
+```clojure
+(-> melbourne-df
+    (g/filter (g/like "Suburb" "%South%"))
+    (g/select "Suburb")
+    g/distinct
+    g/show)
+
+; Prints:
+;
+; +----------------+
+; |Suburb          |
+; +----------------+
+; |South Melbourne |
+; |South Kingsville|
+; |Clayton South   |
+; |Blackburn South |
+; |Vermont South   |
+; |Caulfield South |
+; |Croydon South   |
+; |Springvale South|
+; |Melton South    |
+; |Oakleigh South  |
+; |Wantirna South  |
+; |Southbank       |
+; |South Morang    |
+; |Frankston South |
+; |South Yarra     |
+; +----------------+
+```
 
 ## Simple Data Operations (TODO)
+
+```clojure
+(-> melbourne-df
+    (g/group-by "Suburb")
+    (g/agg (-> (g/count "*") (g/as "n")))
+    (g/order-by (g/desc "n"))
+    g/show)
+
+; Prints:
+;
+; +--------------+---+
+; |Suburb        |n  |
+; +--------------+---+
+; |Reservoir     |359|
+; |Richmond      |260|
+; |Bentleigh East|249|
+; |Preston       |239|
+; |Brunswick     |222|
+; |Essendon      |220|
+; |South Yarra   |202|
+; |Glen Iris     |195|
+; |Hawthorn      |191|
+; |Coburg        |190|
+; |Northcote     |188|
+; |Brighton      |186|
+; |Kew           |177|
+; |Pascoe Vale   |171|
+; |Balwyn North  |171|
+; |Yarraville    |164|
+; |St Kilda      |162|
+; |Glenroy       |159|
+; |Port Melbourne|153|
+; |Moonee Ponds  |149|
+; +--------------+---+
+```
 
 ## MLlib
 
