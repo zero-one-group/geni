@@ -8,6 +8,15 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On like"
+  (let [includes-south? #(clojure.string/includes? % "South")]
+    (-> melbourne-df
+        (g/filter (g/like "Suburb" "%South%"))
+        (g/select "Suburb")
+        g/distinct
+        g/collect-vals
+        flatten) => #(every? includes-south? %)))
+
 (fact "On broadcast"
   (-> melbourne-df g/broadcast) => #(instance? Dataset %))
 

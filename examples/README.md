@@ -17,11 +17,153 @@ Example datasets can be found in the `test/resources` directory.
 
 ## Dataframe
 
-The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html).
+The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html) and [Databricks' examples](https://docs.databricks.com/spark/latest/dataframes-datasets/introduction-to-dataframes-scala.html).
 
-## Text Search (TODO)
+### Text Search
 
-## Simple Data Operations (TODO)
+```clojure
+(-> melbourne-df
+    (g/filter (g/like "Suburb" "%South%"))
+    (g/select "Suburb")
+    g/distinct
+    g/show)
+
+; +----------------+
+; |Suburb          |
+; +----------------+
+; |South Melbourne |
+; |South Kingsville|
+; |Clayton South   |
+; |Blackburn South |
+; |Vermont South   |
+; |Caulfield South |
+; |Croydon South   |
+; |Springvale South|
+; |Melton South    |
+; |Oakleigh South  |
+; |Wantirna South  |
+; |Southbank       |
+; |South Morang    |
+; |Frankston South |
+; |South Yarra     |
+; +----------------+
+```
+
+### Group-By and Aggregate
+
+```clojure
+(-> melbourne-df
+    (g/group-by "Suburb")
+    (g/agg (-> (g/count "*") (g/as "n")))
+    (g/order-by (g/desc "n"))
+    g/show)
+
+; +--------------+---+
+; |Suburb        |n  |
+; +--------------+---+
+; |Reservoir     |359|
+; |Richmond      |260|
+; |Bentleigh East|249|
+; |Preston       |239|
+; |Brunswick     |222|
+; |Essendon      |220|
+; |South Yarra   |202|
+; |Glen Iris     |195|
+; |Hawthorn      |191|
+; |Coburg        |190|
+; |Northcote     |188|
+; |Brighton      |186|
+; |Kew           |177|
+; |Pascoe Vale   |171|
+; |Balwyn North  |171|
+; |Yarraville    |164|
+; |St Kilda      |162|
+; |Glenroy       |159|
+; |Port Melbourne|153|
+; |Moonee Ponds  |149|
+; +--------------+---+
+```
+
+### Printing Schema
+
+``` clojure
+(-> melbourne-df
+    g/print-schema)
+
+; root
+;  |-- Suburb: string (nullable = true)
+;  |-- Address: string (nullable = true)
+;  |-- Rooms: long (nullable = true)
+;  |-- Type: string (nullable = true)
+;  |-- Price: double (nullable = true)
+;  |-- Method: string (nullable = true)
+;  |-- SellerG: string (nullable = true)
+;  |-- Date: string (nullable = true)
+;  |-- Distance: double (nullable = true)
+;  |-- Postcode: double (nullable = true)
+;  |-- Bedroom2: double (nullable = true)
+;  |-- Bathroom: double (nullable = true)
+;  |-- Car: double (nullable = true)
+;  |-- Landsize: double (nullable = true)
+;  |-- BuildingArea: double (nullable = true)
+;  |-- YearBuilt: double (nullable = true)
+;  |-- CouncilArea: string (nullable = true)
+;  |-- Lattitude: double (nullable = true)
+;  |-- Longtitude: double (nullable = true)
+;  |-- Regionname: string (nullable = true)
+;  |-- Propertycount: double (nullable = true)
+```
+
+### Descriptive Statistics
+
+```clojure
+(-> melbourne-df
+    (g/describe "Price")
+    g/show)
+
+; +-------+-----------------+
+; |summary|Price            |
+; +-------+-----------------+
+; |count  |13580            |
+; |mean   |1075684.079455081|
+; |stddev |639310.7242960163|
+; |min    |85000.0          |
+; |max    |9000000.0        |
+; +-------+-----------------+
+```
+
+### Null Rates
+
+```clojure
+(let [null-rate-cols (map g/null-rate (g/column-names melbourne-df))]
+  (-> melbourne-df
+      (g/agg null-rate-cols)
+      g/show-vertical))
+
+; -RECORD 0----------------------------------------
+;  null_rate(Suburb)        | 0.0
+;  null_rate(Address)       | 0.0
+;  null_rate(Rooms)         | 0.0
+;  null_rate(Type)          | 0.0
+;  null_rate(Price)         | 0.0
+;  null_rate(Method)        | 0.0
+;  null_rate(SellerG)       | 0.0
+;  null_rate(Date)          | 0.0
+;  null_rate(Distance)      | 0.0
+;  null_rate(Postcode)      | 0.0
+;  null_rate(Bedroom2)      | 0.0
+;  null_rate(Bathroom)      | 0.0
+;  null_rate(Car)           | 0.004565537555228277
+;  null_rate(Landsize)      | 0.0
+;  null_rate(BuildingArea)  | 0.47496318114874814
+;  null_rate(YearBuilt)     | 0.3958026509572901
+;  null_rate(CouncilArea)   | 0.1008100147275405
+;  null_rate(Lattitude)     | 0.0
+;  null_rate(Longtitude)    | 0.0
+;  null_rate(Regionname)
+;   | 0.0
+;  null_rate(Propertycount) | 0.0
+```
 
 ## MLlib
 

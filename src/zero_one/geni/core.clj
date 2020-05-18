@@ -257,6 +257,7 @@
 
 (defn asc [expr] (.asc (->column expr)))
 (defn desc [expr] (.desc (->column expr)))
+(defn like [expr literal] (.like (->column expr) literal))
 
 (defn lit [expr] (functions/lit expr))
 (defn min [expr] (functions/min expr))
