@@ -15,3 +15,16 @@
     (g/order-by (g/desc "n"))
     g/show)
 
+(-> melbourne-df
+    g/print-schema)
+
+(-> melbourne-df
+    (g/describe "Price")
+    g/show)
+
+(let [null-rate-fn   #(-> % g/null? (g/cast "int") g/mean (g/as %))
+      null-rate-cols (map null-rate-fn (g/column-names melbourne-df))]
+  (-> melbourne-df
+      (g/agg null-rate-cols)
+      g/show-vertical))
+

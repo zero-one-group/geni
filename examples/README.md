@@ -19,7 +19,7 @@ Example datasets can be found in the `test/resources` directory.
 
 The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html) and [Databricks' examples](https://docs.databricks.com/spark/latest/dataframes-datasets/introduction-to-dataframes-scala.html).
 
-## Text Search
+### Text Search
 
 ```clojure
 (-> melbourne-df
@@ -51,7 +51,7 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ; +----------------+
 ```
 
-## Simple Data Operations (TODO)
+### Group-By and Aggregate
 
 ```clojure
 (-> melbourne-df
@@ -86,6 +86,93 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ; |Port Melbourne|153|
 ; |Moonee Ponds  |149|
 ; +--------------+---+
+```
+
+### Printing Schema
+
+``` clojure
+(-> melbourne-df
+    g/print-schema)
+
+; Prints:
+;
+; root
+;  |-- Suburb: string (nullable = true)
+;  |-- Address: string (nullable = true)
+;  |-- Rooms: long (nullable = true)
+;  |-- Type: string (nullable = true)
+;  |-- Price: double (nullable = true)
+;  |-- Method: string (nullable = true)
+;  |-- SellerG: string (nullable = true)
+;  |-- Date: string (nullable = true)
+;  |-- Distance: double (nullable = true)
+;  |-- Postcode: double (nullable = true)
+;  |-- Bedroom2: double (nullable = true)
+;  |-- Bathroom: double (nullable = true)
+;  |-- Car: double (nullable = true)
+;  |-- Landsize: double (nullable = true)
+;  |-- BuildingArea: double (nullable = true)
+;  |-- YearBuilt: double (nullable = true)
+;  |-- CouncilArea: string (nullable = true)
+;  |-- Lattitude: double (nullable = true)
+;  |-- Longtitude: double (nullable = true)
+;  |-- Regionname: string (nullable = true)
+;  |-- Propertycount: double (nullable = true)
+```
+
+### Descriptive Statistics
+
+```clojure
+(-> melbourne-df
+    (g/describe "Price")
+    g/show)
+
+; Prints:
+;
+; +-------+-----------------+
+; |summary|Price            |
+; +-------+-----------------+
+; |count  |13580            |
+; |mean   |1075684.079455081|
+; |stddev |639310.7242960163|
+; |min    |85000.0          |
+; |max    |9000000.0        |
+; +-------+-----------------+
+```
+
+### Null Rates
+
+```clojure
+(let [null-rate-fn   #(-> % g/null? (g/cast "int") g/mean (g/as %))
+      null-rate-cols (map null-rate-fn (g/column-names melbourne-df))]
+  (-> melbourne-df
+      (g/agg null-rate-cols)
+      g/show-vertical))
+
+; Prints:
+;
+; -RECORD 0-----------------------------
+;  Suburb        | 0.0
+;  Address       | 0.0
+;  Rooms         | 0.0
+;  Type          | 0.0
+;  Price         | 0.0
+;  Method        | 0.0
+;  SellerG       | 0.0
+;  Date          | 0.0
+;  Distance      | 0.0
+;  Postcode      | 0.0
+;  Bedroom2      | 0.0
+;  Bathroom      | 0.0
+;  Car           | 0.004565537555228277
+;  Landsize      | 0.0
+;  BuildingArea  | 0.47496318114874814
+;  YearBuilt     | 0.3958026509572901
+;  CouncilArea   | 0.1008100147275405
+;  Lattitude     | 0.0
+;  Longtitude    | 0.0
+;  Regionname    | 0.0
+;  Propertycount | 0.0
 ```
 
 ## MLlib
