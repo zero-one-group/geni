@@ -22,8 +22,7 @@
     (g/describe "Price")
     g/show)
 
-(let [null-rate-fn   #(-> % g/null? (g/cast "int") g/mean (g/as %))
-      null-rate-cols (map null-rate-fn (g/column-names melbourne-df))]
+(let [null-rate-cols (map g/null-rate (g/column-names melbourne-df))]
   (-> melbourne-df
       (g/agg null-rate-cols)
       g/show-vertical))

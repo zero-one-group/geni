@@ -28,8 +28,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
     g/distinct
     g/show)
 
-; Prints:
-;
 ; +----------------+
 ; |Suburb          |
 ; +----------------+
@@ -60,8 +58,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
     (g/order-by (g/desc "n"))
     g/show)
 
-; Prints:
-;
 ; +--------------+---+
 ; |Suburb        |n  |
 ; +--------------+---+
@@ -94,8 +90,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
 (-> melbourne-df
     g/print-schema)
 
-; Prints:
-;
 ; root
 ;  |-- Suburb: string (nullable = true)
 ;  |-- Address: string (nullable = true)
@@ -127,8 +121,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
     (g/describe "Price")
     g/show)
 
-; Prints:
-;
 ; +-------+-----------------+
 ; |summary|Price            |
 ; +-------+-----------------+
@@ -143,36 +135,34 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ### Null Rates
 
 ```clojure
-(let [null-rate-fn   #(-> % g/null? (g/cast "int") g/mean (g/as %))
-      null-rate-cols (map null-rate-fn (g/column-names melbourne-df))]
+(let [null-rate-cols (map g/null-rate (g/column-names melbourne-df))]
   (-> melbourne-df
       (g/agg null-rate-cols)
       g/show-vertical))
 
-; Prints:
-;
-; -RECORD 0-----------------------------
-;  Suburb        | 0.0
-;  Address       | 0.0
-;  Rooms         | 0.0
-;  Type          | 0.0
-;  Price         | 0.0
-;  Method        | 0.0
-;  SellerG       | 0.0
-;  Date          | 0.0
-;  Distance      | 0.0
-;  Postcode      | 0.0
-;  Bedroom2      | 0.0
-;  Bathroom      | 0.0
-;  Car           | 0.004565537555228277
-;  Landsize      | 0.0
-;  BuildingArea  | 0.47496318114874814
-;  YearBuilt     | 0.3958026509572901
-;  CouncilArea   | 0.1008100147275405
-;  Lattitude     | 0.0
-;  Longtitude    | 0.0
-;  Regionname    | 0.0
-;  Propertycount | 0.0
+; -RECORD 0----------------------------------------
+;  null_rate(Suburb)        | 0.0
+;  null_rate(Address)       | 0.0
+;  null_rate(Rooms)         | 0.0
+;  null_rate(Type)          | 0.0
+;  null_rate(Price)         | 0.0
+;  null_rate(Method)        | 0.0
+;  null_rate(SellerG)       | 0.0
+;  null_rate(Date)          | 0.0
+;  null_rate(Distance)      | 0.0
+;  null_rate(Postcode)      | 0.0
+;  null_rate(Bedroom2)      | 0.0
+;  null_rate(Bathroom)      | 0.0
+;  null_rate(Car)           | 0.004565537555228277
+;  null_rate(Landsize)      | 0.0
+;  null_rate(BuildingArea)  | 0.47496318114874814
+;  null_rate(YearBuilt)     | 0.3958026509572901
+;  null_rate(CouncilArea)   | 0.1008100147275405
+;  null_rate(Lattitude)     | 0.0
+;  null_rate(Longtitude)    | 0.0
+;  null_rate(Regionname)
+;   | 0.0
+;  null_rate(Propertycount) | 0.0
 ```
 
 ## MLlib
