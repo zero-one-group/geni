@@ -34,6 +34,7 @@
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
     [zero-one.geni.dataset]
+    [zero-one.geni.data-sources]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column Dataset functions)
@@ -41,38 +42,6 @@
     (org.apache.spark.sql.expressions Window)))
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
-
-(defn read-parquet! [spark-session path]
-  (.. spark-session
-      read
-      (parquet path)))
-
-(defn write-parquet! [dataframe path]
-  (.. dataframe
-      write
-      (mode "overwrite")
-      (parquet path)))
-
-(defn write-csv! [dataframe path]
-  (.. dataframe
-      write
-      (format "com.databricks.spark.csv")
-      (option "header" "true")
-      (mode "overwrite")
-      (save path)))
-
-(defn read-csv! [spark-session path]
-  (.. spark-session
-      read
-      (format "csv")
-      (option "header" "true")
-      (load path)))
-
-(defn read-libsvm! [spark-session path]
-  (-> spark-session
-      .read
-      (.format "libsvm")
-      (.load path)))
 
 (defmulti col class)
 (defmethod col :default [x] (functions/lit x))
@@ -515,6 +484,17 @@
    map->dataset
    records->dataset
    table->dataset])
+
+(import-vars
+  [zero-one.geni.data-sources
+   read-csv!
+   read-json!
+   read-libsvm!
+   read-parquet!
+   write-csv!
+   write-json!
+   write-libsvm!
+   write-parquet!])
 
 (comment
 

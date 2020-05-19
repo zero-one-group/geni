@@ -1,15 +1,16 @@
 (ns zero-one.geni.ml-test
   (:require
-    [clojure.java.io :as io]
     [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.interop :refer [vector->seq]]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [k-means-df libsvm-df spark]])
+    [zero-one.geni.test-resources :refer [create-temp-file!
+                                          k-means-df
+                                          libsvm-df
+                                          spark]])
   (:import
-    (java.io File)
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
                                         LinearSVC
@@ -66,10 +67,6 @@
                                     IsotonicRegression
                                     LinearRegression
                                     RandomForestRegressor)))
-
-(defn create-temp-file! [extension]
-  (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
-    (File/createTempFile "temporary" extension temp-dir)))
 
 (facts "On clustering"
   (let [estimator   (ml/k-means {:k 3})

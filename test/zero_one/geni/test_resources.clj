@@ -1,8 +1,11 @@
 (ns zero-one.geni.test-resources
   (:require
+    [clojure.java.io :as io]
     [clojure.string :refer [split-lines split]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.dataset :as ds]))
+    [zero-one.geni.dataset :as ds])
+  (:import
+    (java.io File)))
 
 (defonce spark
   (g/create-spark-session {:configs {"spark.testing.memory" "2147480000"}}))
@@ -27,3 +30,7 @@
                :rating    (Float/parseFloat (nth row 2))
                :timestamp (long (Integer/parseInt (nth row 3)))}))
        (ds/records->dataset spark)))
+
+(defn create-temp-file! [extension]
+  (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
+    (File/createTempFile "temporary" extension temp-dir)))
