@@ -35,13 +35,12 @@
     [potemkin :refer [import-vars]]
     [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql Column Dataset functions)
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
-
-(defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
 (defmulti col class)
 (defmethod col :default [x] (functions/lit x))

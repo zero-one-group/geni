@@ -1,4 +1,7 @@
-(ns zero-one.geni.data-sources)
+(ns zero-one.geni.data-sources
+  (:refer-clojure :exclude [partition-by sort-by])
+  (:require
+    [zero-one.geni.utils :refer [ensure-coll]]))
 
 ;; TODO:
 ;; Writer: format, option, saveMode, partitionBy, bucketBy, sortBy
@@ -29,17 +32,15 @@
   ([spark-session path options] (read-data! "json" spark-session path options)))
 
 (defn write-data! [format dataframe path options]
-  (let [unconfigured-writer (-> dataframe
+  (let [mode                (:mode options)
+        unconfigured-writer (-> dataframe
                                 (.write)
                                 (.format format)
-                                (cond-> (:mode options) (.mode (:mode options)))
-                                (cond-> (:bucket-by options) (.bucketBy (:bucket-by options)))
-                                (cond-> (:sort-by options) (.sortBy (:sort-by options)))
-                                (cond-> (:partition-by options) (.partitionBy (:partition-by options))))
+                                (cond-> mode (.mode mode)))
         configured-writer   (reduce
                               (fn [w [k v]] (.option w k v))
                               unconfigured-writer
-                              (dissoc options :mode :bucket-by :sort-by :partition-by))]
+                              (dissoc options :mode))]
     (.save configured-writer path)))
 
 (defn write-parquet!

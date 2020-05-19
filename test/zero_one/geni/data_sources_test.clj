@@ -13,9 +13,14 @@
   (-> melbourne-df (g/select "Method" "Type") (g/limit 5)))
 
 (fact "Writer defaults to error"
-  (let [temp-file (.toString (create-temp-file! ".csv"))]
-    (g/write-csv! write-df temp-file {:mode "overwrite"})
-    (g/write-csv! write-df temp-file)) => (throws AnalysisException))
+  (doall
+    (for [write-fn! [g/write-csv! g/write-json! g/write-json! g/write-parquet!]]
+      (let [temp-file (.toString (create-temp-file! ""))]
+        (write-fn! write-df temp-file {:mode "overwrite"})
+        (write-fn! write-df temp-file) => (throws AnalysisException))))
+  (let [temp-file (.toString (create-temp-file! ""))]
+    (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
+    (g/write-libsvm! libsvm-df temp-file) => (throws AnalysisException)))
 
 (fact "Can read with options"
   (let [read-df (g/read-parquet!
