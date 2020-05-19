@@ -21,6 +21,7 @@
                             map
                             max
                             min
+                            mod
                             not
                             partition-by
                             rand
@@ -187,10 +188,6 @@
 (defn cache [dataframe] (.cache dataframe))
 (defn persist [dataframe] (.persist dataframe))
 
-(defn as [column new-name] (.as column new-name))
-(def alias as)
-(defn cast [expr new-type] (.cast (->column expr) new-type))
-
 (defn md5 [expr] (functions/md5 (->column expr)))
 (defn sha1 [expr] (functions/sha1 (->column expr)))
 (defn sha2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
@@ -255,10 +252,6 @@
 (defn regexp-extract [expr regex idx]
   (functions/regexp_extract (->column expr) regex idx))
 
-(defn asc [expr] (.asc (->column expr)))
-(defn desc [expr] (.desc (->column expr)))
-(defn like [expr literal] (.like (->column expr) literal))
-
 (defn lit [expr] (functions/lit expr))
 (defn min [expr] (functions/min expr))
 (defn max [expr] (functions/max expr))
@@ -300,6 +293,19 @@
 (defn round [expr] (functions/round (->column expr)))
 (def pi (lit Math/PI))
 
+(defn asc [expr] (.asc (->column expr)))
+(defn desc [expr] (.desc (->column expr)))
+
+(defn like [expr literal] (.like (->column expr) literal))
+(defn rlike [expr literal] (.rlike (->column expr) literal))
+(defn contains [expr literal] (.contains (->column expr) literal))
+(defn starts-with [expr literal] (.startsWith (->column expr) literal))
+(defn ends-with [expr literal] (.endsWith (->column expr) literal))
+
+(defn as [column new-name] (.as column new-name))
+(def alias as)
+(defn cast [expr new-type] (.cast (->column expr) new-type))
+
 (defn && [& exprs] (reduce #(.and (->column %1) (->column %2)) (lit true) exprs))
 (defn || [& exprs] (reduce #(.or (->column %1) (->column %2)) (lit false) exprs))
 
@@ -307,6 +313,7 @@
 (defn - [& exprs] (reduce #(.minus (->column %1) (->column %2)) exprs))
 (defn * [& exprs] (reduce #(.multiply (->column %1) (->column %2)) (lit 1) exprs))
 (defn / [& exprs] (reduce #(.divide (->column %1) (->column %2)) exprs))
+(defn mod [left-expr right-expr] (.mod (->column left-expr) (->column right-expr)))
 (defn compare-columns [compare-fn expr-0 & exprs]
   (let [exprs (-> exprs (conj expr-0))]
     (reduce
@@ -318,8 +325,11 @@
 (def <= (partial compare-columns #(.leq %1 %2)))
 (def > (partial compare-columns #(.gt %1 %2)))
 (def >= (partial compare-columns #(.geq %1 %2)))
+(defn between [expr lower-bound upper-bound]
+  (.between (->column expr) lower-bound upper-bound))
 (def === (partial compare-columns #(.equalTo %1 %2)))
 
+(defn nan? [expr] (.isNaN (->column expr)))
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
   (-> expr null? (cast "int") mean (as (str "null_rate(" expr ")"))))
@@ -462,6 +472,8 @@
 
 (defn collect-vals [dataframe]
   (clojure.core/map vals (collect dataframe)))
+(defn collect-col [dataframe col-name]
+  (clojure.core/map (keyword col-name) (-> dataframe (select col-name) collect)))
 
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
