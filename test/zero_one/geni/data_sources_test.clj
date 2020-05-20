@@ -12,17 +12,22 @@
 (def write-df
   (-> melbourne-df (g/select "Method" "Type") (g/limit 5)))
 
-(fact "Writer defaults to error"
+(fact "Writer defaults to error" :slow
   (doall
-    (for [write-fn! [g/write-csv! g/write-json! g/write-json! g/write-parquet!]]
-      (let [temp-file (.toString (create-temp-file! ""))]
+    (for [write-fn! [g/write-csv!
+                     g/write-json!
+                     g/write-json!
+                     g/write-parquet!
+                     g/write-text!]]
+      (let [write-df  (g/select write-df "Method")
+            temp-file (.toString (create-temp-file! ""))]
         (write-fn! write-df temp-file {:mode "overwrite"})
         (write-fn! write-df temp-file) => (throws AnalysisException))))
   (let [temp-file (.toString (create-temp-file! ""))]
     (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
     (g/write-libsvm! libsvm-df temp-file) => (throws AnalysisException)))
 
-(fact "Can read with options"
+(fact "Can read with options" :slow
   (let [read-df (g/read-parquet!
                   spark
                   "test/resources/melbourne_housing_snapshot.parquet"
@@ -64,3 +69,10 @@
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
                      (g/read-json! spark temp-file))]
     (g/collect write-df) => (g/collect read-df)))
+
+(fact "Can read and write text"
+  (let [write-df  (g/select write-df "Type")
+        temp-file (.toString (create-temp-file! ".text"))
+        read-df   (do (g/write-text! write-df temp-file {:mode "overwrite"})
+                      (g/read-text! spark temp-file))]
+    (g/collect-vals write-df) => (g/collect-vals read-df)))

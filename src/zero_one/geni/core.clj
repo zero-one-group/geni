@@ -490,10 +490,12 @@
    read-json!
    read-libsvm!
    read-parquet!
+   read-text!
    write-csv!
    write-json!
    write-libsvm!
-   write-parquet!])
+   write-parquet!
+   write-text!])
 
 (comment
 
