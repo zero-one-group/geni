@@ -8,7 +8,7 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
-(facts "On column methods"
+(facts "On column methods" :slow
   (fact "rlike should filter correctly"
     (let [includes-east-or-north? #(or (clojure.string/includes? % "East")
                                        (clojure.string/includes? % "North"))]
@@ -105,7 +105,7 @@
       first
       first) => (range 10))
 
-(fact "On random functions"
+(fact "On random functions" :slow
   (-> melbourne-df
       (g/limit 20)
       (g/select
@@ -163,7 +163,7 @@
       g/collect-vals
       flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
 
-(fact "On partition ID"
+(fact "On partition ID" :slow
   (-> melbourne-df
       (g/limit 10)
       (g/repartition 3)
@@ -250,7 +250,7 @@
         (g/log (g/exp 1)))
       g/collect-vals) => [[true 1.0]])
 
-(facts "On group-by + agg functions"
+(facts "On group-by + agg functions" :slow
   (let [n-rows  20
         summary (-> melbourne-df
                     (g/limit n-rows)
@@ -297,7 +297,7 @@
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05))))
 
-(facts "On windowing"
+(facts "On windowing" :slow
   (fact "can instantiate empty WindowSpec"
     (g/window {}) => #(instance? WindowSpec %))
   (let [records    (-> melbourne-df
@@ -411,14 +411,14 @@
                      :second 5
                      :year 1930})))
 
-(fact "hashing should give unique rows"
+(fact "hashing should give unique rows" :slow
   (let [df        (g/limit melbourne-df 10)
         n-sellers (-> df (g/select "SellerG") g/distinct g/count)]
     (-> df (g/select (g/md5 "SellerG")) g/distinct g/count) => n-sellers
     (-> df (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
     (-> df (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
 
-(fact "correct substring"
+(fact "correct substring" :slow
   (-> melbourne-df
       (g/limit 10)
       (g/select (g/substring "Suburb" 3 4))

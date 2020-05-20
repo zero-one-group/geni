@@ -5,7 +5,7 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [ratings-df]]))
 
-(facts "On recommendation"
+(facts "On recommendation" :slow
   (let [estimator   (ml/als {:max-iter   1
                              :reg-param  0.01
                              :user-col   "user-id"
