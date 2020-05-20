@@ -1,15 +1,16 @@
 (ns zero-one.geni.ml-test
   (:require
-    [clojure.java.io :as io]
     [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.interop :refer [vector->seq]]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [k-means-df libsvm-df spark]])
+    [zero-one.geni.test-resources :refer [create-temp-file!
+                                          k-means-df
+                                          libsvm-df
+                                          spark]])
   (:import
-    (java.io File)
     (org.apache.spark.ml.classification DecisionTreeClassifier
                                         GBTClassifier
                                         LinearSVC
@@ -67,11 +68,7 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
-(defn create-temp-file! [extension]
-  (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
-    (File/createTempFile "temporary" extension temp-dir)))
-
-(facts "On clustering"
+(facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})
         model       (ml/fit k-means-df estimator)
         predictions (ml/transform k-means-df model)
@@ -86,17 +83,7 @@
       (slurp temp-file) => #(not= % "")
       (KMeansModel/load temp-file) => #(instance? KMeansModel %))))
 
-(facts "On clustering"
-  (let [estimator   (ml/k-means {:k 3})
-        model       (ml/fit k-means-df estimator)
-        predictions (ml/transform k-means-df model)
-        evaluator   (ml/clustering-evaluator {})
-        silhoutte   (ml/evaluate predictions evaluator)]
-    silhoutte => #(<= 0.7 % 1.0)
-    (ml/cluster-centers model) => #(and (every? double? (flatten %))
-                                        (= (count %) 3))))
-
-(facts "On classification"
+(facts "On classification" :slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
                        :max-iter 10
@@ -403,7 +390,7 @@
   (ml/word2vec {})
   => #(instance? Word2Vec %))
 
-(facts "On pipeline"
+(facts "On pipeline" :slow
   (fact "should be able to fit the example stages"
     (let [dataset     (ds/table->dataset
                         spark
@@ -483,7 +470,7 @@
           g/first-vals
           first) => #(every? double? %))))
 
-(facts "On correlation"
+(facts "On correlation" :slow
   (let [dataset     (ds/table->dataset
                        spark
                        [[1.0 0.0 -2.0 0.0]
