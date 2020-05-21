@@ -14,9 +14,7 @@ See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://git
 
 # Why?
 
-This question is probably not directed at the choice of Spark, because it is fairly easy to justify choosing Spark due to its maturity, speed and pleasant API. Rather, why wrap Spark in Clojure when you can use Spark natively in Scala or its popular Python API, PySpark?
-
-Clojure is an excellent programming language for data wrangling due to its particular focus on fast feedbacks - most notably through its REPL. Being hosted on the JVM, Clojure interoperates well with Java (and thus Scala) libaries. However, Spark's pleasant API in Scala becomes quite clunky in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
+Clojure is well-suited for data wrangling due to its particular focus on fast feedback - most notably through its REPL. Being hosted on the JVM, Clojure interops well with Java (and, by extension, Scala) libaries. However, Spark's pleasant API in Scala becomes quite unidiomatic in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
 
 An example of such nuisance is having to wrap column names inside a Java array of Spark columns:
 
@@ -56,7 +54,7 @@ Another inconvenience is having to deal with Scala sequences:
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
-More examples can be founde [here](examples/README.md)!
+More examples can be found [here](examples/README.md)!
 
 # Quick Start
 
