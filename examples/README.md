@@ -15,7 +15,7 @@ and a spark session, which can be defined as:
 
 Example datasets can be found in the `test/resources` directory.
 
-## Dataframe
+## Dataframe API
 
 The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html) and [Databricks' examples](https://docs.databricks.com/spark/latest/dataframes-datasets/introduction-to-dataframes-scala.html).
 
@@ -207,4 +207,176 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; => {:pValues (0.6872892787909721 0.6822703303362126),
 ;     :degreesOfFreedom (2 3),
 ;     :statistics (0.75 1.5))
+```
+
+### Pipeline
+
+```clojure
+(def training-set
+  (g/table->dataset
+    spark
+    [[0 "a b c d e spark"  1.0]
+     [1 "b d"              0.0]
+     [2 "spark f g h"      1.0]
+     [3 "hadoop mapreduce" 0.0]]
+    [:id :text :label]))
+
+(def pipeline
+  (ml/pipeline
+    (ml/tokenizer {:input-col "text"
+                   :output-col "words"})
+    (ml/hashing-tf {:num-features 1000
+                    :input-col "words"
+                    :output-col "features"})
+    (ml/logistic-regression {:max-iter 10
+                             :reg-param 0.001})))
+
+(def model (ml/fit training-set pipeline))
+
+(def test-set
+  (g/table->dataset
+    spark
+    [[4 "spark i j k"]
+     [5 "l m n"]
+     [6 "spark hadoop spark"]
+     [7 "apache hadoop"]]
+    [:id :text]))
+
+(-> test-set
+    (ml/transform model)
+    (g/select "id" "text" "probability" "prediction")
+    g/show)
+
+;; +---+------------------+----------------------------------------+----------+
+;; |id |text              |probability                             |prediction|
+;; +---+------------------+----------------------------------------+----------+
+;; |4  |spark i j k       |[0.1596407738787411,0.8403592261212589] |1.0       |
+;; |5  |l m n             |[0.8378325685476612,0.16216743145233883]|0.0       |
+;; |6  |spark hadoop spark|[0.0692663313297627,0.9307336686702373] |1.0       |
+;; |7  |apache hadoop     |[0.9821575333444208,0.01784246665557917]|0.0       |
+;; +---+------------------+----------------------------------------+----------+
+```
+
+### Tokeniser, Hashing TF and IDF
+
+```clojure
+(def sentence-data
+  (g/table->dataset
+    spark
+    [[0.0 "Hi I heard about Spark"]
+     [0.0 "I wish Java could use case classes"]
+     [1.0 "Logistic regression models are neat"]]
+    [:label :sentence]))
+
+(def pipeline
+  (ml/pipeline
+    (ml/tokenizer {:input-col "sentence"
+                    :output-col "words"})
+    (ml/hashing-tf {:num-features 20
+                    :input-col "words"
+                    :output-col "raw-features"})
+    (ml/idf {:input-col "raw-features"
+              :output-col "features"})))
+
+(def pipeline-model
+  (ml/fit sentence-data pipeline))
+
+(-> sentence-data
+    (ml/transform pipeline-model)
+    (g/collect-col "features"))
+
+; => ((0.6931471805599453
+;      0.6931471805599453
+;      0.28768207245178085
+;      1.3862943611198906)
+;     (0.6931471805599453
+;      0.6931471805599453
+;      0.8630462173553426
+;      0.28768207245178085
+;      0.28768207245178085)
+;     (0.6931471805599453
+;      0.6931471805599453
+;      0.28768207245178085
+;      0.28768207245178085
+;      0.6931471805599453))
+```
+
+### PCA
+
+```clojure
+(def dataframe
+  (g/table->dataset
+    spark
+    [[[0.0 1.0 0.0 7.0 0.0]]
+     [[2.0 0.0 3.0 4.0 5.0]]
+     [[4.0 0.0 0.0 6.0 7.0]]]
+    [:features]))
+
+(def pca
+  (ml/fit dataframe (ml/pca {:input-col "features"
+                             :output-col "pca-features"
+                             :k 3})))
+
+(-> dataframe
+    (ml/transform pca)
+    (g/collect-col "pca-features"))
+
+;; => ((1.6485728230883807 -4.013282700516296 -5.524543751369388)
+;;     (-4.645104331781534 -1.1167972663619026 -5.524543751369387)
+;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
+```
+
+### Standard Scaler
+
+```clojure
+(def scaler
+  (ml/standard-scaler {:input-col "features"
+                       :output-col "scaled-features"
+                       :with-std true
+                       :with-mean false}))
+
+(def scaler-model (ml/fit libsvm-df scaler))
+
+(-> libsvm-df
+    (ml/transform scaler-model)
+    (g/limit 1)
+    (g/collect-col "scaled-features"))
+
+;; => ((0.5468234998110156
+;;      1.5923262059067456
+;;      2.435399721310935
+;;      1.7081091742536456
+;;      0.7334796787587756
+;;      0.43457146586677264
+;;      2.0985334204247876
+;;      2.2563158921609334
+;;      2.236765962167892
+;;      2.226905085275203
+;;      2.2554541846497917
+;;      ...
+```
+
+### Vector Assembler
+
+```clojure
+(def dataset
+  (g/table->dataset
+    spark
+    [[0 18 1.0 [0.0 10.0 0.5] 1.0]]
+    [:id :hour :mobile :user-features :clicked]))
+
+(def assembler
+  (ml/vector-assembler {:input-cols ["hour" "mobile" "user-features"]
+                        :output-col "features"}))
+
+(-> dataset
+    (ml/transform assembler)
+    (g/select "features" "clicked")
+    g/show)
+
+; +-----------------------+-------+
+; |features               |clicked|
+; +-----------------------+-------+
+; |[18.0,1.0,0.0,10.0,0.5]|1.0    |
+; +-----------------------+-------+
 ```
