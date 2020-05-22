@@ -2,7 +2,7 @@
   (:require
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark libsvm-df]]))
+    [zero-one.geni.test-resources :refer [spark]]))
 
 ;; Logistic Regression
 (def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
