@@ -54,7 +54,7 @@ Another inconvenience is having to deal with Scala sequences:
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
-Finally, some Column functions such as `+`, `<=` and `&&` become variadic as is expected in any Lisp.
+Finally, some Column functions such as `+`, `<=` and `&&` become variadic as are expected in any Lisp dialects.
 
 More examples can be found [here](examples/README.md).
 
@@ -77,10 +77,10 @@ Because of this, basic arithmetic operations do not require `lit` wrapping:
 However, string literals do require `lit` wrapping:
 
 ```
-; The following will fail, because "Nelson" is interpreted as a Column
+; The following fails, because "Nelson" is interpreted as a Column
 (-> dataframe (g/filter (g/=== "SellerG" "Nelson")))
 
-; The following will succeed
+; The following works, as it checks the column "SellerG" against "Nelson" as a literal
 (-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
 ```
 
