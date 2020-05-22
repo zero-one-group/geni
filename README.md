@@ -54,7 +54,35 @@ Another inconvenience is having to deal with Scala sequences:
 
 In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
 
-More examples can be found [here](examples/README.md)!
+Finally, some Column functions such as `+`, `<=` and `&&` become variadic as is expected in any Lisp.
+
+More examples can be found [here](examples/README.md).
+
+# Geni Semantics: Column Coercion
+
+Many SQL functions and Column methods are overloaded to take either a string or a Column instance as argument. For such cases, Geni implements Column coercion where
+
+1. Column instances are left as they are,
+2. strings are interpreted as column names and;
+3. other values are interpreted as a literal Column.
+
+Because of this, basic arithmetic operations do not require `lit` wrapping:
+
+```clojure
+; The following two expressions are equivalent
+(g/- (g// (g/sin Math/PI) (g/cos Math/PI)) (g/tan Math/PI))
+(g/- (g// (g/sin (g/lit Math/PI)) (g/cos (g/lit Math/PI))) (g/tan (g/lit Math/PI)))
+```
+
+However, string literals do require `lit` wrapping:
+
+```
+; The following will fail, because "Nelson" is interpreted as a Column
+(-> dataframe (g/filter (g/=== "SellerG" "Nelson")))
+
+; The following will succeed
+(-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
+```
 
 # Quick Start
 
