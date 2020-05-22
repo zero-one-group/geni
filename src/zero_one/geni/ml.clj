@@ -19,6 +19,7 @@
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
 
+;; TODO: utility functions such as (labels label-indexer) and (coefficients lr-model)
 (import-vars
   [zero-one.geni.ml-clustering
    bisecting-k-means
