@@ -1,10 +1,11 @@
-(ns examples.features
+(ns examples.classification
   (:require
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [spark]]))
 
 ;; Logistic Regression
+;; TODO: coefficients
 (def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/logistic-regression {:max-iter 10
@@ -29,12 +30,15 @@
 (def label-indexer
   (ml/fit data (ml/string-indexer {:input-col "label" :output-col "indexed-label"})))
 
+(def feature-indexer
+  (ml/fit data (ml/vector-indexer {:input-col "features"
+                                   :output-col "indexed-features"
+                                   :max-categories 4})))
+
 (def pipeline
   (ml/pipeline
     label-indexer
-    (ml/vector-indexer {:input-col "features"
-                        :output-col "indexed-features"
-                        :max-categories 4})
+    feature-indexer
     (ml/gbt-classifier {:label-col "indexed-label"
                         :features-col "indexed-features"
                         :max-iter 10
@@ -45,7 +49,14 @@
 
 (def model (ml/fit train-data pipeline))
 
-(-> train-data
-    (ml/transform model)
+(def predictions (ml/transform test-data model))
+
+(def evaluator
+  (ml/multiclass-classification-evaluator {:label-col "indexed-label"
+                                           :prediction-col "prediction"
+                                           :metric-name "accuracy"}))
+
+(-> predictions
     (g/select "predicted-label" "label")
-    (g/show {:num-rows 5}))
+    (g/order-by (g/rand)))
+(println "Test error: " (- 1 (ml/evaluate predictions evaluator)))
