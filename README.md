@@ -14,9 +14,9 @@ See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://git
 
 # Why?
 
-Clojure is well-suited for data wrangling due to its particular focus on fast feedback - most notably through its REPL. Being hosted on the JVM, Clojure interops well with Java (and, by extension, Scala) libaries. However, Spark's pleasant API in Scala becomes quite unidiomatic in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
+Clojure is particularly well-suited for data wrangling due to its particular focus on fast feedback - most notably through its REPL. Being hosted on the JVM, Clojure interops well with Java (and, by extension, Scala) libaries. However, Spark's pleasant API in Scala becomes quite unidiomatic in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
 
-An example of such nuisance is having to wrap column names inside a Java array of Spark columns:
+For instance, instead of making sure the types line up:
 
 ```clojure
 (-> dataframe
@@ -29,20 +29,20 @@ An example of such nuisance is having to wrap column names inside a Java array o
     .show)
 ```
 
-Geni aims to provide a Spark interface that plays nice with Clojure's threading macro `->` and dynamic types:
+Geni allows us to write the following instead:
 
 ```clojure
-(-> dataframe
-    (group-by (col "SellerG") "Suburb") ;; Mix Column and string types
+(-> dataframe                             ;; Threading macro as the main interface
+    (group-by (lower "SellerG") "Suburb") ;; Mix Column and string types
     (agg
-      (-> (mean "Price") (as "mean"))
-      (-> (stddev "Price") (as "std"))  ;; No need to do into-array
+      (-> (mean "Price") (as "mean"))     ;; No need to do into-array
+      (-> (stddev "Price") (as "std"))    
       (-> (min "Price") (as "min"))
       (-> (max "Price") (as "max")))
     show)
 ```
 
-Another inconvenience is having to deal with Scala sequences:
+Instead of having to deal with interop:
 
 ```clojure
 (->> (.collect dataframe) ;; .collect returns an array of Spark rows
@@ -52,11 +52,101 @@ Another inconvenience is having to deal with Scala sequences:
                           ;; must zip into map to recover row-like maps
 ```
 
-In Geni, `(collect dataframe)` returns a vector of maps, where the maps serve a similar purpose to Spark rows.
+Geni's `(collect dataframe)` returns a seq of maps.
 
 Finally, some Column functions such as `+`, `<=` and `&&` become variadic as are expected in any Lisp dialects.
 
-More examples can be found [here](examples/README.md).
+# Examples
+
+Spark SQL API for grouping and aggregating:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(-> melbourne-df
+    (g/group-by "Suburb")
+    (g/agg (-> (g/count "*") (g/as "n")))
+    (g/order-by (g/desc "n"))
+    g/show)
+
+; +--------------+---+
+; |Suburb        |n  |
+; +--------------+---+
+; |Reservoir     |359|
+; |Richmond      |260|
+; |Bentleigh East|249|
+; |Preston       |239|
+; |Brunswick     |222|
+; |Essendon      |220|
+; |South Yarra   |202|
+; |Glen Iris     |195|
+; |Hawthorn      |191|
+; |Coburg        |190|
+; |Northcote     |188|
+; |Brighton      |186|
+; |Kew           |177|
+; |Pascoe Vale   |171|
+; |Balwyn North  |171|
+; |Yarraville    |164|
+; |St Kilda      |162|
+; |Glenroy       |159|
+; |Port Melbourne|153|
+; |Moonee Ponds  |149|
+; +--------------+---+
+```
+
+MLlib's pipeline:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+(require '[zero-one.geni.ml :as ml])
+
+(def training-set
+  (g/table->dataset
+    spark
+    [[0 "a b c d e spark"  1.0]
+     [1 "b d"              0.0]
+     [2 "spark f g h"      1.0]
+     [3 "hadoop mapreduce" 0.0]]
+    [:id :text :label]))
+
+(def pipeline
+  (ml/pipeline
+    (ml/tokenizer {:input-col "text"
+                   :output-col "words"})
+    (ml/hashing-tf {:num-features 1000
+                    :input-col "words"
+                    :output-col "features"})
+    (ml/logistic-regression {:max-iter 10
+                             :reg-param 0.001})))
+
+(def model (ml/fit training-set pipeline))
+
+(def test-set
+  (g/table->dataset
+    spark
+    [[4 "spark i j k"]
+     [5 "l m n"]
+     [6 "spark hadoop spark"]
+     [7 "apache hadoop"]]
+    [:id :text]))
+
+(-> test-set
+    (ml/transform model)
+    (g/select "id" "text" "probability" "prediction")
+    g/show)
+
+;; +---+------------------+----------------------------------------+----------+
+;; |id |text              |probability                             |prediction|
+;; +---+------------------+----------------------------------------+----------+
+;; |4  |spark i j k       |[0.1596407738787411,0.8403592261212589] |1.0       |
+;; |5  |l m n             |[0.8378325685476612,0.16216743145233883]|0.0       |
+;; |6  |spark hadoop spark|[0.0692663313297627,0.9307336686702373] |1.0       |
+;; |7  |apache hadoop     |[0.9821575333444208,0.01784246665557917]|0.0       |
+;; +---+------------------+----------------------------------------+----------+
+```
+
+More detailed examples can be found [here](examples/README.md).
 
 # Geni Semantics: Column Coercion
 

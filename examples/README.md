@@ -49,41 +49,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ; +----------------+
 ```
 
-### Group-By and Aggregate
-
-```clojure
-(-> melbourne-df
-    (g/group-by "Suburb")
-    (g/agg (-> (g/count "*") (g/as "n")))
-    (g/order-by (g/desc "n"))
-    g/show)
-
-; +--------------+---+
-; |Suburb        |n  |
-; +--------------+---+
-; |Reservoir     |359|
-; |Richmond      |260|
-; |Bentleigh East|249|
-; |Preston       |239|
-; |Brunswick     |222|
-; |Essendon      |220|
-; |South Yarra   |202|
-; |Glen Iris     |195|
-; |Hawthorn      |191|
-; |Coburg        |190|
-; |Northcote     |188|
-; |Brighton      |186|
-; |Kew           |177|
-; |Pascoe Vale   |171|
-; |Balwyn North  |171|
-; |Yarraville    |164|
-; |St Kilda      |162|
-; |Glenroy       |159|
-; |Port Melbourne|153|
-; |Moonee Ponds  |149|
-; +--------------+---+
-```
-
 ### Printing Schema
 
 ``` clojure
@@ -207,54 +172,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; => {:pValues (0.6872892787909721 0.6822703303362126),
 ;     :degreesOfFreedom (2 3),
 ;     :statistics (0.75 1.5))
-```
-
-### Pipeline
-
-```clojure
-(def training-set
-  (g/table->dataset
-    spark
-    [[0 "a b c d e spark"  1.0]
-     [1 "b d"              0.0]
-     [2 "spark f g h"      1.0]
-     [3 "hadoop mapreduce" 0.0]]
-    [:id :text :label]))
-
-(def pipeline
-  (ml/pipeline
-    (ml/tokenizer {:input-col "text"
-                   :output-col "words"})
-    (ml/hashing-tf {:num-features 1000
-                    :input-col "words"
-                    :output-col "features"})
-    (ml/logistic-regression {:max-iter 10
-                             :reg-param 0.001})))
-
-(def model (ml/fit training-set pipeline))
-
-(def test-set
-  (g/table->dataset
-    spark
-    [[4 "spark i j k"]
-     [5 "l m n"]
-     [6 "spark hadoop spark"]
-     [7 "apache hadoop"]]
-    [:id :text]))
-
-(-> test-set
-    (ml/transform model)
-    (g/select "id" "text" "probability" "prediction")
-    g/show)
-
-;; +---+------------------+----------------------------------------+----------+
-;; |id |text              |probability                             |prediction|
-;; +---+------------------+----------------------------------------+----------+
-;; |4  |spark i j k       |[0.1596407738787411,0.8403592261212589] |1.0       |
-;; |5  |l m n             |[0.8378325685476612,0.16216743145233883]|0.0       |
-;; |6  |spark hadoop spark|[0.0692663313297627,0.9307336686702373] |1.0       |
-;; |7  |apache hadoop     |[0.9821575333444208,0.01784246665557917]|0.0       |
-;; +---+------------------+----------------------------------------+----------+
 ```
 
 ### Tokeniser, Hashing TF and IDF
