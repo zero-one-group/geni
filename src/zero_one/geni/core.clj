@@ -503,6 +503,9 @@
   (-> melbourne-df count)
   (-> melbourne-df print-schema)
 
+  (require '[midje.repl :refer [autotest]])
+  (autotest :filter (complement :slow))
+
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
   (require '[clojure.reflect :as r])
