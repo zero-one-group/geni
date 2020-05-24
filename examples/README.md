@@ -134,7 +134,9 @@ The following examples are taken from [Apache Spark's example page](https://spar
 
 The following examples are taken from [Apache Spark's MLlib guide](https://spark.apache.org/docs/latest/ml-guide.html).
 
-### Correlation
+### Basic Statistics
+
+#### Correlation
 
 ```clojure
 (def corr-df
@@ -154,7 +156,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;     (0.1311482458941057   0.9428090415820635   0.19298245614035084 1.0))
 ```
 
-### Hypothesis Testing
+#### Hypothesis Testing
 
 ```clojure
 (def hypothesis-df
@@ -174,7 +176,9 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;     :statistics (0.75 1.5))
 ```
 
-### Tokeniser, Hashing TF and IDF
+### Features
+
+#### Tokeniser, Hashing TF and IDF
 
 ```clojure
 (def sentence-data
@@ -218,7 +222,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;      0.6931471805599453))
 ```
 
-### PCA
+#### PCA
 
 ```clojure
 (def dataframe
@@ -243,7 +247,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
 ```
 
-### Standard Scaler
+#### Standard Scaler
 
 ```clojure
 (def scaler
@@ -273,7 +277,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;;      ...
 ```
 
-### Vector Assembler
+#### Vector Assembler
 
 ```clojure
 (def dataset
@@ -298,7 +302,9 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; +-----------------------+-------+
 ```
 
-### Logistic Regression
+### Classification
+
+#### Logistic Regression
 
 ```clojure
 (def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
@@ -326,7 +332,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; +-----+----------------------------------------+
 ```
 
-### Gradient Boosted Tree Classifier
+#### Gradient Boosted Tree Classifier
 
 ```clojure
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
@@ -382,6 +388,8 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; Test error: 0.08823529411764708
 ```
 
+### Regression
+
 #### Linear Regression
 
 ```clojure
@@ -404,7 +412,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; +-----+----------+
 ```
 
-### Random Forest Regression
+#### Random Forest Regression
 
 ```clojure
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
@@ -482,4 +490,199 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |0.273|1.0   |[0.52,1.151]  |13.57761250142532 |[2.7547621481506925,11.859872224069731]|
 ; |4.199|0.0   |[0.795,-0.226]|9.013097744073866 |[1.8286676321297761,7.872826505878401] |
 ; +-----+------+--------------+------------------+---------------------------------------+
+```
+
+### Clustering
+
+#### K-Means
+
+```clojure
+(def dataset
+  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+
+(def model
+  (ml/fit dataset (ml/k-means {:k 2 :seed 1})))
+
+(def predictions
+  (ml/transform dataset model))
+
+(def silhoutte (ml/evaluate predictions (ml/clustering-evaluator {})))
+
+(println "Silhouette with squared euclidean distance:" silhoutte)
+(println "Cluster centers:" (ml/cluster-centers model))
+
+; Silhouette with squared euclidean distance: 0.9997530305375207
+; Cluster centers: ((0.1 0.1 0.1) (9.1 9.1 9.1))
+```
+
+#### LDA
+
+```clojure
+(def dataset
+  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+
+(def model
+  (ml/fit dataset (ml/lda {:k 10 :max-iter 10})))
+
+(println "log-likehood:" (.logLikelihood model dataset))
+(println "log-perplexity" (.logPerplexity model dataset))
+
+; log-likehood: -164.51762514834732
+; log-perplexity 1.9869278399558856
+
+(-> dataset
+    (ml/transform model)
+    (g/limit 2)
+    (g/collect-col "topicDistribution"))
+
+; => ((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
+;     (0.07701806399774133
+;      0.07701821590017151
+;      0.07701312686434603
+;      0.07701770385981303
+;      0.3068312384243969
+;      0.0770491751796324
+;      0.07701324197964737
+;      0.07701452273708989
+;      0.07701480342311406
+;      0.07700990763404734))
+```
+
+### Collaborative Filtering
+
+```clojure
+(defonce ratings-df
+  (->> (slurp "test/resources/sample_movielens_ratings.txt")
+       clojure.string/split-lines
+       (map #(clojure.string/split % #"::"))
+       (map (fn [row]
+              {:user-id   (Integer/parseInt (first row))
+               :movie-id  (Integer/parseInt (second row))
+               :rating    (Float/parseFloat (nth row 2))
+               :timestamp (long (Integer/parseInt (nth row 3)))}))
+       (g/records->dataset spark)))
+
+(def model
+  (ml/fit ratings-df (ml/als {:max-iter   5
+                              :reg-param  0.01
+                              :user-col   "user-id"
+                              :item-col   "movie-id"
+                              :rating-col "rating"})))
+
+(.setColdStartStrategy model "drop")
+(def predictions
+  (ml/transform ratings-df model))
+
+(def evaluator
+  (ml/regression-evaluator {:metric-name    "rmse"
+                            :label-col      "rating"
+                            :prediction-col "prediction"}))
+
+(println "Root-mean-square error:" (ml/evaluate predictions evaluator))
+(-> (ml/recommend-users model 3)
+    (g/limit 5)
+    g/show)
+(-> (ml/recommend-items model 3)
+    (g/limit 5)
+    g/show)
+
+; Root-mean-square error: 0.29591909389846743
+;
+; +--------+--------------------------------------------------+
+; |movie-id|recommendations                                   |
+; +--------+--------------------------------------------------+
+; |31      |[[12, 3.893104], [6, 3.0838614], [14, 2.9631455]] |
+; |85      |[[16, 4.730368], [8, 4.6532993], [7, 3.7848458]]  |
+; |65      |[[23, 4.732419], [14, 3.1167293], [25, 2.436222]] |
+; |53      |[[22, 5.329093], [4, 4.733863], [24, 4.6916943]]  |
+; |78      |[[25, 1.3145051], [23, 1.1761607], [26, 1.135325]]|
+; +--------+--------------------------------------------------+
+; 
+; +-------+--------------------------------------------------+
+; |user-id|recommendations                                   |
+; +-------+--------------------------------------------------+
+; |28     |[[25, 5.689864], [92, 5.360779], [76, 5.1021585]] |
+; |26     |[[51, 6.298293], [22, 5.4222317], [94, 5.2276535]]|
+; |27     |[[18, 3.7351623], [7, 3.692539], [23, 3.3052857]] |
+; |12     |[[46, 9.0876255], [17, 4.984369], [35, 4.9596915]]|
+; |22     |[[53, 5.329093], [74, 5.013483], [75, 4.916749]]  |
+; +-------+--------------------------------------------------+
+```
+
+### Model Selection and Tuning
+
+```clojure
+(def training
+  (g/table->dataset
+    spark
+    [[0  "a b c d e spark"  1.0]
+     [1  "b d"              0.0]
+     [2  "spark f g h"      1.0]
+     [3  "hadoop mapreduce" 0.0]
+     [4  "b spark who"      1.0]
+     [5  "g d a y"          0.0]
+     [6  "spark fly"        1.0]
+     [7  "was mapreduce"    0.0]
+     [8  "e spark program"  1.0]
+     [9  "a e c l"          0.0]
+     [10 "spark compile"    1.0]
+     [11 "hadoop software"  0.0]]
+    [:id :text :label]))
+
+(def hashing-tf
+  (ml/hashing-tf {:input-col "words" :output-col "features"}))
+
+(def logistic-reg
+  (ml/logistic-regression {:max-iter 10}))
+
+(def pipeline
+  (ml/pipeline
+    (ml/tokeniser {:input-col "text" :output-col "words"})
+    hashing-tf
+    logistic-reg))
+
+(def param-grid
+  (ml/param-grid
+    {hashing-tf {:num-features (mapv int [10 100 1000])}
+     logistic-reg {:reg-param [0.1 0.01]}}))
+
+(def cross-validator
+  (ml/cross-validator {:estimator pipeline
+                       :evaluator (ml/binary-classification-evaluator {})
+                       :estimator-param-maps param-grid
+                       :num-folds 2
+                       :parallelism 2}))
+
+(def cv-model (ml/fit training cross-validator))
+
+(def testing
+  (g/table->dataset
+    spark
+    [[4 "spark i j k"]
+     [5 "l m n"]
+     [6 "mapreduce spark"]
+     [7 "apache hadoop"]]
+    [:id :text]))
+
+(-> testing
+    (ml/transform cv-model)
+    (g/select "id" "text" "probability" "prediction")
+    g/collect)
+
+; => ({:id 4,
+;      :text "spark i j k",
+;      :probability (0.12566260711357555 0.8743373928864244),
+;      :prediction 1.0}
+;     {:id 5,
+;      :text "l m n",
+;      :probability (0.995215441016286 0.004784558983713945),
+;      :prediction 0.0}
+;     {:id 6,
+;      :text "mapreduce spark",
+;      :probability (0.3069689523262689 0.693031047673731),
+;      :prediction 1.0}
+;     {:id 7,
+;      :text "apache hadoop",
+;      :probability (0.8040279442401511 0.19597205575984883),
+;      :prediction 0.0})
 ```
