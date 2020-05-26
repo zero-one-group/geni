@@ -103,7 +103,11 @@
       (g/select (g/flatten (g/array [(g/array (range 10))])))
       g/collect-vals
       first
-      first) => (range 10))
+      first) => (range 10)
+  (-> melbourne-df
+      (g/limit 1)
+      (g/select (-> (g/split "Regionname" " ") (g/as "split")))
+      (g/collect-col "split")) => [["Northern" "Metropolitan"]])
 
 (fact "On random functions" :slow
   (-> melbourne-df
