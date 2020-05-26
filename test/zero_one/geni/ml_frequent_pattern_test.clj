@@ -5,7 +5,7 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [spark]]))
 
-(facts "On FP-Growth training"
+(facts "On FP-Growth training" :slow
   (let [dataset   (-> (g/table->dataset
                         spark
                         [["1 2 5"]
