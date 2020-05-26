@@ -7,11 +7,10 @@
 (def dataset
   (-> (g/table->dataset
         spark
-        [["1 2 5"]
-         ["1 2 3 5"]
-         ["1 2"]]
-        [:items])
-      (g/with-column "items" (g/split "items" " "))))
+        [['("1" "2" "5")]
+         ['("1" "2" "3" "5")]
+         ['("1" "2")]]
+        [:items])))
 
 (def model
   (ml/fit

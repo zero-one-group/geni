@@ -92,6 +92,8 @@
 (import-vars
   [zero-one.geni.ml-fpm
    association-rules
+   find-frequent-sequential-patterns
+   find-patterns
    fp-growth
    freq-itemsets
    frequent-item-sets

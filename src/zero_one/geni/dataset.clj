@@ -1,9 +1,10 @@
 (ns zero-one.geni.dataset
   (:require
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.utils :refer [vector-of-numbers?]])
   (:import
     (org.apache.spark.sql RowFactory)
-    (org.apache.spark.sql.types DataTypes)
+    (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
 (defn ->row [coll]
@@ -23,13 +24,16 @@
    java.lang.String              DataTypes/StringType
    java.sql.Timestamp            DataTypes/TimestampType
    java.util.Date                DataTypes/DateType
-   nil                           DataTypes/NullType
-   clojure.lang.PersistentVector (VectorUDT.)})
+   nil                           DataTypes/NullType})
+
+(defn infer-spark-type [value]
+  (cond
+    (vector-of-numbers? value) (VectorUDT.)
+    (coll? value) (ArrayType. (infer-spark-type (first value)) true)
+    :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
 
 (defn infer-struct-field [col-name value]
-  (let [default-type DataTypes/BinaryType
-        java-type    (type value)
-        spark-type   (get java-type->spark-type java-type default-type)]
+  (let [spark-type   (infer-spark-type value)]
     (DataTypes/createStructField col-name spark-type true)))
 
 (defn infer-schema [col-names values]
