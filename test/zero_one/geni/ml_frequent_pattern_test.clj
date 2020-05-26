@@ -5,20 +5,33 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [spark]]))
 
-(facts "On FP-Growth training" :slow
-  (let [dataset   (-> (g/table->dataset
-                        spark
-                        [["1 2 5"]
-                         ["1 2 3 5"]
-                         ["1 2"]]
-                        [:items])
-                      (g/with-column "items" (g/split "items" " ")))
-        fp-growth (ml/fp-growth {:items-col      "items"
-                                 :min-confidence 0.6
-                                 :min-support    0.5})
-        model     (ml/fit dataset fp-growth)]
-    (g/column-names (ml/frequent-item-sets model)) => ["items" "freq"]
-    (g/column-names (ml/association-rules model)) => ["antecedent"
-                                                      "consequent"
-                                                      "confidence"
-                                                      "lift"]))
+(facts "On Prefix-Span training"
+  (let [dataset     (-> (g/table->dataset
+                          spark
+                          [[['(1 2) '(3)]]
+                           [['(1) '(3 2) '(1 2)]]
+                           [['(1 2) '(5)]]]
+                          [:sequence]))
+        prefix-span (ml/prefix-span {:min-support 0.5
+                                     :max-pattern-length 5
+                                     :max-local-proj-db-size 32000000})]
+    (-> dataset
+        (ml/find-patterns prefix-span)
+        g/column-names) => ["sequence" "freq"]))
+
+(facts "On FP-Growth training"
+ (let [dataset   (-> (g/table->dataset
+                      spark
+                       [[["1" "2" "5"]]
+                        [["1" "2" "3" "5"]]
+                        [["1" "2"]]]
+                       [:items]))
+       fp-growth (ml/fp-growth {:items-col      "items"
+                                :min-confidence 0.6
+                                :min-support    0.5})
+       model     (ml/fit dataset fp-growth)]
+   (g/column-names (ml/frequent-item-sets model)) => ["items" "freq"]
+   (g/column-names (ml/association-rules model)) => ["antecedent"
+                                                     "consequent"
+                                                     "confidence"
+                                                     "lift"]))

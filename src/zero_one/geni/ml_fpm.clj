@@ -28,3 +28,7 @@
                   :max-local-proj-db-size 32000000}
         props     (merge defaults params)]
     (interop/instantiate PrefixSpan props)))
+
+(defn find-frequent-sequential-patterns [dataset prefix-span]
+  (.findFrequentSequentialPatterns prefix-span dataset))
+(def find-patterns find-frequent-sequential-patterns)
