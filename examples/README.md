@@ -686,3 +686,54 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;      :probability (0.8040279442401511 0.19597205575984883),
 ;      :prediction 0.0})
 ```
+
+### Frequent Pattern Mining
+
+```clojure
+(def dataset
+  (-> (g/table->dataset
+        spark
+        [["1 2 5"]
+         ["1 2 3 5"]
+         ["1 2"]]
+        [:items])
+      (g/with-column "items" (g/split "items" " "))))
+
+(def model
+  (ml/fit
+    dataset
+    (ml/fp-growth {:items-col      "items"
+                   :min-confidence 0.6
+                   :min-support    0.5})))
+
+
+(g/show (ml/frequent-item-sets model))
+
+; +---------+----+
+; |items    |freq|
+; +---------+----+
+; |[1]      |3   |
+; |[2]      |3   |
+; |[2, 1]   |3   |
+; |[5]      |2   |
+; |[5, 2]   |2   |
+; |[5, 2, 1]|2   |
+; |[5, 1]   |2   |
+; +---------+----+
+
+(g/show (ml/association-rules model))
+
+; +----------+----------+------------------+----+
+; |antecedent|consequent|confidence        |lift|
+; +----------+----------+------------------+----+
+; |[2, 1]    |[5]       |0.6666666666666666|1.0 |
+; |[5, 1]    |[2]       |1.0               |1.0 |
+; |[2]       |[1]       |1.0               |1.0 |
+; |[2]       |[5]       |0.6666666666666666|1.0 |
+; |[5]       |[2]       |1.0               |1.0 |
+; |[5]       |[1]       |1.0               |1.0 |
+; |[1]       |[2]       |1.0               |1.0 |
+; |[1]       |[5]       |0.6666666666666666|1.0 |
+; |[5, 2]    |[1]       |1.0               |1.0 |
+; +----------+----------+------------------+----+
+```

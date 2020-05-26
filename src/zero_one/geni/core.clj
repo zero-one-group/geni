@@ -212,6 +212,7 @@
 (defn ltrim [expr] (functions/ltrim (->column expr)))
 (defn rtrim [expr] (functions/rtrim (->column expr)))
 (defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
+(defn split [expr pattern] (functions/split (->column expr) pattern))
 (defn regexp-replace [expr pattern-expr replacement-expr]
   (functions/regexp_replace
     (->column expr)

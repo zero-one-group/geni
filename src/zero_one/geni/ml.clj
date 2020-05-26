@@ -91,7 +91,10 @@
 
 (import-vars
   [zero-one.geni.ml-fpm
+   association-rules
    fp-growth
+   freq-itemsets
+   frequent-item-sets
    frequent-pattern-growth
    prefix-span])
 
