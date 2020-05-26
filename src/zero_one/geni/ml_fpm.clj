@@ -14,6 +14,13 @@
     (interop/instantiate FPGrowth props)))
 (def frequent-pattern-growth fp-growth)
 
+(defn frequent-item-sets [fp-model]
+  (.freqItemsets fp-model))
+(def freq-itemsets frequent-item-sets)
+
+(defn association-rules [fp-model]
+  (.associationRules fp-model))
+
 (defn prefix-span [params]
   (let [defaults {:min-support            0.1,
                   :sequence-col           "sequence",
