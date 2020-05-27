@@ -164,7 +164,8 @@
 ;(defn depth [model] (.depth model))
 ;(defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
 ;(defn feature-importances [model] (interop/->clojure (.featureImportances model)))
-(defn find-frequent-sequential-patterns [dataset prefix-span] (.findFrequentSequentialPatterns prefix-span dataset))
+(defn find-frequent-sequential-patterns [dataset prefix-span]
+  (.findFrequentSequentialPatterns prefix-span dataset))
 (def find-patterns find-frequent-sequential-patterns)
 (defn frequent-item-sets [model] (.freqItemsets model))
 (def freq-itemsets frequent-item-sets)
