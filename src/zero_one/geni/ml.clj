@@ -91,12 +91,7 @@
 
 (import-vars
   [zero-one.geni.ml-fpm
-   association-rules
-   find-frequent-sequential-patterns
-   find-patterns
    fp-growth
-   freq-itemsets
-   frequent-item-sets
    frequent-pattern-growth
    prefix-span])
 
@@ -158,6 +153,44 @@
          (into {})
          keywordize-keys)))
 
+;; TODO: describe-topics (LDA), computeCost (BisectingKMeans)
+;; TODO: gaussians (GaussianMixtureModel)
+(defn association-rules [model] (.associationRules model))
+;(defn binary-summary [model] (.binarySummary model))
+;(defn boundaries [model] (interop/->clojure (.boundaries model)))
+;(defn cluster-centers [model] (.clusterCenters model))
+;(defn coefficient-matrix [model] (.coefficientMatrix model))
+;(defn coefficients [model] (.coefficients model))
+;(defn depth [model] (.depth model))
+;(defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
+;(defn feature-importances [model] (interop/->clojure (.featureImportances model)))
+(defn find-frequent-sequential-patterns [dataset prefix-span] (.findFrequentSequentialPatterns prefix-span dataset))
+(def find-patterns find-frequent-sequential-patterns)
+(defn frequent-item-sets [model] (.freqItemsets model))
+(def freq-itemsets frequent-item-sets)
+;(defn gaussians-df [model] (.gaussiansDF model))
+;(defn get-num-trees [model] (.getNumTrees model))
+;(defn intercept [model] (.intercept model))
+;(defn intercept-vector [model] (.interceptVector model))
+;(defn is-distributed [model] (.isDistributed model))
+;(def distributed? is-distributed)
+;(defn log-likelihood [model] (.logLikelihood model))
+;(defn log-perplexity [model] (.logPerplexity model))
+;(defn num-classes [model] (.numClasses model))
+;(defn num-features [model] (.numFeatures model))
+;(defn num-nodes [model] (.numNodes model))
+;(defn pi [model] (interop/->clojure (.pi model)))
+;(defn root-node [model] (.rootNode model))
+;(defn scale [model] (.scale model))
+;(defn summary [model] (.summary model))
+;(defn theta [model] (interop/->clojure (.theta model)))
+;(defn total-num-nodes [model] (.totalNumNodes model))
+;(defn tree-weights [model] (.treeWeights model))
+;(defn trees [model] (.trees model))
+;(defn uid [model] (.uid model))
+;(defn vocab-size [model] (.vocabSize model))
+
+;; TODO: read-stage
 (defn write-stage! [model path]
   (.. model
       write
