@@ -4,7 +4,6 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
-    [zero-one.geni.interop :refer [vector->seq]]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           k-means-df
@@ -83,7 +82,7 @@
       (slurp temp-file) => #(not= % "")
       (KMeansModel/load temp-file) => #(instance? KMeansModel %))))
 
-(facts "On classification" :slow
+(facts "On multinomial classification" :slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
                        :max-iter 10
@@ -100,10 +99,55 @@
                        :metric-name "accuracy"})
         accuracy   (ml/evaluate predictions evaluator)]
    (fact "trainable logistic regression"
-     (vector->seq (.coefficientMatrix model)) => #(every? double? %)
-     (vector->seq (.interceptVector model)) => #(every? double? %))
+     (ml/coefficient-matrix model) => #(and (seq %)
+                                            (every? seq? %)
+                                            (every? double? (flatten %)))
+     (ml/intercept-vector model) => #(every? double? %))
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
+
+(facts "On binary classification" :slow
+  (let [estimator   (ml/logistic-regression
+                      {:thresholds [0.5 1.0]
+                       :max-iter 10
+                       :reg-param 0.3
+                       :elastic-net-param 0.8})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "trainable binary logistic regression"
+     (ml/coefficients model) => #(every? double? %)
+     (ml/intercept model) => double?)
+   (fact "other attributes are callable"
+     (ml/binary-summary model) => (complement nil?) ;; TODO: should be a map
+     (ml/summary model) => (complement nil?)
+     (ml/uid model) => string?
+     (ml/num-classes model) => 2
+     (ml/num-features model) => 692)))
+
+(facts "On decision-tree classifier" :slow
+  (let [estimator   (ml/decision-tree-classifier {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/depth model) => 2
+     (ml/num-nodes model) => 5
+     (ml/root-node model) => (complement nil?))))
+
+(facts "On random forest classifier" :slow
+  (let [estimator   (ml/random-forest-classifier {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/feature-importances model) => #(every? double? %)
+     (ml/total-num-nodes model) => int?
+     (ml/trees model) => seq?)))
+
+(facts "On gradient boosted tree classifier"
+  (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/feature-importances model) => #(every? double? %)
+     (ml/total-num-nodes model) => int?
+     (ml/trees model) => seq?
+     (ml/get-num-trees model) => int?
+     (ml/tree-weights model) => #(every? double? %))))
 
 (fact "On instantiation - FPM"
   (ml/params (ml/prefix-span {:max-pattern-length 321}))

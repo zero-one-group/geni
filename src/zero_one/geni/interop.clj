@@ -69,8 +69,7 @@
   (-> spark-vector .values seq))
 
 (defn matrix->seqs [matrix]
-  (let [n-cols (.numCols matrix)]
-    (->> matrix .values seq (partition n-cols))))
+  (->> matrix .rowIter .toSeq scala-seq->vec (map vector->seq)))
 
 (defn ->clojure [value]
   (cond
