@@ -106,7 +106,7 @@
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
 
-(facts "On binary classification"
+(facts "On binary classification" :slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
                        :max-iter 10
@@ -122,6 +122,32 @@
      (ml/uid model) => string?
      (ml/num-classes model) => 2
      (ml/num-features model) => 692)))
+
+(facts "On decision-tree classifier" :slow
+  (let [estimator   (ml/decision-tree-classifier {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/depth model) => 2
+     (ml/num-nodes model) => 5
+     (ml/root-node model) => (complement nil?))))
+
+(facts "On random forest classifier" :slow
+  (let [estimator   (ml/random-forest-classifier {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/feature-importances model) => #(every? double? %)
+     (ml/total-num-nodes model) => int?
+     (ml/trees model) => seq?)))
+
+(facts "On gradient boosted tree classifier"
+  (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/feature-importances model) => #(every? double? %)
+     (ml/total-num-nodes model) => int?
+     (ml/trees model) => seq?
+     (ml/get-num-trees model) => int?
+     (ml/tree-weights model) => #(every? double? %))))
 
 (fact "On instantiation - FPM"
   (ml/params (ml/prefix-span {:max-pattern-length 321}))
