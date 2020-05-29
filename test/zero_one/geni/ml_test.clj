@@ -65,7 +65,8 @@
                                     GeneralizedLinearRegression
                                     IsotonicRegression
                                     LinearRegression
-                                    RandomForestRegressor)))
+                                    RandomForestRegressor)
+    (org.apache.spark.sql Dataset)))
 
 (facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})
@@ -139,7 +140,7 @@
      (ml/total-num-nodes model) => int?
      (ml/trees model) => seq?)))
 
-(facts "On gradient boosted tree classifier"
+(facts "On gradient boosted tree classifier" :slow
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
         model       (ml/fit libsvm-df estimator)]
    (fact "Attributes are callable"
@@ -148,6 +149,61 @@
      (ml/trees model) => seq?
      (ml/get-num-trees model) => int?
      (ml/tree-weights model) => #(every? double? %))))
+
+(facts "On naive bayes classifier" :slow
+  (let [estimator   (ml/naive-bayes {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/theta model) => #(and (every? seq? %)
+                               (every? double? (flatten %)))
+     (ml/pi model) => #(every? double? %))))
+
+(facts "On isotonic regressor" :slow
+  (let [estimator   (ml/isotonic-regression {})
+        model       (ml/fit libsvm-df estimator)]
+   (fact "Attributes are callable"
+     (ml/boundaries model) => #(every? double? %))))
+
+(facts "On AFT survival regression" :slow
+  (let [dataset   (g/table->dataset
+                     spark
+                     [[1.218 1.0 [1.560 -0.605]]
+                      [2.949 0.0 [0.346  2.158]]
+                      [3.627 0.0 [1.380  0.231]]
+                      [0.273 1.0 [0.520  1.151]]
+                      [4.199 0.0 [0.795 -0.226]]]
+                     [:label :censor :features])
+        estimator (ml/aft-survival-regression {})
+        model     (ml/fit dataset estimator)]
+   (fact "Attributes are callable"
+     (ml/scale model) => #(pos? %))))
+
+(facts "On K-Means clustering" :slow
+  (let [estimator   (ml/k-means {})
+        model       (ml/fit k-means-df estimator)]
+   (fact "Attributes are callable"
+     (ml/cluster-centers model) => #(and (every? seq? %)
+                                         (every? double? (flatten %)))
+     (ml/compute-cost k-means-df model) => pos?)))
+
+(facts "On LDA clustering" :slow
+  (let [estimator   (ml/lda {})
+        model       (ml/fit k-means-df estimator)]
+   (fact "Attributes are callable"
+     (ml/distributed? model) => boolean?
+     (ml/describe-topics model) => #(instance? Dataset %)
+     (ml/estimated-doc-concentration model) => #(every? double? %)
+     (ml/log-likelihood k-means-df model) => double?
+     (ml/log-perplexity k-means-df model) => double?
+     (ml/supported-optimisers model) => #(every? string? %)
+     (ml/vocab-size model) => int?)))
+
+(facts "On GMM clustering" :slow
+  (let [estimator   (ml/gmm {})
+        model       (ml/fit k-means-df estimator)]
+   (fact "Attributes are callable"
+     (ml/weights model) => #(every? double? %)
+     (ml/gaussians-df model) => #(instance? Dataset %))))
 
 (fact "On instantiation - FPM"
   (ml/params (ml/prefix-span {:max-pattern-length 321}))

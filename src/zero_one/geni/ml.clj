@@ -22,7 +22,6 @@
 (import-vars
   [zero-one.geni.ml-clustering
    bisecting-k-means
-   cluster-centers
    gaussian-mixture
    gmm
    k-means
@@ -152,44 +151,48 @@
          (into {})
          keywordize-keys)))
 
-;; TODO: describe-topics (LDA), computeCost (BisectingKMeans)
-;; TODO: gaussians (GaussianMixtureModel)
+;; TODO: computeCost (BisectingKMeans)
 ;; TODO: turn summary into maps
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
-;(defn boundaries [model] (interop/->clojure (.boundaries model)))
-;(defn cluster-centers [model] (.clusterCenters model))
+(defn boundaries [model] (interop/->clojure (.boundaries model)))
+(defn cluster-centers [model] (->> model .clusterCenters seq (map interop/->clojure)))
 (defn coefficient-matrix [model] (interop/matrix->seqs (.coefficientMatrix model)))
 (defn coefficients [model] (interop/vector->seq (.coefficients model)))
+(defn compute-cost [dataset model] (.computeCost model dataset))
 (defn depth [model] (.depth model))
-;(defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
+(def describe-topics (memfn describeTopics))
+(defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
 (defn feature-importances [model] (interop/->clojure (.featureImportances model)))
 (defn find-frequent-sequential-patterns [dataset prefix-span]
   (.findFrequentSequentialPatterns prefix-span dataset))
 (def find-patterns find-frequent-sequential-patterns)
 (defn frequent-item-sets [model] (.freqItemsets model))
 (def freq-itemsets frequent-item-sets)
-;(defn gaussians-df [model] (.gaussiansDF model))
+(defn gaussians-df [model] (.gaussiansDF model))
 (defn get-num-trees [model] (.getNumTrees model))
 (defn intercept [model] (.intercept model))
 (defn intercept-vector [model] (interop/vector->seq (.interceptVector model)))
-;(defn is-distributed [model] (.isDistributed model))
-;(def distributed? is-distributed)
-;(defn log-likelihood [model] (.logLikelihood model))
-;(defn log-perplexity [model] (.logPerplexity model))
+(defn is-distributed [model] (.isDistributed model))
+(def distributed? is-distributed)
+(defn log-likelihood [dataset model] (.logLikelihood model dataset))
+(defn log-perplexity [dataset model] (.logPerplexity model dataset))
 (defn num-classes [model] (.numClasses model))
 (defn num-features [model] (.numFeatures model))
 (defn num-nodes [model] (.numNodes model))
-;(defn pi [model] (interop/->clojure (.pi model)))
+(defn pi [model] (interop/vector->seq (.pi model)))
 (defn root-node [model] (.rootNode model))
-;(defn scale [model] (.scale model))
+(defn scale [model] (.scale model))
 (defn summary [model] (.summary model))
-;(defn theta [model] (interop/->clojure (.theta model)))
+(defn supported-optimizers [model] (seq (.supportedOptimizers model)))
+(def supported-optimisers supported-optimizers)
+(defn theta [model] (interop/matrix->seqs (.theta model)))
 (defn total-num-nodes [model] (.totalNumNodes model))
 (defn tree-weights [model] (seq (.treeWeights model)))
 (defn trees [model] (seq (.trees model)))
 (defn uid [model] (.uid model))
-;(defn vocab-size [model] (.vocabSize model))
+(defn vocab-size [model] (.vocabSize model))
+(defn weights [model] (seq (.weights model)))
 
 ;; TODO: read-stage
 (defn write-stage! [model path]
