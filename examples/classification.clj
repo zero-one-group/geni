@@ -5,7 +5,6 @@
     [zero-one.geni.test-resources :refer [spark]]))
 
 ;; Logistic Regression
-;; TODO: coefficients
 (def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/logistic-regression {:max-iter 10
@@ -19,6 +18,10 @@
     (g/select "label" "probability")
     (g/limit 5)
     g/show)
+
+(take 3 (ml/coefficients lr-model))
+
+(ml/intercept lr-model)
 
 ;; Gradient-Boosted Tree Classifier
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))

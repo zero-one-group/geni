@@ -5,7 +5,6 @@
     [zero-one.geni.test-resources :refer [spark]]))
 
 ;; Linear Regression
-;; TODO: coefficients
 (def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/linear-regression {:max-iter 10
@@ -19,6 +18,10 @@
     (g/select "label" "prediction")
     (g/limit 5)
     g/show)
+
+(take 3 (ml/coefficients lr-model))
+
+(ml/intercept lr-model)
 
 ;; Random Forest Regression
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))

@@ -1,9 +1,8 @@
 (ns examples.basic-statistics
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]))
-
-(defonce spark (g/create-spark-session {}))
+    [zero-one.geni.ml :as ml]
+    [zero-one.geni.test-resources :refer [spark]]))
 
 ;; Correlation
 (def corr-df
