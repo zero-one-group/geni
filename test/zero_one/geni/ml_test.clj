@@ -6,6 +6,7 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [create-temp-file!
+                                          melbourne-df
                                           k-means-df
                                           libsvm-df
                                           spark]])
@@ -110,7 +111,18 @@
                 (g/limit libsvm-df 10)
                 (ml/min-max-scaler {:input-col "features"}))]
     (ml/original-min model) => #(every? double? %)
-    (ml/original-max model) => #(every? double? %)))
+    (ml/original-max model) => #(every? double? %))
+  (let [model (ml/fit
+               (g/limit libsvm-df 10)
+               (ml/max-abs-scaler {:input-col "features"}))]
+    (ml/max-abs model) => #(every? double? %))
+  (let [model (ml/vector-size-hint {:input-col "features" :size 111})]
+    (ml/get-size model) => 111)
+  (let [model (ml/fit
+               (g/select melbourne-df "BuildingArea")
+               (ml/imputer {:input-cols ["BuildingArea"]
+                            :output-cols ["ImputedBuildingArea"]}))]
+    (ml/surrogate-df model) => #(instance? Dataset %)))
 
 (facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})

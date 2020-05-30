@@ -35,6 +35,7 @@
    multiclass-classification-evaluator
    regression-evaluator])
 
+;; TODO: stop words remover, chi-sq-selector
 (import-vars
   [zero-one.geni.ml-feature
    binariser
@@ -154,6 +155,7 @@
          keywordize-keys)))
 
 ;; TODO: turn summary into maps
+;; TODO: approx-nearest-neighbours (LSH)
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
@@ -179,6 +181,7 @@
 (def freq-itemsets frequent-item-sets)
 (defn gaussians-df [model] (.gaussiansDF model))
 (defn get-num-trees [model] (.getNumTrees model))
+(defn get-size [model] (.getSize model))
 (defn idf-vector [model] (interop/vector->seq (.idf model)))
 (defn intercept [model] (.intercept model))
 (defn intercept-vector [model] (interop/vector->seq (.interceptVector model)))
@@ -186,12 +189,13 @@
 (def distributed? is-distributed)
 (defn log-likelihood [dataset model] (.logLikelihood model dataset))
 (defn log-perplexity [dataset model] (.logPerplexity model dataset))
+(defn max-abs [model] (interop/vector->seq (.maxAbs model)))
 (defn mean [model] (interop/vector->seq (.mean model)))
 (defn num-classes [model] (.numClasses model))
 (defn num-features [model] (.numFeatures model))
 (defn num-nodes [model] (.numNodes model))
-(defn original-min [model] (interop/vector->seq (.originalMin model)))
 (defn original-max [model] (interop/vector->seq (.originalMax model)))
+(defn original-min [model] (interop/vector->seq (.originalMin model)))
 (defn pc [model] (interop/matrix->seqs (.pc model)))
 (def principal-components pc)
 (defn pi [model] (interop/vector->seq (.pi model)))
@@ -202,6 +206,7 @@
 (def supported-optimisers supported-optimizers)
 (defn stages [model] (seq (.stages model)))
 (defn std [model] (interop/vector->seq (.std model)))
+(defn surrogate-df [model] (.surrogateDF model))
 (defn theta [model] (interop/matrix->seqs (.theta model)))
 (defn total-num-nodes [model] (.totalNumNodes model))
 (defn tree-weights [model] (seq (.treeWeights model)))
