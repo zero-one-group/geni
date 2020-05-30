@@ -35,6 +35,7 @@
    multiclass-classification-evaluator
    regression-evaluator])
 
+;; TODO: stop words remover, chi-sq-selector
 (import-vars
   [zero-one.geni.ml-feature
    binariser
@@ -65,6 +66,8 @@
    polynomial-expansion
    quantile-discretiser
    quantile-discretizer
+   regex-tokeniser
+   regex-tokenizer
    sql-transformer
    standard-scaler
    string-indexer
@@ -151,11 +154,18 @@
          (into {})
          keywordize-keys)))
 
-;; TODO: computeCost (BisectingKMeans)
 ;; TODO: turn summary into maps
+;; TODO: approx-nearest-neighbours (LSH)
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
+(defn category-maps [model]
+  (->> model
+       .categoryMaps
+       interop/scala-map->map
+       (map (fn [[k v]] [k (interop/scala-map->map v)]))
+       (into {})))
+(defn category-sizes [model] (seq (.categorySizes model)))
 (defn cluster-centers [model] (->> model .clusterCenters seq (map interop/->clojure)))
 (defn coefficient-matrix [model] (interop/matrix->seqs (.coefficientMatrix model)))
 (defn coefficients [model] (interop/vector->seq (.coefficients model)))
@@ -171,27 +181,39 @@
 (def freq-itemsets frequent-item-sets)
 (defn gaussians-df [model] (.gaussiansDF model))
 (defn get-num-trees [model] (.getNumTrees model))
+(defn get-size [model] (.getSize model))
+(defn idf-vector [model] (interop/vector->seq (.idf model)))
 (defn intercept [model] (.intercept model))
 (defn intercept-vector [model] (interop/vector->seq (.interceptVector model)))
 (defn is-distributed [model] (.isDistributed model))
 (def distributed? is-distributed)
 (defn log-likelihood [dataset model] (.logLikelihood model dataset))
 (defn log-perplexity [dataset model] (.logPerplexity model dataset))
+(defn max-abs [model] (interop/vector->seq (.maxAbs model)))
+(defn mean [model] (interop/vector->seq (.mean model)))
 (defn num-classes [model] (.numClasses model))
 (defn num-features [model] (.numFeatures model))
 (defn num-nodes [model] (.numNodes model))
+(defn original-max [model] (interop/vector->seq (.originalMax model)))
+(defn original-min [model] (interop/vector->seq (.originalMin model)))
+(defn pc [model] (interop/matrix->seqs (.pc model)))
+(def principal-components pc)
 (defn pi [model] (interop/vector->seq (.pi model)))
 (defn root-node [model] (.rootNode model))
 (defn scale [model] (.scale model))
 (defn summary [model] (.summary model))
 (defn supported-optimizers [model] (seq (.supportedOptimizers model)))
 (def supported-optimisers supported-optimizers)
+(defn stages [model] (seq (.stages model)))
+(defn std [model] (interop/vector->seq (.std model)))
+(defn surrogate-df [model] (.surrogateDF model))
 (defn theta [model] (interop/matrix->seqs (.theta model)))
 (defn total-num-nodes [model] (.totalNumNodes model))
 (defn tree-weights [model] (seq (.treeWeights model)))
 (defn trees [model] (seq (.trees model)))
 (defn uid [model] (.uid model))
 (defn vocab-size [model] (.vocabSize model))
+(defn vocabulary [model] (seq (.vocabulary model)))
 (defn weights [model] (seq (.weights model)))
 
 ;; TODO: read-stage
@@ -203,33 +225,7 @@
 
 (comment
 
-  (require '[zero-one.geni.core :as g])
-  (require '[zero-one.geni.dataset :as ds])
-  (require '[zero-one.geni.test-resources :refer [spark libsvm-df k-means-df]])
-
-  (g/print-schema libsvm-df)
-  (g/print-schema k-means-df)
-
-  (def model
-    (let [estimator   (k-means {:k 3})
-          model       (fit k-means-df estimator)]
-      model))
-
-
-  (.toPMML model "temp.xml")
-
-  (.toPMML model)
-
-  (class model)
-
-  (require '[clojure.reflect :as r])
-  (->> (r/reflect model)
-       :members
-       (mapv :name)
-       sort)
-
-
-  (import '(org.apache.spark.ml.fpm PrefixSpan))
-  (params (PrefixSpan.))
+  (import '(org.apache.spark.ml.feature RegexTokenizer))
+  (params (RegexTokenizer.))
 
   true)
