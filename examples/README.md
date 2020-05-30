@@ -26,8 +26,8 @@ The following examples are taken from [Apache Spark's example page](https://spar
     (g/filter (g/like "Suburb" "%South%"))
     (g/select "Suburb")
     g/distinct
+    (g/limit 5)
     g/show)
-
 ; +----------------+
 ; |Suburb          |
 ; +----------------+
@@ -36,16 +36,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ; |Clayton South   |
 ; |Blackburn South |
 ; |Vermont South   |
-; |Caulfield South |
-; |Croydon South   |
-; |Springvale South|
-; |Melton South    |
-; |Oakleigh South  |
-; |Wantirna South  |
-; |Southbank       |
-; |South Morang    |
-; |Frankston South |
-; |South Yarra     |
 ; +----------------+
 ```
 
@@ -53,30 +43,12 @@ The following examples are taken from [Apache Spark's example page](https://spar
 
 ``` clojure
 (-> melbourne-df
+    (g/select "Suburb" "Rooms" "Price")
     g/print-schema)
-
 ; root
 ;  |-- Suburb: string (nullable = true)
-;  |-- Address: string (nullable = true)
 ;  |-- Rooms: long (nullable = true)
-;  |-- Type: string (nullable = true)
 ;  |-- Price: double (nullable = true)
-;  |-- Method: string (nullable = true)
-;  |-- SellerG: string (nullable = true)
-;  |-- Date: string (nullable = true)
-;  |-- Distance: double (nullable = true)
-;  |-- Postcode: double (nullable = true)
-;  |-- Bedroom2: double (nullable = true)
-;  |-- Bathroom: double (nullable = true)
-;  |-- Car: double (nullable = true)
-;  |-- Landsize: double (nullable = true)
-;  |-- BuildingArea: double (nullable = true)
-;  |-- YearBuilt: double (nullable = true)
-;  |-- CouncilArea: string (nullable = true)
-;  |-- Lattitude: double (nullable = true)
-;  |-- Longtitude: double (nullable = true)
-;  |-- Regionname: string (nullable = true)
-;  |-- Propertycount: double (nullable = true)
 ```
 
 ### Descriptive Statistics
@@ -85,7 +57,6 @@ The following examples are taken from [Apache Spark's example page](https://spar
 (-> melbourne-df
     (g/describe "Price")
     g/show)
-
 ; +-------+-----------------+
 ; |summary|Price            |
 ; +-------+-----------------+
@@ -100,34 +71,18 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ### Null Rates
 
 ```clojure
-(let [null-rate-cols (map g/null-rate (g/column-names melbourne-df))]
+(letfn [(null-rate [col-name]
+          (-> col-name
+              g/null?
+              (g/cast "double")
+              g/mean
+              (g/as col-name)))]
   (-> melbourne-df
-      (g/agg null-rate-cols)
-      g/show-vertical))
-
-; -RECORD 0----------------------------------------
-;  null_rate(Suburb)        | 0.0
-;  null_rate(Address)       | 0.0
-;  null_rate(Rooms)         | 0.0
-;  null_rate(Type)          | 0.0
-;  null_rate(Price)         | 0.0
-;  null_rate(Method)        | 0.0
-;  null_rate(SellerG)       | 0.0
-;  null_rate(Date)          | 0.0
-;  null_rate(Distance)      | 0.0
-;  null_rate(Postcode)      | 0.0
-;  null_rate(Bedroom2)      | 0.0
-;  null_rate(Bathroom)      | 0.0
-;  null_rate(Car)           | 0.004565537555228277
-;  null_rate(Landsize)      | 0.0
-;  null_rate(BuildingArea)  | 0.47496318114874814
-;  null_rate(YearBuilt)     | 0.3958026509572901
-;  null_rate(CouncilArea)   | 0.1008100147275405
-;  null_rate(Lattitude)     | 0.0
-;  null_rate(Longtitude)    | 0.0
-;  null_rate(Regionname)
-;   | 0.0
-;  null_rate(Propertycount) | 0.0
+      (g/agg (map null-rate ["Car" "LandSize" "BuildingArea"]))
+      g/collect))
+; => ({:Car 0.004565537555228277,
+;      :LandSize 0.0,
+;      :BuildingArea 0.47496318114874814})
 ```
 
 ## MLlib
@@ -205,7 +160,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> sentence-data
     (ml/transform pipeline-model)
     (g/collect-col "features"))
-
 ; => ((0.6931471805599453
 ;      0.6931471805599453
 ;      0.28768207245178085
@@ -241,7 +195,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> dataframe
     (ml/transform pca)
     (g/collect-col "pca-features"))
-
 ;; => ((1.6485728230883807 -4.013282700516296 -5.524543751369388)
 ;;     (-4.645104331781534 -1.1167972663619026 -5.524543751369387)
 ;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
@@ -262,7 +215,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform scaler-model)
     (g/limit 1)
     (g/collect-col "scaled-features"))
-
 ;; => ((0.5468234998110156
 ;;      1.5923262059067456
 ;;      2.435399721310935
@@ -294,7 +246,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform assembler)
     (g/select "features" "clicked")
     g/show)
-
 ; +-----------------------+-------+
 ; |features               |clicked|
 ; +-----------------------+-------+
@@ -320,7 +271,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select "label" "probability")
     (g/limit 5)
     g/show)
-
 ; +-----+----------------------------------------+
 ; |label|probability                             |
 ; +-----+----------------------------------------+
@@ -330,6 +280,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |1.0  |[0.2526490765347194,0.7473509234652805] |
 ; |1.0  |[0.22494007343582254,0.7750599265641774]|
 ; +-----+----------------------------------------+
+
+(take 3 (ml/coefficients lr-model))
+; => (-7.353983524188197E-5 -9.102738505589466E-5 -1.9467430546904298E-4)
+
+(ml/intercept lr-model)
+; => 0.22456315961250325
 ```
 
 #### Gradient Boosted Tree Classifier
@@ -374,7 +330,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select "predicted-label" "label")
     (g/order-by (g/rand)))
 (println "Test error:" (- 1 (ml/evaluate predictions evaluator)))
-
 ; +---------------+-----+
 ; |predicted-label|label|
 ; +---------------+-----+
@@ -384,7 +339,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |1.0            |1.0  |
 ; |1.0            |1.0  |
 ; +---------------+-----+
-;
 ; Test error: 0.08823529411764708
 ```
 
@@ -400,7 +354,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                                :elastic-net-param 0.8}))
 
 (def lr-model (ml/fit training lr))
-
 ; +-----+----------+
 ; |label|prediction|
 ; +-----+----------+
@@ -410,6 +363,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |1.0  |0.57      |
 ; |1.0  |0.57      |
 ; +-----+----------+
+
+(take 3 (ml/coefficients lr-model))
+; => (0.0 0.0 0.0)
+
+(ml/intercept lr-model)
+; => 0.57
 ```
 
 #### Random Forest Regression
@@ -443,7 +402,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select "prediction" "label")
     (g/show {:num-rows 5}))
 (println "RMSE:" (ml/evaluate predictions evaluator))
-
 ; +----------+-----+
 ; |prediction|label|
 ; +----------+-----+
@@ -453,7 +411,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |0.0       |0.0  |
 ; |0.15      |0.0  |
 ; +----------+-----+
-;
 ; RMSE: 0.1436762233038478
 ```
 
@@ -480,7 +437,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def aft-model (ml/fit train aft))
 
 (-> train (ml/transform model) g/show)
-
 ; +-----+------+--------------+------------------+---------------------------------------+
 ; |label|censor|features      |prediction        |quantiles                              |
 ; +-----+------+--------------+------------------+---------------------------------------+
@@ -510,7 +466,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (println "Silhouette with squared euclidean distance:" silhoutte)
 (println "Cluster centers:" (ml/cluster-centers model))
-
 ; Silhouette with squared euclidean distance: 0.9997530305375207
 ; Cluster centers: ((0.1 0.1 0.1) (9.1 9.1 9.1))
 ```
@@ -526,7 +481,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (println "log-likehood:" (.logLikelihood model dataset))
 (println "log-perplexity" (.logPerplexity model dataset))
-
 ; log-likehood: -164.51762514834732
 ; log-perplexity 1.9869278399558856
 
@@ -534,7 +488,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform model)
     (g/limit 2)
     (g/collect-col "topicDistribution"))
-
 ; => ((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
 ;     (0.07701806399774133
 ;      0.07701821590017151
@@ -585,9 +538,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> (ml/recommend-items model 3)
     (g/limit 5)
     g/show)
-
 ; Root-mean-square error: 0.29591909389846743
-;
 ; +--------+--------------------------------------------------+
 ; |movie-id|recommendations                                   |
 ; +--------+--------------------------------------------------+
@@ -597,7 +548,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |53      |[[22, 5.329093], [4, 4.733863], [24, 4.6916943]]  |
 ; |78      |[[25, 1.3145051], [23, 1.1761607], [26, 1.135325]]|
 ; +--------+--------------------------------------------------+
-; 
 ; +-------+--------------------------------------------------+
 ; |user-id|recommendations                                   |
 ; +-------+--------------------------------------------------+
@@ -668,7 +618,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform cv-model)
     (g/select "id" "text" "probability" "prediction")
     g/collect)
-
 ; => ({:id 4,
 ;      :text "spark i j k",
 ;      :probability (0.12566260711357555 0.8743373928864244),
@@ -707,7 +656,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 
 (g/show (ml/frequent-item-sets model))
-
 ; +---------+----+
 ; |items    |freq|
 ; +---------+----+
@@ -721,7 +669,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; +---------+----+
 
 (g/show (ml/association-rules model))
-
 ; +----------+----------+------------------+----+
 ; |antecedent|consequent|confidence        |lift|
 ; +----------+----------+------------------+----+

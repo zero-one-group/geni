@@ -67,8 +67,8 @@ Spark SQL API for grouping and aggregating:
     (g/group-by "Suburb")
     (g/agg (-> (g/count "*") (g/as "n")))
     (g/order-by (g/desc "n"))
+    (g/limit 5)
     g/show)
-
 ; +--------------+---+
 ; |Suburb        |n  |
 ; +--------------+---+
@@ -77,21 +77,6 @@ Spark SQL API for grouping and aggregating:
 ; |Bentleigh East|249|
 ; |Preston       |239|
 ; |Brunswick     |222|
-; |Essendon      |220|
-; |South Yarra   |202|
-; |Glen Iris     |195|
-; |Hawthorn      |191|
-; |Coburg        |190|
-; |Northcote     |188|
-; |Brighton      |186|
-; |Kew           |177|
-; |Pascoe Vale   |171|
-; |Balwyn North  |171|
-; |Yarraville    |164|
-; |St Kilda      |162|
-; |Glenroy       |159|
-; |Port Melbourne|153|
-; |Moonee Ponds  |149|
 ; +--------------+---+
 ```
 
@@ -135,7 +120,6 @@ MLlib's pipeline:
     (ml/transform model)
     (g/select "id" "text" "probability" "prediction")
     g/show)
-
 ;; +---+------------------+----------------------------------------+----------+
 ;; |id |text              |probability                             |prediction|
 ;; +---+------------------+----------------------------------------+----------+
