@@ -23,6 +23,7 @@
                                  PCA
                                  PolynomialExpansion
                                  QuantileDiscretizer
+                                 RegexTokenizer
                                  SQLTransformer
                                  StandardScaler
                                  StringIndexer
@@ -192,3 +193,12 @@
                   :min-count           5}
         props    (merge defaults params)]
     (interop/instantiate Word2Vec props)))
+
+(defn regex-tokeniser [params]
+  (let [defaults {:to-lowercase true,
+                  :pattern "\\s+",
+                  :min-token-length 1,
+                  :gaps true}
+        props    (merge defaults params)]
+    (interop/instantiate RegexTokenizer props)))
+(def regex-tokenizer regex-tokeniser)

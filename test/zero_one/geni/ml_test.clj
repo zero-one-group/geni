@@ -48,6 +48,7 @@
                                  PCA
                                  PolynomialExpansion
                                  QuantileDiscretizer
+                                 RegexTokenizer
                                  SQLTransformer
                                  StandardScaler
                                  StringIndexer
@@ -67,6 +68,49 @@
                                     LinearRegression
                                     RandomForestRegressor)
     (org.apache.spark.sql Dataset)))
+
+(facts "On feature extraction"
+  (let [dataset   (ds/table->dataset spark [[0 ["a" "b" "c"]]] [:id :words])
+        count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
+    (ml/vocabulary count-vec) => #(every? string? %))
+  (let [dataset (ds/table->dataset
+                  spark
+                  [[[2.0  1.0]]
+                   [[0.0  0.0]]
+                   [[3.0 -1.0]]]
+                  [:features])
+        pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
+    (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
+  (let [dataset (ds/table->dataset
+                  spark
+                  [[0.0  1.0]
+                   [0.0  0.0]
+                   [0.0  1.0]
+                   [1.0  0.0]]
+                  [:i :j])
+        ohe     (ml/fit
+                  dataset
+                  (ml/one-hot-encoder {:input-cols ["i" "j"]
+                                       :output-cols ["x" "y"]}))]
+    (ml/category-sizes ohe) => [2 2])
+  (let [indexer (ml/fit
+                  (g/limit libsvm-df 10)
+                  (ml/vector-indexer {:input-col "features" :output-col "indexed"}))]
+    (ml/category-maps indexer) => #(and (map? %)
+                                        (every? int? (map first %))
+                                        (every? map? (map second %))))
+  (let [model (ml/fit
+               (g/limit libsvm-df 10)
+               (ml/standard-scaler {:input-col "features"
+                                    :with-mean true
+                                    :with-std true}))]
+    (ml/mean model) => #(every? double? %)
+    (ml/std model) => #(every? double? %))
+  (let [model (ml/fit
+                (g/limit libsvm-df 10)
+                (ml/min-max-scaler {:input-col "features"}))]
+    (ml/original-min model) => #(every? double? %)
+    (ml/original-max model) => #(every? double? %)))
 
 (facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})
@@ -488,10 +532,15 @@
   (ml/params (ml/word2vec {:vector-size 3}))
   => #(= (:vector-size %) 3)
   (ml/word2vec {})
-  => #(instance? Word2Vec %))
+  => #(instance? Word2Vec %)
+
+  (ml/params (ml/regex-tokeniser {:pattern "\\W"}))
+  => #(= (:pattern %) "\\W")
+  (ml/regex-tokenizer {})
+  => #(instance? RegexTokenizer %))
 
 (facts "On pipeline" :slow
-  (fact "should be able to fit the example stages"
+  (fact "should be able to fit the example stages" :slow
     (let [dataset     (ds/table->dataset
                         spark
                         [[0, "a b c d e spark", 1.0]
@@ -514,7 +563,7 @@
                           g/dtypes)]
       (:probability dtypes) => #(includes? % "Vector")
       (:prediction dtypes) => "DoubleType"))
-  (fact "should be able to fit the idf example"
+  (fact "should be able to fit the idf example" :slow
     (let [dataset     (ds/table->dataset
                         spark
                         [[0.0 "Hi I heard about Spark"]
@@ -533,8 +582,9 @@
           transformed (-> dataset
                           (ml/transform transformer)
                           (g/select "features"))]
-      (->> transformed g/collect-vals flatten) => #(every? double? %)))
-  (fact "should be able to fit the word2vec example"
+      (->> transformed g/collect-vals flatten) => #(every? double? %)
+      (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
+  (fact "should be able to fit the word2vec example" :slow
     (let [dataset     (ds/table->dataset
                         spark
                         [["Hi I heard about Spark"]
