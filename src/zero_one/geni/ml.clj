@@ -12,6 +12,7 @@
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
     [zero-one.geni.ml-tuning]
+    [zero-one.geni.ml-xgb]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml Pipeline
@@ -125,6 +126,11 @@
    cross-validator
    train-validation-split])
 
+(import-vars
+  [zero-one.geni.ml-xgb
+   xgboost-classifier
+   xgboost-regressor])
+
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe col-name))
 (def correlation corr)
@@ -234,7 +240,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.feature RegexTokenizer))
-  (params (RegexTokenizer.))
+  (import '(ml.dmlc.xgboost4j.scala.spark XGBoostRegressor))
+  (params (XGBoostRegressor.))
 
   true)

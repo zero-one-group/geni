@@ -342,6 +342,32 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; Test error: 0.08823529411764708
 ```
 
+#### XGBoost Classifier
+
+```clojure
+(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+
+(def xgb-model
+  (ml/fit
+    training
+    (ml/xgboost-classifier {:max-depth 2 :num-round 2})))
+
+(-> training
+    (ml/transform xgb-model)
+    (g/select "label" "probability")
+    (g/limit 5)
+    g/show)
+; +-----+----------------------------------------+
+; |label|probability                             |
+; +-----+----------------------------------------+
+; |0.0  |[0.7502040266990662,0.24979597330093384]|
+; |1.0  |[0.24869805574417114,0.7513019442558289]|
+; |1.0  |[0.24869805574417114,0.7513019442558289]|
+; |1.0  |[0.24869805574417114,0.7513019442558289]|
+; |1.0  |[0.24869805574417114,0.7513019442558289]|
+; +-----+----------------------------------------+
+```
+
 ### Regression
 
 #### Linear Regression
@@ -446,6 +472,32 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |0.273|1.0   |[0.52,1.151]  |13.57761250142532 |[2.7547621481506925,11.859872224069731]|
 ; |4.199|0.0   |[0.795,-0.226]|9.013097744073866 |[1.8286676321297761,7.872826505878401] |
 ; +-----+------+--------------+------------------+---------------------------------------+
+```
+
+#### XGBoost Regressor
+
+```clojure
+(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+
+(def xgb-model
+  (ml/fit
+    training
+    (ml/xgboost-regressor {:max-depth 2 :num-round 2})))
+
+(-> training
+    (ml/transform xgb-model)
+    (g/select "label" "prediction")
+    (g/limit 5)
+    g/show)
+; +-----+-------------------+
+; |label|prediction         |
+; +-----+-------------------+
+; |0.0  |0.24979597330093384|
+; |1.0  |0.7513019442558289 |
+; |1.0  |0.7513019442558289 |
+; |1.0  |0.7513019442558289 |
+; |1.0  |0.7513019442558289 |
+; +-----+-------------------+
 ```
 
 ### Clustering
