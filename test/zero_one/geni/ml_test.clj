@@ -70,7 +70,36 @@
                                     RandomForestRegressor)
     (org.apache.spark.sql Dataset)))
 
+
 (facts "On feature extraction"
+  (let [ds-a     (ds/table->dataset
+                   spark
+                   [[0 [1.0 1.0 1.0 0.0 0.0 0.0]]
+                    [1 [0.0 0.0 0.0 1.0 1.0 1.0]]
+                    [2 [1.0 1.0 0.0 1.0 0.0 0.0]]]
+                   [:id :features])
+        ds-b     (ds/table->dataset
+                   spark
+                   [[3 [1.0 0.0 1.0 0.0 1.0 0.0]]
+                    [4 [0.0 0.0 1.0 1.0 1.0 0.0]]
+                    [5 [0.0 1.0 1.0 0.0 1.0 0.0]]]
+                   [:id :features])
+        min-hash (ml/fit ds-a (ml/min-hash-lsh {:input-col "features"
+                                                :output-col "hashes"
+                                                :num-hash-tables 5}))]
+    (ml/approx-nearest-neighbours
+      ds-a
+      min-hash
+      [0.0 1.0 0.0 1.0 0.0 0.0]
+      2) => #(instance? Dataset %)
+    (ml/approx-nearest-neighbours
+      ds-a
+      min-hash
+      [0.0 1.0 0.0 1.0 0.0 0.0]
+      2
+      "distCol") => #(instance? Dataset %)
+    (ml/approx-similarity-join ds-a ds-b min-hash 0.6) => #(instance? Dataset %)
+    (ml/approx-similarity-join ds-a ds-b min-hash 0.6 "JaccardDistance") => #(instance? Dataset %))
   (let [dataset   (ds/table->dataset spark [[0 ["a" "b" "c"]]] [:id :words])
         count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
     (ml/vocabulary count-vec) => #(every? string? %))

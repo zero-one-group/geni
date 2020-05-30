@@ -155,7 +155,16 @@
          keywordize-keys)))
 
 ;; TODO: turn summary into maps
-;; TODO: approx-nearest-neighbours (LSH)
+(defn approx-nearest-neighbours
+  ([dataset model key-v n-nearest]
+   (.approxNearestNeighbors model dataset (interop/->scala-coll key-v) n-nearest))
+  ([dataset model key-v n-nearest dist-col]
+   (.approxNearestNeighbors model dataset (interop/->scala-coll key-v) n-nearest dist-col)))
+(defn approx-similarity-join
+  ([dataset-a dataset-b model threshold]
+   (.approxSimilarityJoin model dataset-a dataset-b threshold))
+  ([dataset-a dataset-b model threshold dist-col]
+   (.approxSimilarityJoin model dataset-a dataset-b threshold dist-col)))
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
