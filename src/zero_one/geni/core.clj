@@ -18,6 +18,7 @@
                             first
                             flatten
                             group-by
+                            hash
                             map
                             max
                             min
@@ -152,6 +153,18 @@
   (let [[head & tail] (clojure.core/map ->column (clojure.core/flatten exprs))]
     (.agg dataframe head (into-array Column tail))))
 
+(defn approx-quantile [dataframe col-or-cols probs rel-error]
+  (let [seq-col     (coll? col-or-cols)
+        col-or-cols (if seq-col
+                      (into-array java.lang.String col-or-cols)
+                      col-or-cols)
+        quantiles   (-> dataframe
+                        .stat
+                        (.approxQuantile col-or-cols (double-array probs) rel-error))]
+    (if seq-col
+      (clojure.core/map seq quantiles)
+      (seq quantiles))))
+
 (defn broadcast [dataframe] (functions/broadcast dataframe))
 (defn cache [dataframe] (.cache dataframe))
 (defn persist [dataframe] (.persist dataframe))
@@ -172,6 +185,7 @@
 (defn current-timestamp [] (functions/current_timestamp))
 (defn current-date [] (functions/current_date))
 (defn year [expr] (functions/year (->column expr)))
+(defn quarter [expr] (functions/quarter (->column expr)))
 (defn month [expr] (functions/month (->column expr)))
 (defn week-of-year [expr] (functions/weekofyear (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
@@ -201,6 +215,7 @@
 (defn date-format [expr date-fmt]
   (functions/date_format (->column expr) date-fmt))
 
+(defn expr [s] (functions/expr s))
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
 (defn format-string [fmt exprs]
@@ -265,13 +280,14 @@
 (defn asc [expr] (.asc (->column expr)))
 (defn desc [expr] (.desc (->column expr)))
 
+(defn hash [& exprs] (functions/hash (->col-array exprs)))
 (defn like [expr literal] (.like (->column expr) literal))
 (defn rlike [expr literal] (.rlike (->column expr) literal))
 (defn contains [expr literal] (.contains (->column expr) literal))
 (defn starts-with [expr literal] (.startsWith (->column expr) literal))
 (defn ends-with [expr literal] (.endsWith (->column expr) literal))
 
-(defn as [column new-name] (.as column new-name))
+(defn as [expr new-name] (.as (->column expr) new-name))
 (def alias as)
 (defn cast [expr new-type] (.cast (->column expr) new-type))
 
@@ -521,10 +537,10 @@
   ;; TODO: Clojure docs
   ;; TODO: data-driven query
   (require '[clojure.reflect :as r])
-  (->> (r/reflect functions)
+  (->> (r/reflect (.stat melbourne-df))
        :members
-       (clojure.core/filter #(= (:name %) 'array_distinct))
-       ;(mapv :parameter-types)
+       (clojure.core/filter #(= (:name %) 'approxQuantile))
+       (mapv :parameter-types)
        ;(mapv println)
        pprint)
 

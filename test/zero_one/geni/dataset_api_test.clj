@@ -7,6 +7,13 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [melbourne-df]]))
 
+(fact "On approx-quantile" :slow
+  (-> melbourne-df
+      (g/approx-quantile "Price" [0.1 0.9] 0.2)) => #(< (first %) (second %))
+  (-> melbourne-df
+      (g/approx-quantile ["Price"] [0.1 0.9] 0.2))
+  => #(< (first (first %)) (second (first %))))
+
 (fact "On random-split" :slow
   (let [[train-df val-df] (-> melbourne-df
                               (g/limit 50)
