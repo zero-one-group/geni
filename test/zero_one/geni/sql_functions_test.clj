@@ -8,6 +8,20 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(facts "On hash"
+  (-> melbourne-df
+      (g/limit 10)
+      (g/select (g/hash "SellerG" "Regionname"))
+      g/collect-vals
+      flatten) => #(and (= 3 (count (distinct %)))
+                        (= 10 (count %))))
+
+(facts "On expr"
+  (-> melbourne-df
+      (g/limit 1)
+      (g/select (g/expr "1"))
+      g/collect-vals) => [[1]])
+
 (facts "On column methods" :slow
   (fact "rlike should filter correctly"
     (let [includes-east-or-north? #(or (clojure.string/includes? % "East")
@@ -301,6 +315,33 @@
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05))))
 
+(facts "On window functions" :slow
+  (let [window  (g/window {:partition-by "SellerG" :order-by "Price"})
+        dataset (-> melbourne-df (g/limit 10))]
+    (-> dataset
+        (g/select
+          (-> (g/cume-dist) (g/over window))
+          (-> (g/percent-rank) (g/over window)))
+        g/collect-vals) => #(every? double? (flatten %))
+    (-> dataset
+        (g/select
+          (-> (g/rank) (g/over window))
+          (-> (g/dense-rank) (g/over window))
+          (-> (g/ntile 2) (g/over window)))
+        g/collect-vals) => #(every? int? (flatten %))
+    (-> dataset
+        (g/select
+          (-> (g/lag "Price" 1) (g/over window))
+          (-> (g/lag "Price" 1 -999) (g/over window)))
+        g/collect-vals) => #(and (nil? (first (first %)))
+                                 (= -999.0 (second (first %))))
+    (-> dataset
+        (g/select
+          (-> (g/lead "Price" 1) (g/over window))
+          (-> (g/lead "Price" 1 -999) (g/over window)))
+        g/collect-vals) => #(and (nil? (first (last %)))
+                                 (= -999.0 (second (last %))))))
+
 (facts "On windowing" :slow
   (fact "can instantiate empty WindowSpec"
     (g/window {}) => #(instance? WindowSpec %))
@@ -349,6 +390,11 @@
 
 (facts "On time functions"
   (fact "correct time arithmetic"
+    (-> melbourne-df
+        (g/limit 1)
+        (g/select
+          (-> (g/quarter (g/lit "2020-05-12"))))
+        g/collect-vals) => [[2]]
     (-> melbourne-df
         (g/limit 1)
         (g/select
