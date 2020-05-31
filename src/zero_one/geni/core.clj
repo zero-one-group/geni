@@ -403,8 +403,19 @@
 
 (defn over [column window-spec] (.over column window-spec))
 
-(defn spark-partition-id [] (functions/spark-partition-id))
+(defn cume-dist [] (functions/cume_dist))
+(defn dense-rank [] (functions/dense_rank))
+(defn lag
+  ([expr offset] (functions/lag (->column expr) offset))
+  ([expr offset default] (functions/lag (->column expr) offset default)))
+(defn lead
+  ([expr offset] (functions/lead (->column expr) offset))
+  ([expr offset default] (functions/lead (->column expr) offset default)))
+(defn ntile [n] (functions/ntile n))
+(defn percent-rank [] (functions/percent_rank))
+(defn rank [] (functions/rank))
 (defn row-number [] (functions/row_number))
+(defn spark-partition-id [] (functions/spark-partition-id))
 
 (defn count-distinct [& exprs]
   (let [[head & tail] (clojure.core/map ->column exprs)]
