@@ -19,7 +19,7 @@
 (defn read-csv!
   ([spark-session path] (read-csv! spark-session path (:csv default-options)))
   ([spark-session path options]
-   (read-data! "csv" spark-session path (merge options (:csv default-options)))))
+   (read-data! "csv" spark-session path (merge (:csv default-options) options))))
 
 (defn read-libsvm!
   ([spark-session path] (read-libsvm! spark-session path {}))
