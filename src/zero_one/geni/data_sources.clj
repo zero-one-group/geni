@@ -13,9 +13,13 @@
   ([spark-session path] (read-parquet! spark-session path {}))
   ([spark-session path options] (read-data! "parquet" spark-session path options)))
 
+(def default-options
+  {:csv {"header" "true"}})
+
 (defn read-csv!
-  ([spark-session path] (read-csv! spark-session path {"header" "true"}))
-  ([spark-session path options] (read-data! "csv" spark-session path options)))
+  ([spark-session path] (read-csv! spark-session path (:csv default-options)))
+  ([spark-session path options]
+   (read-data! "csv" spark-session path (merge (:csv default-options) options))))
 
 (defn read-libsvm!
   ([spark-session path] (read-libsvm! spark-session path {}))

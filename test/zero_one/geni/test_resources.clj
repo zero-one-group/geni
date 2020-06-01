@@ -13,6 +13,9 @@
 (defonce melbourne-df
   (g/cache
     (g/read-parquet! spark "test/resources/melbourne_housing_snapshot.parquet")))
+(defonce df-1 (g/cache (g/limit melbourne-df 1)))
+(defonce df-20 (g/cache (g/limit melbourne-df 20)))
+(defonce df-50 (g/cache (g/limit melbourne-df 50)))
 
 (defonce libsvm-df
   (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))

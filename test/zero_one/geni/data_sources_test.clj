@@ -50,7 +50,11 @@
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! spark temp-file))]
-    (g/collect write-df) => (g/collect read-df)))
+    (g/collect write-df) => (g/collect read-df))
+  (let [temp-file (.toString (create-temp-file! ".csv"))
+        read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
+                     (g/read-csv! spark temp-file {}))]
+    (g/column-names read-df) => (g/column-names write-df)))
 
 (fact "Can read and write parquet"
   (let [temp-file (.toString (create-temp-file! ".parquet"))
