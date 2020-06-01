@@ -3,22 +3,20 @@
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [melbourne-df]])
+    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
   (:import
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
 (facts "On hash"
-  (-> melbourne-df
-      (g/limit 10)
+  (-> df-20
       (g/select (g/hash "SellerG" "Regionname"))
       g/collect-vals
-      flatten) => #(and (= 3 (count (distinct %)))
-                        (= 10 (count %))))
+      flatten) => #(and (= 6 (count (distinct %)))
+                        (= 20 (count %))))
 
 (facts "On expr"
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select (g/expr "1"))
       g/collect-vals) => [[1]])
 
@@ -63,8 +61,7 @@
   (-> melbourne-df g/broadcast) => #(instance? Dataset %))
 
 (fact "On array functions"
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))
       (g/with-column "zs" (g/array [(g/lit "x") (g/lit "y")]))
@@ -79,8 +76,7 @@
         (g/array-position "xs" 2))
       g/collect-vals
       first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/select
         (g/array-remove "xs" 1)
@@ -92,8 +88,7 @@
         (g/element-at "xs" (int 2)))
       g/collect-vals
       first) => [[2] [1 1] [2 2 2] [1 1 2] true [[1 1] [2 2] [1 1]] 2]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/with-column "xs" (g/array [4 5 6 1]))
       (g/select
         (g/reverse "xs")
@@ -106,26 +101,22 @@
         (g/array-union "xs" "xs"))
       g/collect-vals
       first) => [[1 6 5 4] 4 [5] [1 4 5 6] [6 5 4 1] 1 6 [4 5 6 1]]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select (g/shuffle (g/array (range 10))))
       g/collect-vals
       flatten
       set) => (set (range 10))
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select (g/flatten (g/array [(g/array (range 10))])))
       g/collect-vals
       first
       first) => (range 10)
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select (-> (g/split "Regionname" " ") (g/as "split")))
       (g/collect-col "split")) => [["Northern" "Metropolitan"]])
 
 (fact "On random functions" :slow
-  (-> melbourne-df
-      (g/limit 20)
+  (-> df-20
       (g/select
         (-> (g/randn 0) (g/as "norm"))
         (-> (g/rand 0) (g/as "unif")))
@@ -134,8 +125,7 @@
         (g/round (g/kurtosis "unif"))
         (g/round (g/covar "unif" "norm")))
       g/collect-vals) => [[0.0 -1.0 0.0]]
-  (-> melbourne-df
-      (g/limit 10)
+  (-> df-20
       (g/select
         (-> (g/randn) (g/as "norm"))
         (-> (g/rand) (g/as "unif")))
@@ -146,14 +136,12 @@
       flatten) => #(every? pos? %))
 
 (fact "On comparison and boolean functions"
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select
         (g/&&)
         (g/||))
       g/collect-vals) => [[true false]]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select
         (g/< 1)
         (g/< 1 2 3)
@@ -165,8 +153,7 @@
       g/collect-vals) => [[true true true false false false true]])
 
 (fact "On trig functions"
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select
         (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
         (g/- (g// g/pi 2)
@@ -182,8 +169,7 @@
       flatten) => (fn [xs] (every? #(< (Math/abs %) 0.001) xs)))
 
 (fact "On partition ID" :slow
-  (-> melbourne-df
-      (g/limit 10)
+  (-> df-20
       (g/repartition 3)
       (g/select (g/spark-partition-id))
       g/collect-vals
@@ -193,13 +179,11 @@
 
 (facts "On formatting"
   (fact "should format number correctly"
-    (-> melbourne-df
-        (g/limit 1)
+    (-> df-1
         (g/select (g/format-number 1234.56789 2))
         g/collect-vals) => [["1,234.57"]])
   (fact "should format strings correctly"
-    (-> melbourne-df
-        (g/limit 1)
+    (-> df-1
         (g/select
           (g/format-string "(Rooms=%d, SellerG=%s)" ["Rooms" "SellerG"])
           (g/concat (g/lower "SellerG") (g/lit "-") (g/upper "Suburb"))
@@ -217,16 +201,14 @@
                              "Metropolitan"]]))
 
 (fact "On arithmetic functions"
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select
         (-> (g/mod 19 7))
         (-> (g/between 1 0 2))
         (-> (g/between -2 -1 0))
         (-> (g/nan? 0)))
       g/collect-vals) => [[5 true false false]]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select
         (-> (g/* (g/log "Price") 0.5))
         (-> (g// (g/log "Price") 2.0))
@@ -236,30 +218,20 @@
       first
       distinct
       count) => 1
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1
       (g/select "Price" (-> (g/abs (g/negate "Price"))))
       g/collect-vals
       first
       distinct
       count) => 1
-  (-> melbourne-df
-      (g/limit 1)
-      (g/select
-        (g/+ 1 1))
-      g/collect-vals) => [[2]]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1 (g/select (g/+ 1 1)) g/collect-vals) => [[2]]
+  (-> df-1
       (g/with-column "two" 2)
       (g/with-column "three" 3)
       (g/select (g/pow "two" "three"))
       g/collect-vals) => [[8.0]]
-  (-> melbourne-df
-      (g/limit 1)
-      (g/select (g/+) (g/*))
-      g/collect-vals) => [[0 1]]
-  (-> melbourne-df
-      (g/limit 1)
+  (-> df-1 (g/select (g/+) (g/*)) g/collect-vals) => [[0 1]]
+  (-> df-1
       (g/select
         (g/=== (g/ceil 1.23)
                (g/floor 2.34)
@@ -269,9 +241,7 @@
       g/collect-vals) => [[true 1.0]])
 
 (facts "On group-by + agg functions" :slow
-  (let [n-rows  20
-        summary (-> melbourne-df
-                    (g/limit n-rows)
+  (let [summary (-> df-20
                     (g/agg
                       (g/count (g/->column "BuildingArea"))
                       (list
@@ -295,47 +265,44 @@
              (* 20)
              int)
       (+ (summary (keyword "count(BuildingArea)"))
-         (summary (keyword "null_count(BuildingArea)"))) => n-rows
+         (summary (keyword "null_count(BuildingArea)"))) => 20
       (let [std-dev  (summary (keyword "stddev_samp(Price)"))
             variance (summary (keyword "var_samp(Price)"))]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
     (fact "count distinct and approx count distinct should be similar"
-      (-> melbourne-df
-          (g/limit 60)
+      (-> df-50
           (g/agg
             (-> (g/count-distinct "SellerG"))
             (-> (g/approx-count-distinct "SellerG")))
           g/collect-vals
           first) => #(< 0.95 (/ (first %) (second %)) 1.05)
-      (-> melbourne-df
-          (g/limit 60)
+      (-> df-50
           (g/agg
             (g/count-distinct "SellerG")
             (g/approx-count-distinct "SellerG" 0.1))
           g/collect-vals
-          first) => #(< 0.95 (/ (first %) (second %)) 1.05))))
+          first) => #(< 0.9 (/ (first %) (second %)) 1.1))))
 
 (facts "On window functions" :slow
-  (let [window  (g/window {:partition-by "SellerG" :order-by "Price"})
-        dataset (-> melbourne-df (g/limit 10))]
-    (-> dataset
+  (let [window  (g/window {:partition-by "SellerG" :order-by "Price"})]
+    (-> df-20
         (g/select
           (-> (g/cume-dist) (g/over window))
           (-> (g/percent-rank) (g/over window)))
         g/collect-vals) => #(every? double? (flatten %))
-    (-> dataset
+    (-> df-20
         (g/select
           (-> (g/rank) (g/over window))
           (-> (g/dense-rank) (g/over window))
           (-> (g/ntile 2) (g/over window)))
         g/collect-vals) => #(every? int? (flatten %))
-    (-> dataset
+    (-> df-20
         (g/select
           (-> (g/lag "Price" 1) (g/over window))
           (-> (g/lag "Price" 1 -999) (g/over window)))
         g/collect-vals) => #(and (nil? (first (first %)))
                                  (= -999.0 (second (first %))))
-    (-> dataset
+    (-> df-20
         (g/select
           (-> (g/lead "Price" 1) (g/over window))
           (-> (g/lead "Price" 1 -999) (g/over window)))
@@ -345,8 +312,7 @@
 (facts "On windowing" :slow
   (fact "can instantiate empty WindowSpec"
     (g/window {}) => #(instance? WindowSpec %))
-  (let [records    (-> melbourne-df
-                       (g/limit 10)
+  (let [records    (-> df-20
                        (g/select
                          "SellerG"
                          (-> (g/max "Price")
@@ -362,10 +328,9 @@
         price-gaps (map :price-gap records)]
     (map vector price-gaps (rest price-gaps))
     => (fn [pairs] (every? #(< (first %) (second %)) pairs))
-    (map :row-num records) => [1 2 3])
+    (map :row-num records) => [1 2 3 4])
   (fact "count rows last week"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
         (g/select
           (-> (g/count "*")
@@ -376,8 +341,7 @@
         flatten
         set) => #{1 2 3})
   (fact "count rows in the last two rows"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
         (g/select
           (-> (g/count "*")
@@ -390,13 +354,11 @@
 
 (facts "On time functions"
   (fact "correct time arithmetic"
-    (-> melbourne-df
-        (g/limit 1)
+    (-> df-1
         (g/select
           (-> (g/quarter (g/lit "2020-05-12"))))
         g/collect-vals) => [[2]]
-    (-> melbourne-df
-        (g/limit 1)
+    (-> df-1
         (g/select
           (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
           (-> (g/next-day (g/lit "2020-02-01") "Sunday") (g/cast "string"))
@@ -415,8 +377,7 @@
                              23
                              -3.0]])
   (fact "correct current times"
-    (-> melbourne-df
-        (g/limit 1)
+    (-> df-1
         (g/select
           (g/cast (g/current-timestamp) "string")
           (g/cast (g/current-date) "string"))
@@ -424,8 +385,7 @@
         flatten) => #(and (clojure.string/includes? (first %) ":")
                           (not (clojure.string/includes? (second %) ":"))))
   (fact "correct time comparisons"
-    (-> melbourne-df
-        (g/limit 3)
+    (-> df-1
         (g/select
           (-> (g/unix-timestamp) (g/as "now"))
           (-> (g/unix-timestamp (g/lit "2020/04/17") "yyyy/MM/dd") (g/as "past"))
@@ -440,8 +400,7 @@
         g/collect-vals) => #(every? identity (flatten %)))
   (fact "correct time extraction"
     (let [date (g/lit "1930-12-30 13:15:05")]
-      (-> melbourne-df
-          (g/limit 1)
+      (-> df-1
           (g/select
             (-> (g/year date) (g/as "year"))
             (-> (g/month date) (g/as "month"))
@@ -462,15 +421,13 @@
                      :year 1930})))
 
 (fact "hashing should give unique rows" :slow
-  (let [df        (g/limit melbourne-df 10)
-        n-sellers (-> df (g/select "SellerG") g/distinct g/count)]
-    (-> df (g/select (g/md5 "SellerG")) g/distinct g/count) => n-sellers
-    (-> df (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
-    (-> df (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
+  (let [n-sellers (-> df-20 (g/select "SellerG") g/distinct g/count)]
+    (-> df-20 (g/select (g/md5 "SellerG")) g/distinct g/count) => n-sellers
+    (-> df-20 (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
+    (-> df-20 (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
 
 (fact "correct substring" :slow
-  (-> melbourne-df
-      (g/limit 10)
+  (-> df-20
       (g/select (g/substring "Suburb" 3 4))
       g/distinct
       g/collect-vals) => [["bots"]])

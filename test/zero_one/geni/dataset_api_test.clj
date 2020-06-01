@@ -5,7 +5,7 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.test-resources :refer [melbourne-df]]))
+    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]]))
 
 (fact "On approx-quantile" :slow
   (-> melbourne-df
@@ -15,9 +15,7 @@
   => #(< (first (first %)) (second (first %))))
 
 (fact "On random-split" :slow
-  (let [[train-df val-df] (-> melbourne-df
-                              (g/limit 50)
-                              (g/random-split [90 10]))]
+  (let [[train-df val-df] (-> df-50 (g/random-split [90 10]))]
     (< (g/count val-df)
        (g/count train-df)) => true))
 
@@ -38,15 +36,13 @@
 
 (facts "On pivot" :slow
   (fact "pivot should return the expected cols"
-    (let [pivotted (-> melbourne-df
-                       (g/limit 20)
+    (let [pivotted (-> df-20
                        (g/group-by "SellerG")
                        (g/pivot "Method")
                        (g/agg (-> (g/count "*") (g/as "n"))))]
       (-> pivotted g/column-names set) => #{"SellerG" "PI" "S" "SP" "VB"}))
   (fact "pivot should be able to specify pivot columns"
-    (let [pivotted (-> melbourne-df
-                       (g/limit 20)
+    (let [pivotted (-> df-20
                        (g/group-by "SellerG")
                        (g/pivot "Method" ["SP" "VB" "XYZ"])
                        (g/agg (-> (g/count "*") (g/as "n"))))]
@@ -54,8 +50,7 @@
 
 (facts "On when"
   (fact "when null and coalesce should be equivalent"
-    (-> melbourne-df
-        (g/limit 20)
+    (-> df-20
         (g/with-column "x"
           (g/when (g/null? "BuildingArea") -999 "BuildingArea"))
         (g/with-column "y"
@@ -71,7 +66,7 @@
         g/column-names) => ["Type" "Price"]))
 
 (facts "On filter"
-  (let [df (-> melbourne-df (g/limit 20) (g/select "SellerG"))]
+  (let [df (-> df-20 (g/select "SellerG"))]
     (fact "should correctly filter rows"
       (-> df
           (g/filter (g/=== "SellerG" (g/lit "Biggin")))
@@ -118,68 +113,58 @@
       (clojure.set/subset? columns-to-drop original-columns) => true
       (clojure.set/intersection columns-to-drop dropped-columns) => empty?))
   (fact "drop duplicates without arg should not drop everything"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/select "Method" "SellerG")
         g/drop-duplicates
-        g/count) => 6)
+        g/count) => 10)
   (fact "drop duplicates can be called with columns"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/select "Method" "SellerG")
         (g/drop-duplicates "SellerG")
-        g/count) => 3))
+        g/count) => 6))
 
 (facts "On except and intercept" :slow
-  (let [other (g/limit melbourne-df 1)]
-    (fact "except should exclude the row"
-      (-> melbourne-df
-          (g/limit 10)
-          (g/except other)
-          g/count) => 9)
-    (fact "except then intercept should be empty"
-      (-> melbourne-df
-          (g/limit 10)
-          (g/except other)
-          (g/intersect other)
-          g/empty?) => true)))
+  (fact "except should exclude the row"
+    (-> df-20
+        (g/except df-1)
+        g/count) => 19)
+  (fact "except then intercept should be empty"
+    (-> df-20
+        (g/except df-1)
+        (g/intersect df-1)
+        g/empty?) => true))
 
 (facts "On union" :slow
   (fact "Union should double the rows preserve distinctness"
-    (let [df      (-> melbourne-df (g/limit 3))
-          unioned (g/union df df)]
-      (g/count unioned) => 6
-      (-> unioned g/distinct g/count) => 3))
+    (let [unioned (g/union df-20 df-20 df-20)]
+      (g/count unioned) => 60
+      (-> unioned g/distinct g/count) => 20))
   (fact "Union by name should line up the names"
-    (let [df1 (-> melbourne-df (g/limit 1) (g/select "Suburb" "SellerG"))
-          df2 (-> melbourne-df (g/limit 1) (g/select "SellerG" "Suburb"))]
-      (-> df1 (g/union-by-name df2) g/distinct g/count)) => 1))
+    (let [left (-> df-1 (g/select "Suburb" "SellerG"))
+          right (-> df-1 (g/select "SellerG" "Suburb"))]
+      (-> left (g/union-by-name right right) g/distinct g/count)) => 1))
 
 (facts "On describe" :slow
   (fact "describe should have the right shape"
-    (let [summary (-> melbourne-df (g/limit 10) (g/describe "Price"))]
+    (let [summary (-> df-20 (g/describe "Price"))]
       (g/column-names summary) => ["summary" "Price"]
       (map :summary (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
   (fact "summary should only pick some stats"
-    (-> melbourne-df
-        (g/limit 2)
+    (-> df-20
         (g/select "Rooms")
         (g/summary "count" "min")
-        g/collect-vals) => [["count" "2"] ["min" "2"]]))
+        g/collect-vals) => [["count" "20"] ["min" "1"]]))
 
 (facts "On sample" :slow
-  (let [df          (-> melbourne-df (g/limit 50))
-        with-rep    (g/sample df 0.8 true)
-        without-rep (g/sample df 0.8)]
+  (let [with-rep    (g/sample df-50 0.8 true)
+        without-rep (g/sample df-50 0.8)]
     (fact "Sampling without replacement should have all unique rows"
       (-> without-rep g/distinct g/count) => (g/count without-rep))
     (fact "Sampling with replacement should have less unique rows"
       (-> with-rep g/distinct g/count) => #(< % 40))))
 
 (facts "On order-by" :slow
-  (let [df (-> melbourne-df
-              (g/limit 10)
-              (g/select (g/as (g/->date-col "Date" "dd/MM/yyyy") "Date")))]
+  (let [df (-> df-20 (g/select (g/as (g/->date-col "Date" "dd/MM/yyyy") "Date")))]
     (fact "should correctly order dates"
       (let [records (-> df (g/order-by (g/desc "Date")) g/collect)
             dates   (map #(str (% "Date")) records)]
@@ -191,50 +176,43 @@
 
 (facts "On caching" :slow
   (fact "should keeps data in memory")
-  (let [df (-> melbourne-df (g/limit 2) g/cache)]
+  (let [df (-> df-1 g/cache)]
     (.. df storageLevel useMemory) => true)
-  (let [df (-> melbourne-df (g/limit 2) g/persist)]
+  (let [df (-> df-1 g/persist)]
     (.. df storageLevel useMemory) => true))
 
 (facts "On repartition" :slow
   (fact "able to repartition by a number"
-    (-> melbourne-df
-        (g/limit 2)
+    (-> df-20
         (g/repartition 2)
         g/partitions
         count) => 2)
   (fact "able to repartition by columns"
-    (-> melbourne-df
-        (g/limit 2)
+    (-> df-20
         (g/repartition "Suburb" "SellerG")
         g/partitions
         count) => #(< 1 %))
   (fact "able to repartition by number and columns"
-    (-> melbourne-df
-        (g/limit 2)
+    (-> df-20
         (g/repartition 10 "Suburb" "SellerG")
         g/partitions
         count) => 10)
   (fact "able to repartition by range by columns"
-    (-> melbourne-df
-        (g/limit 8)
+    (-> df-20
         (g/repartition-by-range "Suburb" "SellerG")
         g/partitions
-        count) => 4)
+        count) => 7)
   (fact "able to repartition by range by number and columns"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/repartition-by-range 3 "Suburb" "SellerG")
         g/partitions
         count) => 3)
   (fact "sort within partitions is differnt to sort"
-    (let [sorted  (-> melbourne-df
-                      (g/limit 10)
+    (let [sorted  (-> df-20
                       (g/select "Method" "SellerG")
                       (g/order-by "Method")
                       g/collect-vals)
-          sorted-within (-> melbourne-df
-                            (g/limit 10)
+          sorted-within (-> df-20
                             (g/select "Method" "SellerG")
                             (g/repartition 2 "SellerG")
                             (g/sort-within-partitions "Method")
@@ -242,8 +220,7 @@
       (= sorted sorted-within) => false
       (set sorted) => (set sorted-within)))
   (fact "coalesce should reduce the number of partitions"
-    (-> melbourne-df
-        (g/limit 10)
+    (-> df-20
         (g/repartition 5)
         (g/coalesce 2)
         g/partitions
@@ -251,44 +228,39 @@
 
 (facts "On join" :slow
   (fact "normal join works as expected"
-    (let [df         (-> melbourne-df (g/limit 30))
-          n-listings (-> df
+    (let [n-listings (-> df-50
                          (g/group-by "Suburb")
                          (g/agg (g/as (g/count "*") "n_listings")))]
-      (-> df (g/join n-listings "Suburb") g/column-names set)
+      (-> df-50 (g/join n-listings "Suburb") g/column-names set)
       => #(contains? % "n_listings")
-      (-> df (g/join n-listings "Suburb" "inner") g/column-names set)
+      (-> df-50 (g/join n-listings "Suburb" "inner") g/column-names set)
       => #(contains? % "n_listings")
-      (-> df (g/join n-listings ["Suburb"] "inner") g/column-names set)
+      (-> df-50 (g/join n-listings ["Suburb"] "inner") g/column-names set)
       => #(contains? % "n_listings")))
   (fact "cross-join works as expected"
-    (-> melbourne-df
-        (g/limit 3)
+    (-> df-20
         (g/select "Suburb")
-        (g/cross-join (-> melbourne-df (g/limit 3) (g/select "Method")))
-        g/count) => 9))
+        (g/cross-join (-> df-20 (g/select "Method")))
+        g/count) => 400))
 
 (facts "On group-by and agg" :slow
   (fact "should have the right shape"
-    (let [df    (g/limit melbourne-df 30)
-          agged (-> df
+    (let [agged (-> df-50
                     (g/group-by "Type")
                     (g/agg
                       (-> (g/count "*") (g/as "n_rows"))
                       (-> (g/max "Price") (g/as "max_price"))))]
-      (g/count agged) => (-> df (g/select "Type") g/distinct g/count)
+      (g/count agged) => (-> df-50 (g/select "Type") g/distinct g/count)
       (g/column-names agged) => ["Type" "n_rows" "max_price"]))
   (fact "agg-all should apply to all columns"
-    (-> melbourne-df
-        (g/limit 3)
+    (-> df-20
         (g/select "Price" "Regionname" "Car")
         (g/agg-all g/count-distinct)
         g/collect
         first
         count) => 3)
   (fact "works with nested data structure"
-    (let [agged    (-> melbourne-df
-                       (g/limit 20)
+    (let [agged    (-> df-20
                        (g/group-by "SellerG")
                        (g/agg
                          (-> (g/collect-list "Suburb") (g/as "suburbs_list"))
