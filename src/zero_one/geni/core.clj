@@ -452,8 +452,8 @@
   ([dataframe fraction with-replacement]
    (.sample dataframe with-replacement fraction)))
 
-(defn union [left-df right-df] (.union left-df right-df))
-(defn union-by-name [left-df right-df] (.unionByName left-df right-df))
+(defn union [& dfs] (reduce #(.union %1 %2) dfs))
+(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
 
 (defn collect [dataframe]
   (let [spark-rows (.collect dataframe)
