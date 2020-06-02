@@ -8,6 +8,25 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(facts "On agg functions"
+  (-> df-20
+      (g/group-by "SellerG")
+      (g/agg
+        (g/first "Regionname")
+        (g/last "Regionname"))
+      g/collect-vals
+      first) => ["Biggin" "Northern Metropolitan" "Northern Metropolitan"]
+  (-> df-20
+      (g/select
+        (g/corr "Price" "Rooms")
+        (g/covar "Price" "Rooms")
+        (g/covar-pop "Price" "Rooms")
+        (g/var-pop "Rooms")
+        (g/stddev-pop "Price")
+        (g/sum-distinct "Rooms"))
+      g/collect-vals
+      flatten) => #(and (= 6 (count %)) (double? (first %))))
+
 (facts "On hash"
   (-> df-20
       (g/select (g/hash "SellerG" "Regionname"))

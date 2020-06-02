@@ -17,6 +17,9 @@
 (fact "On random-split" :slow
   (let [[train-df val-df] (-> df-50 (g/random-split [90 10]))]
     (< (g/count val-df)
+       (g/count train-df)) => true)
+  (let [[train-df val-df] (-> df-50 (g/random-split [90 10] 123))]
+    (< (g/count val-df)
        (g/count train-df)) => true))
 
 (facts "On printing functions"
