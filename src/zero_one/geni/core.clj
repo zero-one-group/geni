@@ -19,6 +19,7 @@
                             flatten
                             group-by
                             hash
+                            last
                             map
                             max
                             min
@@ -69,8 +70,9 @@
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
 
-(defn random-split [dataframe weights]
-  (.randomSplit dataframe (double-array weights)))
+(defn random-split
+  ([dataframe weights] (.randomSplit dataframe (double-array weights)))
+  ([dataframe weights seed] (.randomSplit dataframe (double-array weights) seed)))
 
 (defn empty? [dataframe] (.isEmpty dataframe))
 
@@ -236,17 +238,27 @@
 (defn regexp-extract [expr regex idx]
   (functions/regexp_extract (->column expr) regex idx))
 
+(defn corr [l-expr r-expr] (functions/corr (->column l-expr) (->column r-expr)))
+(defn covar [l-expr r-expr] (functions/covar_samp (->column l-expr) (->column r-expr)))
+(def covar-samp covar)
+(defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
+(defn kurtosis [expr] (functions/kurtosis expr))
 (defn lit [expr] (functions/lit expr))
-(defn min [expr] (functions/min expr))
 (defn max [expr] (functions/max expr))
-(defn stddev [expr] (functions/stddev expr))
-(defn variance [expr] (functions/variance expr))
 (defn mean [expr] (functions/mean expr))
 (def avg mean)
-(defn sum [expr] (functions/sum expr))
+(defn min [expr] (functions/min expr))
 (defn skewness [expr] (functions/skewness expr))
-(defn kurtosis [expr] (functions/kurtosis expr))
-(defn covar [l-expr r-expr] (functions/covar_samp (->column l-expr) (->column r-expr)))
+(defn stddev [expr] (functions/stddev expr))
+(def stddev-samp stddev)
+(defn stddev-pop [expr] (functions/stddev_pop expr))
+(defn sum [expr] (functions/sum expr))
+(defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
+(defn var-pop [expr] (functions/var_pop (->column expr)))
+(defn variance [expr] (functions/variance expr))
+(def var-samp variance)
+
+(defn last [expr] (functions/last (->column expr)))
 
 (defn randn
   ([] (functions/randn))
@@ -474,7 +486,9 @@
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
 
-(defn first [dataframe] (-> dataframe (take 1) clojure.core/first))
+(defmulti first class)
+(defmethod first Dataset [dataframe] (-> dataframe (take 1) clojure.core/first))
+(defmethod first :default [expr] (functions/first (->column expr)))
 (defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
 
 (defn join
