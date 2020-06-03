@@ -232,7 +232,6 @@
 (defn vocabulary [model] (seq (.vocabulary model)))
 (defn weights [model] (seq (.weights model)))
 
-;; TODO: read-stage
 (defn write-stage! [model path]
   (.. model
       write

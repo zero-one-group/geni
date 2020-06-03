@@ -548,14 +548,11 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
 
-  ;; TODO: Clojure docs
-  ;; TODO: data-driven query
   (require '[clojure.reflect :as r])
   (->> (r/reflect (.stat melbourne-df))
        :members
        (clojure.core/filter #(= (:name %) 'approxQuantile))
        (mapv :parameter-types)
-       ;(mapv println)
        pprint)
 
   0)

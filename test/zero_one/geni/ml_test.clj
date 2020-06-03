@@ -155,7 +155,7 @@
                             :output-cols ["ImputedBuildingArea"]}))]
     (ml/surrogate-df model) => #(instance? Dataset %)))
 
-(facts "On clustering" ;:slow
+(facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})
         model       (ml/fit k-means-df estimator)
         predictions (ml/transform k-means-df model)
@@ -209,7 +209,7 @@
      (ml/coefficients model) => #(every? double? %)
      (ml/intercept model) => double?)
    (fact "other attributes are callable"
-     (ml/binary-summary model) => (complement nil?) ;; TODO: should be a map
+     (ml/binary-summary model) => (complement nil?)
      (ml/summary model) => (complement nil?)
      (ml/uid model) => string?
      (ml/num-classes model) => 2

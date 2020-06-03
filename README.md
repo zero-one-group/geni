@@ -132,6 +132,8 @@ MLlib's pipeline:
 
 More detailed examples can be found [here](examples/README.md).
 
+There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/), which can be found [here](examples/nvidia_pipeline.clj).
+
 # Geni Semantics
 
 ## Column Coercion
