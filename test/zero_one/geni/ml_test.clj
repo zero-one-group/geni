@@ -168,7 +168,7 @@
       (slurp temp-file) => ""
       (ml/write-stage! model temp-file) => nil
       (slurp temp-file) => #(not= % "")
-      (KMeansModel/load temp-file) => #(instance? KMeansModel %))))
+      (ml/read-stage! KMeansModel temp-file) => #(instance? KMeansModel %))))
 
 (facts "On multinomial classification" :slow
   (let [estimator   (ml/logistic-regression
@@ -194,6 +194,10 @@
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
 
+(facts "On vector assembler"
+  (let [estimator  (ml/vector-assembler {:input-cols ["x" "y" "z"]})]
+    (ml/input-cols estimator) => ["x" "y" "z"]))
+
 (facts "On binary classification" :slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
@@ -205,7 +209,7 @@
      (ml/coefficients model) => #(every? double? %)
      (ml/intercept model) => double?)
    (fact "other attributes are callable"
-     (ml/binary-summary model) => (complement nil?) ;; TODO: should be a map
+     (ml/binary-summary model) => (complement nil?)
      (ml/summary model) => (complement nil?)
      (ml/uid model) => string?
      (ml/num-classes model) => 2

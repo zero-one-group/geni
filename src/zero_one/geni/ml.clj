@@ -36,7 +36,6 @@
    multiclass-classification-evaluator
    regression-evaluator])
 
-;; TODO: stop words remover, chi-sq-selector
 (import-vars
   [zero-one.geni.ml-feature
    binariser
@@ -160,7 +159,6 @@
          (into {})
          keywordize-keys)))
 
-;; TODO: turn summary into maps
 (defn approx-nearest-neighbours
   ([dataset model key-v n-nearest]
    (.approxNearestNeighbors model dataset (interop/->scala-coll key-v) n-nearest))
@@ -173,6 +171,7 @@
    (.approxSimilarityJoin model dataset-a dataset-b threshold dist-col)))
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
+(defn best-model [model] (.bestModel model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
 (defn category-maps [model]
   (->> model
@@ -195,6 +194,8 @@
 (defn frequent-item-sets [model] (.freqItemsets model))
 (def freq-itemsets frequent-item-sets)
 (defn gaussians-df [model] (.gaussiansDF model))
+(defn get-input-cols [model] (seq (.getInputCols model)))
+(def input-cols get-input-cols)
 (defn get-num-trees [model] (.getNumTrees model))
 (defn get-size [model] (.getSize model))
 (defn idf-vector [model] (interop/vector->seq (.idf model)))
@@ -231,12 +232,24 @@
 (defn vocabulary [model] (seq (.vocabulary model)))
 (defn weights [model] (seq (.weights model)))
 
-;; TODO: read-stage
 (defn write-stage! [model path]
   (.. model
       write
       overwrite
       (save path)))
+
+(defn load-method? [^java.lang.reflect.Method method]
+  (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
+       (= "load" (.getName method))))
+
+(defn load-method [cls]
+  (->> cls
+       .getMethods
+       (filter load-method?)
+       first))
+
+(defn read-stage! [model-cls path]
+  (.invoke (load-method model-cls) model-cls (into-array [path])))
 
 (comment
 
