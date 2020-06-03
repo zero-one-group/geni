@@ -173,6 +173,7 @@
    (.approxSimilarityJoin model dataset-a dataset-b threshold dist-col)))
 (defn association-rules [model] (.associationRules model))
 (defn binary-summary [model] (.binarySummary model))
+(defn best-model [model] (.bestModel model)) ; TODO
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
 (defn category-maps [model]
   (->> model
@@ -195,6 +196,8 @@
 (defn frequent-item-sets [model] (.freqItemsets model))
 (def freq-itemsets frequent-item-sets)
 (defn gaussians-df [model] (.gaussiansDF model))
+(defn get-input-cols [model] (.getInputCols model)) ; TODO
+(def input-cols get-input-cols)
 (defn get-num-trees [model] (.getNumTrees model))
 (defn get-size [model] (.getSize model))
 (defn idf-vector [model] (interop/vector->seq (.idf model)))
