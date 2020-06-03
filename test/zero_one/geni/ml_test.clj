@@ -155,7 +155,7 @@
                             :output-cols ["ImputedBuildingArea"]}))]
     (ml/surrogate-df model) => #(instance? Dataset %)))
 
-(facts "On clustering" :slow
+(facts "On clustering" ;:slow
   (let [estimator   (ml/k-means {:k 3})
         model       (ml/fit k-means-df estimator)
         predictions (ml/transform k-means-df model)
@@ -168,7 +168,7 @@
       (slurp temp-file) => ""
       (ml/write-stage! model temp-file) => nil
       (slurp temp-file) => #(not= % "")
-      (KMeansModel/load temp-file) => #(instance? KMeansModel %))))
+      (ml/read-stage! KMeansModel temp-file) => #(instance? KMeansModel %))))
 
 (facts "On multinomial classification" :slow
   (let [estimator   (ml/logistic-regression
@@ -193,6 +193,10 @@
      (ml/intercept-vector model) => #(every? double? %))
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
+
+(facts "On vector assembler"
+  (let [estimator  (ml/vector-assembler {:input-cols ["x" "y" "z"]})]
+    (ml/input-cols estimator) => ["x" "y" "z"]))
 
 (facts "On binary classification" :slow
   (let [estimator   (ml/logistic-regression

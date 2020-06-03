@@ -2,8 +2,10 @@
   (:require
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml :as ml])
+    [zero-one.geni.ml :as ml]
+    [zero-one.geni.test-resources :refer [libsvm-df]])
   (:import
+    (org.apache.spark.ml.classification LogisticRegressionModel)
     (org.apache.spark.ml.tuning CrossValidator
                                 TrainValidationSplit)))
 
@@ -25,6 +27,18 @@
       param-grid => #(-> % class .isArray)
       (count param-grid) => 18
       (every? #(= (.size %) 3) param-grid) => true)))
+
+(facts "On cross validator fitting" :slow
+  (fact "should be able to replicate Spark example."
+    (let [log-reg    (ml/logistic-regression {:max-iter 1})
+          param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
+          cv         (ml/cross-validator
+                       {:estimator log-reg
+                        :estimator-param-maps param-grid
+                        :evaluator (ml/binary-classification-evaluator {})
+                        :num-folds 2})
+          model      (ml/fit libsvm-df cv)]
+      (ml/best-model model) => (partial instance? LogisticRegressionModel))))
 
 (facts "On cross validator"
   (fact "should be instantiatable"
