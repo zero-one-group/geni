@@ -194,11 +194,16 @@
    (fact "evaluator works"
      accuracy => #(<= 0.9 % 1.0))))
 
-(facts "On vector assembler"
-  (let [estimator  (ml/vector-assembler {:input-cols ["x" "y" "z"]})]
-    (ml/input-cols estimator) => ["x" "y" "z"]))
+(facts "On param getters"
+  (let [estimator (ml/vector-assembler {:input-cols ["x" "y" "z"]})]
+    (ml/input-cols estimator) => ["x" "y" "z"])
+  (let [estimator (ml/one-hot-encoder {:output-cols ["c" "d"]})]
+    (ml/output-cols estimator) => ["c" "d"])
+  (let [estimator (ml/hashing-tf {:input-col "x" :output-col "y"})]
+    (ml/input-col estimator) => "x"
+    (ml/output-col estimator) => "y"))
 
-(facts "On binary classification" :slow
+(facts "On binary classification" ;:slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
                        :max-iter 10
@@ -213,7 +218,14 @@
      (ml/summary model) => (complement nil?)
      (ml/uid model) => string?
      (ml/num-classes model) => 2
-     (ml/num-features model) => 692)))
+     (ml/num-features model) => 692)
+   (fact "basic param getters"
+     (ml/label-col model) => "label"
+     (ml/features-col model) => "features"
+     (ml/prediction-col model) => "prediction"
+     (ml/raw-prediction-col model) => "rawPrediction"
+     (ml/probability-col model) => "probability"
+     (ml/thresholds model) => [0.5 1.0])))
 
 (facts "On decision-tree classifier" :slow
   (let [estimator   (ml/decision-tree-classifier {})
