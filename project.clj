@@ -6,7 +6,7 @@
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.1"]
                  [org.clojure/clojure "1.10.1"]
-                 [org.clojure/java.data "1.0.64"]
+                 [org.clojure/java.data "1.0.78"]
                  [potemkin "0.4.5"]]
   :profiles {:provided
              {:dependencies [[ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
