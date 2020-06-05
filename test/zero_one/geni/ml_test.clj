@@ -55,6 +55,7 @@
                                  RegexTokenizer
                                  SQLTransformer
                                  StandardScaler
+                                 StopWordsRemover
                                  StringIndexer
                                  Tokenizer
                                  VectorAssembler
@@ -460,6 +461,13 @@
   => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
+  (ml/params (ml/stop-words-remover {:case-sensitive true}))
+  => #(= (:case-sensitive %) true)
+  (ml/stop-words-remover {})
+  => #(and (instance? StopWordsRemover %))
+  (-> (ml/stop-words-remover {}) ml/params :stop-words count)
+  => 181
+
   (ml/params (ml/chi-sq-selector {:num-top-features 1122}))
   => #(= (:num-top-features %) 1122)
   (ml/chi-sq-selector {})

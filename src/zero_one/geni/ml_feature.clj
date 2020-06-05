@@ -1,6 +1,7 @@
 (ns zero-one.geni.ml-feature
   (:require
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.default-stop-words :refer [default-stop-words]])
   (:import
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
@@ -27,6 +28,7 @@
                                  RegexTokenizer
                                  SQLTransformer
                                  StandardScaler
+                                 StopWordsRemover
                                  StringIndexer
                                  Tokenizer
                                  VectorAssembler
@@ -34,15 +36,23 @@
                                  VectorSizeHint
                                  Word2Vec)))
 
+(defn stop-words-remover [params]
+  (let [defaults {:output-col "stopWords_9a3d7440ac5c__output",
+                    :locale "en_US",
+                    :stop-words default-stop-words
+                    :case-sensitive false}
+        props    (merge defaults params)]
+    (interop/instantiate StopWordsRemover props)))
+
 (defn chi-sq-selector [params]
-  (let [defaults{:fdr 0.05,
-                 :fpr 0.05,
-                 :label-col "label",
-                 :percentile 0.1,
-                 :selector-type "numTopFeatures",
-                 :num-top-features 50,
-                 :fwe 0.05,
-                 :features-col "features"}
+  (let [defaults {:fdr 0.05,
+                  :fpr 0.05,
+                  :label-col "label",
+                  :percentile 0.1,
+                  :selector-type "numTopFeatures",
+                  :num-top-features 50,
+                  :fwe 0.05,
+                  :features-col "features"}
         props    (merge defaults params)]
     (interop/instantiate ChiSqSelector props)))
 

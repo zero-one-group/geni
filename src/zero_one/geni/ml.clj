@@ -72,6 +72,7 @@
    sql-transformer
    standard-scaler
    string-indexer
+   stop-words-remover
    tokeniser
    tokenizer
    vector-assembler
@@ -272,7 +273,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.feature ChiSqSelector))
-  (params (ChiSqSelector.))
+  (import '(org.apache.spark.ml.feature StopWordsRemover))
+  (params (StopWordsRemover.))
 
   true)
