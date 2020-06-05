@@ -274,6 +274,8 @@
 (comment
 
   (import '(org.apache.spark.ml.feature StopWordsRemover))
+  (stop-words-remover {})
+
   (params (StopWordsRemover.))
 
   true)
