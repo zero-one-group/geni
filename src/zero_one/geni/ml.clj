@@ -43,6 +43,7 @@
    bucketiser
    bucketizer
    bucketed-random-projection-lsh
+   chi-sq-selector
    count-vectoriser
    count-vectorizer
    dct
@@ -71,6 +72,7 @@
    sql-transformer
    standard-scaler
    string-indexer
+   stop-words-remover
    tokeniser
    tokenizer
    vector-assembler
@@ -271,7 +273,9 @@
 
 (comment
 
-  (import '(ml.dmlc.xgboost4j.scala.spark XGBoostRegressor))
-  (params (XGBoostRegressor.))
+  (import '(org.apache.spark.ml.feature StopWordsRemover))
+  (stop-words-remover {})
+
+  (params (StopWordsRemover.))
 
   true)
