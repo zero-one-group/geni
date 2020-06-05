@@ -33,6 +33,7 @@
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
+                                 ChiSqSelector
                                  CountVectorizer
                                  DCT
                                  ElementwiseProduct
@@ -203,7 +204,7 @@
     (ml/input-col estimator) => "x"
     (ml/output-col estimator) => "y"))
 
-(facts "On binary classification" ;:slow
+(facts "On binary classification" :slow
   (let [estimator   (ml/logistic-regression
                       {:thresholds [0.5 1.0]
                        :max-iter 10
@@ -459,6 +460,11 @@
   => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
+  (ml/params (ml/chi-sq-selector {:num-top-features 1122}))
+  => #(= (:num-top-features %) 1122)
+  (ml/chi-sq-selector {})
+  => #(instance? ChiSqSelector %)
+
   (ml/params (ml/vector-assembler {:handle-invalid "skip"}))
   => #(= (:handle-invalid %) "skip")
   (ml/vector-assembler {})

@@ -5,6 +5,7 @@
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
                                  BucketedRandomProjectionLSH
+                                 ChiSqSelector
                                  CountVectorizer
                                  DCT
                                  ElementwiseProduct
@@ -32,6 +33,18 @@
                                  VectorIndexer
                                  VectorSizeHint
                                  Word2Vec)))
+
+(defn chi-sq-selector [params]
+  (let [defaults{:fdr 0.05,
+                 :fpr 0.05,
+                 :label-col "label",
+                 :percentile 0.1,
+                 :selector-type "numTopFeatures",
+                 :num-top-features 50,
+                 :fwe 0.05,
+                 :features-col "features"}
+        props    (merge defaults params)]
+    (interop/instantiate ChiSqSelector props)))
 
 (defn vector-assembler [params]
   (let [defaults {:handle-invalid "error"}

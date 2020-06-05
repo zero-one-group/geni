@@ -43,6 +43,7 @@
    bucketiser
    bucketizer
    bucketed-random-projection-lsh
+   chi-sq-selector
    count-vectoriser
    count-vectorizer
    dct
@@ -271,7 +272,7 @@
 
 (comment
 
-  (import '(ml.dmlc.xgboost4j.scala.spark XGBoostRegressor))
-  (params (XGBoostRegressor.))
+  (import '(org.apache.spark.ml.feature ChiSqSelector))
+  (params (ChiSqSelector.))
 
   true)
