@@ -131,6 +131,8 @@
 
 (defn cross-join [left right] (.crossJoin left right))
 
+;; Agg Methods
+
 ;; Stat Functions
 (defn approx-quantile [dataframe col-or-cols probs rel-error]
   (let [seq-col     (coll? col-or-cols)

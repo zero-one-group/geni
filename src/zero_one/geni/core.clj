@@ -37,11 +37,15 @@
     [zero-one.geni.column]
     [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.sql]
     [zero-one.geni.window])
   (:import
-    (org.apache.spark.sql Dataset functions)
-    (org.apache.spark.sql SparkSession)))
+    (org.apache.spark.sql Column
+                          Dataset
+                          RelationalGroupedDataset
+                          SparkSession
+                          functions)))
 
 (import-vars
   [zero-one.geni.column
@@ -86,7 +90,6 @@
    asc
    asin
    atan
-   avg
    between
    broadcast
    cast
@@ -138,10 +141,7 @@
    lower
    lpad
    ltrim
-   max
    md5
-   mean
-   min
    minute
    mod
    month
@@ -188,7 +188,6 @@
    stddev-pop
    stddev-samp
    substring
-   sum
    sum-distinct
    tan
    tanh
@@ -278,9 +277,19 @@
    write-text!])
 
 (defmulti count class)
-(defmethod count org.apache.spark.sql.Column [x] (functions/count x))
-(defmethod count java.lang.String [x] (functions/count x))
-(defmethod count org.apache.spark.sql.Dataset [x] (.count x))
+(defmethod count :default [x] (functions/count x))
+(defmethod count Dataset [x] (.count x))
+(defmethod count RelationalGroupedDataset [x] (.count x))
+
+(defmulti mean (fn [x & _] (class x)))
+(defmethod mean :default [expr & _] (functions/mean expr))
+(defmethod mean RelationalGroupedDataset
+  [grouped-ds & col-names] (.mean grouped-ds (interop/->scala-seq col-names)))
+(def avg mean)
+
+(defn max [expr] (functions/max expr))
+(defn min [expr] (functions/min expr))
+(defn sum [expr] (functions/sum expr))
 
 (defmulti coalesce (fn [head & _] (class head)))
 (defmethod coalesce Dataset [dataframe n-partitions]
@@ -315,6 +324,11 @@
   (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
   (-> melbourne-df count)
   (-> melbourne-df print-schema)
+
+  (-> melbourne-df
+      (group-by "SellerG")
+      (mean "Price" "Rooms")
+      show)
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
