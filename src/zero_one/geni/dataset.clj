@@ -4,6 +4,7 @@
                             empty?
                             filter
                             group-by
+                            sort
                             take])
   (:require
     [clojure.walk :refer [keywordize-keys]]
@@ -18,57 +19,46 @@
 ;;;; Dataset Methods
 ;; Basic
 (defn cache [dataframe] (.cache dataframe))
-(defn describe [dataframe & column-names]
-  (.describe dataframe (into-array java.lang.String column-names)))
-(defn distinct [dataframe] (.distinct dataframe))
+
+(defn columns [dataframe] (-> dataframe .columns seq))
+(def column-names columns)
+
 (defn drop [dataframe & col-names]
   (.drop dataframe (into-array java.lang.String col-names)))
-(defn drop-duplicates [dataframe & col-names]
-  (if (clojure.core/empty? col-names)
-    (.dropDuplicates dataframe)
-    (.dropDuplicates dataframe (into-array java.lang.String col-names))))
-(defn empty? [dataframe] (.isEmpty dataframe))
-(defn except [dataframe other] (.except dataframe other))
-(defn filter [dataframe expr] (.filter dataframe expr))
-(def where filter)
-(defn intersect [dataframe other] (.intersect dataframe other))
-(defn limit [dataframe n-rows] (.limit dataframe n-rows))
-(defn order-by [dataframe & exprs] (.orderBy dataframe (->col-array exprs)))
-(defn persist [dataframe] (.persist dataframe))
-(defn rename-columns [dataframe rename-map]
-  (reduce
-    (fn [acc-df [old-name new-name]]
-      (.withColumnRenamed acc-df old-name new-name))
-    dataframe
-    rename-map))
-(defn sample
-  ([dataframe fraction] (.sample dataframe fraction))
-  ([dataframe fraction with-replacement]
-   (.sample dataframe with-replacement fraction)))
-(defn select [dataframe & exprs] (.select dataframe (->col-array exprs)))
-(defn summary [dataframe & stat-names]
-  (.summary dataframe (into-array java.lang.String stat-names)))
-(defn with-column [dataframe col-name expr]
-  (.withColumn dataframe col-name (->column expr)))
-(defn union [& dfs] (reduce #(.union %1 %2) dfs))
-(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
 
-;; Inspection
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
     (->> dtypes-as-tuples
          (clojure.core/map interop/scala-tuple->vec)
          (into {})
          keywordize-keys)))
-(defn columns [dataframe]
-  (-> dataframe .columns seq))
-(def column-names columns)
 
-;; IO
-(defn explain [dataframe] (.explain dataframe))
+(defn explain
+  ([dataframe] (.explain dataframe))
+  ([dataframe extended] (.explain dataframe extended)))
+
+(defn filter [dataframe expr] (.filter dataframe expr))
+(def where filter)
+
+(defn is-empty [dataframe] (.isEmpty dataframe))
+(def empty? is-empty)
+
+(defn is-local [dataframe] (.isLocal dataframe))
+(def local? is-local)
+
+(defn persist [dataframe] (.persist dataframe))
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
+
+(defn rename-columns [dataframe rename-map]
+  (reduce
+    (fn [acc-df [old-name new-name]]
+      (.withColumnRenamed acc-df old-name new-name))
+    dataframe
+    rename-map))
+
+(defn select [dataframe & exprs] (.select dataframe (->col-array exprs)))
 
 (defn show
   ([dataframe] (show dataframe {}))
@@ -83,11 +73,38 @@
   ([dataframe] (show dataframe {:vertical true}))
   ([dataframe options] (show dataframe (assoc options :vertical true))))
 
+(defn with-column [dataframe col-name expr]
+  (.withColumn dataframe col-name (->column expr)))
+
+(defn union [& dfs] (reduce #(.union %1 %2) dfs))
+
+(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
+
+;; Typed Transformations
+(defn distinct [dataframe] (.distinct dataframe))
+
+(defn drop-duplicates [dataframe & col-names]
+  (if (clojure.core/empty? col-names)
+    (.dropDuplicates dataframe)
+    (.dropDuplicates dataframe (into-array java.lang.String col-names))))
+
+(defn except [dataframe other] (.except dataframe other))
+
+(defn except-all [dataframe other] (.exceptAll dataframe other))
+
+(defn intersect [dataframe other] (.intersect dataframe other))
+
+(defn intersect-all [dataframe other] (.intersectAll dataframe other))
+
+(defn limit [dataframe n-rows] (.limit dataframe n-rows))
+
+(defn order-by [dataframe & exprs] (.orderBy dataframe (->col-array exprs)))
+(def sort order-by)
+
 (defn random-split
   ([dataframe weights] (.randomSplit dataframe (double-array weights)))
   ([dataframe weights seed] (.randomSplit dataframe (double-array weights) seed)))
 
-;; Partitions
 (defn repartition [dataframe & args]
   (let [args          (clojure.core/flatten args)
         [head & tail] (clojure.core/flatten args)]
@@ -101,6 +118,11 @@
     (if (int? head)
       (.repartitionByRange dataframe head (->col-array tail))
       (.repartitionByRange dataframe (->col-array args)))))
+
+(defn sample
+  ([dataframe fraction] (.sample dataframe fraction))
+  ([dataframe fraction with-replacement]
+   (.sample dataframe with-replacement fraction)))
 
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
@@ -130,6 +152,11 @@
      (.join left right (interop/->scala-seq join-cols) join-type))))
 
 (defn cross-join [left right] (.crossJoin left right))
+
+;; Ungrouped
+(defn spark-session [dataframe] (.sparkSession dataframe))
+
+(defn sql-context [dataframe] (.sqlContext dataframe))
 
 ;; Stat Functions
 (defn approx-quantile [dataframe col-or-cols probs rel-error]
@@ -163,6 +190,11 @@
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
 (defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
+
+(defn describe [dataframe & column-names]
+  (.describe dataframe (into-array java.lang.String column-names)))
+(defn summary [dataframe & stat-names]
+  (.summary dataframe (into-array java.lang.String stat-names)))
 
 ;;;; Dataset Creation
 (defn ->row [coll]

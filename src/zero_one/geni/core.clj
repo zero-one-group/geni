@@ -30,6 +30,7 @@
                             reverse
                             second
                             shuffle
+                            sort
                             take
                             when])
   (:require
@@ -222,6 +223,7 @@
    dtypes
    empty?
    except
+   except-all
    explain
    filter
    first-vals
@@ -229,9 +231,13 @@
    infer-schema
    infer-struct-field
    intersect
+   intersect-all
+   is-empty
+   is-local
    java-type->spark-type
    join
    limit
+   local?
    map->dataset
    order-by
    partitions
@@ -247,7 +253,10 @@
    select
    show
    show-vertical
+   sort
    sort-within-partitions
+   spark-session
+   sql-context
    summary
    table->dataset
    take
