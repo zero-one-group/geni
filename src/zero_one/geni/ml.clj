@@ -259,7 +259,7 @@
       (save path)))
 
 (defn load-method? [^java.lang.reflect.Method method]
-  (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
+  (and ; (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
        (= "load" (.getName method))))
 
 (defn load-method [cls]

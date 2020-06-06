@@ -23,7 +23,8 @@
                             shuffle
                             when])
   (:require
-    [zero-one.geni.column :refer [->col-array ->column]])
+    [zero-one.geni.column :refer [->col-array ->column]]
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column functions)))
 
@@ -233,6 +234,9 @@
   ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
 (defn week-of-year [expr] (functions/weekofyear (->column expr)))
 (defn year [expr] (functions/year (->column expr)))
+
+;;;; Other Functions
+(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
 
 ;;;; Column Methods
 ;; Basics
