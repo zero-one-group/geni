@@ -303,14 +303,14 @@
   [grouped & col-names] (.sum grouped (interop/->scala-seq col-names)))
 
 (defmulti coalesce (fn [head & _] (class head)))
-(defmethod coalesce Dataset [dataset n-partitions]
-  (.coalesce dataset n-partitions))
+(defmethod coalesce Dataset [dataframe n-partitions]
+  (.coalesce dataframe n-partitions))
 (defmethod coalesce :default [& exprs]
   (functions/coalesce (->col-array exprs)))
 
 (defmulti first class)
-(defmethod first Dataset [dataset]
-  (-> dataset (zero-one.geni.dataset/take 1) clojure.core/first))
+(defmethod first Dataset [dataframe]
+  (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
 (defmethod first :default [expr] (functions/first (->column expr)))
 
 (defn create-spark-session [{:keys [app-name master configs log-level]

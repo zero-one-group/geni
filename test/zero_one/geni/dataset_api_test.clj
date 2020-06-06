@@ -7,6 +7,18 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]]))
 
+(fact "On agg methods" :slow
+  (let [grouped (-> df-50 (g/group-by "SellerG"))]
+    (-> grouped (g/mean "Price" "Rooms") g/column-names)
+    => ["SellerG" "avg(Price)" "avg(Rooms)"]
+    (-> grouped (g/min "Price" "Rooms") g/column-names)
+    => ["SellerG" "min(Price)" "min(Rooms)"]
+    (-> grouped (g/max "Price" "Rooms") g/column-names)
+    => ["SellerG" "max(Price)" "max(Rooms)"]
+    (-> grouped (g/sum "Price" "Rooms") g/column-names)
+    => ["SellerG" "sum(Price)" "sum(Rooms)"]
+    (-> grouped g/count g/column-names) => ["SellerG" "count"]))
+
 (fact "On approx-quantile" :slow
   (-> melbourne-df
       (g/approx-quantile "Price" [0.1 0.9] 0.2)) => #(< (first %) (second %))
