@@ -35,8 +35,10 @@
   (:require
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
+    [zero-one.geni.column]
     [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
+    [zero-one.geni.sql]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
@@ -44,13 +46,165 @@
     (org.apache.spark.sql SparkSession)
     (org.apache.spark.sql.expressions Window)))
 
-(defmulti col class)
-(defmethod col :default [x] (functions/lit x))
-(defmethod col org.apache.spark.sql.Column [x] x)
-(defmethod col java.lang.String [x] (functions/col x))
-(defn ->col-array [columns]
-  (->> columns (clojure.core/map col) (into-array Column)))
-(def ->column col)
+(import-vars
+  [zero-one.geni.column
+   col
+   ->col-array
+   ->column])
+
+(import-vars
+  [zero-one.geni.sql
+   &&
+   *
+   +
+   -
+   ->date-col
+   /
+   <
+   <=
+   ===
+   >
+   >=
+   abs
+   acos
+   add-months
+   alias
+   approx-count-distinct
+   array
+   array-contains
+   array-distinct
+   array-except
+   array-intersect
+   array-join
+   array-max
+   array-min
+   array-position
+   array-remove
+   array-repeat
+   array-sort
+   array-union
+   arrays-overlap
+   arrays-zip
+   as
+   asc
+   asin
+   atan
+   avg
+   between
+   broadcast
+   cast
+   ceil
+   collect-list
+   collect-set
+   concat
+   contains
+   corr
+   cos
+   cosh
+   count-distinct
+   covar
+   covar-pop
+   covar-samp
+   cume-dist
+   current-date
+   current-timestamp
+   date-add
+   date-diff
+   date-format
+   date-sub
+   datediff
+   day-of-month
+   day-of-week
+   day-of-year
+   dense-rank
+   desc
+   element-at
+   ends-with
+   exp
+   explode
+   expr
+   flatten
+   floor
+   format-number
+   format-string
+   hash
+   hour
+   kurtosis
+   lag
+   last
+   last-day
+   lead
+   like
+   lit
+   log
+   lower
+   lpad
+   ltrim
+   max
+   md5
+   mean
+   min
+   minute
+   mod
+   month
+   months-between
+   nan?
+   negate
+   next-day
+   not
+   ntile
+   null-count
+   null-rate
+   null?
+   percent-rank
+   pi
+   pow
+   quarter
+   rand
+   randn
+   rank
+   regexp-extract
+   regexp-replace
+   reverse
+   rlike
+   round
+   row-number
+   rpad
+   rtrim
+   second
+   sha1
+   sha2
+   shuffle
+   sin
+   sinh
+   size
+   skewness
+   slice
+   sort-array
+   spark-partition-id
+   split
+   sqr
+   sqrt
+   starts-with
+   stddev
+   stddev-pop
+   stddev-samp
+   substring
+   sum
+   sum-distinct
+   tan
+   tanh
+   to-date
+   trim
+   unix-timestamp
+   upper
+   var-pop
+   var-samp
+   variance
+   week-of-year
+   when
+   year
+   ||])
 
 (defn explain [dataframe] (.explain dataframe))
 
@@ -167,236 +321,15 @@
       (clojure.core/map seq quantiles)
       (seq quantiles))))
 
-(defn broadcast [dataframe] (functions/broadcast dataframe))
 (defn cache [dataframe] (.cache dataframe))
 (defn persist [dataframe] (.persist dataframe))
-
-(defn md5 [expr] (functions/md5 (->column expr)))
-(defn sha1 [expr] (functions/sha1 (->column expr)))
-(defn sha2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
 
 (defmulti count class)
 (defmethod count org.apache.spark.sql.Column [x] (functions/count x))
 (defmethod count java.lang.String [x] (functions/count x))
 (defmethod count org.apache.spark.sql.Dataset [x] (.count x))
 
-(defn unix-timestamp
-  ([] (functions/unix_timestamp))
-  ([expr] (functions/unix_timestamp (->column expr)))
-  ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
-(defn current-timestamp [] (functions/current_timestamp))
-(defn current-date [] (functions/current_date))
-(defn year [expr] (functions/year (->column expr)))
-(defn quarter [expr] (functions/quarter (->column expr)))
-(defn month [expr] (functions/month (->column expr)))
-(defn week-of-year [expr] (functions/weekofyear (->column expr)))
-(defn day-of-year [expr] (functions/dayofyear (->column expr)))
-(defn day-of-month [expr] (functions/dayofmonth (->column expr)))
-(defn day-of-week [expr] (functions/dayofweek (->column expr)))
-(defn last-day [expr] (functions/last_day (->column expr)))
-(defn hour [expr] (functions/hour (->column expr)))
-(defn minute [expr] (functions/minute (->column expr)))
-(defn second [expr] (functions/second (->column expr)))
-
-(defn to-date [expr date-format]
-  (functions/to_date (->column expr) date-format))
-(def ->date-col to-date)
-(defn add-months [expr months]
-  (functions/add_months (->column expr) months))
-(defn months-between [l-expr r-expr]
-  (functions/months_between (->column l-expr) (->column r-expr)))
-(defn next-day [expr day-of-week]
-  (functions/next_day (->column expr) day-of-week))
-(defn date-add [expr days]
-  (functions/date_add (->column expr) days))
-(defn date-sub [expr days]
-  (functions/date_sub (->column expr) days))
-(defn datediff [l-expr r-expr]
-  (functions/datediff (->column l-expr) (->column r-expr)))
-(def date-diff datediff)
-(defn date-format [expr date-fmt]
-  (functions/date_format (->column expr) date-fmt))
-
-(defn expr [s] (functions/expr s))
-(defn format-number [expr decimal-places]
-  (functions/format_number (->column expr) decimal-places))
-(defn format-string [fmt exprs]
-  (functions/format_string fmt (->col-array exprs)))
-(defn lower [expr] (functions/lower (->column expr)))
-(defn upper [expr] (functions/upper (->column expr)))
-(defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
-(defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
-(defn ltrim [expr] (functions/ltrim (->column expr)))
-(defn rtrim [expr] (functions/rtrim (->column expr)))
-(defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
-(defn split [expr pattern] (functions/split (->column expr) pattern))
-(defn regexp-replace [expr pattern-expr replacement-expr]
-  (functions/regexp_replace
-    (->column expr)
-    (->column pattern-expr)
-    (->column replacement-expr)))
-(defn regexp-extract [expr regex idx]
-  (functions/regexp_extract (->column expr) regex idx))
-
-(defn corr [l-expr r-expr] (functions/corr (->column l-expr) (->column r-expr)))
-(defn covar [l-expr r-expr] (functions/covar_samp (->column l-expr) (->column r-expr)))
-(def covar-samp covar)
-(defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
-(defn kurtosis [expr] (functions/kurtosis expr))
-(defn lit [expr] (functions/lit expr))
-(defn max [expr] (functions/max expr))
-(defn mean [expr] (functions/mean expr))
-(def avg mean)
-(defn min [expr] (functions/min expr))
-(defn skewness [expr] (functions/skewness expr))
-(defn stddev [expr] (functions/stddev expr))
-(def stddev-samp stddev)
-(defn stddev-pop [expr] (functions/stddev_pop expr))
-(defn sum [expr] (functions/sum expr))
-(defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
-(defn var-pop [expr] (functions/var_pop (->column expr)))
-(defn variance [expr] (functions/variance expr))
-(def var-samp variance)
-
-(defn last [expr] (functions/last (->column expr)))
-
-(defn randn
-  ([] (functions/randn))
-  ([seed] (functions/randn seed)))
-(defn rand
-  ([] (functions/rand))
-  ([seed] (functions/rand seed)))
-
-(defn not [expr] (functions/not (->column expr)))
-(defn log [expr] (functions/log (->column expr)))
-(defn exp [expr] (functions/exp (->column expr)))
-(defn sqr [expr] (.multiply (->column expr) (->column expr)))
-(defn sqrt [expr] (functions/sqrt (->column expr)))
-(defn pow [base exponent] (functions/pow (->column base) exponent))
-(defn negate [expr] (functions/negate (->column expr)))
-(defn abs [expr] (functions/abs (->column expr)))
-(defn sin [expr] (functions/sin (->column expr)))
-(defn cos [expr] (functions/cos (->column expr)))
-(defn tan [expr] (functions/tan (->column expr)))
-(defn asin [expr] (functions/asin (->column expr)))
-(defn acos [expr] (functions/acos (->column expr)))
-(defn atan [expr] (functions/atan (->column expr)))
-(defn sinh [expr] (functions/sinh (->column expr)))
-(defn cosh [expr] (functions/cosh (->column expr)))
-(defn tanh [expr] (functions/tanh (->column expr)))
-(defn ceil [expr] (functions/ceil (->column expr)))
-(defn floor [expr] (functions/floor (->column expr)))
-(defn round [expr] (functions/round (->column expr)))
-(def pi (lit Math/PI))
-
-(defn asc [expr] (.asc (->column expr)))
-(defn desc [expr] (.desc (->column expr)))
-
-(defn hash [& exprs] (functions/hash (->col-array exprs)))
-(defn like [expr literal] (.like (->column expr) literal))
-(defn rlike [expr literal] (.rlike (->column expr) literal))
-(defn contains [expr literal] (.contains (->column expr) literal))
-(defn starts-with [expr literal] (.startsWith (->column expr) literal))
-(defn ends-with [expr literal] (.endsWith (->column expr) literal))
-
-(defn as [expr new-name] (.as (->column expr) new-name))
-(def alias as)
-(defn cast [expr new-type] (.cast (->column expr) new-type))
-
-(defn && [& exprs] (reduce #(.and (->column %1) (->column %2)) (lit true) exprs))
-(defn || [& exprs] (reduce #(.or (->column %1) (->column %2)) (lit false) exprs))
-
-(defn + [& exprs] (reduce #(.plus (->column %1) (->column %2)) (lit 0) exprs))
-(defn - [& exprs] (reduce #(.minus (->column %1) (->column %2)) exprs))
-(defn * [& exprs] (reduce #(.multiply (->column %1) (->column %2)) (lit 1) exprs))
-(defn / [& exprs] (reduce #(.divide (->column %1) (->column %2)) exprs))
-(defn mod [left-expr right-expr] (.mod (->column left-expr) (->column right-expr)))
-(defn compare-columns [compare-fn expr-0 & exprs]
-  (let [exprs (-> exprs (conj expr-0))]
-    (reduce
-      (fn [acc-col [l-expr r-expr]]
-        (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
-      (lit true)
-      (clojure.core/map vector exprs (rest exprs)))))
-(def < (partial compare-columns #(.lt %1 %2)))
-(def <= (partial compare-columns #(.leq %1 %2)))
-(def > (partial compare-columns #(.gt %1 %2)))
-(def >= (partial compare-columns #(.geq %1 %2)))
-(defn between [expr lower-bound upper-bound]
-  (.between (->column expr) lower-bound upper-bound))
-(def === (partial compare-columns #(.equalTo %1 %2)))
-
-(defn nan? [expr] (.isNaN (->column expr)))
-(defn null? [expr] (.isNull (->column expr)))
-(defn null-rate [expr]
-  (-> expr null? (cast "int") mean (as (str "null_rate(" expr ")"))))
-(defn null-count [expr]
-  (-> expr null? (cast "int") sum (as (str "null_count(" expr ")"))))
-
 (defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
-
-(defn substring [expr pos len] (functions/substring (->column expr) pos len))
-
-(defn collect-list [expr] (functions/collect_list expr))
-(defn collect-set [expr] (functions/collect_set expr))
-(defn explode [expr] (functions/explode (->column expr)))
-
-(defn array-contains [expr value]
-  (functions/array_contains (->column expr) value))
-(defn array-distinct [expr]
-  (functions/array_distinct (->column expr)))
-(defn array-except [left right]
-  (functions/array_except (->column left) (->column right)))
-(defn array-intersect [left right]
-  (functions/array_intersect (->column left) (->column right)))
-(defn array-join
-  ([expr delimiter] (functions/array_join (->column expr) delimiter))
-  ([expr delimiter null-replacement]
-   (functions/array_join (->column expr) delimiter null-replacement)))
-(defn array-max [expr]
-  (functions/array_max (->column expr)))
-(defn array-min [expr]
-  (functions/array_min (->column expr)))
-(defn array-position [expr value]
-  (functions/array_position (->column expr) value))
-(defn array-remove [expr element]
-  (functions/array_remove (->column expr) element))
-(defn array-repeat [left right]
-  (if (nat-int? right)
-    (functions/array_repeat (->column left) right)
-    (functions/array_repeat (->column left) (->column right))))
-(defn array-sort [expr]
-  (functions/array_sort (->column expr)))
-(defn array-union [left right]
-  (functions/array_union (->column left) (->column right)))
-(defn array [exprs]
-  (functions/array (->col-array exprs)))
-(defn arrays-overlap [left right]
-  (functions/arrays_overlap (->column left) (->column right)))
-(defn arrays-zip [exprs]
-  (functions/arrays_zip (->col-array exprs)))
-
-(defn element-at [expr value]
-  (functions/element_at (->column expr) (int value)))
-(defn flatten [expr]
-  (functions/flatten (->column expr)))
-(defn reverse [expr]
-  (functions/reverse (->column expr)))
-(defn shuffle [expr]
-  (functions/shuffle (->column expr)))
-(defn size [expr]
-  (functions/size (->column expr)))
-(defn slice [expr start length]
-  (functions/slice (->column expr) start length))
-(defn sort-array
-  ([expr] (functions/sort_array (->column expr)))
-  ([expr asc] (functions/sort_array (->column expr) asc)))
-
-(defn when
-  ([condition if-expr]
-   (functions/when condition (->column if-expr)))
-  ([condition if-expr else-expr]
-   (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
 (defmulti coalesce (fn [head & _] (class head)))
 (defmethod coalesce Dataset [dataframe n-partitions]
@@ -430,30 +363,6 @@
     (-> (new-window) partition-fn order-fn range-between-fn rows-between-fn)))
 
 (defn over [column window-spec] (.over column window-spec))
-
-(defn cume-dist [] (functions/cume_dist))
-(defn dense-rank [] (functions/dense_rank))
-(defn lag
-  ([expr offset] (functions/lag (->column expr) offset))
-  ([expr offset default] (functions/lag (->column expr) offset default)))
-(defn lead
-  ([expr offset] (functions/lead (->column expr) offset))
-  ([expr offset default] (functions/lead (->column expr) offset default)))
-(defn ntile [n] (functions/ntile n))
-(defn percent-rank [] (functions/percent_rank))
-(defn rank [] (functions/rank))
-(defn row-number [] (functions/row_number))
-(defn spark-partition-id [] (functions/spark-partition-id))
-
-(defn count-distinct [& exprs]
-  (let [[head & tail] (clojure.core/map ->column exprs)]
-    (functions/countDistinct head (into-array Column tail))))
-
-(defn approx-count-distinct
-  ([expr] (functions/approx_count_distinct (->column expr)))
-  ([expr rsd] (functions/approx_count_distinct (->column expr) rsd)))
-
-(defn concat [& exprs] (functions/concat (->col-array exprs)))
 
 (defn agg-all [dataframe agg-fn]
   (let [agg-cols (clojure.core/map agg-fn (column-names dataframe))]
