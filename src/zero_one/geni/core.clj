@@ -277,29 +277,40 @@
    write-text!])
 
 (defmulti count class)
-(defmethod count :default [x] (functions/count x))
-(defmethod count Dataset [x] (.count x))
-(defmethod count RelationalGroupedDataset [x] (.count x))
+(defmethod count :default [expr] (functions/count expr))
+(defmethod count Dataset [dataset] (.count dataset))
+(defmethod count RelationalGroupedDataset [grouped] (.count grouped))
 
-(defmulti mean (fn [x & _] (class x)))
+(defmulti mean (fn [head & _] (class head)))
 (defmethod mean :default [expr & _] (functions/mean expr))
 (defmethod mean RelationalGroupedDataset
-  [grouped-ds & col-names] (.mean grouped-ds (interop/->scala-seq col-names)))
+  [grouped & col-names] (.mean grouped (interop/->scala-seq col-names)))
 (def avg mean)
 
-(defn max [expr] (functions/max expr))
-(defn min [expr] (functions/min expr))
-(defn sum [expr] (functions/sum expr))
+(defmulti max (fn [head & _] (class head)))
+(defmethod max :default [expr] (functions/max expr))
+(defmethod max RelationalGroupedDataset
+  [grouped & col-names] (.max grouped (interop/->scala-seq col-names)))
+
+(defmulti min (fn [head & _] (class head)))
+(defmethod min :default [expr] (functions/min expr))
+(defmethod min RelationalGroupedDataset
+  [grouped & col-names] (.min grouped (interop/->scala-seq col-names)))
+
+(defmulti sum (fn [head & _] (class head)))
+(defmethod sum :default [expr] (functions/sum expr))
+(defmethod sum RelationalGroupedDataset
+  [grouped & col-names] (.sum grouped (interop/->scala-seq col-names)))
 
 (defmulti coalesce (fn [head & _] (class head)))
-(defmethod coalesce Dataset [dataframe n-partitions]
-  (.coalesce dataframe n-partitions))
+(defmethod coalesce Dataset [dataset n-partitions]
+  (.coalesce dataset n-partitions))
 (defmethod coalesce :default [& exprs]
   (functions/coalesce (->col-array exprs)))
 
 (defmulti first class)
-(defmethod first Dataset [dataframe]
-  (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
+(defmethod first Dataset [dataset]
+  (-> dataset (zero-one.geni.dataset/take 1) clojure.core/first))
 (defmethod first :default [expr] (functions/first (->column expr)))
 
 (defn create-spark-session [{:keys [app-name master configs log-level]
@@ -325,10 +336,11 @@
   (-> melbourne-df count)
   (-> melbourne-df print-schema)
 
-  (-> melbourne-df
-      (group-by "SellerG")
-      (mean "Price" "Rooms")
-      show)
+  (-> melbourne-df (group-by "SellerG") (mean "Price" "Rooms") show)
+  (-> melbourne-df (group-by "SellerG") (sum "Price" "Rooms") show)
+  (-> melbourne-df (group-by "SellerG") (min "Price" "Rooms") show)
+  (-> melbourne-df (group-by "SellerG") (max "Price" "Rooms") show)
+  (-> melbourne-df (group-by "SellerG") count show)
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
