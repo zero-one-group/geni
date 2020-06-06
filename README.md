@@ -65,8 +65,8 @@ Spark SQL API for grouping and aggregating:
 
 (-> melbourne-df
     (g/group-by "Suburb")
-    (g/agg (-> (g/count "*") (g/as "n")))
-    (g/order-by (g/desc "n"))
+    g/count
+    (g/order-by (g/desc "count"))
     (g/limit 5)
     g/show)
 ; +--------------+---+
