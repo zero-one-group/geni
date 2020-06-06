@@ -152,8 +152,7 @@
       (->> row
            interop/spark-row->vec
            (clojure.core/map interop/->clojure)
-           (clojure.core/map vector col-names)
-           (into {})
+           (zipmap col-names)
            keywordize-keys))))
 
 (defn collect-vals [dataframe]
