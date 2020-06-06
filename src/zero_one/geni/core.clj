@@ -41,8 +41,7 @@
     [zero-one.geni.sql]
     [zero-one.geni.window])
   (:import
-    (org.apache.spark.sql Column
-                          Dataset
+    (org.apache.spark.sql Dataset
                           RelationalGroupedDataset
                           SparkSession
                           functions)))
@@ -335,12 +334,6 @@
   (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
   (-> melbourne-df count)
   (-> melbourne-df print-schema)
-
-  (-> melbourne-df (group-by "SellerG") (mean "Price" "Rooms") show)
-  (-> melbourne-df (group-by "SellerG") (sum "Price" "Rooms") show)
-  (-> melbourne-df (group-by "SellerG") (min "Price" "Rooms") show)
-  (-> melbourne-df (group-by "SellerG") (max "Price" "Rooms") show)
-  (-> melbourne-df (group-by "SellerG") count show)
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))

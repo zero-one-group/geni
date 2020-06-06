@@ -13,8 +13,6 @@
                             flatten
                             hash
                             last
-                            max
-                            min
                             mod
                             not
                             rand
