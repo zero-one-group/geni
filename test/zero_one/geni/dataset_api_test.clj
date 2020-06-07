@@ -5,7 +5,22 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]]))
+    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
+  (:import
+    (org.apache.spark.sql SparkSession
+                          SQLContext)))
+
+(fact "On agg methods" :slow
+  (let [grouped (-> df-50 (g/group-by "SellerG"))]
+    (-> grouped (g/mean "Price" "Rooms") g/column-names)
+    => ["SellerG" "avg(Price)" "avg(Rooms)"]
+    (-> grouped (g/min "Price" "Rooms") g/column-names)
+    => ["SellerG" "min(Price)" "min(Rooms)"]
+    (-> grouped (g/max "Price" "Rooms") g/column-names)
+    => ["SellerG" "max(Price)" "max(Rooms)"]
+    (-> grouped (g/sum "Price" "Rooms") g/column-names)
+    => ["SellerG" "sum(Price)" "sum(Rooms)"]
+    (-> grouped g/count g/column-names) => ["SellerG" "count"]))
 
 (fact "On approx-quantile" :slow
   (-> melbourne-df
@@ -32,10 +47,18 @@
       (n-lines (with-out-str (g/show-vertical (g/limit df 3)))) => 9
       (n-lines (with-out-str (g/show-vertical df {:num-rows 3}))) => 10
       (n-lines (with-out-str (g/print-schema df))) => (inc n-columns)
-      (n-lines (interop/with-scala-out-str (g/explain df))) => #(< 1 %))))
+      (n-lines (interop/with-scala-out-str (g/explain df))) => #(< 1 %)
+      (n-lines (interop/with-scala-out-str (g/explain df true))) => #(< 10 %))))
 
 (fact "On dtypes"
   (-> melbourne-df g/dtypes :Suburb) => "StringType")
+
+(fact "On local"
+  (-> melbourne-df g/local?) => boolean?)
+
+(fact "On ungrouped methods"
+  (-> melbourne-df g/spark-session) => (partial instance? SparkSession)
+  (-> melbourne-df g/sql-context) => (partial instance? SQLContext))
 
 (facts "On pivot" :slow
   (fact "pivot should return the expected cols"
@@ -126,16 +149,27 @@
         (g/drop-duplicates "SellerG")
         g/count) => 6))
 
-(facts "On except and intercept" :slow
+(facts "On except and intercept" ;:slow
   (fact "except should exclude the row"
     (-> df-20
+        (g/union df-20)
         (g/except df-1)
         g/count) => 19)
+  (fact "except all should leave out the duplicates"
+    (-> df-20
+        (g/union df-20)
+        (g/except-all df-1)
+        g/count) => 39)
   (fact "except then intercept should be empty"
     (-> df-20
         (g/except df-1)
         (g/intersect df-1)
-        g/empty?) => true))
+        g/empty?) => true)
+  (fact "intersect all should preserve duplicates"
+    (-> df-20
+        (g/union df-20)
+        (g/intersect-all df-1)
+        g/count) => 1)) ; TODO: this should be 2
 
 (facts "On union" :slow
   (fact "Union should double the rows preserve distinctness"

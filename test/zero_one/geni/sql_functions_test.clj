@@ -355,7 +355,7 @@
           (-> (g/count "*")
               (g/over (g/window {:partition-by "date"
                                  :order-by "date"
-                                 :range-between [(* -7 60 60 24) 0]}))))
+                                 :range-between {:start (* -7 60 60 24) :end 0}}))))
         g/collect-vals
         flatten
         set) => #{1 2 3})
@@ -366,7 +366,7 @@
           (-> (g/count "*")
               (g/over (g/window {:partition-by "date"
                                  :order-by "date"
-                                 :rows-between [0 1]}))))
+                                 :rows-between {:start 0 :end 1}}))))
         g/collect-vals
         flatten
         set) => #{1 2}))

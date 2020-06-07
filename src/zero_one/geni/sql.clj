@@ -13,8 +13,6 @@
                             flatten
                             hash
                             last
-                            max
-                            min
                             mod
                             not
                             rand
@@ -160,15 +158,10 @@
 (defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
 (defn kurtosis [expr] (functions/kurtosis expr))
 (defn lit [expr] (functions/lit expr))
-(defn max [expr] (functions/max expr))
-(defn mean [expr] (functions/mean expr))
-(def avg mean)
-(defn min [expr] (functions/min expr))
 (defn skewness [expr] (functions/skewness expr))
 (defn stddev [expr] (functions/stddev expr))
 (def stddev-samp stddev)
 (defn stddev-pop [expr] (functions/stddev_pop expr))
-(defn sum [expr] (functions/sum expr))
 (defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance expr))
@@ -273,9 +266,9 @@
 (defn nan? [expr] (.isNaN (->column expr)))
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
-  (-> expr null? (cast "int") mean (as (str "null_rate(" expr ")"))))
+  (-> expr null? (cast "int") functions/mean (as (str "null_rate(" expr ")"))))
 (defn null-count [expr]
-  (-> expr null? (cast "int") sum (as (str "null_count(" expr ")"))))
+  (-> expr null? (cast "int") functions/sum (as (str "null_count(" expr ")"))))
 
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))

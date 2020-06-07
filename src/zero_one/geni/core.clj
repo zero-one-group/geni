@@ -30,6 +30,7 @@
                             reverse
                             second
                             shuffle
+                            sort
                             take
                             when])
   (:require
@@ -37,11 +38,14 @@
     [zero-one.geni.column]
     [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.sql]
     [zero-one.geni.window])
   (:import
-    (org.apache.spark.sql Dataset functions)
-    (org.apache.spark.sql SparkSession)))
+    (org.apache.spark.sql Dataset
+                          RelationalGroupedDataset
+                          SparkSession
+                          functions)))
 
 (import-vars
   [zero-one.geni.column
@@ -86,7 +90,6 @@
    asc
    asin
    atan
-   avg
    between
    broadcast
    cast
@@ -138,10 +141,7 @@
    lower
    lpad
    ltrim
-   max
    md5
-   mean
-   min
    minute
    mod
    month
@@ -188,7 +188,6 @@
    stddev-pop
    stddev-samp
    substring
-   sum
    sum-distinct
    tan
    tanh
@@ -224,6 +223,7 @@
    dtypes
    empty?
    except
+   except-all
    explain
    filter
    first-vals
@@ -231,9 +231,13 @@
    infer-schema
    infer-struct-field
    intersect
+   intersect-all
+   is-empty
+   is-local
    java-type->spark-type
    join
    limit
+   local?
    map->dataset
    order-by
    partitions
@@ -249,7 +253,10 @@
    select
    show
    show-vertical
+   sort
    sort-within-partitions
+   spark-session
+   sql-context
    summary
    table->dataset
    take
@@ -278,9 +285,30 @@
    write-text!])
 
 (defmulti count class)
-(defmethod count org.apache.spark.sql.Column [x] (functions/count x))
-(defmethod count java.lang.String [x] (functions/count x))
-(defmethod count org.apache.spark.sql.Dataset [x] (.count x))
+(defmethod count :default [expr] (functions/count expr))
+(defmethod count Dataset [dataset] (.count dataset))
+(defmethod count RelationalGroupedDataset [grouped] (.count grouped))
+
+(defmulti mean (fn [head & _] (class head)))
+(defmethod mean :default [expr & _] (functions/mean expr))
+(defmethod mean RelationalGroupedDataset
+  [grouped & col-names] (.mean grouped (interop/->scala-seq col-names)))
+(def avg mean)
+
+(defmulti max (fn [head & _] (class head)))
+(defmethod max :default [expr] (functions/max expr))
+(defmethod max RelationalGroupedDataset
+  [grouped & col-names] (.max grouped (interop/->scala-seq col-names)))
+
+(defmulti min (fn [head & _] (class head)))
+(defmethod min :default [expr] (functions/min expr))
+(defmethod min RelationalGroupedDataset
+  [grouped & col-names] (.min grouped (interop/->scala-seq col-names)))
+
+(defmulti sum (fn [head & _] (class head)))
+(defmethod sum :default [expr] (functions/sum expr))
+(defmethod sum RelationalGroupedDataset
+  [grouped & col-names] (.sum grouped (interop/->scala-seq col-names)))
 
 (defmulti coalesce (fn [head & _] (class head)))
 (defmethod coalesce Dataset [dataframe n-partitions]
