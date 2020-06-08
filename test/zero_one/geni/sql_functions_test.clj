@@ -128,8 +128,7 @@
   (-> df-1
       (g/select (g/flatten (g/array [(g/array (range 10))])))
       g/collect-vals
-      first
-      first) => (range 10)
+      ffirst) => (range 10)
   (-> df-1
       (g/select (-> (g/split "Regionname" " ") (g/as "split")))
       (g/collect-col "split")) => [["Northern" "Metropolitan"]])
@@ -319,7 +318,7 @@
         (g/select
           (-> (g/lag "Price" 1) (g/over window))
           (-> (g/lag "Price" 1 -999) (g/over window)))
-        g/collect-vals) => #(and (nil? (first (first %)))
+        g/collect-vals) => #(and (nil? (ffirst %))
                                  (= -999.0 (second (first %))))
     (-> df-20
         (g/select

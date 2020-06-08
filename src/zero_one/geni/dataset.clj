@@ -4,15 +4,17 @@
                             empty?
                             filter
                             group-by
+                            remove
+                            replace
                             sort
                             take])
   (:require
     [clojure.walk :refer [keywordize-keys]]
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [vector-of-numbers?]])
+    [zero-one.geni.utils :refer [ensure-coll vector-of-numbers?]])
   (:import
-    (org.apache.spark.sql Column RowFactory)
+    (org.apache.spark.sql Column RowFactory functions)
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
@@ -50,6 +52,9 @@
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
+
+(defn remove [dataframe expr]
+  (.filter dataframe (functions/not expr)))
 
 (defn rename-columns [dataframe rename-map]
   (reduce
@@ -195,6 +200,30 @@
   (.describe dataframe (into-array java.lang.String column-names)))
 (defn summary [dataframe & stat-names]
   (.summary dataframe (into-array java.lang.String stat-names)))
+
+;; NA Functions
+(defn drop-na
+  ([dataframe]
+   (-> dataframe .na .drop))
+  ([dataframe min-non-nulls-or-cols]
+   (if (coll? min-non-nulls-or-cols)
+     (-> dataframe .na (.drop (interop/->scala-seq min-non-nulls-or-cols)))
+     (-> dataframe .na (.drop min-non-nulls-or-cols))))
+  ([dataframe min-non-nulls cols]
+   (-> dataframe .na (.drop min-non-nulls (interop/->scala-seq cols)))))
+
+(defn fill-na
+  ([dataframe value]
+   (-> dataframe .na (.fill value)))
+  ([dataframe value cols]
+   (-> dataframe .na (.fill value (interop/->scala-seq cols)))))
+
+(defn replace [dataframe cols replacement]
+  (let [cols (ensure-coll cols)]
+    (-> dataframe
+        .na
+        (.replace (into-array java.lang.String cols)
+                  (java.util.HashMap. replacement)))))
 
 ;;;; Dataset Creation
 (defn ->row [coll]

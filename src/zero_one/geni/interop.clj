@@ -18,7 +18,7 @@
   (instance? Seq value))
 
 (defn scala-seq->vec [scala-seq]
-  (into [] (JavaConversions/seqAsJavaList scala-seq)))
+  (vec (JavaConversions/seqAsJavaList scala-seq)))
 
 (defn scala-map->map [^Map m]
   (into {} (JavaConversions/mapAsJavaMap m)))
