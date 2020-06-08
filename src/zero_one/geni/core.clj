@@ -270,7 +270,8 @@
    union
    union-by-name
    where
-   with-column])
+   with-column
+   with-column-renamed])
 
 (import-vars
   [zero-one.geni.window

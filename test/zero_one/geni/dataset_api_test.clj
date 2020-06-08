@@ -140,7 +140,12 @@
                         g/column-names
                         set)]
       col-names => #(contains? % "region_name")
-      col-names => #(not (contains? % "Regionname")))))
+      col-names => #(not (contains? % "Regionname"))))
+  (fact "with-column-renamed actually renames column"
+    (-> df-1
+        (g/with-column-renamed "SellerG" "seller")
+        g/column-names
+        set) => #(nil? (% "SellerG"))))
 
 (facts "On actions" :slow
   (fact "take and take-vals work"

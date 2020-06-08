@@ -81,6 +81,9 @@
 (defn with-column [dataframe col-name expr]
   (.withColumn dataframe col-name (->column expr)))
 
+(defn with-column-renamed [dataframe old-name new-name]
+  (.withColumnRenamed dataframe old-name new-name))
+
 (defn union [& dfs] (reduce #(.union %1 %2) dfs))
 
 (defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
