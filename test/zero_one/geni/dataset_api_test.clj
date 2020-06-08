@@ -10,6 +10,21 @@
     (org.apache.spark.sql SparkSession
                           SQLContext)))
 
+(facts "On NA methods"
+  (fact "On drop-na"
+    (-> df-50 g/drop-na g/count) => 34
+    (-> df-50 (g/drop-na 20) g/count) => 39
+    (-> df-50 (g/drop-na ["BuildingArea"]) g/count) => 38
+    (-> df-50 (g/drop-na 1 ["BuildingArea"]) g/count) => 38)
+  (fact "On fill-na"
+    (-> df-50 (g/fill-na -999.0) (g/collect-col "BuildingArea") set)
+    => #(% -999.0)
+    (-> df-50 (g/fill-na -999.0 ["Regionname"]) (g/collect-col "BuildingArea") set)
+    => #(nil? (% -999.0)))
+  (fact "On replace"
+    (-> df-50 (g/replace "Rooms" {1 -999}) (g/collect-col "Rooms") set)
+    => #(% -999)))
+
 (fact "On agg methods" :slow
   (let [grouped (-> df-50 (g/group-by "SellerG"))]
     (-> grouped (g/mean "Price" "Rooms") g/column-names)
@@ -27,7 +42,7 @@
       (g/approx-quantile "Price" [0.1 0.9] 0.2)) => #(< (first %) (second %))
   (-> melbourne-df
       (g/approx-quantile ["Price"] [0.1 0.9] 0.2))
-  => #(< (first (first %)) (second (first %))))
+  => #(< (ffirst %) (second (first %))))
 
 (fact "On random-split" :slow
   (let [[train-df val-df] (-> df-50 (g/random-split [90 10]))]
@@ -110,7 +125,13 @@
           g/distinct
           g/collect-vals
           flatten
-          set) => #(empty? (clojure.set/intersection % #{"Greg" "Collins" "Biggin"})))))
+          set) => #(empty? (clojure.set/intersection % #{"Greg" "Collins" "Biggin"})))
+    (fact "should correctly remove rows"
+      (-> df
+          (g/remove (g/=== "SellerG" (g/lit "Biggin")))
+          (g/collect-col "SellerG")
+          distinct
+          set) => #{"Nelson" "Jellis" "Greg" "LITTLE" "Collins"})))
 
 (facts "On rename-columns"
   (fact "the new name should exist and the old name should not"
@@ -119,7 +140,12 @@
                         g/column-names
                         set)]
       col-names => #(contains? % "region_name")
-      col-names => #(not (contains? % "Regionname")))))
+      col-names => #(not (contains? % "Regionname"))))
+  (fact "with-column-renamed actually renames column"
+    (-> df-1
+        (g/with-column-renamed "SellerG" "seller")
+        g/column-names
+        set) => #(nil? (% "SellerG"))))
 
 (facts "On actions" :slow
   (fact "take and take-vals work"
@@ -149,7 +175,7 @@
         (g/drop-duplicates "SellerG")
         g/count) => 6))
 
-(facts "On except and intercept" ;:slow
+(facts "On except and intercept" :slow
   (fact "except should exclude the row"
     (-> df-20
         (g/union df-20)

@@ -27,6 +27,8 @@
                             not
                             partition-by
                             rand
+                            remove
+                            replace
                             reverse
                             second
                             shuffle
@@ -220,11 +222,13 @@
    distinct
    drop
    drop-duplicates
+   drop-na
    dtypes
    empty?
    except
    except-all
    explain
+   fill-na
    filter
    first-vals
    group-by
@@ -246,9 +250,11 @@
    print-schema
    random-split
    records->dataset
+   remove
    rename-columns
    repartition
    repartition-by-range
+   replace
    sample
    select
    show
@@ -264,7 +270,8 @@
    union
    union-by-name
    where
-   with-column])
+   with-column
+   with-column-renamed])
 
 (import-vars
   [zero-one.geni.window
@@ -347,11 +354,13 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
 
+  ;; TODO: add remove (i.e. filter not)
   (require '[clojure.reflect :as r])
-  (->> (r/reflect (.stat melbourne-df))
+  (->> (r/reflect temp)
        :members
-       (clojure.core/filter #(= (:name %) 'approxQuantile))
-       (mapv :parameter-types)
+       ;(clojure.core/filter #(= (:name %) 'approxQuantile))
+       ;(mapv :parameter-types)
+       (mapv :name)
        pprint)
 
   0)
