@@ -353,20 +353,6 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
 
-  (import '(scala.collection JavaConverters))
-
-  (-> melbourne-df
-      .na
-      (.replace
-        "Rooms"
-        (java.util.HashMap. {1 2})))
-
-  (def temp
-    (JavaConverters/mapAsScalaMap
-      (java.util.HashMap. {"a" 1 "b" 2})))
-
-  (.size temp)
-
   ;; TODO: add remove (i.e. filter not)
   (require '[clojure.reflect :as r])
   (->> (r/reflect temp)
