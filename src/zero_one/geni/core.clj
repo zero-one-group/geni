@@ -71,7 +71,6 @@
    abs
    acos
    add-months
-   alias
    approx-count-distinct
    array
    array-contains
@@ -88,7 +87,6 @@
    array-union
    arrays-overlap
    arrays-zip
-   as
    asc
    asin
    atan
@@ -212,12 +210,14 @@
    agg-all
    approx-quantile
    cache
+   col-regex
    collect
    collect-col
    collect-vals
    column-names
    columns
    cross-join
+   cube
    describe
    distinct
    drop
@@ -240,6 +240,7 @@
    is-local
    java-type->spark-type
    join
+   join-with
    limit
    local?
    map->dataset
@@ -255,8 +256,10 @@
    repartition
    repartition-by-range
    replace
+   rollup
    sample
    select
+   select-expr
    show
    show-vertical
    sort
@@ -290,6 +293,11 @@
    write-libsvm!
    write-parquet!
    write-text!])
+
+(defmulti as (fn [head & _] (class head)))
+(defmethod as :default [expr new-name] (.as (->column expr) new-name))
+(defmethod as Dataset [dataframe new-name] (.as dataframe new-name))
+(def alias as)
 
 (defmulti count class)
 (defmethod count :default [expr] (functions/count expr))

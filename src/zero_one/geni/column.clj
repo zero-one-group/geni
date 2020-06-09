@@ -1,11 +1,15 @@
 (ns zero-one.geni.column
   (:import
-    (org.apache.spark.sql Column functions)))
+    (org.apache.spark.sql Column
+                          Dataset
+                          functions)))
 
-(defmulti col class)
-(defmethod col :default [x] (functions/lit x))
-(defmethod col org.apache.spark.sql.Column [x] x)
-(defmethod col java.lang.String [x] (functions/col x))
+(defmulti col (fn [head & _] (class head)))
+(defmethod col :default [x & _] (functions/lit x))
+(defmethod col Column [x & _] x)
+(defmethod col java.lang.String [x & _] (functions/col x))
+(defmethod col Dataset [dataframe & args] (.col dataframe (first args)))
+
 (defn ->col-array [columns]
   (->> columns (clojure.core/map col) (into-array Column)))
 (def ->column col)
