@@ -233,8 +233,6 @@
 
 ;;;; Column Methods
 ;; Basics
-(defn as [expr new-name] (.as (->column expr) new-name))
-(def alias as)
 (defn cast [expr new-type] (.cast (->column expr) new-type))
 
 ;; Booleans
@@ -266,9 +264,9 @@
 (defn nan? [expr] (.isNaN (->column expr)))
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
-  (-> expr null? (cast "int") functions/mean (as (str "null_rate(" expr ")"))))
+  (-> expr null? (cast "int") functions/mean (.as (str "null_rate(" expr ")"))))
 (defn null-count [expr]
-  (-> expr null? (cast "int") functions/sum (as (str "null_count(" expr ")"))))
+  (-> expr null? (cast "int") functions/sum (.as (str "null_count(" expr ")"))))
 
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))

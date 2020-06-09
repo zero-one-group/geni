@@ -25,9 +25,6 @@
 (defn columns [dataframe] (-> dataframe .columns seq))
 (def column-names columns)
 
-(defn drop [dataframe & col-names]
-  (.drop dataframe (into-array java.lang.String col-names)))
-
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
     (->> dtypes-as-tuples
@@ -38,9 +35,6 @@
 (defn explain
   ([dataframe] (.explain dataframe))
   ([dataframe extended] (.explain dataframe extended)))
-
-(defn filter [dataframe expr] (.filter dataframe expr))
-(def where filter)
 
 (defn is-empty [dataframe] (.isEmpty dataframe))
 (def empty? is-empty)
@@ -53,17 +47,12 @@
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
 
-(defn remove [dataframe expr]
-  (.filter dataframe (functions/not expr)))
-
 (defn rename-columns [dataframe rename-map]
   (reduce
     (fn [acc-df [old-name new-name]]
       (.withColumnRenamed acc-df old-name new-name))
     dataframe
     rename-map))
-
-(defn select [dataframe & exprs] (.select dataframe (->col-array exprs)))
 
 (defn show
   ([dataframe] (show dataframe {}))
@@ -78,16 +67,6 @@
   ([dataframe] (show dataframe {:vertical true}))
   ([dataframe options] (show dataframe (assoc options :vertical true))))
 
-(defn with-column [dataframe col-name expr]
-  (.withColumn dataframe col-name (->column expr)))
-
-(defn with-column-renamed [dataframe old-name new-name]
-  (.withColumnRenamed dataframe old-name new-name))
-
-(defn union [& dfs] (reduce #(.union %1 %2) dfs))
-
-(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
-
 ;; Typed Transformations
 (defn distinct [dataframe] (.distinct dataframe))
 
@@ -100,18 +79,30 @@
 
 (defn except-all [dataframe other] (.exceptAll dataframe other))
 
+(defn filter [dataframe expr] (.filter dataframe expr))
+(def where filter)
+
 (defn intersect [dataframe other] (.intersect dataframe other))
 
 (defn intersect-all [dataframe other] (.intersectAll dataframe other))
+
+(defn join-with
+  ([left right condition] (.joinWith left right condition))
+  ([left right condition join-type] (.joinWith left right condition join-type)))
 
 (defn limit [dataframe n-rows] (.limit dataframe n-rows))
 
 (defn order-by [dataframe & exprs] (.orderBy dataframe (->col-array exprs)))
 (def sort order-by)
 
+(defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
+
 (defn random-split
   ([dataframe weights] (.randomSplit dataframe (double-array weights)))
   ([dataframe weights seed] (.randomSplit dataframe (double-array weights) seed)))
+
+(defn remove [dataframe expr]
+  (.filter dataframe (functions/not expr)))
 
 (defn repartition [dataframe & args]
   (let [args          (clojure.core/flatten args)
@@ -135,16 +126,11 @@
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
 
-(defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
+(defn union [& dfs] (reduce #(.union %1 %2) dfs))
 
-;; Grouping and Aggregation
-(defn group-by [dataframe & exprs]
-  (.groupBy dataframe (->col-array exprs)))
+(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
 
-(defn pivot
-  ([grouped expr] (.pivot grouped (->column expr)))
-  ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
-
+;; Untyped Transformations
 (defn agg [dataframe & exprs]
   (let [[head & tail] (clojure.core/map ->column (clojure.core/flatten exprs))]
     (.agg dataframe head (into-array Column tail))))
@@ -153,13 +139,42 @@
   (let [agg-cols (clojure.core/map agg-fn (column-names dataframe))]
     (apply agg dataframe agg-cols)))
 
+(defn col-regex [dataframe col-name] (.colRegex dataframe col-name))
+
+(defn cross-join [left right] (.crossJoin left right))
+
+(defn cube [dataframe & exprs]
+  (.cube dataframe (->col-array exprs)))
+
+(defn drop [dataframe & col-names]
+  (.drop dataframe (into-array java.lang.String col-names)))
+
+(defn group-by [dataframe & exprs]
+  (.groupBy dataframe (->col-array exprs)))
+
 (defn join
   ([left right join-cols] (join left right join-cols "inner"))
   ([left right join-cols join-type]
    (let [join-cols (if (string? join-cols) [join-cols] join-cols)]
      (.join left right (interop/->scala-seq join-cols) join-type))))
 
-(defn cross-join [left right] (.crossJoin left right))
+(defn pivot
+  ([grouped expr] (.pivot grouped (->column expr)))
+  ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
+
+(defn rollup [dataframe & exprs]
+  (.rollup dataframe (->col-array exprs)))
+
+(defn select [dataframe & exprs] (.select dataframe (->col-array exprs)))
+
+(defn select-expr [dataframe & exprs]
+  (.selectExpr dataframe (into-array java.lang.String exprs)))
+
+(defn with-column [dataframe col-name expr]
+  (.withColumn dataframe col-name (->column expr)))
+
+(defn with-column-renamed [dataframe old-name new-name]
+  (.withColumnRenamed dataframe old-name new-name))
 
 ;; Ungrouped
 (defn spark-session [dataframe] (.sparkSession dataframe))

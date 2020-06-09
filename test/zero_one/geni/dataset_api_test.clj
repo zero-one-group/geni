@@ -7,8 +7,33 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
   (:import
-    (org.apache.spark.sql SparkSession
+    (org.apache.spark.sql Dataset
+                          SparkSession
                           SQLContext)))
+
+(fact "On join-with"
+  (let [n-listings (-> df-50 (g/group-by "SellerG") g/count)]
+    (-> df-50
+        (g/join-with
+          n-listings
+          (g/=== (g/col n-listings "SellerG")
+                 (g/col-regex df-50 "SellerG")))
+        g/column-names) => ["_1" "_2"]
+    (-> df-50
+        (g/join-with
+          n-listings
+          (g/=== (g/col n-listings "SellerG")
+                 (g/col df-50 "SellerG"))
+          "left")
+        g/column-names) => ["_1" "_2"]))
+
+(facts "On non-group-by aggregations"
+  (fact "On cube"
+    (-> df-20 (g/cube "SellerG" "Suburb") g/count g/count) => 14
+    (-> df-20 (g/rollup "SellerG" "Suburb") g/count g/count) => 13))
+
+(fact "On alias"
+  (-> df-50 (g/alias "abc")) => (partial instance? Dataset))
 
 (facts "On NA methods"
   (fact "On drop-na"
@@ -104,7 +129,11 @@
   (fact "should drop unselected columns"
     (-> melbourne-df
         (g/select "Type" "Price")
-        g/column-names) => ["Type" "Price"]))
+        g/column-names) => ["Type" "Price"])
+  (fact "select-expr works as expected"
+    (-> melbourne-df
+        (g/select-expr "Price+1" "Rooms-1")
+        g/column-names) => ["(Price + 1)" "(Rooms - 1)"]))
 
 (facts "On filter"
   (let [df (-> df-20 (g/select "SellerG"))]
