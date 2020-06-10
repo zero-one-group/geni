@@ -1,7 +1,7 @@
 (ns zero-one.geni.ml-test
   (:require
     [clojure.string :refer [includes?]]
-    [midje.sweet :refer [facts fact =>]]
+    [midje.sweet :refer [facts fact => throws]]
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
@@ -78,6 +78,7 @@
   (let [stage     (ml/vector-assembler {})
         temp-file (.toString (create-temp-file! ".xml"))]
     (ml/write-stage! stage temp-file {:overwrite true}) => nil
+    (ml/write-stage! stage temp-file) => (throws Exception)
     (ml/write-stage! stage temp-file {:overwrite true
                                       :persistSubModels "true"}) => nil))
 
@@ -174,7 +175,7 @@
                                         (= (count %) 3))
     (let [temp-file (.toString (create-temp-file! ".xml"))]
       (slurp temp-file) => ""
-      (ml/write-stage! model temp-file) => nil
+      (ml/write-stage! model temp-file {:overwrite true}) => nil
       (slurp temp-file) => #(not= % "")
       (ml/read-stage! KMeansModel temp-file) => #(instance? KMeansModel %))))
 
