@@ -252,11 +252,18 @@
 (defn vocabulary [model] (seq (.vocabulary model)))
 (defn weights [model] (seq (.weights model)))
 
-(defn write-stage! [model path]
-  (.. model
-      write
-      overwrite
-      (save path)))
+(defn write-stage!
+  ([stage path] (write-stage! stage path {:overwrite false}))
+  ([stage path options]
+   (let [overwrite           (:overwrite options)
+         unconfigured-writer (-> stage
+                                 .write
+                                 (cond-> overwrite .overwrite))
+         configured-writer    (reduce
+                                (fn [w [k v]] (.option w (name k) v))
+                                unconfigured-writer
+                                (dissoc options :overwrite))]
+     (.save configured-writer path))))
 
 (defn load-method? [^java.lang.reflect.Method method]
   (and ; (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))

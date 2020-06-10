@@ -74,6 +74,12 @@
                                     RandomForestRegressor)
     (org.apache.spark.sql Dataset)))
 
+(facts "On reading and writing"
+  (let [stage     (ml/vector-assembler {})
+        temp-file (.toString (create-temp-file! ".xml"))]
+    (ml/write-stage! stage temp-file {:overwrite true}) => nil
+    (ml/write-stage! stage temp-file {:overwrite true
+                                      :persistSubModels "true"}) => nil))
 
 (facts "On feature extraction" :slow
   (let [ds-a     (ds/table->dataset
