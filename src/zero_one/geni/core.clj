@@ -62,6 +62,7 @@
    +
    -
    ->date-col
+   ->timestamp-col
    /
    <
    <=
@@ -88,16 +89,24 @@
    arrays-overlap
    arrays-zip
    asc
+   asc-nulls-first
+   asc-nulls-last
+   ascii
    asin
    atan
+   atan2
    between
+   bin
    broadcast
    cast
+   cbrt
    ceil
    collect-list
    collect-set
    concat
+   concat-ws
    contains
+   conv
    corr
    cos
    cosh
@@ -105,6 +114,7 @@
    covar
    covar-pop
    covar-samp
+   cube-root
    cume-dist
    current-date
    current-timestamp
@@ -112,17 +122,22 @@
    date-diff
    date-format
    date-sub
+   date-trunc
    datediff
    day-of-month
    day-of-week
    day-of-year
+   degrees
    dense-rank
    desc
+   desc-nulls-first
+   desc-nulls-last
    element-at
    ends-with
    exp
    explode
    expr
+   factorial
    flatten
    floor
    format-number
@@ -192,6 +207,7 @@
    tan
    tanh
    to-date
+   to-timestamp
    trim
    unix-timestamp
    upper

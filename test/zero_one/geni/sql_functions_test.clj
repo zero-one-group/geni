@@ -8,6 +8,49 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On number functions"
+  (-> df-1
+      (g/select
+        (g/bin (g/lit "12"))
+        (g/conv (g/lit "12") 10 3)
+        (g/degrees Math/PI)
+        (g/factorial 10))
+      g/collect-vals) => [["1100" "110" 180.0 3628800]])
+
+(fact "On sorting functions" :slow
+  (-> df-20
+      (g/order-by (g/asc-nulls-first "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      first) => nil?
+  (-> df-20
+      (g/order-by (g/asc-nulls-last "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      last) => nil?
+  (-> df-20
+      (g/order-by (g/desc-nulls-first "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      first) => nil?
+  (-> df-20
+      (g/order-by (g/desc-nulls-last "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      last) => nil?)
+
+(facts "On string functions" :slow
+  (fact "correct ascii"
+    (-> df-1 (g/select (g/ascii "Suburb")) g/collect-vals ffirst) => 65)
+  (fact "correct concat-ws"
+    (-> df-20
+        (g/group-by "Suburb")
+        (g/agg (-> (g/collect-set "SellerG") (g/as "sellers")))
+        (g/select (g/concat-ws "," "sellers"))
+        g/collect-vals
+        ffirst) => "Biggin,Jellis,Collins,Nelson,Greg,LITTLE")
+  (fact "correct substring"
+    (-> df-20
+        (g/select (g/substring "Suburb" 3 4))
+        g/distinct
+        g/collect-vals) => [["bots"]]))
+
 (facts "On agg functions"
   (-> df-20
       (g/group-by "SellerG")
@@ -172,6 +215,10 @@
 
 (fact "On trig functions"
   (-> df-1
+      (g/select (g/atan2 1 2))
+      g/collect-vals
+      ffirst) => #(< 0.463 % 0.464)
+  (-> df-1
       (g/select
         (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
         (g/- (g// g/pi 2)
@@ -224,8 +271,9 @@
         (-> (g/mod 19 7))
         (-> (g/between 1 0 2))
         (-> (g/between -2 -1 0))
-        (-> (g/nan? 0)))
-      g/collect-vals) => [[5 true false false]]
+        (-> (g/nan? 0))
+        (-> (g/cbrt 27)))
+      g/collect-vals) => [[5 true false false 3.0]]
   (-> df-1
       (g/select
         (-> (g/* (g/log "Price") 0.5))
@@ -378,6 +426,12 @@
         g/collect-vals) => [[2]]
     (-> df-1
         (g/select
+          (-> (g/date-trunc "YYYY" (g/to-timestamp (g/lit "2020-05-12")))))
+        g/collect-vals
+        ffirst
+        .getTime) => 1577811600000
+    (-> df-1
+        (g/select
           (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
           (-> (g/next-day (g/lit "2020-02-01") "Sunday") (g/cast "string"))
           (-> (g/lit "2020-03-02") (g/date-add 10) (g/date-sub 3) (g/cast "string"))
@@ -444,8 +498,3 @@
     (-> df-20 (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
 
-(fact "correct substring" :slow
-  (-> df-20
-      (g/select (g/substring "Suburb" 3 4))
-      g/distinct
-      g/collect-vals) => [["bots"]])

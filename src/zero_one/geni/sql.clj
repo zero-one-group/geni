@@ -26,9 +26,9 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: concat-ws, ascii, asc-nulls-first, asc-nulls-last, atan2, base64, bin
-;; TODO: bitwise-not, bround, cbrt, conv, crc32, date-trunc, decode, degrees
-;; TODO: desc-nulls-first, desc-nulls-last, encode, factorial, from-json, from-unixtime
+;; TODO: base64
+;; TODO: bitwise-not, bround, crc32, decode
+;; TODO: encode, from-json, from-unixtime
 ;; TODO: greatest, grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
 ;; TODO: least, length, levenshtein, locate, log1p, log2, map-concat, map-from-arrays
 ;; TODO: map-from-entries, map-keys, map-values, map, monotonically-increasing-id
@@ -63,7 +63,10 @@
 (defn acos [expr] (functions/acos (->column expr)))
 (defn asin [expr] (functions/asin (->column expr)))
 (defn atan [expr] (functions/atan (->column expr)))
+(defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
 (defn ceil [expr] (functions/ceil (->column expr)))
+(defn cbrt [expr] (functions/cbrt (->column expr)))
+(def cube-root cbrt)
 (defn cos [expr] (functions/cos (->column expr)))
 (defn cosh [expr] (functions/cosh (->column expr)))
 (defn exp [expr] (functions/exp (->column expr)))
@@ -135,6 +138,12 @@
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
 
+;;;; Number Functions
+(defn bin [expr] (functions/bin (->column expr)))
+(defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
+(defn degrees [expr] (functions/degrees (->column expr)))
+(defn factorial [expr] (functions/factorial (->column expr)))
+
 ;;;; Boolean Functions
 (defn not [expr] (functions/not (->column expr)))
 (defn when
@@ -179,7 +188,9 @@
 (def var-samp variance)
 
 ;;;; String Functions
+(defn ascii [expr] (functions/ascii (->column expr)))
 (defn concat [& exprs] (functions/concat (->col-array exprs)))
+(defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
 (defn expr [s] (functions/expr s))
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
@@ -213,6 +224,8 @@
   (functions/date_format (->column expr) date-fmt))
 (defn date-sub [expr days]
   (functions/date_sub (->column expr) days))
+(defn date-trunc [fmt expr]
+  (functions/date_trunc fmt (->column expr)))
 (defn datediff [l-expr r-expr]
   (functions/datediff (->column l-expr) (->column r-expr)))
 (def date-diff datediff)
@@ -232,6 +245,9 @@
 (defn to-date [expr date-format]
   (functions/to_date (->column expr) date-format))
 (def ->date-col to-date)
+(defn to-timestamp [expr]
+  (functions/to_timestamp (->column expr)))
+(def ->timestamp-col to-timestamp)
 (defn unix-timestamp
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
@@ -288,4 +304,8 @@
 
 ;; Sorting
 (defn asc [expr] (.asc (->column expr)))
+(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
+(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
 (defn desc [expr] (.desc (->column expr)))
+(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
+(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
