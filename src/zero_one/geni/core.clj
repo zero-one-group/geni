@@ -31,6 +31,7 @@
                             replace
                             reverse
                             second
+                            sequence
                             shuffle
                             sort
                             take
@@ -63,6 +64,7 @@
    -
    ->date-col
    ->timestamp-col
+   ->utc-timestamp
    /
    <
    <=
@@ -142,6 +144,7 @@
    floor
    format-number
    format-string
+   from-unixtime
    greatest
    hash
    hour
@@ -169,6 +172,7 @@
    month
    months-between
    nan?
+   nanvl
    negate
    next-day
    not
@@ -197,6 +201,7 @@
    rpad
    rtrim
    second
+   sequence
    sha1
    sha2
    shuffle
@@ -221,6 +226,8 @@
    tanh
    to-date
    to-timestamp
+   to-utc-timestamp
+   translate
    trim
    unix-timestamp
    upper

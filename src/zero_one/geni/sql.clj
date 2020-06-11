@@ -18,6 +18,7 @@
                             rand
                             reverse
                             second
+                            sequence
                             shuffle
                             when])
   (:require
@@ -26,13 +27,13 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: base64 bitwise-not, bround, crc32, decode, encode, from-json, from-unixtime
+;; TODO: base64 bitwise-not, bround, crc32, decode, encode, from-json,
 ;; TODO: grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
 ;; TODO: map-from-arrays
 ;; TODO: map-from-entries, map-keys, map-values, map, monotonically-increasing-id
-;; TODO: nanvl, schema-of-json
-;; TODO: sequence, shift-left, shift-right, shift-right-unsigned, struct
-;; TODO: to-utc-timestamp, translate, typed-lit, unbase64, unhex.
+;; TODO: schema-of-json
+;; TODO: shift-left, shift-right, shift-right-unsigned, struct
+;; TODO: typed-lit, unbase64, unhex.
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -72,6 +73,7 @@
 (defn log [expr] (functions/log (->column expr)))
 (defn log1p [expr] (functions/log1p (->column expr)))
 (defn log2 [expr] (functions/log2 (->column expr)))
+(defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
 (defn pow [base exponent] (functions/pow (->column base) exponent))
 (defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
@@ -132,6 +134,8 @@
 (def posexplode-outer posexplode)
 (defn reverse [expr]
   (functions/reverse (->column expr)))
+(defn sequence [start stop step]
+  (functions/sequence (->column start) (->column stop) (->column step)))
 (defn shuffle [expr]
   (functions/shuffle (->column expr)))
 (defn size [expr]
@@ -218,6 +222,8 @@
 (defn rtrim [expr] (functions/rtrim (->column expr)))
 (defn split [expr pattern] (functions/split (->column expr) pattern))
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
+(defn translate [expr match replacement]
+  (functions/translate (->column expr) match replacement))
 (defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
 (defn upper [expr] (functions/upper (->column expr)))
 
@@ -240,6 +246,7 @@
 (defn day-of-month [expr] (functions/dayofmonth (->column expr)))
 (defn day-of-week [expr] (functions/dayofweek (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
+(defn from-unixtime [expr] (functions/from_unixtime (->column expr)))
 (defn hour [expr] (functions/hour (->column expr)))
 (defn last-day [expr] (functions/last_day (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
@@ -256,6 +263,9 @@
 (defn to-timestamp [expr]
   (functions/to_timestamp (->column expr)))
 (def ->timestamp-col to-timestamp)
+(defn to-utc-timestamp [expr]
+  (functions/to_timestamp (->column expr)))
+(def ->utc-timestamp to-utc-timestamp)
 (defn unix-timestamp
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))

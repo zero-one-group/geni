@@ -14,8 +14,9 @@
         (g/rint 3.2)
         (g/log1p 0)
         (g/log2 2)
-        (g/signum -321))
-      g/collect-vals) => [[3.0 0.0 1.0 -1.0]]
+        (g/signum -321)
+        (g/nanvl 3 2))
+      g/collect-vals) => [[3.0 0.0 1.0 -1.0 3.0]]
   (-> df-1
       (g/select
         (g/bin (g/lit "12"))
@@ -46,16 +47,17 @@
       (g/collect-col "BuildingArea")
       last) => nil?)
 
-(facts "On string functions" ;:slow
+(facts "On string functions" :slow
   (fact "correct ascii"
     (-> df-1
         (g/select
           (g/ascii "Suburb")
           (g/length "Suburb")
           (g/levenshtein "Suburb" "Regionname")
-          (g/locate "bar" (g/lit "foobar")))
+          (g/locate "bar" (g/lit "foobar"))
+          (g/translate (g/lit "foobar") "bar" "baz"))
         g/collect-vals
-        first) => [65 10 19 4])
+        first) => [65 10 19 4 "foobaz"])
   (fact "correct concat-ws"
     (-> df-20
         (g/group-by "Suburb")
@@ -197,7 +199,10 @@
       ffirst) => (range 10)
   (-> df-1
       (g/select (-> (g/split "Regionname" " ") (g/as "split")))
-      (g/collect-col "split")) => [["Northern" "Metropolitan"]])
+      (g/collect-col "split")) => [["Northern" "Metropolitan"]]
+  (-> df-1
+      (g/select (-> (g/sequence 1 3 1) (g/as "range")))
+      (g/collect-col "range")) => [[1 2 3]])
 
 (fact "On random functions" :slow
   (-> df-20
@@ -444,9 +449,15 @@
 (facts "On time functions"
   (fact "correct time arithmetic"
     (-> df-1
+        (g/select (-> (g/to-utc-timestamp (g/lit "2020-05-12"))))
+        g/collect-vals
+        ffirst
+        .getTime) => #(= (mod % 10000) 0)
+    (-> df-1
         (g/select
-          (-> (g/quarter (g/lit "2020-05-12"))))
-        g/collect-vals) => [[2]]
+          (-> (g/quarter (g/lit "2020-05-12")))
+          (-> (g/from-unixtime 1)))
+        g/collect-vals) => [[2 "1970-01-01 07:00:01"]]
     (-> df-1
         (g/select
           (-> (g/date-trunc "YYYY" (g/to-timestamp (g/lit "2020-05-12")))))
