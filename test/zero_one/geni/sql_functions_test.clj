@@ -486,10 +486,13 @@
         ffirst
         .getTime) => #(= (mod % 10000) 0)
     (-> df-1
-        (g/select
-          (-> (g/quarter (g/lit "2020-05-12")))
-          (-> (g/from-unixtime 1)))
-        g/collect-vals) => [[2 "1970-01-01 07:00:01"]]
+        (g/select (-> (g/from-unixtime 1)))
+        g/collect-vals
+        ffirst) => #(.contains % "1970-01-01 ")
+    (-> df-1
+        (g/select (-> (g/quarter (g/lit "2020-05-12"))))
+        g/collect-vals
+        ffirst) => 2
     (-> df-1
         (g/select
           (-> (g/date-trunc "YYYY" (g/to-timestamp (g/lit "2020-05-12")))))
