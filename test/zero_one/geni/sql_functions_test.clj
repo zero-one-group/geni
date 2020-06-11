@@ -11,11 +11,22 @@
 (fact "On number functions"
   (-> df-1
       (g/select
+        (g/rint 3.2)
+        (g/log1p 0)
+        (g/log2 2)
+        (g/signum -321))
+      g/collect-vals) => [[3.0 0.0 1.0 -1.0]]
+  (-> df-1
+      (g/select
         (g/bin (g/lit "12"))
         (g/conv (g/lit "12") 10 3)
         (g/degrees Math/PI)
-        (g/factorial 10))
-      g/collect-vals) => [["1100" "110" 180.0 3628800]])
+        (g/factorial 10)
+        (g/radians (/ 180.0 Math/PI))
+        (g/greatest 1 2 3)
+        (g/least 1 2 3)
+        (g/pmod 10 -3))
+      g/collect-vals) => [["1100" "110" 180.0 3628800 1.0 3 1 1]])
 
 (fact "On sorting functions" :slow
   (-> df-20
@@ -35,9 +46,16 @@
       (g/collect-col "BuildingArea")
       last) => nil?)
 
-(facts "On string functions" :slow
+(facts "On string functions" ;:slow
   (fact "correct ascii"
-    (-> df-1 (g/select (g/ascii "Suburb")) g/collect-vals ffirst) => 65)
+    (-> df-1
+        (g/select
+          (g/ascii "Suburb")
+          (g/length "Suburb")
+          (g/levenshtein "Suburb" "Regionname")
+          (g/locate "bar" (g/lit "foobar")))
+        g/collect-vals
+        first) => [65 10 19 4])
   (fact "correct concat-ws"
     (-> df-20
         (g/group-by "Suburb")
@@ -52,6 +70,11 @@
         g/collect-vals) => [["bots"]]))
 
 (facts "On agg functions"
+  (-> df-20
+      (g/group-by "SellerG")
+      (g/agg (-> (g/collect-list "Regionname") (g/as "regions")))
+      (g/select (g/posexplode "regions"))
+      g/count) => 20
   (-> df-20
       (g/group-by "SellerG")
       (g/agg
@@ -429,7 +452,7 @@
           (-> (g/date-trunc "YYYY" (g/to-timestamp (g/lit "2020-05-12")))))
         g/collect-vals
         ffirst
-        .getTime) => 1577811600000
+        .getTime) => #(= (mod % 10000) 0)
     (-> df-1
         (g/select
           (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))

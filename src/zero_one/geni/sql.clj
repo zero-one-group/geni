@@ -26,14 +26,12 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: base64
-;; TODO: bitwise-not, bround, crc32, decode
-;; TODO: encode, from-json, from-unixtime
-;; TODO: greatest, grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
-;; TODO: least, length, levenshtein, locate, log1p, log2, map-concat, map-from-arrays
+;; TODO: base64 bitwise-not, bround, crc32, decode, encode, from-json, from-unixtime
+;; TODO: grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
+;; TODO: map-from-arrays
 ;; TODO: map-from-entries, map-keys, map-values, map, monotonically-increasing-id
-;; TODO: nanvl, pmod, posexplode, posexplode-outer, radians, rint, schema-of-json
-;; TODO: sequence, shift-left, shift-right, shift-right-unsigned, signum, struct
+;; TODO: nanvl, schema-of-json
+;; TODO: sequence, shift-left, shift-right, shift-right-unsigned, struct
 ;; TODO: to-utc-timestamp, translate, typed-lit, unbase64, unhex.
 
 ;;;; Agg Functions
@@ -72,8 +70,12 @@
 (defn exp [expr] (functions/exp (->column expr)))
 (defn floor [expr] (functions/floor (->column expr)))
 (defn log [expr] (functions/log (->column expr)))
+(defn log1p [expr] (functions/log1p (->column expr)))
+(defn log2 [expr] (functions/log2 (->column expr)))
 (defn negate [expr] (functions/negate (->column expr)))
 (defn pow [base exponent] (functions/pow (->column base) exponent))
+(defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
+(defn rint [expr] (functions/rint (->column expr)))
 (defn round [expr] (functions/round (->column expr)))
 (defn sin [expr] (functions/sin (->column expr)))
 (defn sinh [expr] (functions/sinh (->column expr)))
@@ -126,6 +128,8 @@
 (defn flatten [expr]
   (functions/flatten (->column expr)))
 (defn last [expr] (functions/last (->column expr)))
+(defn posexplode [expr] (functions/posexplode (->column expr)))
+(def posexplode-outer posexplode)
 (defn reverse [expr]
   (functions/reverse (->column expr)))
 (defn shuffle [expr]
@@ -143,6 +147,9 @@
 (defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
 (defn degrees [expr] (functions/degrees (->column expr)))
 (defn factorial [expr] (functions/factorial (->column expr)))
+(defn radians [expr] (functions/radians (->column expr)))
+(defn signum [expr] (functions/signum (->column expr)))
+(def sign signum)
 
 ;;;; Boolean Functions
 (defn not [expr] (functions/not (->column expr)))
@@ -196,6 +203,7 @@
   (functions/format_number (->column expr) decimal-places))
 (defn format-string [fmt exprs]
   (functions/format_string fmt (->col-array exprs)))
+(defn locate [substr expr] (functions/locate substr (->column expr)))
 (defn lower [expr] (functions/lower (->column expr)))
 (defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
 (defn ltrim [expr] (functions/ltrim (->column expr)))
@@ -279,6 +287,8 @@
 (def >= (partial compare-columns #(.geq %1 %2)))
 (defn between [expr lower-bound upper-bound]
   (.between (->column expr) lower-bound upper-bound))
+(defn greatest [& exprs] (functions/greatest (->col-array exprs)))
+(defn least [& exprs] (functions/least (->col-array exprs)))
 
 ;; Arithmetic
 (defn + [& exprs] (reduce #(.plus (->column %1) (->column %2)) (lit 0) exprs))
@@ -298,6 +308,9 @@
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))
 (defn ends-with [expr literal] (.endsWith (->column expr) literal))
+(defn length [expr] (functions/length (->column expr)))
+(defn levenshtein [left-expr right-expr]
+  (functions/levenshtein (->column left-expr) (->column right-expr)))
 (defn like [expr literal] (.like (->column expr) literal))
 (defn rlike [expr literal] (.rlike (->column expr) literal))
 (defn starts-with [expr literal] (.startsWith (->column expr) literal))

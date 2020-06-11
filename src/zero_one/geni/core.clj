@@ -142,6 +142,7 @@
    floor
    format-number
    format-string
+   greatest
    hash
    hour
    isin
@@ -150,9 +151,15 @@
    last
    last-day
    lead
+   least
+   length
+   levenshtein
    like
    lit
+   locate
    log
+   log1p
+   log2
    lower
    lpad
    ltrim
@@ -171,14 +178,19 @@
    null?
    percent-rank
    pi
+   pmod
+   posexplode
+   posexplode-outer
    pow
    quarter
+   radians
    rand
    randn
    rank
    regexp-extract
    regexp-replace
    reverse
+   rint
    rlike
    round
    row-number
@@ -188,6 +200,7 @@
    sha1
    sha2
    shuffle
+   signum
    sin
    sinh
    size
