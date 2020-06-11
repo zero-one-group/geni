@@ -30,7 +30,14 @@
 (facts "On non-group-by aggregations"
   (fact "On cube"
     (-> df-20 (g/cube "SellerG" "Suburb") g/count g/count) => 14
-    (-> df-20 (g/rollup "SellerG" "Suburb") g/count g/count) => 13))
+    (-> df-20 (g/rollup "SellerG" "Suburb") g/count g/count) => 13)
+  (fact "On grouping"
+    (-> df-20
+        (g/cube "SellerG" "Suburb")
+        (g/agg (g/grouping "SellerG"))
+        g/collect-vals
+        first
+        last) => 0))
 
 (fact "On alias"
   (-> df-50 (g/alias "abc")) => (partial instance? Dataset))

@@ -8,7 +8,98 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On misc functions"
+  (-> df-1
+      (g/select (g/input-file-name))
+      g/collect-vals) => [[""]]
+  (-> df-1
+      (g/select (g/crc32 (g/encode (g/lit "123") "UTF-8")))
+      g/collect-vals
+      ffirst) => int?)
+
+(fact "On number functions"
+  (-> df-1
+      (g/select
+        (g/shift-right 2 1)
+        (g/shift-left 2 1)
+        (g/shift-right-unsigned -2 1)
+        (g/bitwise-not -123)
+        (g/bround -123.456))
+      g/collect-vals) => [[1 4 9223372036854775807 122 -123.0]]
+  (-> df-1
+      (g/select
+        (g/rint 3.2)
+        (g/log1p 0)
+        (g/log2 2)
+        (g/signum -321)
+        (g/nanvl 3 2)
+        (g/unhex (g/hex 1))
+        (g/hypot 3 4)
+        (g/base64 (g/unbase64 (g/lit "abc"))))
+      g/collect-vals) => [[3.0 0.0 1.0 -1.0 3.0 [1] 5.0 "abc="]]
+  (-> df-1
+      (g/select
+        (g/bin (g/lit "12"))
+        (g/conv (g/lit "12") 10 3)
+        (g/degrees Math/PI)
+        (g/factorial 10)
+        (g/radians (/ 180.0 Math/PI))
+        (g/greatest 1 2 3)
+        (g/least 1 2 3)
+        (g/pmod 10 -3))
+      g/collect-vals) => [["1100" "110" 180.0 3628800 1.0 3 1 1]])
+
+(fact "On sorting functions" :slow
+  (-> df-20
+      (g/order-by (g/asc-nulls-first "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      first) => nil?
+  (-> df-20
+      (g/order-by (g/asc-nulls-last "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      last) => nil?
+  (-> df-20
+      (g/order-by (g/desc-nulls-first "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      first) => nil?
+  (-> df-20
+      (g/order-by (g/desc-nulls-last "BuildingArea"))
+      (g/collect-col "BuildingArea")
+      last) => nil?)
+
+(facts "On string functions" ;:slow
+  (fact "correct ascii"
+    (-> df-1
+        (g/select
+          (g/ascii "Suburb")
+          (g/length "Suburb")
+          (g/levenshtein "Suburb" "Regionname")
+          (g/locate "bar" (g/lit "foobar"))
+          (g/translate (g/lit "foobar") "bar" "baz")
+          (g/initcap (g/lit "abc"))
+          (g/instr (g/lit "abcdef") "c")
+          (g/decode (g/encode (g/lit "1122") "UTF-8") "UTF-8"))
+        g/collect-vals
+        first) => [65 10 19 4 "foobaz" "Abc" 3 "1122"])
+  (fact "correct concat-ws"
+    (-> df-20
+        (g/group-by "Suburb")
+        (g/agg (-> (g/collect-set "SellerG") (g/as "sellers")))
+        (g/select (g/concat-ws "," "sellers"))
+        g/collect-vals
+        ffirst) => "Biggin,Jellis,Collins,Nelson,Greg,LITTLE")
+  (fact "correct substring"
+    (-> df-20
+        (g/select (g/substring "Suburb" 3 4))
+        g/distinct
+        g/collect-vals) => [["bots"]]))
+
 (facts "On agg functions"
+  (-> df-20
+      (g/group-by "SellerG")
+      (g/agg (-> (g/collect-list "Regionname") (g/as "regions")))
+      (g/select (g/posexplode "regions"))
+      g/count) => 20
   (-> df-20
       (g/group-by "SellerG")
       (g/agg
@@ -80,6 +171,15 @@
   (-> melbourne-df g/broadcast) => #(instance? Dataset %))
 
 (fact "On array functions"
+  (-> df-20
+      (g/select
+        (-> (g/monotonically-increasing-id) (g/as "id")))
+      (g/collect-col "id")) => (range 20)
+  (-> df-1
+      (g/select
+        (g/struct "SellerG" "Rooms"))
+      g/collect-vals
+      first) => [["Biggin" 2]]
   (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))
@@ -131,7 +231,10 @@
       ffirst) => (range 10)
   (-> df-1
       (g/select (-> (g/split "Regionname" " ") (g/as "split")))
-      (g/collect-col "split")) => [["Northern" "Metropolitan"]])
+      (g/collect-col "split")) => [["Northern" "Metropolitan"]]
+  (-> df-1
+      (g/select (-> (g/sequence 1 3 1) (g/as "range")))
+      (g/collect-col "range")) => [[1 2 3]])
 
 (fact "On random functions" :slow
   (-> df-20
@@ -171,6 +274,10 @@
       g/collect-vals) => [[true true true false false false true]])
 
 (fact "On trig functions"
+  (-> df-1
+      (g/select (g/atan2 1 2))
+      g/collect-vals
+      ffirst) => #(< 0.463 % 0.464)
   (-> df-1
       (g/select
         (g/- (g// (g/sin g/pi) (g/cos g/pi)) (g/tan g/pi))
@@ -224,8 +331,9 @@
         (-> (g/mod 19 7))
         (-> (g/between 1 0 2))
         (-> (g/between -2 -1 0))
-        (-> (g/nan? 0)))
-      g/collect-vals) => [[5 true false false]]
+        (-> (g/nan? 0))
+        (-> (g/cbrt 27)))
+      g/collect-vals) => [[5 true false false 3.0]]
   (-> df-1
       (g/select
         (-> (g/* (g/log "Price") 0.5))
@@ -373,9 +481,24 @@
 (facts "On time functions"
   (fact "correct time arithmetic"
     (-> df-1
+        (g/select (-> (g/to-utc-timestamp (g/lit "2020-05-12"))))
+        g/collect-vals
+        ffirst
+        .getTime) => #(= (mod % 10000) 0)
+    (-> df-1
+        (g/select (-> (g/from-unixtime 1)))
+        g/collect-vals
+        ffirst) => #(.contains % "1970-01-01 ")
+    (-> df-1
+        (g/select (-> (g/quarter (g/lit "2020-05-12"))))
+        g/collect-vals
+        ffirst) => 2
+    (-> df-1
         (g/select
-          (-> (g/quarter (g/lit "2020-05-12"))))
-        g/collect-vals) => [[2]]
+          (-> (g/date-trunc "YYYY" (g/to-timestamp (g/lit "2020-05-12")))))
+        g/collect-vals
+        ffirst
+        .getTime) => #(= (mod % 10000) 0)
     (-> df-1
         (g/select
           (-> (g/last-day (g/lit "2020-05-12")) (g/cast "string"))
@@ -444,8 +567,3 @@
     (-> df-20 (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
 
-(fact "correct substring" :slow
-  (-> df-20
-      (g/select (g/substring "Suburb" 3 4))
-      g/distinct
-      g/collect-vals) => [["bots"]])

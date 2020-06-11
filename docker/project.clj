@@ -11,11 +11,11 @@
   :profiles {:provided
              {:dependencies [[ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
                              [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                             [org.apache.spark/spark-core_2.12 "2.4.5"]
-                             [org.apache.spark/spark-hive_2.12 "2.4.5"]
-                             [org.apache.spark/spark-mllib_2.12 "2.4.5"]
-                             [org.apache.spark/spark-sql_2.12 "2.4.5"]
-                             [org.apache.spark/spark-streaming_2.12 "2.4.5"]]}
+                             [org.apache.spark/spark-core_2.12 "2.4.6"]
+                             [org.apache.spark/spark-hive_2.12 "2.4.6"]
+                             [org.apache.spark/spark-mllib_2.12 "2.4.6"]
+                             [org.apache.spark/spark-sql_2.12 "2.4.6"]
+                             [org.apache.spark/spark-streaming_2.12 "2.4.6"]]}
              :dev {:dependencies [[expound "0.8.4"]
                                   [midje "1.9.9"]]
                    :plugins [[lein-cloverage "1.1.2"]

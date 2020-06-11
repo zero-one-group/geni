@@ -18,13 +18,18 @@
                             rand
                             reverse
                             second
+                            sequence
                             shuffle
+                            struct
                             when])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column functions)))
+
+;; TODO: map-from-arrays, map-from-entries, map-keys, map-values, map
+;; TODO: schema-of-json, from-json, to-json
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -35,6 +40,7 @@
     (functions/countDistinct head (into-array Column tail))))
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
+(defn grouping [expr] (functions/grouping (->column expr)))
 (defn lag
   ([expr offset] (functions/lag (->column expr) offset))
   ([expr offset default] (functions/lag (->column expr) offset default)))
@@ -53,14 +59,24 @@
 (defn acos [expr] (functions/acos (->column expr)))
 (defn asin [expr] (functions/asin (->column expr)))
 (defn atan [expr] (functions/atan (->column expr)))
+(defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
+(defn bround [expr] (functions/bround (->column expr)))
 (defn ceil [expr] (functions/ceil (->column expr)))
+(defn cbrt [expr] (functions/cbrt (->column expr)))
+(def cube-root cbrt)
 (defn cos [expr] (functions/cos (->column expr)))
 (defn cosh [expr] (functions/cosh (->column expr)))
 (defn exp [expr] (functions/exp (->column expr)))
 (defn floor [expr] (functions/floor (->column expr)))
+(defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
 (defn log [expr] (functions/log (->column expr)))
+(defn log1p [expr] (functions/log1p (->column expr)))
+(defn log2 [expr] (functions/log2 (->column expr)))
+(defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
 (defn pow [base exponent] (functions/pow (->column base) exponent))
+(defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
+(defn rint [expr] (functions/rint (->column expr)))
 (defn round [expr] (functions/round (->column expr)))
 (defn sin [expr] (functions/sin (->column expr)))
 (defn sinh [expr] (functions/sinh (->column expr)))
@@ -107,13 +123,18 @@
 (defn collect-list [expr] (functions/collect_list expr))
 (defn collect-set [expr] (functions/collect_set expr))
 (defn explode [expr] (functions/explode (->column expr)))
+(def explode-outer explode)
 (defn element-at [expr value]
   (functions/element_at (->column expr) (int value)))
 (defn flatten [expr]
   (functions/flatten (->column expr)))
 (defn last [expr] (functions/last (->column expr)))
+(defn posexplode [expr] (functions/posexplode (->column expr)))
+(def posexplode-outer posexplode)
 (defn reverse [expr]
   (functions/reverse (->column expr)))
+(defn sequence [start stop step]
+  (functions/sequence (->column start) (->column stop) (->column step)))
 (defn shuffle [expr]
   (functions/shuffle (->column expr)))
 (defn size [expr]
@@ -123,6 +144,28 @@
 (defn sort-array
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
+(defn struct [& exprs] (functions/struct (->col-array exprs)))
+
+;;;; Number Functions
+(defn base64 [expr] (functions/base64 (->column expr)))
+(defn bin [expr] (functions/bin (->column expr)))
+(defn bitwise-not [expr] (functions/bitwiseNOT (->column expr)))
+(defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
+(defn crc32 [expr] (functions/crc32 (->column expr)))
+(defn decode [expr charset] (functions/decode (->column expr) charset))
+(defn degrees [expr] (functions/degrees (->column expr)))
+(defn encode [expr charset] (functions/encode (->column expr) charset))
+(defn factorial [expr] (functions/factorial (->column expr)))
+(defn hex [expr] (functions/hex (->column expr)))
+(defn radians [expr] (functions/radians (->column expr)))
+(defn signum [expr] (functions/signum (->column expr)))
+(def sign signum)
+(defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
+(defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
+(defn shift-right-unsigned [expr num-bits]
+  (functions/shiftRightUnsigned (->column expr) num-bits))
+(defn unbase64 [expr] (functions/unbase64 (->column expr)))
+(defn unhex [expr] (functions/unhex (->column expr)))
 
 ;;;; Boolean Functions
 (defn not [expr] (functions/not (->column expr)))
@@ -168,12 +211,17 @@
 (def var-samp variance)
 
 ;;;; String Functions
+(defn ascii [expr] (functions/ascii (->column expr)))
 (defn concat [& exprs] (functions/concat (->col-array exprs)))
+(defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
 (defn expr [s] (functions/expr s))
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
 (defn format-string [fmt exprs]
   (functions/format_string fmt (->col-array exprs)))
+(defn initcap [expr] (functions/initcap (->column expr)))
+(defn instr [expr substr] (functions/instr (->column expr) substr))
+(defn locate [substr expr] (functions/locate substr (->column expr)))
 (defn lower [expr] (functions/lower (->column expr)))
 (defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
 (defn ltrim [expr] (functions/ltrim (->column expr)))
@@ -188,6 +236,8 @@
 (defn rtrim [expr] (functions/rtrim (->column expr)))
 (defn split [expr pattern] (functions/split (->column expr) pattern))
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
+(defn translate [expr match replacement]
+  (functions/translate (->column expr) match replacement))
 (defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
 (defn upper [expr] (functions/upper (->column expr)))
 
@@ -202,12 +252,15 @@
   (functions/date_format (->column expr) date-fmt))
 (defn date-sub [expr days]
   (functions/date_sub (->column expr) days))
+(defn date-trunc [fmt expr]
+  (functions/date_trunc fmt (->column expr)))
 (defn datediff [l-expr r-expr]
   (functions/datediff (->column l-expr) (->column r-expr)))
 (def date-diff datediff)
 (defn day-of-month [expr] (functions/dayofmonth (->column expr)))
 (defn day-of-week [expr] (functions/dayofweek (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
+(defn from-unixtime [expr] (functions/from_unixtime (->column expr)))
 (defn hour [expr] (functions/hour (->column expr)))
 (defn last-day [expr] (functions/last_day (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
@@ -221,6 +274,12 @@
 (defn to-date [expr date-format]
   (functions/to_date (->column expr) date-format))
 (def ->date-col to-date)
+(defn to-timestamp [expr]
+  (functions/to_timestamp (->column expr)))
+(def ->timestamp-col to-timestamp)
+(defn to-utc-timestamp [expr]
+  (functions/to_timestamp (->column expr)))
+(def ->utc-timestamp to-utc-timestamp)
 (defn unix-timestamp
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
@@ -229,7 +288,8 @@
 (defn year [expr] (functions/year (->column expr)))
 
 ;;;; Other Functions
-(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
+(defn input-file-name [] (functions/input_file_name))
+(defn monotonically-increasing-id [] (functions/monotonically_increasing_id))
 
 ;;;; Column Methods
 ;; Basics
@@ -252,6 +312,9 @@
 (def >= (partial compare-columns #(.geq %1 %2)))
 (defn between [expr lower-bound upper-bound]
   (.between (->column expr) lower-bound upper-bound))
+(defn greatest [& exprs] (functions/greatest (->col-array exprs)))
+(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
+(defn least [& exprs] (functions/least (->col-array exprs)))
 
 ;; Arithmetic
 (defn + [& exprs] (reduce #(.plus (->column %1) (->column %2)) (lit 0) exprs))
@@ -271,10 +334,17 @@
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))
 (defn ends-with [expr literal] (.endsWith (->column expr) literal))
+(defn length [expr] (functions/length (->column expr)))
+(defn levenshtein [left-expr right-expr]
+  (functions/levenshtein (->column left-expr) (->column right-expr)))
 (defn like [expr literal] (.like (->column expr) literal))
 (defn rlike [expr literal] (.rlike (->column expr) literal))
 (defn starts-with [expr literal] (.startsWith (->column expr) literal))
 
 ;; Sorting
 (defn asc [expr] (.asc (->column expr)))
+(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
+(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
 (defn desc [expr] (.desc (->column expr)))
+(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
+(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))

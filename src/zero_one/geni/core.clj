@@ -31,8 +31,10 @@
                             replace
                             reverse
                             second
+                            sequence
                             shuffle
                             sort
+                            struct
                             take
                             when])
   (:require
@@ -62,6 +64,8 @@
    +
    -
    ->date-col
+   ->timestamp-col
+   ->utc-timestamp
    /
    <
    <=
@@ -88,16 +92,27 @@
    arrays-overlap
    arrays-zip
    asc
+   asc-nulls-first
+   asc-nulls-last
+   ascii
    asin
    atan
+   atan2
+   base64
    between
+   bin
+   bitwise-not
    broadcast
+   bround
    cast
+   cbrt
    ceil
    collect-list
    collect-set
    concat
+   concat-ws
    contains
+   conv
    corr
    cos
    cosh
@@ -105,6 +120,8 @@
    covar
    covar-pop
    covar-samp
+   crc32
+   cube-root
    cume-dist
    current-date
    current-timestamp
@@ -112,41 +129,64 @@
    date-diff
    date-format
    date-sub
+   date-trunc
    datediff
    day-of-month
    day-of-week
    day-of-year
+   decode
+   degrees
    dense-rank
    desc
+   desc-nulls-first
+   desc-nulls-last
    element-at
+   encode
    ends-with
    exp
    explode
    expr
+   factorial
    flatten
    floor
    format-number
    format-string
+   from-unixtime
+   greatest
+   grouping
    hash
+   hex
    hour
+   hypot
+   initcap
+   input-file-name
+   instr
    isin
    kurtosis
    lag
    last
    last-day
    lead
+   least
+   length
+   levenshtein
    like
    lit
+   locate
    log
+   log1p
+   log2
    lower
    lpad
    ltrim
    md5
    minute
    mod
+   monotonically-increasing-id
    month
    months-between
    nan?
+   nanvl
    negate
    next-day
    not
@@ -156,23 +196,33 @@
    null?
    percent-rank
    pi
+   pmod
+   posexplode
+   posexplode-outer
    pow
    quarter
+   radians
    rand
    randn
    rank
    regexp-extract
    regexp-replace
    reverse
+   rint
    rlike
    round
    row-number
    rpad
    rtrim
    second
+   sequence
    sha1
    sha2
+   shift-left
+   shift-right
+   shift-right-unsigned
    shuffle
+   signum
    sin
    sinh
    size
@@ -187,12 +237,18 @@
    stddev
    stddev-pop
    stddev-samp
+   struct
    substring
    sum-distinct
    tan
    tanh
    to-date
+   to-timestamp
+   to-utc-timestamp
+   translate
    trim
+   unbase64
+   unhex
    unix-timestamp
    upper
    var-pop
