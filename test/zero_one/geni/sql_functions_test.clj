@@ -8,15 +8,35 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On misc functions"
+  (-> df-1
+      (g/select (g/input-file-name))
+      g/collect-vals) => [[""]]
+  (-> df-1
+      (g/select (g/crc32 (g/encode (g/lit "123") "UTF-8")))
+      g/collect-vals
+      ffirst) => int?)
+
 (fact "On number functions"
+  (-> df-1
+      (g/select
+        (g/shift-right 2 1)
+        (g/shift-left 2 1)
+        (g/shift-right-unsigned -2 1)
+        (g/bitwise-not -123)
+        (g/bround -123.456))
+      g/collect-vals) => [[1 4 9223372036854775807 122 -123.0]]
   (-> df-1
       (g/select
         (g/rint 3.2)
         (g/log1p 0)
         (g/log2 2)
         (g/signum -321)
-        (g/nanvl 3 2))
-      g/collect-vals) => [[3.0 0.0 1.0 -1.0 3.0]]
+        (g/nanvl 3 2)
+        (g/unhex (g/hex 1))
+        (g/hypot 3 4)
+        (g/base64 (g/unbase64 (g/lit "abc"))))
+      g/collect-vals) => [[3.0 0.0 1.0 -1.0 3.0 [1] 5.0 "abc="]]
   (-> df-1
       (g/select
         (g/bin (g/lit "12"))
@@ -47,7 +67,7 @@
       (g/collect-col "BuildingArea")
       last) => nil?)
 
-(facts "On string functions" :slow
+(facts "On string functions" ;:slow
   (fact "correct ascii"
     (-> df-1
         (g/select
@@ -55,9 +75,12 @@
           (g/length "Suburb")
           (g/levenshtein "Suburb" "Regionname")
           (g/locate "bar" (g/lit "foobar"))
-          (g/translate (g/lit "foobar") "bar" "baz"))
+          (g/translate (g/lit "foobar") "bar" "baz")
+          (g/initcap (g/lit "abc"))
+          (g/instr (g/lit "abcdef") "c")
+          (g/decode (g/encode (g/lit "1122") "UTF-8") "UTF-8"))
         g/collect-vals
-        first) => [65 10 19 4 "foobaz"])
+        first) => [65 10 19 4 "foobaz" "Abc" 3 "1122"])
   (fact "correct concat-ws"
     (-> df-20
         (g/group-by "Suburb")
@@ -148,6 +171,15 @@
   (-> melbourne-df g/broadcast) => #(instance? Dataset %))
 
 (fact "On array functions"
+  (-> df-20
+      (g/select
+        (-> (g/monotonically-increasing-id) (g/as "id")))
+      (g/collect-col "id")) => (range 20)
+  (-> df-1
+      (g/select
+        (g/struct "SellerG" "Rooms"))
+      g/collect-vals
+      first) => [["Biggin" 2]]
   (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))

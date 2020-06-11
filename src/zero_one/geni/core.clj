@@ -34,6 +34,7 @@
                             sequence
                             shuffle
                             sort
+                            struct
                             take
                             when])
   (:require
@@ -97,9 +98,12 @@
    asin
    atan
    atan2
+   base64
    between
    bin
+   bitwise-not
    broadcast
+   bround
    cast
    cbrt
    ceil
@@ -116,6 +120,7 @@
    covar
    covar-pop
    covar-samp
+   crc32
    cube-root
    cume-dist
    current-date
@@ -129,12 +134,14 @@
    day-of-month
    day-of-week
    day-of-year
+   decode
    degrees
    dense-rank
    desc
    desc-nulls-first
    desc-nulls-last
    element-at
+   encode
    ends-with
    exp
    explode
@@ -146,8 +153,14 @@
    format-string
    from-unixtime
    greatest
+   grouping
    hash
+   hex
    hour
+   hypot
+   initcap
+   input-file-name
+   instr
    isin
    kurtosis
    lag
@@ -169,6 +182,7 @@
    md5
    minute
    mod
+   monotonically-increasing-id
    month
    months-between
    nan?
@@ -204,6 +218,9 @@
    sequence
    sha1
    sha2
+   shift-left
+   shift-right
+   shift-right-unsigned
    shuffle
    signum
    sin
@@ -220,6 +237,7 @@
    stddev
    stddev-pop
    stddev-samp
+   struct
    substring
    sum-distinct
    tan
@@ -229,6 +247,8 @@
    to-utc-timestamp
    translate
    trim
+   unbase64
+   unhex
    unix-timestamp
    upper
    var-pop

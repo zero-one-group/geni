@@ -20,6 +20,7 @@
                             second
                             sequence
                             shuffle
+                            struct
                             when])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
@@ -27,13 +28,8 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: base64 bitwise-not, bround, crc32, decode, encode, from-json,
-;; TODO: grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
-;; TODO: map-from-arrays
-;; TODO: map-from-entries, map-keys, map-values, map, monotonically-increasing-id
-;; TODO: schema-of-json
-;; TODO: shift-left, shift-right, shift-right-unsigned, struct
-;; TODO: typed-lit, unbase64, unhex.
+;; TODO: map-from-arrays, map-from-entries, map-keys, map-values, map
+;; TODO: schema-of-json, from-json, to-json
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -44,6 +40,7 @@
     (functions/countDistinct head (into-array Column tail))))
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
+(defn grouping [expr] (functions/grouping (->column expr)))
 (defn lag
   ([expr offset] (functions/lag (->column expr) offset))
   ([expr offset default] (functions/lag (->column expr) offset default)))
@@ -63,6 +60,7 @@
 (defn asin [expr] (functions/asin (->column expr)))
 (defn atan [expr] (functions/atan (->column expr)))
 (defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
+(defn bround [expr] (functions/bround (->column expr)))
 (defn ceil [expr] (functions/ceil (->column expr)))
 (defn cbrt [expr] (functions/cbrt (->column expr)))
 (def cube-root cbrt)
@@ -70,6 +68,7 @@
 (defn cosh [expr] (functions/cosh (->column expr)))
 (defn exp [expr] (functions/exp (->column expr)))
 (defn floor [expr] (functions/floor (->column expr)))
+(defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
 (defn log [expr] (functions/log (->column expr)))
 (defn log1p [expr] (functions/log1p (->column expr)))
 (defn log2 [expr] (functions/log2 (->column expr)))
@@ -145,15 +144,28 @@
 (defn sort-array
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
+(defn struct [& exprs] (functions/struct (->col-array exprs)))
 
 ;;;; Number Functions
+(defn base64 [expr] (functions/base64 (->column expr)))
 (defn bin [expr] (functions/bin (->column expr)))
+(defn bitwise-not [expr] (functions/bitwiseNOT (->column expr)))
 (defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
+(defn crc32 [expr] (functions/crc32 (->column expr)))
+(defn decode [expr charset] (functions/decode (->column expr) charset))
 (defn degrees [expr] (functions/degrees (->column expr)))
+(defn encode [expr charset] (functions/encode (->column expr) charset))
 (defn factorial [expr] (functions/factorial (->column expr)))
+(defn hex [expr] (functions/hex (->column expr)))
 (defn radians [expr] (functions/radians (->column expr)))
 (defn signum [expr] (functions/signum (->column expr)))
 (def sign signum)
+(defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
+(defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
+(defn shift-right-unsigned [expr num-bits]
+  (functions/shiftRightUnsigned (->column expr) num-bits))
+(defn unbase64 [expr] (functions/unbase64 (->column expr)))
+(defn unhex [expr] (functions/unhex (->column expr)))
 
 ;;;; Boolean Functions
 (defn not [expr] (functions/not (->column expr)))
@@ -207,6 +219,8 @@
   (functions/format_number (->column expr) decimal-places))
 (defn format-string [fmt exprs]
   (functions/format_string fmt (->col-array exprs)))
+(defn initcap [expr] (functions/initcap (->column expr)))
+(defn instr [expr substr] (functions/instr (->column expr) substr))
 (defn locate [substr expr] (functions/locate substr (->column expr)))
 (defn lower [expr] (functions/lower (->column expr)))
 (defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
@@ -274,7 +288,8 @@
 (defn year [expr] (functions/year (->column expr)))
 
 ;;;; Other Functions
-(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
+(defn input-file-name [] (functions/input_file_name))
+(defn monotonically-increasing-id [] (functions/monotonically_increasing_id))
 
 ;;;; Column Methods
 ;; Basics
@@ -298,6 +313,7 @@
 (defn between [expr lower-bound upper-bound]
   (.between (->column expr) lower-bound upper-bound))
 (defn greatest [& exprs] (functions/greatest (->col-array exprs)))
+(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
 (defn least [& exprs] (functions/least (->col-array exprs)))
 
 ;; Arithmetic
