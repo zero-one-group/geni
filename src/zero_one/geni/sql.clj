@@ -26,6 +26,16 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
+;; TODO: concat-ws, ascii, asc-nulls-first, asc-nulls-last, atan2, base64, bin
+;; TODO: bitwise-not, bround, cbrt, conv, crc32, date-trunc, decode, degrees
+;; TODO: desc-nulls-first, desc-nulls-last, encode, factorial, from-json, from-unixtime
+;; TODO: greatest, grouping, hex, hypot, initcap, input-file-name, instr, json-tuple
+;; TODO: least, length, levenshtein, locate, log1p, log2, map-concat, map-from-arrays
+;; TODO: map-from-entries, map-keys, map-values, map, monotonically-increasing-id
+;; TODO: nanvl, pmod, posexplode, posexplode-outer, radians, rint, schema-of-json
+;; TODO: sequence, shift-left, shift-right, shift-right-unsigned, signum, struct
+;; TODO: to-utc-timestamp, translate, typed-lit, unbase64, unhex.
+
 ;;;; Agg Functions
 (defn approx-count-distinct
   ([expr] (functions/approx_count_distinct (->column expr)))
@@ -107,6 +117,7 @@
 (defn collect-list [expr] (functions/collect_list expr))
 (defn collect-set [expr] (functions/collect_set expr))
 (defn explode [expr] (functions/explode (->column expr)))
+(def explode-outer explode)
 (defn element-at [expr value]
   (functions/element_at (->column expr) (int value)))
 (defn flatten [expr]
