@@ -392,6 +392,12 @@
   (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
 (defmethod first :default [expr] (functions/first (->column expr)))
 
+(def to-string (memfn toString))
+(def ->string to-string)
+
+(def to-json (memfn toJSON))
+(def ->json to-json)
+
 (defn create-spark-session [{:keys [app-name master configs log-level]
                              :or   {app-name  "Geni App"
                                     master    "local[*]"
