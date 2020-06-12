@@ -196,28 +196,21 @@
 
 ;; Actions
 (defn collect [dataframe]
-  (let [spark-rows (.collect dataframe)
-        col-names  (column-names dataframe)]
-    (for [row spark-rows]
-      (->> row
-           interop/spark-row->vec
-           (clojure.core/map interop/->clojure)
-           (zipmap col-names)
-           keywordize-keys))))
-
-(defn collect-vals [dataframe]
-  (clojure.core/map vals (collect dataframe)))
-(defn collect-col [dataframe col-name]
-  (clojure.core/map (keyword col-name) (-> dataframe (select col-name) collect)))
-
+  (->> dataframe .collect seq (clojure.core/map interop/->clojure)))
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
-(defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
-(defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
 
 (defn describe [dataframe & column-names]
   (.describe dataframe (into-array java.lang.String column-names)))
 (defn summary [dataframe & stat-names]
   (.summary dataframe (into-array java.lang.String stat-names)))
+
+;;;; Actions for Rows
+(defn collect-vals [dataframe]
+  (clojure.core/map vals (collect dataframe)))
+(defn collect-col [dataframe col-name]
+  (clojure.core/map (keyword col-name) (-> dataframe (select col-name) collect)))
+(defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
+(defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
 
 ;; NA Functions
 (defn drop-na

@@ -48,9 +48,6 @@
     (coll? value) (->scala-seq value)
     :else value))
 
-(defn spark-row->vec [row]
-  (-> row .toSeq scala-seq->vec))
-
 (defn array? [value] (.isArray (class value)))
 
 (defn spark-row? [value]
@@ -71,13 +68,19 @@
 (defn matrix->seqs [matrix]
   (->> matrix .rowIter .toSeq scala-seq->vec (map vector->seq)))
 
+(declare ->clojure)
+(defn spark-row->map [row]
+  (let [cols   (->> row .schema .fieldNames (map keyword))
+        values (->> row .toSeq scala-seq->vec (map ->clojure))]
+    (zipmap cols values)))
+
 (defn ->clojure [value]
   (cond
     (nil? value)            nil
     (coll? value)           (map ->clojure value)
     (array? value)          (map ->clojure (seq value))
     (scala-seq? value)      (map ->clojure (scala-seq->vec value))
-    (spark-row? value)      (spark-row->vec value)
+    (spark-row? value)      (spark-row->map value)
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)
