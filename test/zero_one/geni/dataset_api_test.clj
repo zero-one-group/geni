@@ -105,7 +105,9 @@
 
 (fact "On ungrouped methods"
   (-> melbourne-df g/spark-session) => (partial instance? SparkSession)
-  (-> melbourne-df g/sql-context) => (partial instance? SQLContext))
+  (-> melbourne-df g/sql-context) => (partial instance? SQLContext)
+  (-> df-1 g/to-json g/collect) => (every-pred seq? #(every? string? %))
+  (-> df-1 g/to-string) => string?)
 
 (facts "On pivot" :slow
   (fact "pivot should return the expected cols"

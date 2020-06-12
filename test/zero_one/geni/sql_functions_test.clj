@@ -179,7 +179,7 @@
       (g/select
         (g/struct "SellerG" "Rooms"))
       g/collect-vals
-      first) => [["Biggin" 2]]
+      first) => [{:SellerG "Biggin" :Rooms 2}]
   (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))
@@ -196,6 +196,7 @@
       g/collect-vals
       first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2]
   (-> df-1
+      (g/with-column "ys" (g/array [-3 -2 -1]))
       (g/with-column "xs" (g/array [1 2 1]))
       (g/select
         (g/array-remove "xs" 1)
@@ -203,10 +204,12 @@
         (g/array-repeat 2 (g/lit (int 3)))
         (g/array-sort "xs")
         (g/arrays-overlap "xs" "xs")
-        (g/arrays-zip ["xs" "xs"])
-        (g/element-at "xs" (int 2)))
+        (g/element-at "xs" (int 2))
+        (g/arrays-zip ["ys" "xs"]))
       g/collect-vals
-      first) => [[2] [1 1] [2 2 2] [1 1 2] true [[1 1] [2 2] [1 1]] 2]
+      first) => [[2] [1 1] [2 2 2] [1 1 2] true 2 [{:xs 1 :ys -3}
+                                                   {:xs 2 :ys -2}
+                                                   {:xs 1 :ys -1}]]
   (-> df-1
       (g/with-column "xs" (g/array [4 5 6 1]))
       (g/select
