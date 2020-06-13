@@ -36,7 +36,7 @@
   ([expr] (functions/approx_count_distinct (->column expr)))
   ([expr rsd] (functions/approx_count_distinct (->column expr) rsd)))
 (defn count-distinct [& exprs]
-  (let [[head & tail] (clojure.core/map ->column exprs)]
+  (let [[head & tail] (map ->column exprs)]
     (functions/countDistinct head (into-array Column tail))))
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
@@ -304,7 +304,7 @@
       (fn [acc-col [l-expr r-expr]]
         (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
       (lit true)
-      (clojure.core/map vector exprs (rest exprs)))))
+      (map vector exprs (rest exprs)))))
 (def < (partial compare-columns #(.lt %1 %2)))
 (def <= (partial compare-columns #(.leq %1 %2)))
 (def === (partial compare-columns #(.equalTo %1 %2)))

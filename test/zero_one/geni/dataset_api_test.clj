@@ -11,6 +11,13 @@
                           SparkSession
                           SQLContext)))
 
+(fact "group-by with map"
+  (-> df-20
+      (g/group-by "SellerG")
+      (g/agg {:n-regions (g/count-distinct "Regionname")
+              :n-null-building-area (g/null-count "BuildingArea")})
+      g/column-names) => ["SellerG" "n-regions" "n-null-building-area"])
+
 (fact "On join-with"
   (let [n-listings (-> df-50 (g/group-by "SellerG") g/count)]
     (-> df-50
