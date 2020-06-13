@@ -29,7 +29,7 @@
 (defn scala-tuple->vec [p]
   (->> (.productArity p)
        (range)
-       (clojure.core/map #(.productElement p %))
+       (map #(.productElement p %))
        (into [])))
 
 (defn ->scala-function0 [f]
