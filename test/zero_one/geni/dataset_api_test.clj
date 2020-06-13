@@ -18,14 +18,14 @@
           n-listings
           (g/=== (g/col n-listings "SellerG")
                  (g/col-regex df-50 "SellerG")))
-        g/column-names) => ["_1" "_2"]
+        g/columns) => [:_1 :_2]
     (-> df-50
         (g/join-with
           n-listings
           (g/=== (g/col n-listings "SellerG")
                  (g/col df-50 "SellerG"))
           "left")
-        g/column-names) => ["_1" "_2"]))
+        g/columns) => [:_1 :_2]))
 
 (facts "On non-group-by aggregations"
   (fact "On cube"
