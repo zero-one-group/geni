@@ -35,11 +35,11 @@
     (g/count read-df) => 13580)
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
-                     (g/read-csv! spark temp-file {"header" "false"}))]
+                     (g/read-csv! spark temp-file {:header "false"}))]
     (set (g/column-names read-df)) => #(not= % #{"Method" "Type"}))
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
         read-df  (do (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
-                     (g/read-libsvm! spark temp-file {"numFeatures" "780"}))]
+                     (g/read-libsvm! spark temp-file {:num-features"780"}))]
     (g/collect read-df) => (g/collect libsvm-df))
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
@@ -47,6 +47,11 @@
     (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write csv"
+  (let [temp-file (.toString (create-temp-file! ".csv"))
+        read-df  (do (g/write-csv! write-df temp-file {:mode      "overwrite"
+                                                       :delimiter "|"})
+                     (g/read-csv! spark temp-file {:delimiter "|"}))]
+    (g/collect write-df) => (g/collect read-df))
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! spark temp-file))]
