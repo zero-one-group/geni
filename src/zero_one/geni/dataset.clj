@@ -28,7 +28,7 @@
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
     (->> dtypes-as-tuples
-         (clojure.core/map interop/scala-tuple->vec)
+         (map interop/scala-tuple->vec)
          (into {})
          keywordize-keys)))
 
@@ -105,15 +105,15 @@
   (.filter dataframe (functions/not expr)))
 
 (defn repartition [dataframe & args]
-  (let [args          (clojure.core/flatten args)
-        [head & tail] (clojure.core/flatten args)]
+  (let [args          (flatten args)
+        [head & tail] (flatten args)]
     (if (int? head)
       (.repartition dataframe head (->col-array tail))
       (.repartition dataframe (->col-array args)))))
 
 (defn repartition-by-range [dataframe & args]
-  (let [args          (clojure.core/flatten args)
-        [head & tail] (clojure.core/flatten args)]
+  (let [args          (flatten args)
+        [head & tail] (flatten args)]
     (if (int? head)
       (.repartitionByRange dataframe head (->col-array tail))
       (.repartitionByRange dataframe (->col-array args)))))
@@ -131,12 +131,18 @@
 (defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
 
 ;; Untyped Transformations
-(defn agg [dataframe & exprs]
-  (let [[head & tail] (clojure.core/map ->column (clojure.core/flatten exprs))]
+(defn ->agg-col [arg]
+  (cond
+    (map? arg)  (for [[k v] arg] (.as (->column v) (name k)))
+    (coll? arg) (map ->column arg)
+    :else       [(->column arg)]))
+
+(defn agg [dataframe & args]
+  (let [[head & tail] (mapcat ->agg-col args)]
     (.agg dataframe head (into-array Column tail))))
 
 (defn agg-all [dataframe agg-fn]
-  (let [agg-cols (clojure.core/map agg-fn (column-names dataframe))]
+  (let [agg-cols (map agg-fn (column-names dataframe))]
     (apply agg dataframe agg-cols)))
 
 (defn col-regex [dataframe col-name] (.colRegex dataframe col-name))
@@ -191,12 +197,12 @@
                         .stat
                         (.approxQuantile col-or-cols (double-array probs) rel-error))]
     (if seq-col
-      (clojure.core/map seq quantiles)
+      (map seq quantiles)
       (seq quantiles))))
 
 ;; Actions
 (defn collect [dataframe]
-  (->> dataframe .collect seq (clojure.core/map interop/->clojure)))
+  (->> dataframe .collect seq (map interop/->clojure)))
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 
 (defn describe [dataframe & column-names]
@@ -206,11 +212,11 @@
 
 ;;;; Actions for Rows
 (defn collect-vals [dataframe]
-  (clojure.core/map vals (collect dataframe)))
+  (map vals (collect dataframe)))
 (defn collect-col [dataframe col-name]
-  (clojure.core/map (keyword col-name) (-> dataframe (select col-name) collect)))
+  (map (keyword col-name) (-> dataframe (select col-name) collect)))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
-(defn first-vals [dataframe] (-> dataframe (take-vals 1) clojure.core/first))
+(defn first-vals [dataframe] (-> dataframe (take-vals 1) first))
 
 ;; NA Functions
 (defn drop-na
@@ -271,7 +277,7 @@
     (mapv infer-struct-field col-names values)))
 
 (defn first-non-nil [values]
-  (first (clojure.core/filter clojure.core/identity values)))
+  (first (clojure.core/filter identity values)))
 
 (defn transpose [xs]
   (apply map list xs))

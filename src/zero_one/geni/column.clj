@@ -11,5 +11,5 @@
 (defmethod col Dataset [dataframe & args] (.col dataframe (first args)))
 
 (defn ->col-array [columns]
-  (->> columns (clojure.core/map col) (into-array Column)))
+  (->> columns (map col) (into-array Column)))
 (def ->column col)
