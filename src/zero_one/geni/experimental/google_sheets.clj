@@ -9,9 +9,9 @@
     (com.google.api.services.sheets.v4 Sheets$Builder
                                        SheetsScopes)))
 
-(defonce json-factory (JacksonFactory/getDefaultInstance))
+(def json-factory (JacksonFactory/getDefaultInstance))
 
-(defonce http-transport (GoogleNetHttpTransport/newTrustedTransport))
+(def http-transport (GoogleNetHttpTransport/newTrustedTransport))
 
 (defn google-credentials [creds-path]
   (-> (GoogleCredential/fromStream (clojure.java.io/input-stream creds-path))
