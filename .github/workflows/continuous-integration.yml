@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: 'echo "$GENI_CI" > resources/credentials.json'
+        shell: bash
+        env:
+          GENI_CI: ${{secrets.GENI_CI}}
       - name: unit-tests
         uses: docker://zeroonetechnology/geni:latest
         with:
@@ -22,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: 'echo "$GENI_CI" > resources/credentials.json'
+        shell: bash
+        env:
+          GENI_CI: ${{secrets.GENI_CI}}
       - name: coverage
         uses: docker://zeroonetechnology/geni:latest
         with:
