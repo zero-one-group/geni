@@ -1,6 +1,5 @@
 *.DS_Store*
 .clj-kondo/.cache
-resources/
 
 pom.xml
 pom.xml.asc
