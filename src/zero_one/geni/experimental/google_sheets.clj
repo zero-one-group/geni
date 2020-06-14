@@ -15,7 +15,7 @@
 
 (defn- google-credentials [creds-path]
   (-> (GoogleCredential/fromStream (clojure.java.io/input-stream creds-path))
-      (.createScoped [SheetsScopes/SPREADSHEETS_READONLY])))
+      (.createScoped [SheetsScopes/SPREADSHEETS])))
 
 (defn sheets-service [google-props]
   (let [app-name       (:app-name google-props "Geni Lib")

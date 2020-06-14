@@ -20,6 +20,7 @@
                              [ml.dmlc/xgboost4j_2.12 "1.0.0"]
                              ;; Google Sheets Integration
                              [com.google.api-client/google-api-client "1.30.9"]
+                             [com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
                              [com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
                              [com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
                              ;;;; Prevent overwrite of an older guava version
