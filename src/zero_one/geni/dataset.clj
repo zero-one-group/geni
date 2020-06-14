@@ -22,8 +22,9 @@
 ;; Basic
 (defn cache [dataframe] (.cache dataframe))
 
-(defn columns [dataframe] (-> dataframe .columns seq))
-(def column-names columns)
+(defn column-names [dataframe] (-> dataframe .columns seq))
+
+(defn columns [dataframe] (->> dataframe column-names (map keyword)))
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
@@ -205,8 +206,8 @@
   (->> dataframe .collect seq (map interop/->clojure)))
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 
-(defn describe [dataframe & column-names]
-  (.describe dataframe (into-array java.lang.String column-names)))
+(defn describe [dataframe & col-names]
+  (.describe dataframe (into-array java.lang.String col-names)))
 (defn summary [dataframe & stat-names]
   (.summary dataframe (into-array java.lang.String stat-names)))
 

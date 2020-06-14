@@ -1,10 +1,15 @@
 (ns zero-one.geni.data-sources
-  (:refer-clojure :exclude [partition-by sort-by]))
+  (:refer-clojure :exclude [partition-by sort-by])
+  (:require
+    [camel-snake-kebab.core :refer [->camelCase]]))
+
+(defn norm-option-key [k]
+  (->camelCase (name k)))
 
 (defn read-data! [format spark-session path options]
   (let [unconfigured-reader (.. spark-session read (format format))
         configured-reader   (reduce
-                              (fn [r [k v]] (.option r k v))
+                              (fn [r [k v]] (.option r (norm-option-key k) v))
                               unconfigured-reader
                               options)]
     (.load configured-reader path)))
@@ -40,7 +45,7 @@
                                 (.format format)
                                 (cond-> mode (.mode mode)))
         configured-writer   (reduce
-                              (fn [w [k v]] (.option w k v))
+                              (fn [w [k v]] (.option w (norm-option-key k) v))
                               unconfigured-writer
                               (dissoc options :mode))]
     (.save configured-writer path)))
