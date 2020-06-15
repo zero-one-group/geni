@@ -207,9 +207,9 @@
 (defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
 
 (defn describe [dataframe & col-names]
-  (.describe dataframe (into-array java.lang.String col-names)))
+  (.describe dataframe (into-array java.lang.String (map name col-names))))
 (defn summary [dataframe & stat-names]
-  (.summary dataframe (into-array java.lang.String stat-names)))
+  (.summary dataframe (into-array java.lang.String (map name stat-names))))
 
 ;;;; Actions for Rows
 (defn collect-vals [dataframe]

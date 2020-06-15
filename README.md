@@ -16,30 +16,33 @@ See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://git
 
 Clojure is particularly well-suited for data wrangling due to its particular focus on fast feedback - most notably through its REPL. Being hosted on the JVM, Clojure interops well with Java (and, by extension, Scala) libaries. However, Spark's pleasant API in Scala becomes quite unidiomatic in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
 
-For instance, instead of making sure the types line up:
+Geni allows us to write queries without making sure that the types line up:
+
+```clojure
+(-> dataframe                    ;; Idiomatic threading macro as the main interface
+    (group-by (lower "SellerG")  ;; Dynamism with mixed Column, string and keyword types
+              "Suburb"
+              :Regionname)
+    (agg {:mean (mean "Price")   ;; No need for into-array to handle interop
+          :std  (stddev "Price")
+          :min  (min "Price")
+          :max  (max "Price")})
+    show)
+```
+
+In contrast, you would have to write the following instead with pure interop:
 
 ```clojure
 (-> dataframe
-    (.groupBy "SellerG" (into-array java.lang.String ["Suburb"]))
+    (.groupBy (into-array Column [(functions/lower (functions/col "SellerG"))
+                                  (functions/col "Suburb")
+                                  (functions/col "Regionname")]))
     (.agg
       (.as (functions/mean "Price") "mean")
       (into-array Column [(.as (functions/stddev "Price") "std")
                           (.as (functions/min "Price") "min")
                           (.as (functions/max "Price") "max")]))
     .show)
-```
-
-Geni allows us to write the following instead:
-
-```clojure
-(-> dataframe                             ;; Threading macro as the main interface
-    (group-by (lower "SellerG") "Suburb") ;; Mix Column and string types
-    (agg
-      (-> (mean "Price") (as "mean"))     ;; No need to do into-array
-      (-> (stddev "Price") (as "std"))
-      (-> (min "Price") (as "min"))
-      (-> (max "Price") (as "max")))
-    show)
 ```
 
 Instead of having to deal with interop:
@@ -54,7 +57,17 @@ Instead of having to deal with interop:
 
 Geni's `(collect dataframe)` returns a seq of maps.
 
-Finally, some Column functions such as `+`, `<=` and `&&` become variadic as are expected in any Lisp dialects.
+Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
+
+```clojure
+(-> melbourne-df
+    (remove (like :Regionname "%Metropolitan%"))
+    (filter (&& (< 2 :Rooms 5)
+                (< 5e5 :Price 6e5)
+                (< :YearBuilt 2010)))
+    (select :Regionname :Rooms :Price :YearBuilt)
+    show)
+```
 
 # Examples
 
@@ -64,9 +77,9 @@ Spark SQL API for grouping and aggregating:
 (require '[zero-one.geni.core :as g])
 
 (-> melbourne-df
-    (g/group-by "Suburb")
+    (g/group-by :Suburb)
     g/count
-    (g/order-by (g/desc "count"))
+    (g/order-by (g/desc :count))
     (g/limit 5)
     g/show)
 ; +--------------+---+
@@ -118,7 +131,7 @@ MLlib's pipeline:
 
 (-> test-set
     (ml/transform model)
-    (g/select "id" "text" "probability" "prediction")
+    (g/select :id :text :probability :prediction)
     g/show)
 ;; +---+------------------+----------------------------------------+----------+
 ;; |id |text              |probability                             |prediction|
@@ -138,10 +151,10 @@ There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Ap
 
 ## Column Coercion
 
-Many SQL functions and Column methods are overloaded to take either a string or a Column instance as argument. For such cases, Geni implements Column coercion where
+Many SQL functions and Column methods are overloaded to take either a keyword, a string or a Column instance as argument. For such cases, Geni implements Column coercion where
 
 1. Column instances are left as they are,
-2. strings are interpreted as column names and;
+2. strings and keywords are interpreted as column names and;
 3. other values are interpreted as a literal Column.
 
 Because of this, basic arithmetic operations do not require `lit` wrapping:
@@ -224,13 +237,21 @@ You would also need to add Spark as provided dependencies. For instance, have th
 
 ```clojure
 :provided
-{:dependencies [[ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
+{:dependencies [;; Spark
+                [org.apache.spark/spark-core_2.12 "2.4.6"]
+                [org.apache.spark/spark-hive_2.12 "2.4.6"]
+                [org.apache.spark/spark-mllib_2.12 "2.4.6"]
+                [org.apache.spark/spark-sql_2.12 "2.4.6"]
+                [org.apache.spark/spark-streaming_2.12 "2.4.6"]
+                ;; Optional: Spark XGBoost
+                [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                [org.apache.spark/spark-core_2.12 "2.4.5"]
-                [org.apache.spark/spark-hive_2.12 "2.4.5"]
-                [org.apache.spark/spark-mllib_2.12 "2.4.5"]
-                [org.apache.spark/spark-sql_2.12 "2.4.5"]
-                [org.apache.spark/spark-streaming_2.12 "2.4.5"]]}
+                ;; Optional: Google Sheets Integration
+                [com.google.api-client/google-api-client "1.30.9"]
+                [com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
+                [com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
+                [com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
+                [org.apache.hadoop/hadoop-client "2.7.3"]]}
 ```
 
 # Future Work

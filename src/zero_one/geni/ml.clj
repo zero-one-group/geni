@@ -133,11 +133,11 @@
    xgboost-regressor])
 
 (defn corr [dataframe col-name]
-  (Correlation/corr dataframe col-name))
+  (Correlation/corr dataframe (name col-name)))
 (def correlation corr)
 
 (defn chi-square-test [dataframe features-col label-col]
-  (ChiSquareTest/test dataframe features-col label-col))
+  (ChiSquareTest/test dataframe (name features-col) (name label-col)))
 
 (defn pipeline [& stages]
   (-> (Pipeline.)
@@ -223,6 +223,7 @@
 (defn intercept-vector [model] (interop/vector->seq (.interceptVector model)))
 (defn is-distributed [model] (.isDistributed model))
 (def distributed? is-distributed)
+(defn labels [model] (seq (.labels model)))
 (defn log-likelihood [dataset model] (.logLikelihood model dataset))
 (defn log-perplexity [dataset model] (.logPerplexity model dataset))
 (defn max-abs [model] (interop/vector->seq (.maxAbs model)))
