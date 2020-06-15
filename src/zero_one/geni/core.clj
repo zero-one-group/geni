@@ -351,7 +351,7 @@
    write-text!])
 
 (defmulti as (fn [head & _] (class head)))
-(defmethod as :default [expr new-name] (.as (->column expr) new-name))
+(defmethod as :default [expr new-name] (.as (->column expr) (name new-name)))
 (defmethod as Dataset [dataframe new-name] (.as dataframe new-name))
 (def alias as)
 

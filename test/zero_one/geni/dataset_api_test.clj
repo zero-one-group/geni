@@ -137,8 +137,8 @@
 (facts "On select"
   (fact "should drop unselected columns"
     (-> melbourne-df
-        (g/select "Type" "Price")
-        g/column-names) => ["Type" "Price"])
+        (g/select "Type" (g/col "Price") :Regionname)
+        g/column-names) => ["Type" "Price" "Regionname"])
   (fact "select-expr works as expected"
     (-> melbourne-df
         (g/select-expr "Price+1" "Rooms-1")

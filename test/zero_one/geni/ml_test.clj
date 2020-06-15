@@ -83,6 +83,9 @@
                                       :persistSubModels "true"}) => nil))
 
 (facts "On feature extraction" :slow
+  (let [indexer (ml/fit libsvm-df (ml/string-indexer {:input-col :label
+                                                      :output-col :indexed-label}))]
+    (ml/labels indexer) => ["1.0" "0.0"])
   (let [ds-a     (ds/table->dataset
                    spark
                    [[0 [1.0 1.0 1.0 0.0 0.0 0.0]]
@@ -131,8 +134,8 @@
                   [:i :j])
         ohe     (ml/fit
                   dataset
-                  (ml/one-hot-encoder {:input-cols ["i" "j"]
-                                       :output-cols ["x" "y"]}))]
+                  (ml/one-hot-encoder {:input-cols [:i :j]
+                                       :output-cols [:x :y]}))]
     (ml/category-sizes ohe) => [2 2])
   (let [indexer (ml/fit
                   (g/limit libsvm-df 10)
@@ -142,7 +145,7 @@
                                         (every? map? (map second %))))
   (let [model (ml/fit
                (g/limit libsvm-df 10)
-               (ml/standard-scaler {:input-col "features"
+               (ml/standard-scaler {:input-col :features
                                     :with-mean true
                                     :with-std true}))]
     (ml/mean model) => #(every? double? %)

@@ -23,27 +23,30 @@ The following examples are taken from [Apache Spark's example page](https://spar
 
 ```clojure
 (-> melbourne-df
-    (g/filter (g/like "Suburb" "%South%"))
-    (g/select "Suburb")
+    (g/filter (g/like :Suburb "%South%"))
+    (g/select "Suburb"
+              (g/lower "SellerG")
+              :Regionname
+              (g/upper :Type))
     g/distinct
     (g/limit 5)
     g/show)
-; +----------------+
-; |Suburb          |
-; +----------------+
-; |South Melbourne |
-; |South Kingsville|
-; |Clayton South   |
-; |Blackburn South |
-; |Vermont South   |
-; +----------------+
+; +---------------+--------------+--------------------------+-----------+
+; |Suburb         |lower(SellerG)|Regionname                |upper(Type)|
+; +---------------+--------------+--------------------------+-----------+
+; |Wantirna South |llc           |Eastern Metropolitan      |H          |
+; |South Melbourne|conquest      |Southern Metropolitan     |H          |
+; |Frankston South|ray           |South-Eastern Metropolitan|H          |
+; |South Melbourne|cayzer        |Southern Metropolitan     |U          |
+; |South Melbourne|williams      |Southern Metropolitan     |H          |
+; +---------------+--------------+--------------------------+-----------+
 ```
 
 ### Printing Schema
 
 ``` clojure
 (-> melbourne-df
-    (g/select "Suburb" "Rooms" "Price")
+    (g/select :Suburb :Rooms :Price)
     g/print-schema)
 ; root
 ;  |-- Suburb: string (nullable = true)
@@ -55,7 +58,7 @@ The following examples are taken from [Apache Spark's example page](https://spar
 
 ```clojure
 (-> melbourne-df
-    (g/describe "Price")
+    (g/describe :Price)
     g/show)
 ; +-------+-----------------+
 ; |summary|Price            |
@@ -78,7 +81,7 @@ The following examples are taken from [Apache Spark's example page](https://spar
               g/mean
               (g/as col-name)))]
   (-> melbourne-df
-      (g/agg (map null-rate ["Car" "LandSize" "BuildingArea"]))
+      (g/agg (map null-rate [:Car :LandSize :BuildingArea]))
       g/collect))
 ; => ({:Car 0.004565537555228277,
 ;      :LandSize 0.0,
@@ -104,7 +107,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     [:features]))
 
 (let [corr-kw (keyword "pearson(features)")]
-  (corr-kw (g/first (ml/corr corr-df "features"))))
+  (corr-kw (g/first (ml/corr corr-df :features))))
 ; => ((1.0                  0.055641488407465814 0.9442673704375603  0.1311482458941057)
 ;     (0.055641488407465814 1.0                  0.22329687826943603 0.9428090415820635)
 ;     (0.9442673704375603   0.22329687826943603  1.0                 0.19298245614035084)
@@ -125,7 +128,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
       [1.0 [3.5 40.0]]]
      [:label :features]))
 
-(g/first (ml/chi-square-test hypothesis-df "features" "label"))
+(g/first (ml/chi-square-test hypothesis-df :features :label))
 ; => {:pValues (0.6872892787909721 0.6822703303362126),
 ;     :degreesOfFreedom (2 3),
 ;     :statistics (0.75 1.5))
@@ -146,20 +149,20 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (def pipeline
   (ml/pipeline
-    (ml/tokenizer {:input-col "sentence"
-                    :output-col "words"})
+    (ml/tokenizer {:input-col :sentence
+                    :output-col :words})
     (ml/hashing-tf {:num-features 20
-                    :input-col "words"
-                    :output-col "raw-features"})
-    (ml/idf {:input-col "raw-features"
-              :output-col "features"})))
+                    :input-col :words
+                    :output-col :raw-features})
+    (ml/idf {:input-col :raw-features
+              :output-col :features})))
 
 (def pipeline-model
   (ml/fit sentence-data pipeline))
 
 (-> sentence-data
     (ml/transform pipeline-model)
-    (g/collect-col "features"))
+    (g/collect-col :features))
 ; => ((0.6931471805599453
 ;      0.6931471805599453
 ;      0.28768207245178085
@@ -188,13 +191,13 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     [:features]))
 
 (def pca
-  (ml/fit dataframe (ml/pca {:input-col "features"
-                             :output-col "pca-features"
+  (ml/fit dataframe (ml/pca {:input-col :features
+                             :output-col :pca-features
                              :k 3})))
 
 (-> dataframe
     (ml/transform pca)
-    (g/collect-col "pca-features"))
+    (g/collect-col :pca-features))
 ;; => ((1.6485728230883807 -4.013282700516296 -5.524543751369388)
 ;;     (-4.645104331781534 -1.1167972663619026 -5.524543751369387)
 ;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
@@ -204,8 +207,8 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 ```clojure
 (def scaler
-  (ml/standard-scaler {:input-col "features"
-                       :output-col "scaled-features"
+  (ml/standard-scaler {:input-col :features
+                       :output-col :scaled-features
                        :with-std true
                        :with-mean false}))
 
@@ -214,7 +217,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> libsvm-df
     (ml/transform scaler-model)
     (g/limit 1)
-    (g/collect-col "scaled-features"))
+    (g/collect-col :scaled-features))
 ;; => ((0.5468234998110156
 ;;      1.5923262059067456
 ;;      2.435399721310935
@@ -239,12 +242,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     [:id :hour :mobile :user-features :clicked]))
 
 (def assembler
-  (ml/vector-assembler {:input-cols ["hour" "mobile" "user-features"]
-                        :output-col "features"}))
+  (ml/vector-assembler {:input-cols [:hour :mobile :user-features]
+                        :output-col :features}))
 
 (-> dataset
     (ml/transform assembler)
-    (g/select "features" "clicked")
+    (g/select :features :clicked)
     g/show)
 ; +-----------------------+-------+
 ; |features               |clicked|
@@ -268,7 +271,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> training
     (ml/transform lr-model)
-    (g/select "label" "probability")
+    (g/select :label :probability)
     (g/limit 5)
     g/show)
 ; +-----+----------------------------------------+
@@ -298,36 +301,36 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def test-data (second split-data))
 
 (def label-indexer
-  (ml/fit data (ml/string-indexer {:input-col "label" :output-col "indexed-label"})))
+  (ml/fit data (ml/string-indexer {:input-col :label :output-col :indexed-label})))
 
 (def feature-indexer
-  (ml/fit data (ml/vector-indexer {:input-col "features"
-                                   :output-col "indexed-features"
+  (ml/fit data (ml/vector-indexer {:input-col :features
+                                   :output-col :indexed-features
                                    :max-categories 4})))
 
 (def pipeline
   (ml/pipeline
     label-indexer
     feature-indexer
-    (ml/gbt-classifier {:label-col "indexed-label"
-                        :features-col "indexed-features"
+    (ml/gbt-classifier {:label-col :indexed-label
+                        :features-col :indexed-features
                         :max-iter 10
                         :feature-subset-strategy "auto"})
-    (ml/index-to-string {:input-col "prediction"
-                         :output-col "predicted-label"
-                         :labels (.labels label-indexer)})))
+    (ml/index-to-string {:input-col :prediction
+                         :output-col :predicted-label
+                         :labels (ml/labels label-indexer)})))
 
 (def model (ml/fit train-data pipeline))
 
 (def predictions (ml/transform test-data model))
 
 (def evaluator
-  (ml/multiclass-classification-evaluator {:label-col "indexed-label"
-                                           :prediction-col "prediction"
+  (ml/multiclass-classification-evaluator {:label-col :indexed-label
+                                           :prediction-col :prediction
                                            :metric-name "accuracy"}))
 
 (-> predictions
-    (g/select "predicted-label" "label")
+    (g/select :predicted-label :label)
     (g/order-by (g/rand)))
 (println "Test error:" (- 1 (ml/evaluate predictions evaluator)))
 ; +---------------+-----+
@@ -354,7 +357,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> training
     (ml/transform xgb-model)
-    (g/select "label" "probability")
+    (g/select :label :probability)
     (g/limit 5)
     g/show)
 ; +-----+----------------------------------------+
@@ -403,8 +406,8 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
 
 (def feature-indexer
-  (ml/fit data (ml/vector-indexer {:input-col "features"
-                                   :output-col "indexed-features"
+  (ml/fit data (ml/vector-indexer {:input-col :features
+                                   :output-col :indexed-features
                                    :max-categories 4})))
 
 (def split-data (g/random-split data [0.7 0.3]))
@@ -414,18 +417,18 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def pipeline
   (ml/pipeline
     feature-indexer
-    (ml/random-forest-regressor {:label-col "label"
-                                 :features-col "indexed-features"})))
+    (ml/random-forest-regressor {:label-col :label
+                                 :features-col :indexed-features})))
 
 (def model (ml/fit train-data pipeline))
 (def predictions (ml/transform test-data model))
 (def evaluator
-  (ml/regression-evaluator {:label-col "label"
-                            :prediction-col "prediction"
+  (ml/regression-evaluator {:label-col :label
+                            :prediction-col :prediction
                             :metric-name "rmse"}))
 
 (-> predictions
-    (g/select "prediction" "label")
+    (g/select :prediction :label)
     (g/show {:num-rows 5}))
 (println "RMSE:" (ml/evaluate predictions evaluator))
 ; +----------+-----+
@@ -458,7 +461,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def aft
   (ml/aft-survival-regression
     {:quantile-probabilities quantile-probabilities
-     :quantiles-col "quantiles"}))
+     :quantiles-col :quantiles}))
 
 (def aft-model (ml/fit train aft))
 
@@ -486,7 +489,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> training
     (ml/transform xgb-model)
-    (g/select "label" "prediction")
+    (g/select :label :prediction)
     (g/limit 5)
     g/show)
 ; +-----+-------------------+
@@ -539,7 +542,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> dataset
     (ml/transform model)
     (g/limit 2)
-    (g/collect-col "topicDistribution"))
+    (g/collect-col :topicDistribution))
 ; => ((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
 ;     (0.07701806399774133
 ;      0.07701821590017151
@@ -570,9 +573,9 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def model
   (ml/fit ratings-df (ml/als {:max-iter   5
                               :reg-param  0.01
-                              :user-col   "user-id"
-                              :item-col   "movie-id"
-                              :rating-col "rating"})))
+                              :user-col   :user-id
+                              :item-col   :movie-id
+                              :rating-col :rating})))
 
 (.setColdStartStrategy model "drop")
 (def predictions
@@ -580,8 +583,8 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (def evaluator
   (ml/regression-evaluator {:metric-name    "rmse"
-                            :label-col      "rating"
-                            :prediction-col "prediction"}))
+                            :label-col      :rating
+                            :prediction-col :prediction}))
 
 (println "Root-mean-square error:" (ml/evaluate predictions evaluator))
 (-> (ml/recommend-users model 3)
@@ -632,14 +635,14 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     [:id :text :label]))
 
 (def hashing-tf
-  (ml/hashing-tf {:input-col "words" :output-col "features"}))
+  (ml/hashing-tf {:input-col :words :output-col :features}))
 
 (def logistic-reg
   (ml/logistic-regression {:max-iter 10}))
 
 (def pipeline
   (ml/pipeline
-    (ml/tokeniser {:input-col "text" :output-col "words"})
+    (ml/tokeniser {:input-col :text :output-col :words})
     hashing-tf
     logistic-reg))
 
@@ -668,7 +671,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> testing
     (ml/transform cv-model)
-    (g/select "id" "text" "probability" "prediction")
+    (g/select :id :text :probability :prediction)
     g/collect)
 ; => ({:id 4,
 ;      :text "spark i j k",
@@ -702,7 +705,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def model
   (ml/fit
     dataset
-    (ml/fp-growth {:items-col      "items"
+    (ml/fp-growth {:items-col      :items
                    :min-confidence 0.6
                    :min-support    0.5})))
 

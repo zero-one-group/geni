@@ -115,6 +115,13 @@
 (defn set-value [^java.lang.reflect.Method method instance value]
   (.invoke method instance (into-array [(->java (setter-type method) value)])))
 
+(defn convert-keywords [value]
+  (cond
+    (keyword? value)              (name value)
+    (and (coll? value)
+         (every? keyword? value)) (map name value)
+    :else                         value))
+
 (defn instantiate
   ([^Class cls props]
    (let [setters  (setters-map cls)
@@ -122,7 +129,7 @@
      (reduce
        (fn [_ [k v]]
          (when-let [setter (setters k)]
-           (set-value setter instance v)))
+           (set-value setter instance (convert-keywords v))))
        instance
        props))))
 

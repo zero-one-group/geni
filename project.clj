@@ -15,15 +15,14 @@
                              [org.apache.spark/spark-mllib_2.12 "2.4.6"]
                              [org.apache.spark/spark-sql_2.12 "2.4.6"]
                              [org.apache.spark/spark-streaming_2.12 "2.4.6"]
-                             ;; Spark XGBoost
+                             ;; Optional: Spark XGBoost
                              [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
                              [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                             ;; Google Sheets Integration
+                             ;; Optional: Google Sheets Integration
                              [com.google.api-client/google-api-client "1.30.9"]
                              [com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
                              [com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
                              [com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
-                             ;;;; Prevent overwrite of an older guava version
                              [org.apache.hadoop/hadoop-client "2.7.3"]]}
              :dev {:dependencies [[expound "0.8.4"]
                                   [midje "1.9.9"]]
