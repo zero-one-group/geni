@@ -17,6 +17,7 @@
         spreadsheet-id (gs/create-sheets! (assoc google-props :sheet-name "melbourne"))
         new-props      (merge google-props {:sheet-name "melbourne" :spreadsheet-id spreadsheet-id})
         read-df        (do
+                         (Thread/sleep 50000)
                          (gs/write-sheets! dataframe new-props {:header false})
                          (gs/read-sheets! spark new-props {:header false}))
         delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
