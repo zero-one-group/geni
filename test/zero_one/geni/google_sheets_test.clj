@@ -1,10 +1,10 @@
 (ns zero-one.geni.google-sheets-test
   (:require
     [clojure.walk :refer [keywordize-keys]]
-    [zero-one.geni.core :as g]
     [midje.sweet :refer [facts fact =>]]
+    [zero-one.geni.core :as g]
     [zero-one.geni.experimental.google-sheets :as gs]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (def google-props
   {:credentials    "resources/credentials.json"
@@ -12,7 +12,38 @@
 
 (defonce service (gs/sheets-service google-props))
 
-(facts "On google sheet conversion functions" :slow
+(defn random-sleep! []
+  (Thread/sleep (+ (rand-int 2500) 2500)))
+
+(facts "On writing to Google Sheets" :slow
+  (let [dataframe      (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price"))
+        spreadsheet-id (gs/create-sheets! (assoc google-props :sheet-name "melbourne"))
+        new-props      (merge google-props {:sheet-name "melbourne" :spreadsheet-id spreadsheet-id})
+        read-df        (do
+                         (random-sleep!)
+                         (gs/write-sheets! dataframe new-props {:header false})
+                         (random-sleep!)
+                         (gs/read-sheets! spark new-props {:header false}))
+        delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
+    spreadsheet-id => string?
+    (g/count read-df) => 20
+    (g/columns read-df) => [:_c0 :_c1 :_c2 :_c3]
+    delete-status => nil?)
+  (let [dataframe      (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price"))
+        spreadsheet-id (gs/create-sheets! (assoc google-props :sheet-name "melbourne"))
+        new-props      (merge google-props {:sheet-name "melbourne" :spreadsheet-id spreadsheet-id})
+        read-df        (do
+                         (random-sleep!)
+                         (gs/write-sheets! dataframe new-props)
+                         (random-sleep!)
+                         (gs/read-sheets! spark new-props))
+        delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
+    spreadsheet-id => string?
+    (g/count read-df) => 20
+    (g/columns read-df) => [:SellerG :Date :Rooms :Price]
+    delete-status => nil?))
+
+(facts "On Google Sheets conversion functions" :slow
   (let [ss-id  (:spreadsheet-id google-props)
         values (gs/sheet-values service ss-id "seismic_bumps")]
     (g/columns (gs/spreadsheet-values->dataset spark values {}))
@@ -20,7 +51,7 @@
     (g/columns (gs/spreadsheet-values->dataset spark values {:header false}))
     => [:_c0 :_c1 :_c2 :_c3 :_c4 :_c5 :_c6 :_c7]))
 
-(facts "On google sheet basic functions" :slow
+(facts "On Google Sheets basic functions" :slow
   (let [ss-id (:spreadsheet-id google-props)]
     (fact "should retrieve correct sheet names"
       (gs/sheet-names service ss-id) => ["gsheet_api_tutorial" "seismic_bumps"])
