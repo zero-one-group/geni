@@ -13,7 +13,7 @@
 (defonce service (gs/sheets-service google-props))
 
 (defn random-sleep! []
-  (Thread/sleep (+ (rand-int 5000) 5000)))
+  (Thread/sleep (+ (rand-int 2500) 2500)))
 
 (facts "On writing to Google Sheets" :slow
   (let [dataframe      (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price"))
@@ -23,8 +23,7 @@
                          (random-sleep!)
                          (gs/write-sheets! dataframe new-props {:header false})
                          (random-sleep!)
-                         (gs/read-sheets! spark new-props {:header false})
-                         (random-sleep!))
+                         (gs/read-sheets! spark new-props {:header false}))
         delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
     spreadsheet-id => string?
     (g/count read-df) => 20
@@ -37,8 +36,7 @@
                          (random-sleep!)
                          (gs/write-sheets! dataframe new-props)
                          (random-sleep!)
-                         (gs/read-sheets! spark new-props)
-                         (random-sleep!))
+                         (gs/read-sheets! spark new-props))
         delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
     spreadsheet-id => string?
     (g/count read-df) => 20
