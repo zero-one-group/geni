@@ -13,7 +13,7 @@
 (defonce service (gs/sheets-service google-props))
 
 (defn random-sleep! []
-  (Thread/sleep (+ (rand-int 5000) 1000)))
+  (Thread/sleep (+ (rand-int 5000) 5000)))
 
 (facts "On writing to Google Sheets" :slow
   (let [dataframe      (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price"))
