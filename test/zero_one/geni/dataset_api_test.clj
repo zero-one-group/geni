@@ -143,7 +143,12 @@
   (fact "select-expr works as expected"
     (-> melbourne-df
         (g/select-expr "Price+1" "Rooms-1")
-        g/column-names) => ["(Price + 1)" "(Rooms - 1)"]))
+        g/column-names) => ["(Price + 1)" "(Rooms - 1)"])
+  (fact "column order should be preserved"
+    (-> melbourne-df
+        (g/select (range 100))
+        g/collect-vals
+        first) => (range 100)))
 
 (facts "On filter"
   (let [df (-> df-20 (g/select "SellerG"))]

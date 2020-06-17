@@ -207,7 +207,8 @@
 
 ;;;; Actions for Rows
 (defn collect-vals [dataframe]
-  (map vals (collect dataframe)))
+  (let [cols (columns dataframe)]
+    (map (apply juxt cols) (collect dataframe))))
 (defn collect-col [dataframe col-name]
   (map (keyword col-name) (-> dataframe (select col-name) collect)))
 (defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
