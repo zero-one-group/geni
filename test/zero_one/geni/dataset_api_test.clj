@@ -146,6 +146,18 @@
 
 (facts "On filter"
   (let [df (-> df-20 (g/select "SellerG"))]
+    (fact "should implicitly cast to boolean"
+      (-> df-20
+          (g/select :Rooms)
+          (g/filter (g/- :Rooms 2))
+          g/distinct
+          (g/collect-col :Rooms)
+          set) => #(not (% 2))
+      (-> df-20
+          (g/select :Rooms)
+          (g/remove (g/- :Rooms 2))
+          g/distinct
+          (g/collect-col :Rooms)) => [2])
     (fact "should correctly filter rows"
       (-> df
           (g/filter (g/=== "SellerG" (g/lit "Biggin")))

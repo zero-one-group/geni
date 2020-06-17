@@ -51,7 +51,7 @@
 (defn rename-columns [dataframe rename-map]
   (reduce
     (fn [acc-df [old-name new-name]]
-      (.withColumnRenamed acc-df old-name new-name))
+      (.withColumnRenamed acc-df (name old-name) (name new-name)))
     dataframe
     rename-map))
 
@@ -74,13 +74,13 @@
 (defn drop-duplicates [dataframe & col-names]
   (if (clojure.core/empty? col-names)
     (.dropDuplicates dataframe)
-    (.dropDuplicates dataframe (into-array java.lang.String col-names))))
+    (.dropDuplicates dataframe (into-array java.lang.String (map name col-names)))))
 
 (defn except [dataframe other] (.except dataframe other))
 
 (defn except-all [dataframe other] (.exceptAll dataframe other))
 
-(defn filter [dataframe expr] (.filter dataframe expr))
+(defn filter [dataframe expr] (.filter dataframe (.cast (->column expr) "boolean")))
 (def where filter)
 
 (defn intersect [dataframe other] (.intersect dataframe other))
@@ -103,7 +103,7 @@
   ([dataframe weights seed] (.randomSplit dataframe (double-array weights) seed)))
 
 (defn remove [dataframe expr]
-  (.filter dataframe (functions/not expr)))
+  (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))
 
 (defn repartition [dataframe & args]
   (let [args          (flatten args)
@@ -146,7 +146,7 @@
   (let [agg-cols (map agg-fn (column-names dataframe))]
     (apply agg dataframe agg-cols)))
 
-(defn col-regex [dataframe col-name] (.colRegex dataframe col-name))
+(defn col-regex [dataframe col-name] (.colRegex dataframe (name col-name)))
 
 (defn cross-join [left right] (.crossJoin left right))
 
@@ -154,7 +154,7 @@
   (.cube dataframe (->col-array exprs)))
 
 (defn drop [dataframe & col-names]
-  (.drop dataframe (into-array java.lang.String col-names)))
+  (.drop dataframe (into-array java.lang.String (map name col-names))))
 
 (defn group-by [dataframe & exprs]
   (.groupBy dataframe (->col-array exprs)))
@@ -178,10 +178,10 @@
   (.selectExpr dataframe (into-array java.lang.String exprs)))
 
 (defn with-column [dataframe col-name expr]
-  (.withColumn dataframe col-name (->column expr)))
+  (.withColumn dataframe (name col-name) (->column expr)))
 
 (defn with-column-renamed [dataframe old-name new-name]
-  (.withColumnRenamed dataframe old-name new-name))
+  (.withColumnRenamed dataframe (name old-name) (name new-name)))
 
 ;; Ungrouped
 (defn spark-session [dataframe] (.sparkSession dataframe))

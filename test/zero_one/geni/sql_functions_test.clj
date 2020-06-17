@@ -484,6 +484,17 @@
 (facts "On time functions"
   (fact "correct time arithmetic"
     (-> df-1
+        (g/select
+          (-> (g/to-timestamp (g/lit "2020-05-12")))
+          (-> (g/to-timestamp (g/lit "2020-05-12") "yyyy-MM-dd"))
+          (-> (g/to-date (g/lit "2020-05-12")))
+          (-> (g/to-date (g/lit "2020-05-12") "yyyy-MM-dd")))
+        g/collect-vals
+        first) => (fn [[x0 x1 x2 x3]] (and (instance? java.sql.Timestamp x0)
+                                           (instance? java.sql.Timestamp x1)
+                                           (instance? java.sql.Date x2)
+                                           (instance? java.sql.Date x3)))
+    (-> df-1
         (g/select (-> (g/to-utc-timestamp (g/lit "2020-05-12"))))
         g/collect-vals
         ffirst

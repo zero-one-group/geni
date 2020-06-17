@@ -271,11 +271,13 @@
   (functions/next_day (->column expr) day-of-week))
 (defn quarter [expr] (functions/quarter (->column expr)))
 (defn second [expr] (functions/second (->column expr)))
-(defn to-date [expr date-format]
-  (functions/to_date (->column expr) date-format))
+(defn to-date
+  ([expr] (functions/to_date (->column expr)))
+  ([expr date-format] (functions/to_date (->column expr) date-format)))
 (def ->date-col to-date)
-(defn to-timestamp [expr]
-  (functions/to_timestamp (->column expr)))
+(defn to-timestamp
+  ([expr] (functions/to_timestamp (->column expr)))
+  ([expr date-format] (functions/to_timestamp (->column expr) date-format)))
 (def ->timestamp-col to-timestamp)
 (defn to-utc-timestamp [expr]
   (functions/to_timestamp (->column expr)))

@@ -424,7 +424,6 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
 
-  ;; TODO: add remove (i.e. filter not)
   (require '[clojure.reflect :as r])
   (->> (r/reflect temp)
        :members
