@@ -271,4 +271,5 @@ geni is licensed under Apache License v2.0.
 
 Some code was taken from:
 
-* [finagle-clojure](https://github.com/finagle/finagle-clojure): especially in terms of Scala interop.
+* [finagle-clojure](https://github.com/finagle/finagle-clojure) - especially in terms of Scala interop.
+* [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).

@@ -1,7 +1,7 @@
 (ns zero-one.geni.google-sheets-test
   (:require
     [clojure.walk :refer [keywordize-keys]]
-    [midje.sweet :refer [facts fact =>]]
+    [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.experimental.google-sheets :as gs]
     [zero-one.geni.test-resources :refer [spark df-20]]))
@@ -12,17 +12,38 @@
 
 (defonce service (gs/sheets-service google-props))
 
-(defn random-sleep! []
-  (Thread/sleep (+ (rand-int 2500) 2500)))
+(defn action-fn [retries-to-success]
+  (let [n-tries (atom 0)]
+    (fn []
+      (swap! n-tries inc)
+      (if (<= @n-tries retries-to-success)
+        (throw (Exception. "Try again"))
+        @n-tries))))
+
+(facts "On exponential-backoff"
+  (gs/exponential-backoff {:wait-ms     100
+                           :growth-rate 2
+                           :max-ms      399
+                           :action!     (action-fn 0)}) => 1
+  (gs/exponential-backoff {:wait-ms     100
+                           :growth-rate 2
+                           :max-ms      399
+                           :action!     (action-fn 1)}) => 2
+  (gs/exponential-backoff {:wait-ms     100
+                           :growth-rate 2
+                           :max-ms      399
+                           :action!     (action-fn 2)}) => 3
+  (gs/exponential-backoff {:wait-ms     100
+                           :growth-rate 2
+                           :max-ms      399
+                           :action!     (action-fn 3)}) => (throws Exception))
 
 (facts "On writing to Google Sheets" :slow
   (let [dataframe      (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price"))
         spreadsheet-id (gs/create-sheets! (assoc google-props :sheet-name "melbourne"))
         new-props      (merge google-props {:sheet-name "melbourne" :spreadsheet-id spreadsheet-id})
         read-df        (do
-                         (random-sleep!)
                          (gs/write-sheets! dataframe new-props {:header false})
-                         (random-sleep!)
                          (gs/read-sheets! spark new-props {:header false}))
         delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
     spreadsheet-id => string?
@@ -33,9 +54,7 @@
         spreadsheet-id (gs/create-sheets! (assoc google-props :sheet-name "melbourne"))
         new-props      (merge google-props {:sheet-name "melbourne" :spreadsheet-id spreadsheet-id})
         read-df        (do
-                         (random-sleep!)
                          (gs/write-sheets! dataframe new-props)
-                         (random-sleep!)
                          (gs/read-sheets! spark new-props))
         delete-status  (gs/delete-sheets! google-props spreadsheet-id)]
     spreadsheet-id => string?
@@ -45,7 +64,7 @@
 
 (facts "On Google Sheets conversion functions" :slow
   (let [ss-id  (:spreadsheet-id google-props)
-        values (gs/sheet-values service ss-id "seismic_bumps")]
+        values (gs/sheet-values! service ss-id "seismic_bumps")]
     (g/columns (gs/spreadsheet-values->dataset spark values {}))
     => [:V1 :V2 :V3 :V4 :V5 :V6 :V7 :Class]
     (g/columns (gs/spreadsheet-values->dataset spark values {:header false}))
@@ -54,12 +73,12 @@
 (facts "On Google Sheets basic functions" :slow
   (let [ss-id (:spreadsheet-id google-props)]
     (fact "should retrieve correct sheet names"
-      (gs/sheet-names service ss-id) => ["gsheet_api_tutorial" "seismic_bumps"])
+      (gs/sheet-names! service ss-id) => ["gsheet_api_tutorial" "seismic_bumps"])
     (fact "should retrieve correct values with specified sheet"
-      (first (gs/sheet-values service ss-id "seismic_bumps"))
+      (first (gs/sheet-values! service ss-id "seismic_bumps"))
       => ["V1" "V2" "V3" "V4" "V5" "V6" "V7" "Class"])
     (fact "should retrieve correct values with unspecified sheet"
-      (first (gs/sheet-values service ss-id nil))
+      (first (gs/sheet-values! service ss-id nil))
       => ["Student Name"
           "Gender"
           "Class Level"

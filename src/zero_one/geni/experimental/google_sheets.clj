@@ -15,6 +15,22 @@
                                              SpreadsheetProperties
                                              ValueRange)))
 
+(defn exponential-backoff [{:keys [wait-ms growth-rate max-ms action!] :as options}]
+  (if (<= max-ms wait-ms)
+    (action!)
+    (try
+      (action!)
+      (catch Throwable _
+        (Thread/sleep wait-ms)
+        (exponential-backoff (update options :wait-ms (partial * growth-rate)))))))
+
+(defn safely-execute! [service]
+  (Thread/sleep (+ 250 (rand-int 250)))
+  (exponential-backoff {:wait-ms     1000
+                        :growth-rate 2
+                        :max-ms      16000
+                        :action!     #(.execute service)}))
+
 (def json-factory (JacksonFactory/getDefaultInstance))
 
 (def http-transport (GoogleNetHttpTransport/newTrustedTransport))
@@ -37,22 +53,22 @@
         (.setApplicationName app-name)
         .build)))
 
-(defn sheet-names [service spreadsheet-id]
+(defn sheet-names! [service spreadsheet-id]
   (let [sheet-objs (-> service
                        .spreadsheets
                        (.get spreadsheet-id)
-                       .execute
+                       safely-execute!
                        .getSheets)]
     (map #(-> % .getProperties .getTitle) sheet-objs)))
 
-(defn sheet-values [service spreadsheet-id sheet-name]
+(defn sheet-values! [service spreadsheet-id sheet-name]
   (let [sheet-name (or sheet-name
-                       (first (sheet-names service spreadsheet-id)))
+                       (first (sheet-names! service spreadsheet-id)))
         value-objs (-> service
                        .spreadsheets
                        .values
                        (.get spreadsheet-id sheet-name)
-                       .execute
+                       safely-execute!
                        .getValues)]
     (map seq value-objs)))
 
@@ -75,9 +91,9 @@
   ([spark google-props] (read-sheets! spark google-props {}))
   ([spark google-props options]
    (let [service        (sheets-service google-props)
-         values         (sheet-values service
-                                      (:spreadsheet-id google-props)
-                                      (:sheet-name google-props))]
+         values         (sheet-values! service
+                                       (:spreadsheet-id google-props)
+                                       (:sheet-name google-props))]
      (spreadsheet-values->dataset spark values options))))
 
 (defn dataset->value-range [dataframe options]
@@ -99,7 +115,7 @@
          .values
          (.update (:spreadsheet-id google-props) sheet-range value-range)
          (.setValueInputOption "USER_ENTERED")
-         .execute))))
+         safely-execute!))))
 
 (defn create-sheets! [google-props]
   (let [service            (sheets-service google-props)
@@ -114,11 +130,11 @@
         .spreadsheets
         (.create target-spreadsheet)
         (.setFields "spreadsheetId")
-        .execute
+        safely-execute!
         .getSpreadsheetId)))
 
 (defn delete-sheets! [google-props spreadsheet-id]
   (-> (drive-service google-props)
       .files
       (.delete spreadsheet-id)
-      .execute))
+      safely-execute!))
