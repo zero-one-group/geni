@@ -1,4 +1,4 @@
-(defproject zero.one/geni "0.0.7"
+(defproject zero.one/geni "0.0.8"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure library that wraps Apache Spark"
   :url "https://github.com/zero-one-group/geni"
