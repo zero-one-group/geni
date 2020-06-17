@@ -352,7 +352,7 @@
 
 (defmulti as (fn [head & _] (class head)))
 (defmethod as :default [expr new-name] (.as (->column expr) (name new-name)))
-(defmethod as Dataset [dataframe new-name] (.as dataframe new-name))
+(defmethod as Dataset [dataframe new-name] (.as dataframe (name new-name)))
 (def alias as)
 
 (defmulti count class)
@@ -362,24 +362,24 @@
 
 (defmulti mean (fn [head & _] (class head)))
 (defmethod mean :default [expr & _] (functions/mean expr))
-(defmethod mean RelationalGroupedDataset
-  [grouped & col-names] (.mean grouped (interop/->scala-seq col-names)))
+(defmethod mean RelationalGroupedDataset [grouped & col-names]
+  (.mean grouped (interop/->scala-seq (clojure.core/map name col-names))))
 (def avg mean)
 
 (defmulti max (fn [head & _] (class head)))
 (defmethod max :default [expr] (functions/max expr))
-(defmethod max RelationalGroupedDataset
-  [grouped & col-names] (.max grouped (interop/->scala-seq col-names)))
+(defmethod max RelationalGroupedDataset [grouped & col-names]
+  (.max grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
 (defmulti min (fn [head & _] (class head)))
 (defmethod min :default [expr] (functions/min expr))
-(defmethod min RelationalGroupedDataset
-  [grouped & col-names] (.min grouped (interop/->scala-seq col-names)))
+(defmethod min RelationalGroupedDataset [grouped & col-names]
+  (.min grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
 (defmulti sum (fn [head & _] (class head)))
 (defmethod sum :default [expr] (functions/sum expr))
-(defmethod sum RelationalGroupedDataset
-  [grouped & col-names] (.sum grouped (interop/->scala-seq col-names)))
+(defmethod sum RelationalGroupedDataset [grouped & col-names]
+  (.sum grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
 (defmulti coalesce (fn [head & _] (class head)))
 (defmethod coalesce Dataset [dataframe n-partitions]
@@ -424,7 +424,6 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
 
-  ;; TODO: add remove (i.e. filter not)
   (require '[clojure.reflect :as r])
   (->> (r/reflect temp)
        :members

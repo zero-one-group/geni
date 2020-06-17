@@ -10,7 +10,15 @@
 (defmethod col java.lang.String [x & _] (functions/col x))
 (defmethod col clojure.lang.Keyword [x & _] (functions/col (name x)))
 (defmethod col Dataset [dataframe & args] (.col dataframe (first args)))
-
-(defn ->col-array [columns]
-  (->> columns (map col) (into-array Column)))
 (def ->column col)
+
+(defn ->col-seq [arg]
+  (cond
+    (map? arg)  (for [[k v] arg] (.as (->column v) (name k)))
+    (coll? arg) (map ->column arg)
+    :else       [(->column arg)]))
+
+(defn ->col-array [args]
+  (->> args
+       (mapcat ->col-seq)
+       (into-array Column)))

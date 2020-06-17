@@ -137,15 +137,33 @@
 (facts "On select"
   (fact "should drop unselected columns"
     (-> melbourne-df
-        (g/select "Type" (g/col "Price") :Regionname)
-        g/column-names) => ["Type" "Price" "Regionname"])
+        (g/select "Type" (g/col "Price") :Regionname {:a "SellerG"
+                                                      :b "BuildingArea"})
+        g/column-names) => ["Type" "Price" "Regionname" "a" "b"])
   (fact "select-expr works as expected"
     (-> melbourne-df
         (g/select-expr "Price+1" "Rooms-1")
-        g/column-names) => ["(Price + 1)" "(Rooms - 1)"]))
+        g/column-names) => ["(Price + 1)" "(Rooms - 1)"])
+  (fact "column order should be preserved"
+    (-> melbourne-df
+        (g/select (range 100))
+        g/collect-vals
+        first) => (range 100)))
 
 (facts "On filter"
   (let [df (-> df-20 (g/select "SellerG"))]
+    (fact "should implicitly cast to boolean"
+      (-> df-20
+          (g/select :Rooms)
+          (g/filter (g/- :Rooms 2))
+          g/distinct
+          (g/collect-col :Rooms)
+          set) => #(not (% 2))
+      (-> df-20
+          (g/select :Rooms)
+          (g/remove (g/- :Rooms 2))
+          g/distinct
+          (g/collect-col :Rooms)) => [2])
     (fact "should correctly filter rows"
       (-> df
           (g/filter (g/=== "SellerG" (g/lit "Biggin")))

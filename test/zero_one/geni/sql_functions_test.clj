@@ -262,6 +262,13 @@
 (fact "On comparison and boolean functions"
   (-> df-1
       (g/select
+        (g/&& {:a true  :b true})
+        (g/&& {:a true  :b false})
+        (g/|| {:a false :b false})
+        (g/|| {:a true  :b false}))
+      g/collect-vals) => [[true false false true]]
+  (-> df-1
+      (g/select
         (g/&&)
         (g/||))
       g/collect-vals) => [[true false]]
@@ -329,6 +336,13 @@
                              "Metropolitan"]]))
 
 (fact "On arithmetic functions"
+  (-> df-1
+      (g/select
+        (-> (g/+ {:a 6 :b 2}))
+        (-> (g/- {:a 6 :b 2}))
+        (-> (g/* {:a 6 :b 2}))
+        (-> (g// {:a 6 :b 2})))
+      g/collect-vals) => [[8 4 12 3.0]]
   (-> df-1
       (g/select
         (-> (g/mod 19 7))
@@ -410,7 +424,13 @@
             (g/count-distinct "SellerG")
             (g/approx-count-distinct "SellerG" 0.1))
           g/collect-vals
-          first) => #(< 0.9 (/ (first %) (second %)) 1.1))))
+          first) => #(< 0.9 (/ (first %) (second %)) 1.1))
+    (fact "count distinct can take a map"
+      (-> df-50
+          (g/agg
+            (g/count-distinct {:seller :SellerG
+                               :suburb :Suburb}))
+          g/column-names) => ["count(DISTINCT SellerG AS `seller`, Suburb AS `suburb`)"])))
 
 (facts "On window functions" :slow
   (let [window  (g/window {:partition-by "SellerG" :order-by "Price"})]
@@ -483,6 +503,17 @@
 
 (facts "On time functions"
   (fact "correct time arithmetic"
+    (-> df-1
+        (g/select
+          (-> (g/to-timestamp (g/lit "2020-05-12")))
+          (-> (g/to-timestamp (g/lit "2020-05-12") "yyyy-MM-dd"))
+          (-> (g/to-date (g/lit "2020-05-12")))
+          (-> (g/to-date (g/lit "2020-05-12") "yyyy-MM-dd")))
+        g/collect-vals
+        first) => (fn [[x0 x1 x2 x3]] (and (instance? java.sql.Timestamp x0)
+                                           (instance? java.sql.Timestamp x1)
+                                           (instance? java.sql.Date x2)
+                                           (instance? java.sql.Date x3)))
     (-> df-1
         (g/select (-> (g/to-utc-timestamp (g/lit "2020-05-12"))))
         g/collect-vals
