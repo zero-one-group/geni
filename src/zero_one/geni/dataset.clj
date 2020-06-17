@@ -132,14 +132,8 @@
 (defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
 
 ;; Untyped Transformations
-(defn ->agg-col [arg]
-  (cond
-    (map? arg)  (for [[k v] arg] (.as (->column v) (name k)))
-    (coll? arg) (map ->column arg)
-    :else       [(->column arg)]))
-
 (defn agg [dataframe & args]
-  (let [[head & tail] (mapcat ->agg-col args)]
+  (let [[head & tail] (->col-array args)]
     (.agg dataframe head (into-array Column tail))))
 
 (defn agg-all [dataframe agg-fn]
