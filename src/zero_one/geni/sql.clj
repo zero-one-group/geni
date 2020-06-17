@@ -36,7 +36,7 @@
   ([expr] (functions/approx_count_distinct (->column expr)))
   ([expr rsd] (functions/approx_count_distinct (->column expr) rsd)))
 (defn count-distinct [& exprs]
-  (let [[head & tail] (map ->column exprs)]
+  (let [[head & tail] (->col-array exprs)]
     (functions/countDistinct head (into-array Column tail))))
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
@@ -298,8 +298,14 @@
 (defn cast [expr new-type] (.cast (->column expr) new-type))
 
 ;; Booleans
-(defn && [& exprs] (reduce #(.and (->column %1) (->column %2)) (lit true) exprs))
-(defn || [& exprs] (reduce #(.or (->column %1) (->column %2)) (lit false) exprs))
+(defn && [& exprs]
+  (reduce #(.and (->column %1) (->column %2))
+          (lit true)
+          (->col-array exprs)))
+(defn || [& exprs]
+  (reduce #(.or (->column %1) (->column %2))
+          (lit false)
+          (->col-array exprs)))
 (defn- compare-columns [compare-fn expr-0 & exprs]
   (let [exprs (-> exprs (conj expr-0))]
     (reduce
@@ -319,10 +325,20 @@
 (defn least [& exprs] (functions/least (->col-array exprs)))
 
 ;; Arithmetic
-(defn + [& exprs] (reduce #(.plus (->column %1) (->column %2)) (lit 0) exprs))
-(defn - [& exprs] (reduce #(.minus (->column %1) (->column %2)) exprs))
-(defn * [& exprs] (reduce #(.multiply (->column %1) (->column %2)) (lit 1) exprs))
-(defn / [& exprs] (reduce #(.divide (->column %1) (->column %2)) exprs))
+(defn + [& exprs]
+  (reduce #(.plus (->column %1) (->column %2))
+          (lit 0)
+          (->col-array exprs)))
+(defn - [& exprs]
+  (reduce #(.minus (->column %1) (->column %2))
+          (->col-array exprs)))
+(defn * [& exprs]
+  (reduce #(.multiply (->column %1) (->column %2))
+          (lit 1)
+          (->col-array exprs)))
+(defn / [& exprs]
+  (reduce #(.divide (->column %1) (->column %2))
+          (->col-array exprs)))
 (defn mod [left-expr right-expr] (.mod (->column left-expr) (->column right-expr)))
 
 ;; Missing Data
