@@ -1,4 +1,4 @@
-(ns zero-one.geni.experimental.google-sheets
+(ns zero-one.geni.optional.google-sheets
   (:require
     [clojure.java.io]
     [zero-one.geni.dataset :as ds])

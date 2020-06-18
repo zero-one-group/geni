@@ -4,6 +4,7 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.ml-classification]
     [zero-one.geni.ml-clustering]
     [zero-one.geni.ml-evaluation]
@@ -11,9 +12,7 @@
     [zero-one.geni.ml-fpm]
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
-    [zero-one.geni.ml-tuning]
-    [zero-one.geni.ml-xgb]
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.ml-tuning])
   (:import
     (org.apache.spark.ml Pipeline
                          PipelineStage)
@@ -126,11 +125,6 @@
    param-grid
    cross-validator
    train-validation-split])
-
-(import-vars
-  [zero-one.geni.ml-xgb
-   xgboost-classifier
-   xgboost-regressor])
 
 (defn corr [dataframe col-name]
   (Correlation/corr dataframe (name col-name)))

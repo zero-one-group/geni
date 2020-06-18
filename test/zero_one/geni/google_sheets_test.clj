@@ -2,7 +2,7 @@
   (:require
     [midje.sweet :refer [facts throws =>]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.experimental.google-sheets :as gs]
+    [zero-one.geni.optional.google-sheets :as gs]
     [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (def google-props
