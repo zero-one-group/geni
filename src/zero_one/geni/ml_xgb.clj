@@ -1,8 +1,8 @@
 (ns zero-one.geni.ml-xgb)
 
-(def xgboost-classifier nil)
+(declare xgboost-classifier)
 
-(def xgboost-regressor nil)
+(declare xgboost-regressor)
 
 (defmacro include-xgboost-fns [throw?]
   (if (try
