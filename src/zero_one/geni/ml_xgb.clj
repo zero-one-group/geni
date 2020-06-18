@@ -1,17 +1,18 @@
 (ns zero-one.geni.ml-xgb)
 
-(declare xgboost-classifier)
-
-(declare xgboost-regressor)
+(declare xgboost-classifier
+         xgboost-regressor)
 
 (defmacro include-xgboost-fns [throw?]
   (if (try
         (when throw?
           (throw (ClassNotFoundException. "Intentional exception.")))
-        (require '[zero-one.geni.interop :as interop]
-                 '[zero-one.geni.utils :refer [coalesce]])
-        (import '(ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
-                                                XGBoostRegressor))
+        (require
+          '[zero-one.geni.interop :as interop]
+          '[zero-one.geni.utils :refer [coalesce]])
+        (import
+          '(ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
+                                          XGBoostRegressor))
         (catch ClassNotFoundException _ nil))
 
    '(do

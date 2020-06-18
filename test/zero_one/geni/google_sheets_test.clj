@@ -1,8 +1,8 @@
 (ns zero-one.geni.google-sheets-test
   (:require
-    [midje.sweet :refer [facts throws =>]]
+    [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.optional.google-sheets :as gs]
+    [zero-one.geni.google-sheets :as gs]
     [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (def google-props
@@ -60,3 +60,6 @@
     (g/count read-df) => 20
     (g/columns read-df) => [:SellerG :Date :Rooms :Price]
     delete-status => nil?))
+
+(fact "On dynamic import"
+  (gs/include-google-sheets-fns true) => :failed)
