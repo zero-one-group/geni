@@ -332,8 +332,8 @@
   => #(and (= (:eta %) 0.1)
            (= (:max-bin %) 543))
   (ml/xgboost-classifier {})
-  => #(instance? XGBoostClassifier %))
-  ;(include-xgboost-fns #(throw (Exception. ""))) => true)
+  => #(instance? XGBoostClassifier %)
+  (include-xgboost-fns true) => :failed)
 
 (fact "On instantiation - FPM"
   (ml/params (ml/prefix-span {:max-pattern-length 321}))
