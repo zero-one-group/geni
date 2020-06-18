@@ -12,12 +12,18 @@
     [zero-one.geni.ml-fpm]
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
-    [zero-one.geni.ml-tuning])
+    [zero-one.geni.ml-tuning]
+    [zero-one.geni.ml-xgb])
   (:import
     (org.apache.spark.ml Pipeline
                          PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
                               Correlation)))
+
+(import-vars
+  [zero-one.geni.ml-xgb
+   xgboost-classifier
+   xgboost-regressor])
 
 (import-vars
   [zero-one.geni.ml-clustering
