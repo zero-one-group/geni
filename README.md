@@ -1,6 +1,4 @@
-<p align="center">
-    <img src="logo/geni.png" width="350px">
-</p>
+<img src="logo/geni.png" width="400px">
 
 [![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
