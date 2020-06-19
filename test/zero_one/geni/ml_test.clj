@@ -5,7 +5,6 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.optional.xgboost :as xgb]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           melbourne-df
                                           k-means-df
@@ -323,15 +322,15 @@
 
 
 (fact "On instantiation - XGB"
-  (ml/params (xgb/xgboost-regressor {:num-round 890 :max-bin 222}))
+  (ml/params (ml/xgboost-regressor {:num-round 890 :max-bin 222}))
   => #(and (= (:num-round %) 890)
            (= (:max-bin %) 222))
-  (xgb/xgboost-regressor {})
+  (ml/xgboost-regressor {})
   => #(instance? XGBoostRegressor %)
-  (ml/params (xgb/xgboost-classifier {:eta 0.1 :max-bin 543}))
+  (ml/params (ml/xgboost-classifier {:eta 0.1 :max-bin 543}))
   => #(and (= (:eta %) 0.1)
            (= (:max-bin %) 543))
-  (xgb/xgboost-classifier {})
+  (ml/xgboost-classifier {})
   => #(instance? XGBoostClassifier %))
 
 (fact "On instantiation - FPM"

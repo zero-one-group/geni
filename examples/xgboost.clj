@@ -2,7 +2,6 @@
   (:require
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.optional.xgboost :as xgb]
     [zero-one.geni.test-resources :refer [spark]]))
 
 ;; XGBoost Classifier
@@ -11,7 +10,7 @@
 (def xgb-model
   (ml/fit
     training
-    (xgb/xgboost-classifier {:max-depth 2 :num-round 2})))
+    (ml/xgboost-classifier {:max-depth 2 :num-round 2})))
 
 (-> training
     (ml/transform xgb-model)
@@ -25,7 +24,7 @@
 (def xgb-model
   (ml/fit
     training
-    (xgb/xgboost-regressor {:max-depth 2 :num-round 2})))
+    (ml/xgboost-regressor {:max-depth 2 :num-round 2})))
 
 (-> training
     (ml/transform xgb-model)

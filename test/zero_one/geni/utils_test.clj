@@ -3,9 +3,20 @@
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [ensure-coll]])
+    [zero-one.geni.utils :refer [ensure-coll with-dynamic-import]])
   (:import
     (scala.collection Seq)))
+
+(fact "dynamic import fails gracefully"
+  (with-dynamic-import
+    (import '(org.apache.spark.sql functions))
+    (def abc-def-ghi 123)) => #(and (= % :succeeded) (= abc-def-ghi 123))
+  (with-dynamic-import
+    (import '(some.non-existent.namespace non-existent-class))
+    (def jkl-mno-pqr 123)) => #(and (= % :failed) (nil? (resolve 'jkl-mno-pqr)))
+  (with-dynamic-import
+    (+ 1 1)
+    (def stu-vwx-yz 123)) => #(and (= % :failed) (nil? (resolve 'stu-vwx-yz))))
 
 (facts "On ensure-coll"
   (fact "should not change collections"

@@ -42,6 +42,7 @@
     [zero-one.geni.column]
     [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
+    [zero-one.geni.google-sheets]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.sql]
     [zero-one.geni.window])
@@ -349,6 +350,15 @@
    write-libsvm!
    write-parquet!
    write-text!])
+
+(import-vars
+  [zero-one.geni.google-sheets
+   sheet-names!
+   sheet-values!
+   read-sheets!
+   write-sheets!
+   create-sheets!
+   delete-sheets!])
 
 (defmulti as (fn [head & _] (class head)))
 (defmethod as :default [expr new-name] (.as (->column expr) (name new-name)))

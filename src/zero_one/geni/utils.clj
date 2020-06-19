@@ -7,3 +7,12 @@
 
 (defn vector-of-numbers? [value]
   (and (vector? value) (every? number? value)))
+
+(defmacro with-dynamic-import [imports & body]
+  (if (try
+        (assert (= 'import (first imports)) "The first form must be an import.")
+        (eval imports)
+        (catch ClassNotFoundException _ nil)
+        (catch AssertionError _ nil))
+    `(do ~@body :succeeded)
+    :failed))
