@@ -15,16 +15,11 @@ WARNING! This library is still unstable. Some information here may be outdated. 
 
 Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations, instead of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the section on [Geni semantics](docs/semantics.md) for more details.
 
-## Motivation: Geni vs. Interop
+## Why?
 
-Many data tasks such as exploratory data analysis require frequent feedback from the data. For such tasks, the process can typically be described by the following loop:
+Many data tasks such as exploratory data analysis require frequent feedback from the data. For such tasks, the process can typically be described by the following loop i) question about the data, ii) transformation of the data, iii) interpretation of the results of the transformation and iv) new questions about the data.
 
-1. Question about the data.
-2. Transformation to the data.
-3. Results of the transformation.
-4. New questions about the data.
-
-Geni optimises for the speed of the feedback loop. It aims to provide a dynamic and terse interface that complements the Clojure REPL. 
+Geni optimises for the speed of this feedback loop by providing a dynamic and terse interface that complements working in the Clojure REPL.
 
 For many Geni functions, we do not need to make sure that the types line up; only that the args can be converted into Spark Columns. Consider the following example:
 
@@ -55,7 +50,7 @@ In contrast, we would have to write the following instead with pure interop:
     .show)
 ```
 
-At times, it can be tricky to figure out the interop:
+At times, it can be tricky to figure out the interop , which often times requires careful inspection of Java reflection. This problem is compounded in the case of Scala interop:
 
 ```clojure
 (import '(scala.collection JavaConversions))
@@ -65,7 +60,7 @@ At times, it can be tricky to figure out the interop:
      ;; returns a seq of seqs - must zipmap with col names to get maps
 ```
 
-Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps.
+Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps.
 
 Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
 
@@ -79,7 +74,9 @@ Finally, Geni supports various Clojure (or Lisp) idioms by making some functions
     show)
 ```
 
-## Examples
+Note that functions such as `remove` and `filter` accept the Spark Dataset in the first argument. This departure from Clojure's idioms is to emulate Scala's method chaining with the threading macro `->`.
+
+## Basic Examples
 
 Spark SQL API for grouping and aggregating:
 
@@ -103,7 +100,7 @@ Spark SQL API for grouping and aggregating:
 ; +--------------+---+
 ```
 
-MLlib's pipeline:
+Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
 
 ```clojure
 (require '[zero-one.geni.core :as g])
@@ -169,7 +166,7 @@ Step into the directory, and run the command `lein run`!
 
 # Installation
 
-Note that `geni` wraps Apache Spark 2.4.5, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
+Note that `geni` wraps Apache Spark 3.0.0, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
 
 Add the following to your `project.clj` dependency:
 
@@ -196,10 +193,14 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.hadoop/hadoop-client "2.7.3"]]}
 ```
 
+When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier` and `g/read-sheets`) will be left unbound.
+
 # Further Resources
 
-* [Examples](examples/README.md)
+* [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
+* [Optional XGBoost Support](docs/xgboost.md)
+* [Optional Google-Sheets Integration](docs/google_sheets.md)
 
 # License
 

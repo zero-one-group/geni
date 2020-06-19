@@ -26,7 +26,19 @@ However, string literals do require `lit` wrapping:
 (-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
 ```
 
-### Dataset Creation: ArrayType vs. VectorType
+### Column-Array Coercion
+
+<!--TODO-->
+
+### Keywords for Columns
+
+It may be useful to think of a Spark Dataset as a seq of maps, so that keywords can be idiomatically used to refer to columns (i.e. keys). For that reason, the predicate column above may be more idiomatically written as `(g/=== :SellerG (g/lit "Nelson"))`.
+
+### Boolean Casts
+
+<!--TODO-->
+
+### ArrayType vs. VectorType in Dataset Creation
 
 Inspired by Pandas' flexible DataFrame creation, Geni provides three main ways to create Spark Datasets:
 
@@ -65,4 +77,3 @@ It it sometimes convenient to be able to create a Spark vector column, which is 
 ;  |-- features: array (nullable = true)
 ;  |    |-- element: double (containsNull = true)
 ```
-
