@@ -1,3 +1,4 @@
 {:skip-comments true
- :lint-as {zero-one.geni.utils/export-symbols clojure.core/declare}}
-
+ :linters
+  {:unresolved-symbol
+    {:exclude [(zero-one.geni.utils/with-dynamic-import)]}}}

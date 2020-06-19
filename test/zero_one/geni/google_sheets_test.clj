@@ -1,6 +1,6 @@
 (ns zero-one.geni.google-sheets-test
   (:require
-    [midje.sweet :refer [facts fact throws =>]]
+    [midje.sweet :refer [facts throws =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.google-sheets :as gs]
     [zero-one.geni.test-resources :refer [spark df-20]]))
