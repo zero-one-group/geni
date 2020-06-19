@@ -67,7 +67,6 @@
    normaliser
    normalizer
    one-hot-encoder
-   one-hot-encoder-estimator
    pca
    polynomial-expansion
    quantile-discretiser
