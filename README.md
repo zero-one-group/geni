@@ -2,20 +2,31 @@
     <img src="logo/geni.png" width="250px">
 </p>
 
-[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
-[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
-[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
-[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
+<p align="center">
+    [![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
+    [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
+    [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
+    [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
+</p>
 
-Geni (*/gɜni/* or "gurney" without the r) is a Clojure library that wraps Apache Spark. The name comes from the Javanese word for fire.
+Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) library that wraps [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
 ## Overview
 
-Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark Dataset and Column operations, instead of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the section on [Geni semantics](docs/semantics.md) for more details.
+Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations, instead of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the section on [Geni semantics](docs/semantics.md) for more details.
 
 ## Motivation: Geni vs. Interop
+
+Many data tasks such as exploratory data analysis require frequent feedback from the data. For such tasks, the process can typically be described by the following loop:
+
+1. Question about the data.
+2. Transformation to the data.
+3. Results of the transformation.
+4. New questions about the data.
+
+Geni optimises for the speed of the feedback loop. It aims to provide a dynamic and terse interface that complements the Clojure REPL. 
 
 For many Geni functions, we do not need to make sure that the types line up; only that the args can be converted into Spark Columns. Consider the following example:
 
@@ -45,15 +56,6 @@ In contrast, we would have to write the following instead with pure interop:
                           (.as (functions/max "Price") "max")]))
     .show)
 ```
-
-Many data tasks such as exploratory data analysis require frequent feedback from the data. For such tasks, the process can typically be described by the following loop:
-
-1. Question about the data.
-2. Transformation to the data.
-3. Results of the transformation.
-4. New question about the data.
-
-The combination of Clojure's REPL and being dynamic and terse offers a distinct advantage in such settings by accelerating the feedback loop.
 
 At times, it can be tricky to figure out the interop:
 
