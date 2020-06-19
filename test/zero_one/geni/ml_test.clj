@@ -5,7 +5,6 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.ml-xgb :refer [include-xgboost-fns]]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           melbourne-df
                                           k-means-df
@@ -332,8 +331,7 @@
   => #(and (= (:eta %) 0.1)
            (= (:max-bin %) 543))
   (ml/xgboost-classifier {})
-  => #(instance? XGBoostClassifier %)
-  (include-xgboost-fns true) => :failed)
+  => #(instance? XGBoostClassifier %))
 
 (fact "On instantiation - FPM"
   (ml/params (ml/prefix-span {:max-pattern-length 321}))

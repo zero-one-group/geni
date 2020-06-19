@@ -60,6 +60,3 @@
     (g/count read-df) => 20
     (g/columns read-df) => [:SellerG :Date :Rooms :Price]
     delete-status => nil?))
-
-(fact "On dynamic import"
-  (gs/include-google-sheets-fns true) => :failed)
