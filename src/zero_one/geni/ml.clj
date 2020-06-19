@@ -67,7 +67,6 @@
    normaliser
    normalizer
    one-hot-encoder
-   one-hot-encoder-estimator
    pca
    polynomial-expansion
    quantile-discretiser
@@ -185,7 +184,6 @@
 (defn cluster-centers [model] (->> model .clusterCenters seq (map interop/->clojure)))
 (defn coefficient-matrix [model] (interop/matrix->seqs (.coefficientMatrix model)))
 (defn coefficients [model] (interop/vector->seq (.coefficients model)))
-(defn compute-cost [dataset model] (.computeCost model dataset))
 (defn depth [model] (.depth model))
 (def describe-topics (memfn describeTopics))
 (defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
