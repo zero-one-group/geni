@@ -1,36 +1,37 @@
-<img src="logo/geni.png" width="250px">
+<p align="center">
+    <img src="logo/geni.png" width="250px">
+</p>
 
 [![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
+[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
 
-WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet!
+Geni (*/gɜni/* or "gurney" without the r) is a Clojure library that wraps Apache Spark. The name comes from the Javanese word for fire.
 
-See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
+WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
-# Introduction
+## Overview
 
-`geni` (*/gɜni/* or "gurney" without the r) is a Clojure library that wraps Apache Spark. The name comes from the Javanese word for fire.
+Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark Dataset and Column operations, instead of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the section on [Geni semantics](docs/semantics.md) for more details.
 
-# Why?
+## Motivation: Geni vs. Interop
 
-Clojure is particularly well-suited for data wrangling due to its particular focus on fast feedback - most notably through its REPL. Being hosted on the JVM, Clojure interops well with Java (and, by extension, Scala) libaries. However, Spark's pleasant API in Scala becomes quite unidiomatic in Clojure. Geni aims to provide an ergonomic Spark interface for the Clojure REPL.
-
-Geni allows us to write queries without making sure that the types line up:
+For many Geni functions, we do not need to make sure that the types line up; only that the args can be converted into Spark Columns. Consider the following example:
 
 ```clojure
-(-> dataframe                    ;; Idiomatic threading macro as the main interface
-    (group-by (lower "SellerG")  ;; Dynamism with mixed Column, string and keyword types
-              "Suburb"
+(-> dataframe
+    (group-by (lower "SellerG")  ;; Mixed Column, string and keyword types.
+              "Suburb"           ;; No need for `into-array`.
               :Regionname)
-    (agg {:mean (mean "Price")   ;; No need for into-array to handle interop
-          :std  (stddev "Price")
-          :min  (min "Price")
-          :max  (max "Price")})
+    (agg {:mean (mean :Price)    ;; Map keys are interpreted as aliases.
+          :std  (stddev :Price)
+          :min  (min :Price)
+          :max  (max :Price)})
     show)
 ```
 
-In contrast, you would have to write the following instead with pure interop:
+In contrast, we would have to write the following instead with pure interop:
 
 ```clojure
 (-> dataframe
@@ -45,17 +46,26 @@ In contrast, you would have to write the following instead with pure interop:
     .show)
 ```
 
-Instead of having to deal with interop:
+Many data tasks such as exploratory data analysis require frequent feedback from the data. For such tasks, the process can typically be described by the following loop:
+
+1. Question about the data.
+2. Transformation to the data.
+3. Results of the transformation.
+4. New question about the data.
+
+The combination of Clojure's REPL and being dynamic and terse offers a distinct advantage in such settings by accelerating the feedback loop.
+
+At times, it can be tricky to figure out the interop:
 
 ```clojure
+(import '(scala.collection JavaConversions))
+
 (->> (.collect dataframe) ;; .collect returns an array of Spark rows
-     (map
-       #(JavaConversions/seqAsJavaList
-       (.. % toSeq))))    ;; returns a seq of seqs
-                          ;; must zip into map to recover row-like maps
+     (map #(JavaConversions/seqAsJavaList (.. % toSeq))))
+     ;; returns a seq of seqs - must zipmap with col names to get maps
 ```
 
-Geni's `(collect dataframe)` returns a seq of maps.
+Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps.
 
 Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
 
@@ -69,7 +79,7 @@ Finally, Geni supports various Clojure (or Lisp) idioms by making some functions
     show)
 ```
 
-# Examples
+## Examples
 
 Spark SQL API for grouping and aggregating:
 
@@ -147,74 +157,6 @@ More detailed examples can be found [here](examples/README.md).
 
 There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/), which can be found [here](examples/nvidia_pipeline.clj).
 
-# Geni Semantics
-
-## Column Coercion
-
-Many SQL functions and Column methods are overloaded to take either a keyword, a string or a Column instance as argument. For such cases, Geni implements Column coercion where
-
-1. Column instances are left as they are,
-2. strings and keywords are interpreted as column names and;
-3. other values are interpreted as a literal Column.
-
-Because of this, basic arithmetic operations do not require `lit` wrapping:
-
-```clojure
-; The following two expressions are equivalent
-(g/- (g// (g/sin Math/PI) (g/cos Math/PI)) (g/tan Math/PI))
-(g/- (g// (g/sin (g/lit Math/PI)) (g/cos (g/lit Math/PI))) (g/tan (g/lit Math/PI)))
-```
-
-However, string literals do require `lit` wrapping:
-
-```clojure
-; The following fails, because "Nelson" is interpreted as a Column
-(-> dataframe (g/filter (g/=== "SellerG" "Nelson")))
-
-; The following works, as it checks the column "SellerG" against "Nelson" as a literal
-(-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
-```
-
-## Dataset Creation: ArrayType vs. VectorType
-
-Inspired by Pandas' flexible DataFrame creation, Geni provides three main ways to create Spark Datasets:
-
-```clojure
-; The following three expressions are equivalent
-(g/table->dataset spark
-                  [[1 "x"]
-                   [2 "y"]
-                   [3 "z"]]
-                  [:a :b])
-(g/map->dataset spark {:a [1 2 3] :b ["x" "y" "z"]})
-(g/records->dataset spark [{:a 1 :b "x"}
-                           {:a 2 :b "y"}
-                           {:a 3 :b "z"}])
-```
-
-It it sometimes convenient to be able to create a Spark vector column, which is different to SQL array columns. For that reason, Geni provides an easy way to create vector columns, but it comes with a potential gotcha. A vector of numbers is interpreted as a Spark vector, but any list is always interpreted as a SQL array:
-
-```clojure
-(g/print-schema
-  (g/table->dataset spark
-                    [[0.0 [0.5 10.0]]
-                     [1.0 [1.5 30.0]]]
-                    [:label :features]))
-; root
-;  |-- label: double (nullable = true)
-;  |-- features: vector (nullable = true)
-
-(g/print-schema
-  (g/table->dataset spark
-                    [[0.0 '(0.5 10.0)]
-                     [1.0 '(1.5 30.0)]]
-                    [:label :features]))
-; root
-;  |-- label: double (nullable = true)
-;  |-- features: array (nullable = true)
-;  |    |-- element: double (containsNull = true)
-```
-
 # Quick Start
 
 Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
@@ -254,12 +196,10 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.hadoop/hadoop-client "2.7.3"]]}
 ```
 
-# Future Work
+# Further Resources
 
-Features:
-- Data-oriented queries and pipeline stages.
-- Setup on GCP's Dataproc + guide.
-- Clojure docs.
+* [Examples](examples/README.md)
+* [Geni Semantics](docs/semantics.md)
 
 # License
 

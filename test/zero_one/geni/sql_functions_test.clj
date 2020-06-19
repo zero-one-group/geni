@@ -383,19 +383,19 @@
         (g/log (g/exp 1)))
       g/collect-vals) => [[true 1.0]])
 
-(facts "On group-by + agg functions" :slow
+(facts "On group-by + agg functions" ;:slow
   (let [summary (-> df-20
                     (g/agg
                       (g/count (g/->column "BuildingArea"))
                       (list
                         (g/null-rate "BuildingArea")
                         (g/null-count "BuildingArea"))
-                      (g/min "Price")
-                      (g/sum "Price")
-                      (g/mean "Price")
-                      (g/stddev "Price")
-                      (g/variance "Price")
-                      (g/max "Price"))
+                      (g/min :Price)
+                      (g/sum :Price)
+                      (g/mean :Price)
+                      (g/stddev :Price)
+                      (g/variance :Price)
+                      (g/max :Price))
                     g/collect
                     first)]
     (fact "common SQL functions should work"
