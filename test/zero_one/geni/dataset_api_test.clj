@@ -283,7 +283,7 @@
       (-> with-rep g/distinct g/count) => #(< % 40))))
 
 (facts "On order-by" :slow
-  (let [df (-> df-20 (g/select (g/as (g/->date-col "Date" "dd/MM/yyyy") "Date")))]
+  (let [df (-> df-20 (g/select (g/as (g/->date-col "Date" "d/MM/yyyy") "Date")))]
     (fact "should correctly order dates"
       (let [records (-> df (g/order-by (g/desc "Date")) g/collect)
             dates   (map #(str (% "Date")) records)]

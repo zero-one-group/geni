@@ -48,7 +48,7 @@
                                  MinMaxScaler
                                  NGram
                                  Normalizer
-                                 OneHotEncoderEstimator
+                                 OneHotEncoder
                                  PCA
                                  PolynomialExpansion
                                  QuantileDiscretizer
@@ -173,7 +173,7 @@
         predictions (ml/transform k-means-df model)
         evaluator   (ml/clustering-evaluator {})
         silhoutte   (ml/evaluate predictions evaluator)]
-    silhoutte => #(<= 0.7 % 1.0)
+    silhoutte => #(<= 0.6 % 1.0)
     (ml/cluster-centers model) => #(and (every? double? (flatten %))
                                         (= (count %) 3))
     (let [temp-file (.toString (create-temp-file! ".xml"))]
@@ -293,13 +293,12 @@
    (fact "Attributes are callable"
      (ml/scale model) => #(pos? %))))
 
-(facts "On K-Means clustering" :slow
+(facts "On K-Means clustering" ;:slow
   (let [estimator   (ml/k-means {})
         model       (ml/fit k-means-df estimator)]
    (fact "Attributes are callable"
      (ml/cluster-centers model) => #(and (every? seq? %)
-                                         (every? double? (flatten %)))
-     (ml/compute-cost k-means-df model) => pos?)))
+                                         (every? double? (flatten %))))))
 
 (facts "On LDA clustering" :slow
   (let [estimator   (ml/lda {})
@@ -531,7 +530,7 @@
   (ml/params (ml/one-hot-encoder {:input-cols ["categoryIndex1" "categoryIndex2"]}))
   => #(= (:input-cols %) ["categoryIndex1" "categoryIndex2"])
   (ml/one-hot-encoder {})
-  => #(instance? OneHotEncoderEstimator %)
+  => #(instance? OneHotEncoder %)
 
   (ml/params (ml/vector-indexer {:max-categories 10}))
   => #(= (:max-categories %) 10)

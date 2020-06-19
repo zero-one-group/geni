@@ -21,7 +21,7 @@
                                  MinMaxScaler
                                  NGram
                                  Normalizer
-                                 OneHotEncoderEstimator
+                                 OneHotEncoder
                                  PCA
                                  PolynomialExpansion
                                  QuantileDiscretizer
@@ -103,8 +103,7 @@
 (defn one-hot-encoder [params]
   (let [defaults {:drop-last true :handle-invalid "error"}
         props    (merge defaults params)]
-    (interop/instantiate OneHotEncoderEstimator props)))
-(def one-hot-encoder-estimator one-hot-encoder)
+    (interop/instantiate OneHotEncoder props)))
 
 (defn vector-indexer [params]
   (let [defaults {:max-categories 20 :handle-invalid "error"}

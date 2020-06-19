@@ -67,7 +67,7 @@
       (g/collect-col "BuildingArea")
       last) => nil?)
 
-(facts "On string functions" ;:slow
+(facts "On string functions" :slow
   (fact "correct ascii"
     (-> df-1
         (g/select
@@ -430,7 +430,7 @@
           (g/agg
             (g/count-distinct {:seller :SellerG
                                :suburb :Suburb}))
-          g/column-names) => ["count(DISTINCT SellerG AS `seller`, Suburb AS `suburb`)"])))
+          g/column-names) => ["count(SellerG AS `seller`, Suburb AS `suburb`)"])))
 
 (facts "On window functions" :slow
   (let [window  (g/window {:partition-by "SellerG" :order-by "Price"})]
@@ -480,7 +480,7 @@
     (map :row-num records) => [1 2 3 4])
   (fact "count rows last week"
     (-> df-20
-        (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
+        (g/select (-> (g/unix-timestamp "Date" "d/MM/yyyy") (g/as "date")))
         (g/select
           (-> (g/count "*")
               (g/over (g/window {:partition-by "date"
@@ -491,7 +491,7 @@
         set) => #{1 2 3})
   (fact "count rows in the last two rows"
     (-> df-20
-        (g/select (-> (g/unix-timestamp "Date" "dd/MM/yyyy") (g/as "date")))
+        (g/select (-> (g/unix-timestamp "Date" "d/MM/yyyy") (g/as "date")))
         (g/select
           (-> (g/count "*")
               (g/over (g/window {:partition-by "date"
@@ -600,4 +600,3 @@
     (-> df-20 (g/select (g/md5 "SellerG")) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha1 "SellerG")) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha2 "SellerG" 256)) g/distinct g/count) => n-sellers))
-
