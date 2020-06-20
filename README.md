@@ -6,16 +6,14 @@ Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) 
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
-<p align="center">
-    <span>[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)</span>
-    <span>[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)</b>
-    <span>[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)</span>
-    <span>[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)</span>
-</p>
+[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
+[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
+[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
+[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
 
 ## Overview
 
-Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations, instead of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the section on [Geni semantics](docs/semantics.md) for more details.
+Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni relies on Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations in place of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the docs section on [Geni semantics](docs/semantics.md) for more details.
 
 ## Why?
 
@@ -37,7 +35,7 @@ For many Geni functions, we do not need to make sure that the types line up; onl
     show)
 ```
 
-In contrast, we would have to write the following instead with pure interop:
+In contrast, we would have to write the following with pure interop:
 
 ```clojure
 (-> dataframe
@@ -62,7 +60,26 @@ At times, it can be tricky to figure out the interop , which often times require
      ;; returns a seq of seqs - must zipmap with col names to get maps
 ```
 
-Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps.
+Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps. Creating and collecting arbitrarily nested maps become trivial:
+
+```clojure
+(-> dataframe
+    (select
+      {:property
+       (struct
+         {:market   (struct :SellerG :Price :Date)
+          :house    (struct :Landsize :Rooms)
+          :location (struct :Address {:coord (struct :Lattitude :Longtitude)})})})
+    (limit 1)
+    collect)
+=> ({:property
+     {:market {:SellerG "Biggin", :Price 1480000.0, :Date "3/12/2016"},
+      :house {:Landsize 202.0, :Rooms 2},
+      :location
+      {:Suburb "Abbotsford",
+       :Address "85 Turner St",
+       :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
+```
 
 Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
 
@@ -76,7 +93,7 @@ Finally, Geni supports various Clojure (or Lisp) idioms by making some functions
     show)
 ```
 
-Note that functions such as `remove` and `filter` accept the Spark Dataset in the first argument. This departure from Clojure's idioms is to emulate Scala's method chaining with the threading macro `->`.
+Note that functions such as `remove` and `filter` accept the Spark Dataset in the first argument. This unfortunate departure from Clojure's idioms is necessary to emulate Scala's method chaining with the threading macro `->`.
 
 ## Basic Examples
 
@@ -179,11 +196,11 @@ You would also need to add Spark as provided dependencies. For instance, have th
 ```clojure
 :provided
 {:dependencies [;; Spark
-                [org.apache.spark/spark-core_2.12 "2.4.6"]
-                [org.apache.spark/spark-hive_2.12 "2.4.6"]
-                [org.apache.spark/spark-mllib_2.12 "2.4.6"]
-                [org.apache.spark/spark-sql_2.12 "2.4.6"]
-                [org.apache.spark/spark-streaming_2.12 "2.4.6"]
+                [org.apache.spark/spark-core_2.12 "3.0.0"]
+                [org.apache.spark/spark-hive_2.12 "3.0.0"]
+                [org.apache.spark/spark-mllib_2.12 "3.0.0"]
+                [org.apache.spark/spark-sql_2.12 "3.0.0"]
+                [org.apache.spark/spark-streaming_2.12 "3.0.0"]
                 ;; Optional: Spark XGBoost
                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]

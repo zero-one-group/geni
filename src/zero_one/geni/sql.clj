@@ -114,11 +114,11 @@
   (functions/array_sort (->column expr)))
 (defn array-union [left right]
   (functions/array_union (->column left) (->column right)))
-(defn array [exprs]
+(defn array [& exprs]
   (functions/array (->col-array exprs)))
 (defn arrays-overlap [left right]
   (functions/arrays_overlap (->column left) (->column right)))
-(defn arrays-zip [exprs]
+(defn arrays-zip [& exprs]
   (functions/arrays_zip (->col-array exprs)))
 (defn collect-list [expr] (functions/collect_list expr))
 (defn collect-set [expr] (functions/collect_set expr))

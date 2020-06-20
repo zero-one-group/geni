@@ -428,8 +428,9 @@
 (comment
 
   (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
-  (-> melbourne-df count)
-  (-> melbourne-df print-schema)
+  (def dataframe melbourne-df)
+  (-> dataframe count)
+  (-> dataframe print-schema)
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
