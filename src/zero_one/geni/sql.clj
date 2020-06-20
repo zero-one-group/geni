@@ -114,11 +114,11 @@
   (functions/array_sort (->column expr)))
 (defn array-union [left right]
   (functions/array_union (->column left) (->column right)))
-(defn array [exprs]
+(defn array [& exprs]
   (functions/array (->col-array exprs)))
 (defn arrays-overlap [left right]
   (functions/arrays_overlap (->column left) (->column right)))
-(defn arrays-zip [exprs]
+(defn arrays-zip [& exprs]
   (functions/arrays_zip (->col-array exprs)))
 (defn collect-list [expr] (functions/collect_list expr))
 (defn collect-set [expr] (functions/collect_set expr))
@@ -199,15 +199,15 @@
   (functions/covar_samp (->column l-expr) (->column r-expr)))
 (def covar-samp covar)
 (defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
-(defn kurtosis [expr] (functions/kurtosis expr))
+(defn kurtosis [expr] (functions/kurtosis (->column expr)))
 (defn lit [expr] (functions/lit expr))
-(defn skewness [expr] (functions/skewness expr))
-(defn stddev [expr] (functions/stddev expr))
+(defn skewness [expr] (functions/skewness (->column expr)))
+(defn stddev [expr] (functions/stddev (->column expr)))
 (def stddev-samp stddev)
-(defn stddev-pop [expr] (functions/stddev_pop expr))
+(defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
 (defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
 (defn var-pop [expr] (functions/var_pop (->column expr)))
-(defn variance [expr] (functions/variance expr))
+(defn variance [expr] (functions/variance (->column expr)))
 (def var-samp variance)
 
 ;;;; String Functions
@@ -345,9 +345,9 @@
 (defn nan? [expr] (.isNaN (->column expr)))
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
-  (-> expr null? (cast "int") functions/mean (.as (str "null_rate(" expr ")"))))
+  (-> expr ->column null? (cast "int") functions/mean (.as (str "null_rate(" expr ")"))))
 (defn null-count [expr]
-  (-> expr null? (cast "int") functions/sum (.as (str "null_count(" expr ")"))))
+  (-> expr ->column null? (cast "int") functions/sum (.as (str "null_count(" expr ")"))))
 
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))

@@ -366,28 +366,28 @@
 (def alias as)
 
 (defmulti count class)
-(defmethod count :default [expr] (functions/count expr))
+(defmethod count :default [expr] (functions/count (->column expr)))
 (defmethod count Dataset [dataset] (.count dataset))
 (defmethod count RelationalGroupedDataset [grouped] (.count grouped))
 
 (defmulti mean (fn [head & _] (class head)))
-(defmethod mean :default [expr & _] (functions/mean expr))
+(defmethod mean :default [expr & _] (functions/mean (->column expr)))
 (defmethod mean RelationalGroupedDataset [grouped & col-names]
   (.mean grouped (interop/->scala-seq (clojure.core/map name col-names))))
 (def avg mean)
 
 (defmulti max (fn [head & _] (class head)))
-(defmethod max :default [expr] (functions/max expr))
+(defmethod max :default [expr] (functions/max (->column expr)))
 (defmethod max RelationalGroupedDataset [grouped & col-names]
   (.max grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
 (defmulti min (fn [head & _] (class head)))
-(defmethod min :default [expr] (functions/min expr))
+(defmethod min :default [expr] (functions/min (->column expr)))
 (defmethod min RelationalGroupedDataset [grouped & col-names]
   (.min grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
 (defmulti sum (fn [head & _] (class head)))
-(defmethod sum :default [expr] (functions/sum expr))
+(defmethod sum :default [expr] (functions/sum (->column expr)))
 (defmethod sum RelationalGroupedDataset [grouped & col-names]
   (.sum grouped (interop/->scala-seq (clojure.core/map name col-names))))
 
@@ -428,8 +428,9 @@
 (comment
 
   (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
-  (-> melbourne-df count)
-  (-> melbourne-df print-schema)
+  (def dataframe melbourne-df)
+  (-> dataframe count)
+  (-> dataframe print-schema)
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (complement :slow))
