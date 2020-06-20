@@ -6,10 +6,12 @@ Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) 
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
-[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
-[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
-[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
-[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
+<p align="center">
+    <span>[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)</span>
+    <span>[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)</b>
+    <span>[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)</span>
+    <span>[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)</span>
+</p>
 
 ## Overview
 
@@ -154,7 +156,7 @@ More detailed examples can be found [here](examples/README.md).
 
 There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/), which can be found [here](examples/nvidia_pipeline.clj).
 
-# Quick Start
+## Quick Start
 
 Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
 
@@ -164,7 +166,7 @@ lein new geni <project-name>
 
 Step into the directory, and run the command `lein run`!
 
-# Installation
+## Installation
 
 Note that `geni` wraps Apache Spark 3.0.0, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
 
@@ -195,20 +197,20 @@ You would also need to add Spark as provided dependencies. For instance, have th
 
 When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier` and `g/read-sheets`) will be left unbound.
 
-# Further Resources
+## Further Resources
 
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Optional Google-Sheets Integration](docs/google_sheets.md)
 
-# License
+## License
 
 Copyright 2020 Zero One Group.
 
 geni is licensed under Apache License v2.0.
 
-# Mentions
+## Mentions
 
 Some code was taken from:
 
