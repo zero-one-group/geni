@@ -22,14 +22,14 @@
     [:id :text :label]))
 
 (def hashing-tf
-  (ml/hashing-tf {:input-col "words" :output-col "features"}))
+  (ml/hashing-tf {:input-col :words :output-col :features}))
 
 (def logistic-reg
   (ml/logistic-regression {:max-iter 10}))
 
 (def pipeline
   (ml/pipeline
-    (ml/tokeniser {:input-col "text" :output-col "words"})
+    (ml/tokeniser {:input-col :text :output-col :words})
     hashing-tf
     logistic-reg))
 
@@ -58,5 +58,5 @@
 
 (-> testing
     (ml/transform cv-model)
-    (g/select "id" "text" "probability" "prediction")
+    (g/select :id :text :probability :prediction)
     g/collect)

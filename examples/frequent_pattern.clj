@@ -15,7 +15,7 @@
 (def model
   (ml/fit
     dataset
-    (ml/fp-growth {:items-col      "items"
+    (ml/fp-growth {:items-col      :items
                    :min-confidence 0.6
                    :min-support    0.5})))
 

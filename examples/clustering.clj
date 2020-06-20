@@ -26,10 +26,10 @@
 (def model
   (ml/fit dataset (ml/lda {:k 10 :max-iter 10})))
 
-(println "log-likehood:" (.logLikelihood model dataset))
-(println "log-perplexity" (.logPerplexity model dataset))
+(println "log-likehood:" (ml/log-likelihood dataset model))
+(println "log-perplexity" (ml/log-perplexity dataset model))
 
 (-> dataset
     (ml/transform model)
     (g/limit 2)
-    (g/collect-col "topicDistribution"))
+    (g/collect-col :topicDistribution))

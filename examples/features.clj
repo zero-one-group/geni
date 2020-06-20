@@ -17,20 +17,20 @@
 
 (def pipeline
   (ml/pipeline
-    (ml/tokenizer {:input-col "sentence"
-                    :output-col "words"})
+    (ml/tokenizer {:input-col :sentence
+                    :output-col :words})
     (ml/hashing-tf {:num-features 20
-                    :input-col "words"
-                    :output-col "raw-features"})
-    (ml/idf {:input-col "raw-features"
-              :output-col "features"})))
+                    :input-col :words
+                    :output-col :raw-features})
+    (ml/idf {:input-col :raw-features
+              :output-col :features})))
 
 (def pipeline-model
   (ml/fit sentence-data pipeline))
 
 (-> sentence-data
     (ml/transform pipeline-model)
-    (g/collect-col "features"))
+    (g/collect-col :features))
 
 ;; PCA
 (def dataframe
@@ -42,18 +42,18 @@
     [:features]))
 
 (def pca
-  (ml/fit dataframe (ml/pca {:input-col "features"
-                             :output-col "pca-features"
+  (ml/fit dataframe (ml/pca {:input-col :features
+                             :output-col :pca-features
                              :k 3})))
 
 (-> dataframe
     (ml/transform pca)
-    (g/collect-col "pca-features"))
+    (g/collect-col :pca-features))
 
 ;; Standard Scaler
 (def scaler
-  (ml/standard-scaler {:input-col "features"
-                       :output-col "scaled-features"
+  (ml/standard-scaler {:input-col :features
+                       :output-col :scaled-features
                        :with-std true
                        :with-mean false}))
 
@@ -62,7 +62,7 @@
 (-> libsvm-df
     (ml/transform scaler-model)
     (g/limit 1)
-    (g/collect-col "scaled-features"))
+    (g/collect-col :scaled-features))
 
 ;; Vector Assembler
 (def dataset
@@ -72,10 +72,10 @@
     [:id :hour :mobile :user-features :clicked]))
 
 (def assembler
-  (ml/vector-assembler {:input-cols ["hour" "mobile" "user-features"]
-                        :output-col "features"}))
+  (ml/vector-assembler {:input-cols [:hour :mobile :user-features]
+                        :output-col :features}))
 
 (-> dataset
     (ml/transform assembler)
-    (g/select "features" "clicked")
+    (g/select :features :clicked)
     g/show)

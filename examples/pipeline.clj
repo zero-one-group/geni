@@ -16,11 +16,11 @@
 
 (def pipeline
   (ml/pipeline
-    (ml/tokenizer {:input-col "text"
-                   :output-col "words"})
+    (ml/tokenizer {:input-col :text
+                   :output-col :words})
     (ml/hashing-tf {:num-features 1000
-                    :input-col "words"
-                    :output-col "features"})
+                    :input-col :words
+                    :output-col :features})
     (ml/logistic-regression {:max-iter 10
                              :reg-param 0.001})))
 
@@ -37,5 +37,5 @@
 
 (-> test-set
     (ml/transform model)
-    (g/select "id" "text" "probability" "prediction")
+    (g/select :id :text :probability :prediction)
     g/show)

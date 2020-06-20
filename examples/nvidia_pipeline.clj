@@ -9,21 +9,21 @@
 ;; Load Data
 (def dataframe
   (-> (g/read-parquet! spark "test/resources/housing.parquet")
-      (g/with-column "rooms_per_house" (g// "total_rooms" "households"))
-      (g/with-column "population_per_house" (g// "population" "households"))
-      (g/with-column "bedrooms_per_house" (g// "total_bedrooms" "households"))
-      (g/drop "total_rooms" "households" "population" "total_bedrooms")
-      (g/with-column "median_income" (g/cast "median_income" "double"))
-      (g/with-column "median_house_value" (g/cast "median_house_value" "double"))
-      (g/with-column "housing_median_age" (g/cast "housing_median_age" "double"))
+      (g/with-column :rooms_per_house (g// :total_rooms :households))
+      (g/with-column :population_per_house (g// :population :households))
+      (g/with-column :bedrooms_per_house (g// :total_bedrooms :households))
+      (g/drop :total_rooms :households :population :total_bedrooms)
+      (g/with-column :median_income (g/double :median_income))
+      (g/with-column :median_house_value (g/double :median_house_value))
+      (g/with-column :housing_median_age (g/double :housing_median_age))
       g/cache))
 
 ;; Summary Statistics
 (-> dataframe
-    (g/describe "median_income"
-                "median_house_value"
-                "bedrooms_per_house"
-                "population_per_house")
+    (g/describe :median_income
+                :median_house_value
+                :bedrooms_per_house
+                :population_per_house)
     g/show)
 ; +-------+------------------+------------------+------------------+--------------------+
 ; |summary|median_income     |median_house_value|bedrooms_per_house|population_per_house|
@@ -36,7 +36,7 @@
 ; +-------+------------------+------------------+------------------+--------------------+
 
 (-> dataframe
-    (g/select (g/corr "median_house_value" "median_income"))
+    (g/select (g/corr :median_house_value :median_income))
     g/show)
 ; +---------------------------------------+
 ; |corr(median_house_value, median_income)|
@@ -50,22 +50,22 @@
 
 ;; Feature Extraction and Pipelining
 (def assembler
-  (ml/vector-assembler {:input-cols ["housing_median_age"
-                                     "median_income"
-                                     "bedrooms_per_house"
-                                     "population_per_house"]
-                        :output-col "raw-features"
+  (ml/vector-assembler {:input-cols [:housing_median_age
+                                     :median_income
+                                     :bedrooms_per_house
+                                     :population_per_house]
+                        :output-col :raw-features
                         :handle-invalid "skip"}))
 
 (def scaler
-  (ml/standard-scaler {:input-col "raw-features"
-                       :output-col "features"
+  (ml/standard-scaler {:input-col :raw-features
+                       :output-col :features
                        :with-mean true
                        :with-std true}))
 
 (def random-forest
-  (ml/random-forest-regressor {:label-col "median_house_value"
-                               :features-col "features"}))
+  (ml/random-forest-regressor {:label-col :median_house_value
+                               :features-col :features}))
 
 (def pipeline
   (ml/pipeline assembler scaler random-forest))
@@ -78,8 +78,8 @@
                     :num-trees (map int [5 20])}}))
 
 (def evaluator
-  (ml/regression-evaluator {:label-col "median_house_value"
-                            :prediction-col "prediction"
+  (ml/regression-evaluator {:label-col :median_house_value
+                            :prediction-col :prediction
                             :metric-name "rmse"}))
 
 (def cross-validator
@@ -107,10 +107,10 @@
 (def predictions
   (-> test-data
       (ml/transform pipeline-model)
-      (g/select "prediction" "median_house_value")
-      (g/with-column "error" (g/- "prediction" "median_house_value"))))
+      (g/select :prediction :median_house_value)
+      (g/with-column :error (g/- :prediction :median_house_value))))
 
-(-> predictions (g/select "prediction" "median_house_value" "error") g/show)
+(-> predictions (g/select :prediction :median_house_value :error) g/show)
 ; +------------------+------------------+------------------+
 ; |prediction        |median_house_value|error             |
 ; +------------------+------------------+------------------+
@@ -137,7 +137,7 @@
 ; +------------------+------------------+------------------+
 ; only showing top 20 rows
 
-(-> predictions (g/describe "prediction" "median_house_value" "error") g/show)
+(-> predictions (g/describe :prediction :median_house_value :error) g/show)
 ; +-------+-----------------+------------------+------------------+
 ; |summary|prediction       |median_house_value|error             |
 ; +-------+-----------------+------------------+------------------+
@@ -151,12 +151,12 @@
 (def mae
   (ml/evaluate
     predictions
-    (ml/regression-evaluator {:label-col "median_house_value" :metric-name "mae"})))
+    (ml/regression-evaluator {:label-col :median_house_value :metric-name "mae"})))
 
 (def rmse
   (ml/evaluate
     predictions
-    (ml/regression-evaluator {:label-col "median_house_value" :metric-name "rmse"})))
+    (ml/regression-evaluator {:label-col :median_house_value :metric-name "rmse"})))
 
 (println (format "MAE: %,.2f, RMSE: %,.2f" mae rmse))
 ; MAE: 48,558.07, RMSE: 64,288.17
