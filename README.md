@@ -171,16 +171,6 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
 
 More detailed examples can be found [here](examples/README.md).There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/), which can be found [here](examples/nvidia_pipeline.clj).
 
-Google Sheets integration:
-
-```clojure
-(let [google-props {:credentials    "{path-to-api-key}"
-                    :spreadsheet-id "{gsheet-spreadsheet-id}"
-                    :sheet-name     "{sheet-name}"}
-      options      {:header false}]
-  (gs/write-sheets! dataframe google-props options))
-```
-
 ## Quick Start
 
 Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
@@ -226,8 +216,8 @@ When the optional dependencies are not present, the vars to the corresponding fu
 
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
-* [Optional XGBoost Support](docs/xgboost.md)
 * [Optional Google-Sheets Integration](docs/google_sheets.md)
+* [Optional XGBoost Support](examples/xgboost.clj)
 
 ## License
 
