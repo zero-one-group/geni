@@ -52,6 +52,11 @@
                           SparkSession
                           functions)))
 
+;; TODO: inc, dec, short, int, long, float, double, bool, byte
+;; TODO: zero? pos? neg? even? odd? number? rational? integer? ratio?
+;; TODO: decimal? float? (1.9) double? int? nat-int? neg-int? pos-int?
+;; TODO: think about all seq functions
+
 (import-vars
   [zero-one.geni.column
    col
