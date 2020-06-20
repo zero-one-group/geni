@@ -5,11 +5,18 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
+    [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
   (:import
     (org.apache.spark.sql Dataset
                           SparkSession
                           SQLContext)))
+
+(fact "On clojure idioms"
+  (let [r-50      (range 50)
+        dataframe (g/records->dataset spark (map (fn [i] {:x i}) r-50))]
+    (-> dataframe (g/collect-col :x)) => r-50
+    (-> dataframe g/shuffle (g/collect-col :x)) => #(and (not= % r-50)
+                                                         (= (set %) (set r-50)))))
 
 (fact "On join-with"
   (let [n-listings (-> df-50 (g/group-by "SellerG") g/count)]
@@ -138,7 +145,7 @@
   (fact "should drop unselected columns"
     (-> melbourne-df
         (g/select "Type" (g/col "Price") :Regionname {:a "SellerG"
-                                                      :b "BuildingArea"})
+                                                        :b "BuildingArea"})
         g/column-names) => ["Type" "Price" "Regionname" "a" "b"])
   (fact "select-expr works as expected"
     (-> melbourne-df

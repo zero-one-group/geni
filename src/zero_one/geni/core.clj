@@ -5,38 +5,53 @@
                             /
                             <
                             <=
+                            =
                             >
                             >=
                             alias
+                            boolean
+                            byte
                             cast
                             concat
                             count
+                            dec
                             distinct
+                            double
                             drop
                             empty?
+                            even?
                             filter
                             first
                             flatten
+                            float
                             group-by
                             hash
+                            inc
+                            int
                             last
+                            long
                             map
                             max
                             min
                             mod
+                            neg?
                             not
+                            odd?
                             partition-by
+                            pos?
                             rand
                             remove
                             replace
                             reverse
                             second
                             sequence
+                            short
                             shuffle
                             sort
                             struct
                             take
-                            when])
+                            when
+                            zero?])
   (:require
     [potemkin :refer [import-vars]]
     [zero-one.geni.column]
@@ -51,11 +66,6 @@
                           RelationalGroupedDataset
                           SparkSession
                           functions)))
-
-;; TODO: inc, dec, short, int, long, float, double, bool, byte
-;; TODO: zero? pos? neg? even? odd? number? rational? integer? ratio?
-;; TODO: decimal? float? (1.9) double? int? nat-int? neg-int? pos-int?
-;; TODO: think about all seq functions
 
 (import-vars
   [zero-one.geni.column
@@ -75,6 +85,7 @@
    /
    <
    <=
+   =
    ===
    >
    >=
@@ -108,8 +119,10 @@
    between
    bin
    bitwise-not
+   boolean
    broadcast
    bround
+   byte
    cast
    cbrt
    ceil
@@ -140,20 +153,24 @@
    day-of-month
    day-of-week
    day-of-year
+   dec
    decode
    degrees
    dense-rank
    desc
    desc-nulls-first
    desc-nulls-last
+   double
    element-at
    encode
    ends-with
+   even?
    exp
    explode
    expr
    factorial
    flatten
+   float
    floor
    format-number
    format-string
@@ -164,9 +181,11 @@
    hex
    hour
    hypot
+   inc
    initcap
    input-file-name
    instr
+   int
    isin
    kurtosis
    lag
@@ -182,6 +201,7 @@
    log
    log1p
    log2
+   long
    lower
    lpad
    ltrim
@@ -193,6 +213,7 @@
    months-between
    nan?
    nanvl
+   neg?
    negate
    next-day
    not
@@ -200,9 +221,11 @@
    null-count
    null-rate
    null?
+   odd?
    percent-rank
    pi
    pmod
+   pos?
    posexplode
    posexplode-outer
    pow
@@ -227,7 +250,7 @@
    shift-left
    shift-right
    shift-right-unsigned
-   shuffle
+   short
    signum
    sin
    sinh
@@ -263,6 +286,7 @@
    week-of-year
    when
    year
+   zero?
    ||])
 
 (import-vars
@@ -402,6 +426,12 @@
 (defmethod coalesce :default [& exprs]
   (functions/coalesce (->col-array exprs)))
 
+(defmulti shuffle class)
+(defmethod shuffle :default [expr]
+  (functions/shuffle (->column expr)))
+(defmethod shuffle Dataset [dataframe]
+  (order-by dataframe (functions/randn)))
+
 (defmulti first class)
 (defmethod first Dataset [dataframe]
   (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
@@ -441,11 +471,12 @@
   (autotest :filter (complement :slow))
 
   (require '[clojure.reflect :as r])
-  (->> (r/reflect temp)
+  (->> (r/reflect Dataset)
        :members
        ;(clojure.core/filter #(= (:name %) 'approxQuantile))
        ;(mapv :parameter-types)
        (mapv :name)
+       clojure.core/sort
        pprint)
 
   0)

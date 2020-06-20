@@ -8,6 +8,35 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(fact "On clojure idioms"
+  (-> df-1
+      (g/select
+        (g/inc 1)
+        (g/dec 1)
+        (g/= 1 1)
+        (g/zero? 1)
+        (g/pos? 1)
+        (g/neg? 1)
+        (g/even? 1)
+        (g/odd? 1))
+      g/collect-vals) => [[2 0 true false true false false true]]
+  (-> df-1
+      (g/select
+        {:a (g/short 1.0)
+         :b (g/int 1.0)
+         :c (g/long 1.0)
+         :d (g/float 1)
+         :e (g/double 1)
+         :f (g/boolean 1)
+         :g (g/byte 1)})
+      g/dtypes) => {:a "ShortType"
+                    :b "IntegerType"
+                    :c "LongType"
+                    :d "FloatType"
+                    :e "DoubleType"
+                    :f "BooleanType"
+                    :g "ByteType"})
+
 (fact "On misc functions"
   (-> df-1
       (g/select (g/input-file-name))
