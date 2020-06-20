@@ -217,7 +217,7 @@ When the optional dependencies are not present, the vars to the corresponding fu
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
 * [Optional Google-Sheets Integration](docs/google_sheets.md)
-* [Optional XGBoost Support](examples/xgboost.clj)
+* [Optional XGBoost Support](docs/xgboost.md)
 
 ## License
 
