@@ -26,6 +26,12 @@ However, string literals do require `lit` wrapping:
 (-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
 ```
 
+It may be useful to think of a Spark Dataset as a seq of maps, so that keywords can be idiomatically used to refer to columns (i.e. keys). For that reason, the predicate column above may be more idiomatically written as:
+
+```clojure
+(g/=== :SellerG (g/lit "Nelson"))
+```
+
 ### Column-Array Coercion
 
 Geni implements Column-array coercion to variadic SQL functions and Column methods, such as `select` and `group-by`. The coercion rules are as follos:
@@ -47,10 +53,6 @@ A function like `select` can take all of these different types in a single invoc
     g/columns)
 => (:SellerG :Address :Postcode :log-price :rooms :Date :Method :Lattitude :Longtitude)
 ```
-
-### Keywords for Columns
-
-It may be useful to think of a Spark Dataset as a seq of maps, so that keywords can be idiomatically used to refer to columns (i.e. keys). For that reason, the predicate column above may be more idiomatically written as `(g/=== :SellerG (g/lit "Nelson"))`.
 
 ### Boolean Casts
 
