@@ -60,7 +60,7 @@ At times, it can be tricky to figure out the interop , which often times require
      ;; returns a seq of seqs - must zipmap with col names to get maps
 ```
 
-Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps. Creating and collecting arbitrarily nested maps become trivial:
+Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps. Collecting deeply nested structs as maps becomes straightforward:
 
 ```clojure
 (-> dataframe
