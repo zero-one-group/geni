@@ -124,9 +124,9 @@
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
 
-(defn union [& dfs] (reduce #(.union %1 %2) dfs))
+(defn union [& dataframes] (reduce #(.union %1 %2) dataframes))
 
-(defn union-by-name [& dfs] (reduce #(.unionByName %1 %2) dfs))
+(defn union-by-name [& dataframes] (reduce #(.unionByName %1 %2) dataframes))
 
 ;; Untyped Transformations
 (defn agg [dataframe & args]
@@ -153,8 +153,8 @@
 (defn join
   ([left right join-cols] (join left right join-cols "inner"))
   ([left right join-cols join-type]
-   (let [join-cols (if (string? join-cols) [join-cols] join-cols)]
-     (.join left right (interop/->scala-seq join-cols) join-type))))
+   (let [join-cols (ensure-coll join-cols)]
+     (.join left right (interop/->scala-seq (map name join-cols)) join-type))))
 
 (defn pivot
   ([grouped expr] (.pivot grouped (->column expr)))
@@ -183,8 +183,8 @@
 (defn approx-quantile [dataframe col-or-cols probs rel-error]
   (let [seq-col     (coll? col-or-cols)
         col-or-cols (if seq-col
-                      (into-array java.lang.String col-or-cols)
-                      col-or-cols)
+                      (into-array java.lang.String (map name col-or-cols))
+                      (name col-or-cols))
         quantiles   (-> dataframe
                         .stat
                         (.approxQuantile col-or-cols (double-array probs) rel-error))]
@@ -217,19 +217,19 @@
    (-> dataframe .na .drop))
   ([dataframe min-non-nulls-or-cols]
    (if (coll? min-non-nulls-or-cols)
-     (-> dataframe .na (.drop (interop/->scala-seq min-non-nulls-or-cols)))
+     (-> dataframe .na (.drop (interop/->scala-seq (map name min-non-nulls-or-cols))))
      (-> dataframe .na (.drop min-non-nulls-or-cols))))
   ([dataframe min-non-nulls cols]
-   (-> dataframe .na (.drop min-non-nulls (interop/->scala-seq cols)))))
+   (-> dataframe .na (.drop min-non-nulls (interop/->scala-seq (map name cols))))))
 
 (defn fill-na
   ([dataframe value]
    (-> dataframe .na (.fill value)))
   ([dataframe value cols]
-   (-> dataframe .na (.fill value (interop/->scala-seq cols)))))
+   (-> dataframe .na (.fill value (interop/->scala-seq (map name cols))))))
 
 (defn replace [dataframe cols replacement]
-  (let [cols (ensure-coll cols)]
+  (let [cols (map name (ensure-coll cols))]
     (-> dataframe
         .na
         (.replace (into-array java.lang.String cols)

@@ -9,7 +9,7 @@
   {:credentials "resources/credentials.json"})
 
 (def dataframe
-  (-> df-20 (g/select "SellerG" "Date" "Rooms" "Price")))
+  (-> df-20 (g/select :SellerG :Date :Rooms :Price)))
 
 (defonce service (gs/sheets-service google-props))
 
