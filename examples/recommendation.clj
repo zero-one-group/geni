@@ -19,9 +19,9 @@
 (def model
   (ml/fit ratings-df (ml/als {:max-iter   5
                               :reg-param  0.01
-                              :user-col   "user-id"
-                              :item-col   "movie-id"
-                              :rating-col "rating"})))
+                              :user-col   :user-id
+                              :item-col   :movie-id
+                              :rating-col :rating})))
 
 (.setColdStartStrategy model "drop")
 (def predictions
@@ -29,8 +29,8 @@
 
 (def evaluator
   (ml/regression-evaluator {:metric-name    "rmse"
-                            :label-col      "rating"
-                            :prediction-col "prediction"}))
+                            :label-col      :rating
+                            :prediction-col :prediction}))
 
 (println "Root-mean-square error:" (ml/evaluate predictions evaluator))
 (-> (ml/recommend-users model 3)

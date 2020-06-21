@@ -102,9 +102,6 @@
   ([dataframe weights] (.randomSplit dataframe (double-array weights)))
   ([dataframe weights seed] (.randomSplit dataframe (double-array weights) seed)))
 
-(defn remove [dataframe expr]
-  (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))
-
 (defn repartition [dataframe & args]
   (let [args          (flatten args)
         [head & tail] (flatten args)]
@@ -305,3 +302,7 @@
                         (zipmap col-names (repeat []))
                         records)]
     (map->dataset spark map-of-values)))
+
+;; Clojure Idioms
+(defn remove [dataframe expr]
+  (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))

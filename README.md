@@ -84,7 +84,7 @@ Geni handles all the interop in the background - `(collect dataframe)` returns a
 Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
 
 ```clojure
-(-> melbourne-df
+(-> dataframe
     (remove (like :Regionname "%Metropolitan%"))
     (filter (&& (< 2 :Rooms 5)
                 (< 5e5 :Price 6e5)
@@ -102,7 +102,7 @@ Spark SQL API for grouping and aggregating:
 ```clojure
 (require '[zero-one.geni.core :as g])
 
-(-> melbourne-df
+(-> dataframe
     (g/group-by :Suburb)
     g/count
     (g/order-by (g/desc :count))
@@ -183,7 +183,7 @@ Step into the directory, and run the command `lein run`!
 
 ## Installation
 
-Note that `geni` wraps Apache Spark 3.0.0, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
+Note that Geni wraps Apache Spark 3.0.0, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
 
 Add the following to your `project.clj` dependency:
 
@@ -223,7 +223,7 @@ When the optional dependencies are not present, the vars to the corresponding fu
 
 Copyright 2020 Zero One Group.
 
-geni is licensed under Apache License v2.0.
+Geni is licensed under Apache License v2.0.
 
 ## Mentions
 
@@ -231,3 +231,4 @@ Some code was taken from:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) - especially in terms of Scala interop.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
+* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/Aredington](https://old.reddit.com/user/Aredington) for [with-dynamic-import](src/zero_one/geni/utils.clj).

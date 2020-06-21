@@ -15,7 +15,7 @@
 
 (-> training
     (ml/transform lr-model)
-    (g/select "label" "prediction")
+    (g/select :label :prediction)
     (g/limit 5)
     g/show)
 
@@ -27,8 +27,8 @@
 (def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
 
 (def feature-indexer
-  (ml/fit data (ml/vector-indexer {:input-col "features"
-                                   :output-col "indexed-features"
+  (ml/fit data (ml/vector-indexer {:input-col :features
+                                   :output-col :indexed-features
                                    :max-categories 4})))
 
 (def split-data (g/random-split data [0.7 0.3]))
@@ -38,18 +38,18 @@
 (def pipeline
   (ml/pipeline
     feature-indexer
-    (ml/random-forest-regressor {:label-col "label"
-                                 :features-col "indexed-features"})))
+    (ml/random-forest-regressor {:label-col :label
+                                 :features-col :indexed-features})))
 
 (def model (ml/fit train-data pipeline))
 (def predictions (ml/transform test-data model))
 (def evaluator
-  (ml/regression-evaluator {:label-col "label"
-                            :prediction-col "prediction"
+  (ml/regression-evaluator {:label-col :label
+                            :prediction-col :prediction
                             :metric-name "rmse"}))
 
 (-> predictions
-    (g/select "prediction" "label")
+    (g/select :prediction :label)
     (g/show {:num-rows 5}))
 (println "RMSE:" (ml/evaluate predictions evaluator))
 
@@ -69,8 +69,8 @@
 (def aft
   (ml/aft-survival-regression
     {:quantile-probabilities quantile-probabilities
-     :quantiles-col "quantiles"}))
+     :quantiles-col :quantiles}))
 
 (def aft-model (ml/fit train aft))
 
-(-> train (ml/transform model) g/show)
+(-> train (ml/transform aft-model) g/show)

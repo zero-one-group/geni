@@ -5,23 +5,38 @@
                             /
                             <
                             <=
+                            =
                             >
                             >=
                             alias
+                            boolean
+                            byte
                             cast
                             concat
+                            dec
+                            double
+                            even?
                             flatten
+                            float
                             hash
+                            inc
+                            int
                             last
+                            long
                             mod
+                            neg?
                             not
+                            odd?
+                            pos?
                             rand
                             reverse
                             second
                             sequence
-                            shuffle
+                            short
+                            short
                             struct
-                            when])
+                            when
+                            zero?])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop])
@@ -125,7 +140,7 @@
 (defn explode [expr] (functions/explode (->column expr)))
 (def explode-outer explode)
 (defn element-at [expr value]
-  (functions/element_at (->column expr) (int value)))
+  (functions/element_at (->column expr) (clojure.core/int value)))
 (defn flatten [expr]
   (functions/flatten (->column expr)))
 (defn last [expr] (functions/last (->column expr)))
@@ -135,8 +150,6 @@
   (functions/reverse (->column expr)))
 (defn sequence [start stop step]
   (functions/sequence (->column start) (->column stop) (->column step)))
-(defn shuffle [expr]
-  (functions/shuffle (->column expr)))
 (defn size [expr]
   (functions/size (->column expr)))
 (defn slice [expr start length]
@@ -366,3 +379,26 @@
 (defn desc [expr] (.desc (->column expr)))
 (defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
 (defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
+
+;; Clojure Idioms
+
+;;;; Arithmetic
+(defn inc [expr] (+ (->column expr) 1))
+(defn dec [expr] (- (->column expr) 1))
+
+;;;; Casting
+(defn short [expr] (cast (->column expr) "short"))
+(defn int [expr] (cast (->column expr) "int"))
+(defn long [expr] (cast (->column expr) "long"))
+(defn float [expr] (cast (->column expr) "float"))
+(defn double [expr] (cast (->column expr) "double"))
+(defn boolean [expr] (cast (->column expr) "boolean"))
+(defn byte [expr] (cast (->column expr) "byte"))
+
+;;;; Predicates
+(defn = [l-expr r-expr] (=== (->column l-expr) (->column r-expr)))
+(defn zero? [expr] (=== (->column expr) 0))
+(defn pos? [expr] (< 0 (->column expr)))
+(defn neg? [expr] (< (->column expr) 0))
+(defn even? [expr] (=== (mod (->column expr) 2) 0))
+(defn odd? [expr] (=== (mod (->column expr) 2) 1))
