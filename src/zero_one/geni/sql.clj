@@ -89,7 +89,7 @@
 (defn log2 [expr] (functions/log2 (->column expr)))
 (defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
-(defn pow [base exponent] (functions/pow (->column base) exponent))
+(defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
 (defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
 (defn rint [expr] (functions/rint (->column expr)))
 (defn round [expr] (functions/round (->column expr)))
@@ -135,8 +135,8 @@
   (functions/arrays_overlap (->column left) (->column right)))
 (defn arrays-zip [& exprs]
   (functions/arrays_zip (->col-array exprs)))
-(defn collect-list [expr] (functions/collect_list expr))
-(defn collect-set [expr] (functions/collect_set expr))
+(defn collect-list [expr] (functions/collect_list (->column expr)))
+(defn collect-set [expr] (functions/collect_set (->column expr)))
 (defn explode [expr] (functions/explode (->column expr)))
 (def explode-outer explode)
 (defn element-at [expr value]
@@ -358,9 +358,9 @@
 (defn nan? [expr] (.isNaN (->column expr)))
 (defn null? [expr] (.isNull (->column expr)))
 (defn null-rate [expr]
-  (-> expr ->column null? (cast "int") functions/mean (.as (str "null_rate(" expr ")"))))
+  (-> expr ->column null? (cast "int") functions/mean (.as (str "null_rate(" (name expr) ")"))))
 (defn null-count [expr]
-  (-> expr ->column null? (cast "int") functions/sum (.as (str "null_count(" expr ")"))))
+  (-> expr ->column null? (cast "int") functions/sum (.as (str "null_count(" (name expr) ")"))))
 
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))

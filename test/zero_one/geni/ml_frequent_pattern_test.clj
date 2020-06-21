@@ -26,7 +26,7 @@
                         [["1" "2" "3" "5"]]
                         [["1" "2"]]]
                        [:items]))
-       fp-growth (ml/fp-growth {:items-col      "items"
+       fp-growth (ml/fp-growth {:items-col      :items
                                 :min-confidence 0.6
                                 :min-support    0.5})
        model     (ml/fit dataset fp-growth)]

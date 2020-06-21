@@ -9,7 +9,7 @@
 (defmethod col Column [x & _] x)
 (defmethod col java.lang.String [x & _] (functions/col x))
 (defmethod col clojure.lang.Keyword [x & _] (functions/col (name x)))
-(defmethod col Dataset [dataframe & args] (.col dataframe (first args)))
+(defmethod col Dataset [dataframe & args] (.col dataframe (name (first args))))
 (def ->column col)
 
 (defn ->col-seq [arg]
