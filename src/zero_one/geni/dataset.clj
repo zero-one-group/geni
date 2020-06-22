@@ -179,9 +179,6 @@
 
 (defn sql-context [dataframe] (.sqlContext dataframe))
 
-(defn to-json [dataframe] (.toJSON dataframe))
-(def ->json to-json)
-
 (defn is-streaming [dataframe] (.isStreaming dataframe))
 (def streaming? is-streaming)
 
