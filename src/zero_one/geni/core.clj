@@ -290,7 +290,6 @@
 
 (import-vars
   [zero-one.geni.dataset
-   ->json
    ->row
    agg
    agg-all
@@ -361,7 +360,6 @@
    tail-vals
    take
    take-vals
-   to-json
    union
    union-by-name
    where
