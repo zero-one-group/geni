@@ -179,6 +179,9 @@
 
 (defn sql-context [dataframe] (.sqlContext dataframe))
 
+(defn is-streaming [dataframe] (.isStreaming dataframe))
+(def streaming? is-streaming)
+
 ;; Stat Functions
 (defn approx-quantile [dataframe col-or-cols probs rel-error]
   (let [seq-col     (coll? col-or-cols)
@@ -193,23 +196,44 @@
       (seq quantiles))))
 
 ;; Actions
-(defn collect [dataframe]
-  (->> dataframe .collect seq (map interop/->clojure)))
-(defn take [dataframe n-rows] (-> dataframe (limit n-rows) collect))
+(defn- collected->maps [collected]
+  (map interop/->clojure collected))
 
+(defn- collected->vectors [collected cols]
+  (map (apply juxt cols) (collected->maps collected)))
+
+;;;; Returning Maps
+(defn collect [dataframe]
+  (->> dataframe .collect collected->maps))
+(defn take [dataframe n-rows]
+  (-> dataframe (.take n-rows) collected->maps))
+(defn tail [dataframe n-rows]
+  (-> dataframe (.tail n-rows) collected->maps))
+
+;;;; Returning Vectors
+(defn collect-vals [dataframe]
+  (let [cols (columns dataframe)]
+    (-> dataframe .collect (collected->vectors cols))))
+(defn take-vals [dataframe n-rows]
+  (let [cols (columns dataframe)]
+    (-> dataframe (.take n-rows) (collected->vectors cols))))
+(defn tail-vals [dataframe n-rows]
+  (let [cols (columns dataframe)]
+    (-> dataframe (.tail n-rows) (collected->vectors cols))))
+
+;;;;; Shortcut Returns
+(defn collect-col [dataframe col-name]
+  (map (keyword col-name) (-> dataframe (select col-name) collect)))
+(defn first-vals [dataframe]
+  (-> dataframe (take-vals 1) first))
+(defn last-vals [dataframe]
+  (-> dataframe (tail-vals 1) first))
+
+;;;; Returning Datasets
 (defn describe [dataframe & col-names]
   (.describe dataframe (into-array java.lang.String (map name col-names))))
 (defn summary [dataframe & stat-names]
   (.summary dataframe (into-array java.lang.String (map name stat-names))))
-
-;;;; Actions for Rows
-(defn collect-vals [dataframe]
-  (let [cols (columns dataframe)]
-    (map (apply juxt cols) (collect dataframe))))
-(defn collect-col [dataframe col-name]
-  (map (keyword col-name) (-> dataframe (select col-name) collect)))
-(defn take-vals [dataframe n-rows] (-> dataframe (limit n-rows) collect-vals))
-(defn first-vals [dataframe] (-> dataframe (take-vals 1) first))
 
 ;; NA Functions
 (defn drop-na

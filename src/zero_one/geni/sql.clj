@@ -143,7 +143,6 @@
   (functions/element_at (->column expr) (clojure.core/int value)))
 (defn flatten [expr]
   (functions/flatten (->column expr)))
-(defn last [expr] (functions/last (->column expr)))
 (defn posexplode [expr] (functions/posexplode (->column expr)))
 (def posexplode-outer posexplode)
 (defn reverse [expr]

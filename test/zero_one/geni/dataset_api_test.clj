@@ -111,10 +111,18 @@
   (-> melbourne-df g/local?) => boolean?)
 
 (fact "On ungrouped methods"
+  (-> melbourne-df g/streaming?) => false
   (-> melbourne-df g/spark-session) => (partial instance? SparkSession)
   (-> melbourne-df g/sql-context) => (partial instance? SQLContext)
   (-> df-1 g/to-json g/collect) => (every-pred seq? #(every? string? %))
-  (-> df-1 g/to-string) => string?)
+  (-> df-1 g/to-string) => string?
+  (-> df-20
+      (g/limit 2)
+      (g/select :Date :CouncilArea)
+      g/->json
+      g/collect) => ["{\"Date\":\"3/12/2016\",\"CouncilArea\":\"Yarra\"}"
+                     "{\"Date\":\"4/02/2016\",\"CouncilArea\":\"Yarra\"}"]
+  (-> df-1 g/to-json g/collect) => (-> df-1 g/->json g/collect))
 
 (facts "On pivot" :slow
   (fact "pivot should return the expected cols"
@@ -211,11 +219,15 @@
 
 (facts "On actions" :slow
   (fact "take and take-vals work"
-    (count (g/take melbourne-df 5)) => 5
-    (count (g/take-vals melbourne-df 10)) => 10)
+    (g/take df-20 5) => #(and (= (count %) 5) (every? map? %))
+    (g/take-vals df-20 10) => #(and (= (count %) 10) (every? vector? %))
+    (g/tail df-20 5) => #(and (= (count %) 5) (every? map? %))
+    (g/tail-vals df-20 10) => #(and (= (count %) 10) (every? vector? %)))
   (fact "first works"
-    (-> melbourne-df (g/select :Method) g/first) => {:Method "S"}
-    (-> melbourne-df (g/select :Method) g/first-vals) => ["S"]))
+    (-> df-20 (g/select :Address) g/first) => {:Address "85 Turner St"}
+    (-> df-20 (g/select :Address) g/first-vals) => ["85 Turner St"]
+    (-> df-20 (g/select :Address) g/last) => {:Address "42 Valiant St"}
+    (-> df-20 (g/select :Address) g/last-vals) => ["42 Valiant St"]))
 
 (facts "On drop" :slow
   (fact "dropped columns should no longer exist"

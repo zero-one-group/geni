@@ -189,7 +189,6 @@
    isin
    kurtosis
    lag
-   last
    last-day
    lead
    least
@@ -324,9 +323,11 @@
    intersect-all
    is-empty
    is-local
+   is-streaming
    java-type->spark-type
    join
    join-with
+   last-vals
    limit
    local?
    map->dataset
@@ -352,8 +353,11 @@
    sort-within-partitions
    spark-session
    sql-context
+   streaming?
    summary
    table->dataset
+   tail
+   tail-vals
    take
    take-vals
    union
@@ -436,6 +440,11 @@
 (defmethod first Dataset [dataframe]
   (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
 (defmethod first :default [expr] (functions/first (->column expr)))
+
+(defmulti last class)
+(defmethod last Dataset [dataframe]
+  (-> dataframe (zero-one.geni.dataset/tail 1) clojure.core/first))
+(defmethod last :default [expr] (functions/last (->column expr)))
 
 (def to-string (memfn toString))
 (def ->string to-string)
