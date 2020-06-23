@@ -92,6 +92,7 @@
    abs
    acos
    add-months
+   aggregate
    approx-count-distinct
    array
    array-contains
@@ -165,6 +166,7 @@
    encode
    ends-with
    even?
+   exists
    exp
    explode
    expr
@@ -177,6 +179,7 @@
    from-unixtime
    greatest
    grouping
+   grouping-id
    hash
    hex
    hour
@@ -270,6 +273,7 @@
    sum-distinct
    tan
    tanh
+   time-window
    to-date
    to-timestamp
    to-utc-timestamp
@@ -286,6 +290,7 @@
    when
    year
    zero?
+   zip-with
    ||])
 
 (import-vars

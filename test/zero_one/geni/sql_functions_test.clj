@@ -125,6 +125,10 @@
 
 (facts "On agg functions"
   (-> df-20
+      (g/cube :SellerG :Regionname)
+      (g/agg (g/grouping-id :SellerG :Regionname))
+      g/first-vals) => ["Biggin" "Northern Metropolitan" 0]
+  (-> df-20
       (g/group-by :SellerG)
       (g/agg (-> (g/collect-list :Regionname) (g/as :regions)))
       (g/select (g/posexplode :regions))
@@ -205,8 +209,9 @@
         (-> (g/monotonically-increasing-id) (g/as "id")))
       (g/collect-col "id")) => (range 20)
   (-> df-1
+      (g/with-column :struct (g/struct :SellerG :Rooms))
       (g/select
-        (g/struct :SellerG :Rooms))
+        :struct)
       g/collect-vals
       first) => [{:SellerG "Biggin" :Rooms 2}]
   (-> df-1
@@ -221,9 +226,12 @@
         (g/array-intersect "ys" "xs")
         (g/array-join "zs" ",")
         (g/array-join "zs" "," "-")
-        (g/array-position "xs" 2))
+        (g/array-position "xs" 2)
+        (g/aggregate :xs 0 g/+)
+        (g/aggregate :xs 0 g/+ g/sqr)
+        (g/exists :xs g/zero?))
       g/collect-vals
-      first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2]
+      first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2 4 16 false]
   (-> df-1
       (g/with-column "ys" (g/array [-3 -2 -1]))
       (g/with-column "xs" (g/array [1 2 1]))
@@ -234,11 +242,12 @@
         (g/array-sort "xs")
         (g/arrays-overlap "xs" "xs")
         (g/element-at "xs" (int 2))
+        (g/zip-with "ys" "xs" g/+)
         (g/arrays-zip ["ys" "xs"]))
       g/collect-vals
-      first) => [[2] [1 1] [2 2 2] [1 1 2] true 2 [{:xs 1 :ys -3}
-                                                   {:xs 2 :ys -2}
-                                                   {:xs 1 :ys -1}]]
+      first) => [[2] [1 1] [2 2 2] [1 1 2] true 2 [-2 0 0] [{:xs 1 :ys -3}
+                                                            {:xs 2 :ys -2}
+                                                            {:xs 1 :ys -1}]]
   (-> df-1
       (g/with-column "xs" (g/array [4 5 6 1]))
       (g/select
@@ -531,6 +540,21 @@
         set) => #{1 2}))
 
 (facts "On time functions"
+  (fact "correct time bucketisation"
+    (let [dataframe (-> df-20
+                         (g/with-column :date (g/to-date :Date "d/MM/yyyy")))]
+      (-> dataframe
+          (g/select (g/time-window :date "7 days"))
+          g/distinct
+          g/count) => #(<= 10 % 14)
+      (-> dataframe
+          (g/select (g/time-window :date "7 days" "2 days"))
+          g/distinct
+          g/count) => #(<= 40 % 44)
+      (-> dataframe
+          (g/select (g/time-window :date "7 days" "3 days" "2 days"))
+          g/distinct
+          g/count) => #(<= 28 % 32)))
   (fact "correct time arithmetic"
     (-> df-1
         (g/select

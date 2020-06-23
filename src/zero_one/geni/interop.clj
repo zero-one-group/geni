@@ -11,7 +11,10 @@
                                 SparseVector
                                 Vectors)
     (org.apache.spark.sql Row)
-    (scala Console Function0)
+    (scala Console
+           Function0
+           Function1
+           Function2)
     (scala.collection JavaConversions Map Seq)))
 
 (defn scala-seq? [value]
@@ -33,7 +36,13 @@
        (into [])))
 
 (defn ->scala-function0 [f]
-  (reify Function0 (apply [this] (f))))
+  (reify Function0 (apply [_] (f))))
+
+(defn ->scala-function1 [f]
+  (reify Function1 (apply [_ x] (f x))))
+
+(defn ->scala-function2 [f]
+  (reify Function2 (apply [_ x y] (f x y))))
 
 (defmacro with-scala-out-str [& body]
   `(let [out-buffer# (ByteArrayOutputStream.)]
