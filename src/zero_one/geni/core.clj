@@ -92,7 +92,10 @@
    abs
    acos
    add-months
+   aggregate
    approx-count-distinct
+   exists
+   zip-with
    array
    array-contains
    array-distinct
@@ -155,6 +158,7 @@
    day-of-year
    dec
    decode
+   time-window
    degrees
    dense-rank
    desc
@@ -177,6 +181,7 @@
    from-unixtime
    greatest
    grouping
+   grouping-id
    hash
    hex
    hour

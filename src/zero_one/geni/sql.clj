@@ -44,7 +44,11 @@
     (org.apache.spark.sql Column functions)))
 
 ;; TODO: map-from-arrays, map-from-entries, map-keys, map-values, map
-;; TODO: schema-of-json, from-json, to-json
+;; TODO: schema-of-json, from-json, to-json, from-csv
+
+;; TODO: support map functions + proper collect for Scala Map
+;(defn map-entries [expr] (functions/map_entries (->column expr)))
+;(defn map-from-entries [expr] (functions/map_from_entries (->column expr)))
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -56,6 +60,8 @@
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
 (defn grouping [expr] (functions/grouping (->column expr)))
+(defn grouping-id [& exprs]
+  (functions/grouping_id (interop/->scala-seq (->col-array exprs))))
 (defn lag
   ([expr offset] (functions/lag (->column expr) offset))
   ([expr offset default] (functions/lag (->column expr) offset default)))
@@ -101,6 +107,13 @@
 (defn tanh [expr] (functions/tanh (->column expr)))
 
 ;;;; Array Functions
+(defn aggregate
+  ([expr init merge-fn] (aggregate expr init merge-fn identity))
+  ([expr init merge-fn finish-fn]
+   (functions/aggregate (->column expr)
+                        (->column init)
+                        (interop/->scala-function2 merge-fn)
+                        (interop/->scala-function1 finish-fn))))
 (defn array-contains [expr value]
   (functions/array_contains (->column expr) value))
 (defn array-distinct [expr]
@@ -137,6 +150,8 @@
   (functions/arrays_zip (->col-array exprs)))
 (defn collect-list [expr] (functions/collect_list (->column expr)))
 (defn collect-set [expr] (functions/collect_set (->column expr)))
+(defn exists [expr predicate]
+  (functions/exists (->column expr) (interop/->scala-function1 predicate)))
 (defn explode [expr] (functions/explode (->column expr)))
 (def explode-outer explode)
 (defn element-at [expr value]
@@ -157,6 +172,10 @@
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
 (defn struct [& exprs] (functions/struct (->col-array exprs)))
+(defn zip-with [left right merge-fn]
+  (functions/zip_with (->column left)
+                      (->column right)
+                      (interop/->scala-function2 merge-fn)))
 
 ;;;; Number Functions
 (defn base64 [expr] (functions/base64 (->column expr)))
@@ -298,6 +317,10 @@
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
   ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
+(defn time-window
+  ([time-expr duration] (functions/window (->column time-expr) duration))
+  ([time-expr duration slide] (functions/window (->column time-expr) duration slide))
+  ([time-expr duration slide start] (functions/window (->column time-expr) duration slide start)))
 (defn week-of-year [expr] (functions/weekofyear (->column expr)))
 (defn year [expr] (functions/year (->column expr)))
 
