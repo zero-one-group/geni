@@ -94,8 +94,6 @@
    add-months
    aggregate
    approx-count-distinct
-   exists
-   zip-with
    array
    array-contains
    array-distinct
@@ -158,7 +156,6 @@
    day-of-year
    dec
    decode
-   time-window
    degrees
    dense-rank
    desc
@@ -169,6 +166,7 @@
    encode
    ends-with
    even?
+   exists
    exp
    explode
    expr
@@ -275,6 +273,7 @@
    sum-distinct
    tan
    tanh
+   time-window
    to-date
    to-timestamp
    to-utc-timestamp
@@ -291,6 +290,7 @@
    when
    year
    zero?
+   zip-with
    ||])
 
 (import-vars
