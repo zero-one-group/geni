@@ -6,7 +6,6 @@
     [zero-one.geni.utils :refer [vector-of-doubles?]])
   (:import
     (java.io ByteArrayOutputStream)
-    (org.apache.spark.ml functions)
     (org.apache.spark.ml.linalg DenseVector
                                 DenseMatrix
                                 SparseVector
