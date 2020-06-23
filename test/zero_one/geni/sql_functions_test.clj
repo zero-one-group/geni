@@ -546,15 +546,15 @@
       (-> dataframe
           (g/select (g/time-window :date "7 days"))
           g/distinct
-          g/count) => 12
+          g/count) => #(<= 10 % 14)
       (-> dataframe
           (g/select (g/time-window :date "7 days" "2 days"))
           g/distinct
-          g/count) => 42
+          g/count) => #(<= 40 % 44)
       (-> dataframe
           (g/select (g/time-window :date "7 days" "3 days" "2 days"))
           g/distinct
-          g/count) => 30))
+          g/count) => #(<= 28 % 32)))
   (fact "correct time arithmetic"
     (-> df-1
         (g/select
