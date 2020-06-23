@@ -39,7 +39,7 @@
                             when
                             zero?])
   (:require
-    [zero-one.geni.column :refer [->col-array ->column]]
+    [zero-one.geni.column :refer [->col-array ->column lit]]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column functions)))
@@ -247,7 +247,6 @@
 (defn greatest [& exprs] (functions/greatest (->col-array exprs)))
 (defn input-file-name [] (functions/input_file_name))
 (defn least [& exprs] (functions/least (->col-array exprs)))
-(defn lit [expr] (functions/lit expr))
 ;(defn map [& exprs] (functions/map (->col-array exprs)))
 ;(defn map-from-arrays [key-expr val-expr]
   ;(functions/map_from_arrays (->column key-expr) (->column val-expr)))

@@ -22,6 +22,8 @@
         some-users  (-> ratings-df (g/select :user-id) g/distinct (g/limit 3))
         some-items  (-> ratings-df (g/select :movie-id) g/distinct (g/limit 5))]
     rmse => #(<= % 0.9)
+    (g/count (ml/item-factors model)) => 100
+    (g/count (ml/user-factors model)) => 30
     (let [recommendations (ml/recommend-users model 6)]
       (-> recommendations g/collect) => #(and (every? number? (map :movie-id %))
                                               (every? map? (mapcat :recommendations %)))

@@ -5,8 +5,8 @@
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
-(defn vector-of-numbers? [value]
-  (and (vector? value) (every? number? value)))
+(defn vector-of-doubles? [value]
+  (and (vector? value) (every? double? value)))
 
 (defmacro with-dynamic-import [imports & body]
   (if (try

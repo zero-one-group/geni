@@ -217,7 +217,15 @@
         g/columns
         set) => #(nil? (% :SellerG))))
 
-(facts "On actions" :slow
+(facts "On actions" ;:slow
+  (fact "correct collection of lits"
+    (-> df-1
+        (g/select
+          (g/lit 1)
+          (g/lit "a")
+          (g/lit [2.0])
+          (g/lit ["b"]))
+        g/first-vals) => [1 "a" [2.0] ["b"]])
   (fact "take and take-vals work"
     (g/take df-20 5) => #(and (= (count %) 5) (every? map? %))
     (g/take-vals df-20 10) => #(and (= (count %) 10) (every? vector? %))

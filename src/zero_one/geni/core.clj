@@ -69,9 +69,10 @@
 
 (import-vars
   [zero-one.geni.column
-   col
    ->col-array
-   ->column])
+   ->column
+   col
+   lit])
 
 (import-vars
   [zero-one.geni.sql
@@ -203,7 +204,6 @@
    length
    levenshtein
    like
-   lit
    locate
    log
    log10

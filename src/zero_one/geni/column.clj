@@ -4,6 +4,10 @@
                           Dataset
                           functions)))
 
+(defn lit [arg]
+  (let [normed-arg (if (coll? arg) (into-array (type (first arg)) arg) arg)]
+    (functions/lit normed-arg)))
+
 (defmulti col (fn [head & _] (class head)))
 (defmethod col :default [x & _] (functions/lit x))
 (defmethod col Column [x & _] x)
