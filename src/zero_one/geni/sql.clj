@@ -23,6 +23,7 @@
                             int
                             last
                             long
+                            map
                             mod
                             neg?
                             not
@@ -57,56 +58,11 @@
 (defn count-distinct [& exprs]
   (let [[head & tail] (->col-array exprs)]
     (functions/countDistinct head (into-array Column tail))))
-(defn cume-dist [] (functions/cume_dist))
-(defn dense-rank [] (functions/dense_rank))
 (defn grouping [expr] (functions/grouping (->column expr)))
 (defn grouping-id [& exprs]
   (functions/grouping_id (interop/->scala-seq (->col-array exprs))))
-(defn lag
-  ([expr offset] (functions/lag (->column expr) offset))
-  ([expr offset default] (functions/lag (->column expr) offset default)))
-(defn lead
-  ([expr offset] (functions/lead (->column expr) offset))
-  ([expr offset default] (functions/lead (->column expr) offset default)))
-(defn ntile [n] (functions/ntile n))
-(defn percent-rank [] (functions/percent_rank))
-(defn rank [] (functions/rank))
-(defn row-number [] (functions/row_number))
-(defn spark-partition-id [] (functions/spark-partition-id))
 
-;;;; Arithmetic Functions
-(def pi (functions/lit Math/PI))
-(defn abs [expr] (functions/abs (->column expr)))
-(defn acos [expr] (functions/acos (->column expr)))
-(defn asin [expr] (functions/asin (->column expr)))
-(defn atan [expr] (functions/atan (->column expr)))
-(defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
-(defn bround [expr] (functions/bround (->column expr)))
-(defn ceil [expr] (functions/ceil (->column expr)))
-(defn cbrt [expr] (functions/cbrt (->column expr)))
-(def cube-root cbrt)
-(defn cos [expr] (functions/cos (->column expr)))
-(defn cosh [expr] (functions/cosh (->column expr)))
-(defn exp [expr] (functions/exp (->column expr)))
-(defn floor [expr] (functions/floor (->column expr)))
-(defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
-(defn log [expr] (functions/log (->column expr)))
-(defn log1p [expr] (functions/log1p (->column expr)))
-(defn log2 [expr] (functions/log2 (->column expr)))
-(defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
-(defn negate [expr] (functions/negate (->column expr)))
-(defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
-(defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
-(defn rint [expr] (functions/rint (->column expr)))
-(defn round [expr] (functions/round (->column expr)))
-(defn sin [expr] (functions/sin (->column expr)))
-(defn sinh [expr] (functions/sinh (->column expr)))
-(defn sqr [expr] (.multiply (->column expr) (->column expr)))
-(defn sqrt [expr] (functions/sqrt (->column expr)))
-(defn tan [expr] (functions/tan (->column expr)))
-(defn tanh [expr] (functions/tanh (->column expr)))
-
-;;;; Array Functions
+;;;; Collection Functions
 (defn aggregate
   ([expr init merge-fn] (aggregate expr init merge-fn identity))
   ([expr init merge-fn finish-fn]
@@ -142,22 +98,22 @@
   (functions/array_sort (->column expr)))
 (defn array-union [left right]
   (functions/array_union (->column left) (->column right)))
-(defn array [& exprs]
-  (functions/array (->col-array exprs)))
 (defn arrays-overlap [left right]
   (functions/arrays_overlap (->column left) (->column right)))
 (defn arrays-zip [& exprs]
   (functions/arrays_zip (->col-array exprs)))
 (defn collect-list [expr] (functions/collect_list (->column expr)))
 (defn collect-set [expr] (functions/collect_set (->column expr)))
+(defn concat [& exprs] (functions/concat (->col-array exprs)))
 (defn exists [expr predicate]
   (functions/exists (->column expr) (interop/->scala-function1 predicate)))
 (defn explode [expr] (functions/explode (->column expr)))
 (def explode-outer explode)
 (defn element-at [expr value]
   (functions/element_at (->column expr) (clojure.core/int value)))
-(defn flatten [expr]
-  (functions/flatten (->column expr)))
+(defn flatten [expr] (functions/flatten (->column expr)))
+(defn forall [expr predicate]
+  (functions/forall (->column expr) (interop/->scala-function1 predicate)))
 (defn posexplode [expr] (functions/posexplode (->column expr)))
 (def posexplode-outer posexplode)
 (defn reverse [expr]
@@ -171,108 +127,14 @@
 (defn sort-array
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
-(defn struct [& exprs] (functions/struct (->col-array exprs)))
+(defn transform [expr xform-fn]
+  (functions/transform (->column expr) (interop/->scala-function1 xform-fn)))
 (defn zip-with [left right merge-fn]
   (functions/zip_with (->column left)
                       (->column right)
                       (interop/->scala-function2 merge-fn)))
 
-;;;; Number Functions
-(defn base64 [expr] (functions/base64 (->column expr)))
-(defn bin [expr] (functions/bin (->column expr)))
-(defn bitwise-not [expr] (functions/bitwiseNOT (->column expr)))
-(defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
-(defn crc32 [expr] (functions/crc32 (->column expr)))
-(defn decode [expr charset] (functions/decode (->column expr) charset))
-(defn degrees [expr] (functions/degrees (->column expr)))
-(defn encode [expr charset] (functions/encode (->column expr) charset))
-(defn factorial [expr] (functions/factorial (->column expr)))
-(defn hex [expr] (functions/hex (->column expr)))
-(defn radians [expr] (functions/radians (->column expr)))
-(defn signum [expr] (functions/signum (->column expr)))
-(def sign signum)
-(defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
-(defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
-(defn shift-right-unsigned [expr num-bits]
-  (functions/shiftRightUnsigned (->column expr) num-bits))
-(defn unbase64 [expr] (functions/unbase64 (->column expr)))
-(defn unhex [expr] (functions/unhex (->column expr)))
-
-;;;; Boolean Functions
-(defn not [expr] (functions/not (->column expr)))
-(defn when
-  ([condition if-expr]
-   (functions/when condition (->column if-expr)))
-  ([condition if-expr else-expr]
-   (-> (when condition if-expr) (.otherwise (->column else-expr)))))
-
-;;;; Dataset Functions
-(defn broadcast [dataframe] (functions/broadcast dataframe))
-
-;;;; Hash Functions
-(defn hash [& exprs] (functions/hash (->col-array exprs)))
-(defn md5 [expr] (functions/md5 (->column expr)))
-(defn sha1 [expr] (functions/sha1 (->column expr)))
-(defn sha2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
-
-;;;; Random Functions
-(defn randn
-  ([] (functions/randn))
-  ([seed] (functions/randn seed)))
-(defn rand
-  ([] (functions/rand))
-  ([seed] (functions/rand seed)))
-
-;;;; Stats Functions
-(defn corr [l-expr r-expr]
-  (functions/corr (->column l-expr) (->column r-expr)))
-(defn covar [l-expr r-expr]
-  (functions/covar_samp (->column l-expr) (->column r-expr)))
-(def covar-samp covar)
-(defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
-(defn kurtosis [expr] (functions/kurtosis (->column expr)))
-(defn lit [expr] (functions/lit expr))
-(defn skewness [expr] (functions/skewness (->column expr)))
-(defn stddev [expr] (functions/stddev (->column expr)))
-(def stddev-samp stddev)
-(defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
-(defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
-(defn var-pop [expr] (functions/var_pop (->column expr)))
-(defn variance [expr] (functions/variance (->column expr)))
-(def var-samp variance)
-
-;;;; String Functions
-(defn ascii [expr] (functions/ascii (->column expr)))
-(defn concat [& exprs] (functions/concat (->col-array exprs)))
-(defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
-(defn expr [s] (functions/expr s))
-(defn format-number [expr decimal-places]
-  (functions/format_number (->column expr) decimal-places))
-(defn format-string [fmt exprs]
-  (functions/format_string fmt (->col-array exprs)))
-(defn initcap [expr] (functions/initcap (->column expr)))
-(defn instr [expr substr] (functions/instr (->column expr) substr))
-(defn locate [substr expr] (functions/locate substr (->column expr)))
-(defn lower [expr] (functions/lower (->column expr)))
-(defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
-(defn ltrim [expr] (functions/ltrim (->column expr)))
-(defn regexp-extract [expr regex idx]
-  (functions/regexp_extract (->column expr) regex idx))
-(defn regexp-replace [expr pattern-expr replacement-expr]
-  (functions/regexp_replace
-    (->column expr)
-    (->column pattern-expr)
-    (->column replacement-expr)))
-(defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
-(defn rtrim [expr] (functions/rtrim (->column expr)))
-(defn split [expr pattern] (functions/split (->column expr) pattern))
-(defn substring [expr pos len] (functions/substring (->column expr) pos len))
-(defn translate [expr match replacement]
-  (functions/translate (->column expr) match replacement))
-(defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
-(defn upper [expr] (functions/upper (->column expr)))
-
-;;;; Time Functions
+;;;; Date and Time Functions
 (defn add-months [expr months]
   (functions/add_months (->column expr) months))
 (defn current-date [] (functions/current_date))
@@ -324,9 +186,176 @@
 (defn week-of-year [expr] (functions/weekofyear (->column expr)))
 (defn year [expr] (functions/year (->column expr)))
 
-;;;; Other Functions
+;;;; Maths Functions
+(def pi (functions/lit Math/PI))
+(defn abs [expr] (functions/abs (->column expr)))
+(defn acos [expr] (functions/acos (->column expr)))
+(defn asin [expr] (functions/asin (->column expr)))
+(defn atan [expr] (functions/atan (->column expr)))
+(defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
+(defn bin [expr] (functions/bin (->column expr)))
+(defn bround [expr] (functions/bround (->column expr)))
+(defn cbrt [expr] (functions/cbrt (->column expr)))
+(def cube-root cbrt)
+(defn ceil [expr] (functions/ceil (->column expr)))
+(defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
+(defn cos [expr] (functions/cos (->column expr)))
+(defn cosh [expr] (functions/cosh (->column expr)))
+(defn degrees [expr] (functions/degrees (->column expr)))
+(defn exp [expr] (functions/exp (->column expr)))
+(defn expm1 [expr] (functions/expm1 (->column expr)))
+(defn factorial [expr] (functions/factorial (->column expr)))
+(defn floor [expr] (functions/floor (->column expr)))
+(defn hex [expr] (functions/hex (->column expr)))
+(defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
+(defn log [expr] (functions/log (->column expr)))
+(defn log10 [expr] (functions/log10 (->column expr)))
+(defn log1p [expr] (functions/log1p (->column expr)))
+(defn log2 [expr] (functions/log2 (->column expr)))
+(defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
+(defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
+(defn radians [expr] (functions/radians (->column expr)))
+(defn rint [expr] (functions/rint (->column expr)))
+(defn round [expr] (functions/round (->column expr)))
+(defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
+(defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
+(defn shift-right-unsigned [expr num-bits] (functions/shiftRightUnsigned (->column expr) num-bits))
+(defn signum [expr] (functions/signum (->column expr)))
+(def sign signum)
+(defn sin [expr] (functions/sin (->column expr)))
+(defn sinh [expr] (functions/sinh (->column expr)))
+(defn sqr [expr] (.multiply (->column expr) (->column expr)))
+(defn sqrt [expr] (functions/sqrt (->column expr)))
+(defn tan [expr] (functions/tan (->column expr)))
+(defn tanh [expr] (functions/tanh (->column expr)))
+(defn unhex [expr] (functions/unhex (->column expr)))
+
+;;;; Misc Functions
+(defn crc32 [expr] (functions/crc32 (->column expr)))
+(defn hash [& exprs] (functions/hash (->col-array exprs)))
+(defn md5 [expr] (functions/md5 (->column expr)))
+(defn sha1 [expr] (functions/sha1 (->column expr)))
+(defn sha2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
+(defn xxhash64 [& exprs] (functions/xxhash64 (->col-array exprs)))
+
+;;;; Non-Agg Functions
+(defn array [& exprs]
+  (functions/array (->col-array exprs)))
+(defn bitwise-not [expr] (functions/bitwiseNOT (->column expr)))
+(defn broadcast [dataframe] (functions/broadcast dataframe))
+(defn expr [s] (functions/expr s))
+(defn greatest [& exprs] (functions/greatest (->col-array exprs)))
 (defn input-file-name [] (functions/input_file_name))
+(defn least [& exprs] (functions/least (->col-array exprs)))
+(defn lit [expr] (functions/lit expr))
+;(defn map [& exprs] (functions/map (->col-array exprs)))
+;(defn map-from-arrays [key-expr val-expr]
+  ;(functions/map_from_arrays (->column key-expr) (->column val-expr)))
 (defn monotonically-increasing-id [] (functions/monotonically_increasing_id))
+(defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
+(defn negate [expr] (functions/negate (->column expr)))
+(defn not [expr] (functions/not (->column expr)))
+(defn randn
+  ([] (functions/randn))
+  ([seed] (functions/randn seed)))
+(defn rand
+  ([] (functions/rand))
+  ([seed] (functions/rand seed)))
+(defn spark-partition-id [] (functions/spark-partition-id))
+(defn struct [& exprs] (functions/struct (->col-array exprs)))
+(defn when
+  ([condition if-expr]
+   (functions/when condition (->column if-expr)))
+  ([condition if-expr else-expr]
+   (-> (when condition if-expr) (.otherwise (->column else-expr)))))
+
+;;;; Partition Transform Functions
+;(defn bucket [num-buckets expr] (functions/bucket num-buckets (->column expr)))
+;(defn days [expr] (functions/days (->column expr)))
+;(defn hours [expr] (functions/hours (->column expr)))
+;(defn months [expr] (functions/months (->column expr)))
+;(defn years [expr] (functions/years (->column expr)))
+
+;;;; Sorting Functions
+(defn asc [expr] (.asc (->column expr)))
+(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
+(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
+(defn desc [expr] (.desc (->column expr)))
+(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
+(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
+
+;;;; String Functions
+(defn ascii [expr] (functions/ascii (->column expr)))
+(defn base64 [expr] (functions/base64 (->column expr)))
+(defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
+(defn decode [expr charset] (functions/decode (->column expr) charset))
+(defn encode [expr charset] (functions/encode (->column expr) charset))
+(defn format-number [expr decimal-places]
+  (functions/format_number (->column expr) decimal-places))
+(defn format-string [fmt exprs]
+  (functions/format_string fmt (->col-array exprs)))
+(defn initcap [expr] (functions/initcap (->column expr)))
+(defn instr [expr substr] (functions/instr (->column expr) substr))
+(defn length [expr] (functions/length (->column expr)))
+(defn levenshtein [left-expr right-expr]
+  (functions/levenshtein (->column left-expr) (->column right-expr)))
+(defn locate [substr expr] (functions/locate substr (->column expr)))
+(defn lower [expr] (functions/lower (->column expr)))
+(defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
+(defn ltrim [expr] (functions/ltrim (->column expr)))
+(defn overlay
+  ([src rep pos] (functions/overlay (->column src) (->column rep) (->column pos)))
+  ([src rep pos len] (functions/overlay (->column src) (->column rep) (->column pos) (->column len))))
+(defn regexp-extract [expr regex idx]
+  (functions/regexp_extract (->column expr) regex idx))
+(defn regexp-replace [expr pattern-expr replacement-expr]
+  (functions/regexp_replace
+    (->column expr)
+    (->column pattern-expr)
+    (->column replacement-expr)))
+(defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
+(defn rtrim [expr] (functions/rtrim (->column expr)))
+(defn soundex [expr] (functions/soundex (->column expr)))
+(defn split [expr pattern] (functions/split (->column expr) pattern))
+(defn substring [expr pos len] (functions/substring (->column expr) pos len))
+(defn substring-index [expr delim cnt]
+  (functions/substring-index (->column expr) delim cnt))
+(defn translate [expr match replacement]
+  (functions/translate (->column expr) match replacement))
+(defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
+(defn unbase64 [expr] (functions/unbase64 (->column expr)))
+(defn upper [expr] (functions/upper (->column expr)))
+
+;;;; Window Functions
+(defn cume-dist [] (functions/cume_dist))
+(defn dense-rank [] (functions/dense_rank))
+(defn lag
+  ([expr offset] (functions/lag (->column expr) offset))
+  ([expr offset default] (functions/lag (->column expr) offset default)))
+(defn lead
+  ([expr offset] (functions/lead (->column expr) offset))
+  ([expr offset default] (functions/lead (->column expr) offset default)))
+(defn ntile [n] (functions/ntile n))
+(defn percent-rank [] (functions/percent_rank))
+(defn rank [] (functions/rank))
+(defn row-number [] (functions/row_number))
+
+;;;; Stats Functions
+(defn corr [l-expr r-expr]
+  (functions/corr (->column l-expr) (->column r-expr)))
+(defn covar [l-expr r-expr]
+  (functions/covar_samp (->column l-expr) (->column r-expr)))
+(def covar-samp covar)
+(defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
+(defn kurtosis [expr] (functions/kurtosis (->column expr)))
+(defn skewness [expr] (functions/skewness (->column expr)))
+(defn stddev [expr] (functions/stddev (->column expr)))
+(def stddev-samp stddev)
+(defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
+(defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
+(defn var-pop [expr] (functions/var_pop (->column expr)))
+(defn variance [expr] (functions/variance (->column expr)))
+(def var-samp variance)
 
 ;;;; Column Methods
 ;; Basics
@@ -347,7 +376,7 @@
       (fn [acc-col [l-expr r-expr]]
         (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
       (lit true)
-      (map vector exprs (rest exprs)))))
+      (clojure.core/map vector exprs (rest exprs)))))
 (def < (partial compare-columns #(.lt %1 %2)))
 (def <= (partial compare-columns #(.leq %1 %2)))
 (def === (partial compare-columns #(.equalTo %1 %2)))
@@ -355,9 +384,7 @@
 (def >= (partial compare-columns #(.geq %1 %2)))
 (defn between [expr lower-bound upper-bound]
   (.between (->column expr) lower-bound upper-bound))
-(defn greatest [& exprs] (functions/greatest (->col-array exprs)))
 (defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
-(defn least [& exprs] (functions/least (->col-array exprs)))
 
 ;; Arithmetic
 (defn + [& exprs]
@@ -387,23 +414,11 @@
 ;; Strings
 (defn contains [expr literal] (.contains (->column expr) literal))
 (defn ends-with [expr literal] (.endsWith (->column expr) literal))
-(defn length [expr] (functions/length (->column expr)))
-(defn levenshtein [left-expr right-expr]
-  (functions/levenshtein (->column left-expr) (->column right-expr)))
 (defn like [expr literal] (.like (->column expr) literal))
 (defn rlike [expr literal] (.rlike (->column expr) literal))
 (defn starts-with [expr literal] (.startsWith (->column expr) literal))
 
-;; Sorting
-(defn asc [expr] (.asc (->column expr)))
-(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
-(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
-(defn desc [expr] (.desc (->column expr)))
-(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
-(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
-
 ;; Clojure Idioms
-
 ;;;; Arithmetic
 (defn inc [expr] (+ (->column expr) 1))
 (defn dec [expr] (- (->column expr) 1))

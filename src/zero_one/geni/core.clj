@@ -123,6 +123,7 @@
    boolean
    broadcast
    bround
+   ;bucket
    byte
    cast
    cbrt
@@ -154,6 +155,7 @@
    day-of-month
    day-of-week
    day-of-year
+   ;days
    dec
    decode
    degrees
@@ -169,11 +171,13 @@
    exists
    exp
    explode
+   expm1
    expr
    factorial
    flatten
    float
    floor
+   forall
    format-number
    format-string
    from-unixtime
@@ -183,6 +187,7 @@
    hash
    hex
    hour
+   ;hours
    hypot
    inc
    initcap
@@ -201,17 +206,21 @@
    lit
    locate
    log
+   log10
    log1p
    log2
    long
    lower
    lpad
    ltrim
+   ;map
+   ;map-from-arrays
    md5
    minute
    mod
    monotonically-increasing-id
    month
+   ;months
    months-between
    nan?
    nanvl
@@ -224,6 +233,7 @@
    null-rate
    null?
    odd?
+   overlay
    percent-rank
    pi
    pmod
@@ -260,6 +270,7 @@
    skewness
    slice
    sort-array
+   soundex
    spark-partition-id
    split
    sqr
@@ -270,6 +281,7 @@
    stddev-samp
    struct
    substring
+   substring-index
    sum-distinct
    tan
    tanh
@@ -277,6 +289,7 @@
    to-date
    to-timestamp
    to-utc-timestamp
+   transform
    translate
    trim
    unbase64
@@ -288,7 +301,9 @@
    variance
    week-of-year
    when
+   xxhash64
    year
+   ;years
    zero?
    zip-with
    ||])

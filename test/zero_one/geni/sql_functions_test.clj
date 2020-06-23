@@ -96,7 +96,7 @@
       (g/collect-col :BuildingArea)
       last) => nil?)
 
-(facts "On string functions" :slow
+(facts "On string functions" ;:slow
   (fact "correct ascii"
     (-> df-1
         (g/select
@@ -107,9 +107,11 @@
           (g/translate (g/lit "foobar") "bar" "baz")
           (g/initcap (g/lit "abc"))
           (g/instr (g/lit "abcdef") "c")
-          (g/decode (g/encode (g/lit "1122") "UTF-8") "UTF-8"))
+          (g/decode (g/encode (g/lit "1122") "UTF-8") "UTF-8")
+          (g/overlay :Suburb (g/lit "abc") 3)
+          (g/overlay :Suburb (g/lit "xyz") 3 1))
         g/collect-vals
-        first) => [65 10 19 4 "foobaz" "Abc" 3 "1122"])
+        first) => [65 10 19 4 "foobaz" "Abc" 3 "1122" "Ababcsford" "Abxyzotsford"])
   (fact "correct concat-ws"
     (-> df-20
         (g/group-by :Suburb)
@@ -119,9 +121,13 @@
         ffirst) => "Biggin,Jellis,Collins,Nelson,Greg,LITTLE")
   (fact "correct substring"
     (-> df-20
-        (g/select (g/substring :Suburb 3 4))
+        (g/select
+          (g/substring :Suburb 3 4)
+          (g/substring-index :Suburb "bb" 1)
+          (g/substring-index :Suburb "bb" -1)
+          (g/soundex :Suburb))
         g/distinct
-        g/collect-vals) => [["bots"]]))
+        g/collect-vals) => [["bots" "A" "otsford" "A132"]]))
 
 (facts "On agg functions"
   (-> df-20
@@ -229,9 +235,10 @@
         (g/array-position "xs" 2)
         (g/aggregate :xs 0 g/+)
         (g/aggregate :xs 0 g/+ g/sqr)
-        (g/exists :xs g/zero?))
+        (g/exists :xs g/zero?)
+        (g/forall :ys #(g/< % 10)))
       g/collect-vals
-      first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2 4 16 false]
+      first) => [[1 2 1] true [1 2] [3] [2 1] "x,y" "x,y" 2 4 16 false true]
   (-> df-1
       (g/with-column "ys" (g/array [-3 -2 -1]))
       (g/with-column "xs" (g/array [1 2 1]))
@@ -258,9 +265,10 @@
         (g/sort-array "xs" false)
         (g/array-min "xs")
         (g/array-max "xs")
-        (g/array-union "xs" "xs"))
+        (g/array-union "xs" "xs")
+        (g/transform "xs" g/inc))
       g/collect-vals
-      first) => [[1 6 5 4] 4 [5] [1 4 5 6] [6 5 4 1] 1 6 [4 5 6 1]]
+      first) => [[1 6 5 4] 4 [5] [1 4 5 6] [6 5 4 1] 1 6 [4 5 6 1] [5 6 7 2]]
   (-> df-1
       (g/select (g/shuffle (g/array (range 10))))
       g/collect-vals
@@ -418,10 +426,12 @@
                (g/floor 2.34)
                (g/round 2.49)
                (g/round 1.51))
-        (g/log (g/exp 1)))
-      g/collect-vals) => [[true 1.0]])
+        (g/log (g/exp 1))
+        (g/expm1 0)
+        (g/log10 10))
+      g/collect-vals) => [[true 1.0 0.0 1.0]])
 
-(facts "On group-by + agg functions" ;:slow
+(facts "On group-by + agg functions" :slow
   (let [summary (-> df-20
                     (g/agg
                       (g/count (g/->column :BuildingArea))
@@ -650,6 +660,7 @@
 
 (fact "hashing should give unique rows" :slow
   (let [n-sellers (-> df-20 (g/select :SellerG) g/distinct g/count)]
+    (-> df-20 (g/select (g/xxhash64 :SellerG)) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/md5 :SellerG)) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha1 :SellerG)) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha2 :SellerG 256)) g/distinct g/count) => n-sellers))
