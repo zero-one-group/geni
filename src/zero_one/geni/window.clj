@@ -28,3 +28,9 @@
       (cond-> rows-between (set-rows-between rows-between))))
 
 (defn over [column window-spec] (.over column window-spec))
+
+(def unbounded-following (Window/unboundedFollowing))
+
+(def unbounded-preceeding (Window/unboundedPreceding))
+
+(def current-row (Window/currentRow))
