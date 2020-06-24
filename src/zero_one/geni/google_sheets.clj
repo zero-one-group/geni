@@ -29,18 +29,18 @@
   delete-sheets!)
 
 (with-dynamic-import
-  (import
-    '(com.google.api.client.googleapis.auth.oauth2 GoogleCredential)
-    '(com.google.api.client.googleapis.javanet GoogleNetHttpTransport)
-    '(com.google.api.client.json.jackson2 JacksonFactory)
-    '(com.google.api.services.drive DriveScopes Drive$Builder)
-    '(com.google.api.services.sheets.v4 Sheets$Builder
-                                        SheetsScopes)
-    '(com.google.api.services.sheets.v4.model Sheet
-                                              SheetProperties
-                                              Spreadsheet
-                                              SpreadsheetProperties
-                                              ValueRange))
+  [[com.google.api.client.googleapis.auth.oauth2 GoogleCredential]
+   [com.google.api.client.googleapis.javanet GoogleNetHttpTransport]
+   [com.google.api.client.json.jackson2 JacksonFactory]
+   [com.google.api.services.drive DriveScopes
+                                  Drive$Builder]
+   [com.google.api.services.sheets.v4 Sheets$Builder
+                                      SheetsScopes]
+   [com.google.api.services.sheets.v4.model Sheet
+                                            SheetProperties
+                                            Spreadsheet
+                                            SpreadsheetProperties
+                                            ValueRange]]
 
   (def json-factory (JacksonFactory/getDefaultInstance))
 

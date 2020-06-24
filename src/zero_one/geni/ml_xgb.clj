@@ -7,7 +7,7 @@
          xgboost-regressor)
 
 (with-dynamic-import
-  (import '(ml.dmlc.xgboost4j.scala.spark XGBoostClassifier XGBoostRegressor))
+  [[ml.dmlc.xgboost4j.scala.spark XGBoostClassifier XGBoostRegressor]]
 
   (defn xgboost-classifier [params]
       (let [defaults  {:num-round 1,
