@@ -405,6 +405,8 @@
 (import-vars
   [zero-one.geni.window
    over
+   unbounded-following
+   unbounded-preceeding
    window])
 
 (import-vars

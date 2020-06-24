@@ -231,4 +231,4 @@ Some code was taken from:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) - especially in terms of Scala interop.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
-* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/Aredington](https://old.reddit.com/user/Aredington) for [with-dynamic-import](src/zero_one/geni/utils.clj).
+* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).

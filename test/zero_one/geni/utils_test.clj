@@ -7,16 +7,24 @@
   (:import
     (scala.collection Seq)))
 
-(fact "dynamic import fails gracefully"
-  (with-dynamic-import
-    (import '(org.apache.spark.sql functions))
-    (def abc-def-ghi 123)) => #(and (= % :succeeded) (= abc-def-ghi 123))
-  (with-dynamic-import
-    (import '(some.non-existent.namespace non-existent-class))
-    (def jkl-mno-pqr 123)) => #(and (= % :failed) (nil? (resolve 'jkl-mno-pqr)))
-  (with-dynamic-import
-    (+ 1 1)
-    (def stu-vwx-yz 123)) => #(and (= % :failed) (nil? (resolve 'stu-vwx-yz))))
+(facts "On dynamic imports"
+  (fact "succeeds with valid import forms"
+    (with-dynamic-import
+      [[org.apache.spark.sql functions]]
+      (def adf-def 123)) => #(and (= % :succeeded) (= adf-def 123))
+    (with-dynamic-import
+      [org.apache.spark.sql.Column]
+      (def ghi-jkl 123)) => :succeeded) ;#(and (= % :succeeded) (= ghi-jkl 123))))
+  (fact "fails gracefully"
+    (with-dynamic-import
+      [[some.non-existent.namespace non-existent-class]]
+      (def mno-pqr 123)) => #(and (= % :failed) (nil? (resolve 'mno-pqr)))
+    (with-dynamic-import
+      [some.non-existent.namespace.NonExistentClass]
+      (def stu-vwx 123)) => #(and (= % :failed) (nil? (resolve 'stu-vwx)))
+    (with-dynamic-import
+      (+ 1 1)
+      (def xyz 123)) => #(and (= % :failed) (nil? (resolve 'xyz)))))
 
 (facts "On ensure-coll"
   (fact "should not change collections"
