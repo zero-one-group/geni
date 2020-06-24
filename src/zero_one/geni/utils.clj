@@ -18,9 +18,8 @@
           (for [imp imports]
             (if (symbol? imp)
               (import-class imp)
-              (let [package (first imp)
-                    classes (rest imp)]
-                (doall (for [cls classes] (import-class package cls)))))))
+              (let [[pkg & classes] imp]
+                (doall (for [cls classes] (import-class pkg cls)))))))
         true
         (catch ClassNotFoundException _ nil))
     `(do ~@body :succeeded)
