@@ -3,7 +3,7 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.java.data :as j]
     [clojure.string :refer [replace-first]]
-    [zero-one.geni.utils :refer [vector-of-numbers?]])
+    [zero-one.geni.utils :refer [vector-of-doubles?]])
   (:import
     (java.io ByteArrayOutputStream)
     (org.apache.spark.ml.linalg DenseVector
@@ -51,9 +51,13 @@
         (->scala-function0 (fn [] ~@body)))
       (.toString out-buffer# "UTF-8")))
 
+(defn ->dense-vector [values]
+  (let [[x & xs] values]
+    (Vectors/dense x (->scala-seq xs))))
+
 (defn ->scala-coll [value]
   (cond
-    (vector-of-numbers? value) (let [[x & xs] value] (Vectors/dense x (->scala-seq xs)))
+    (vector-of-doubles? value) (->dense-vector value)
     (coll? value) (->scala-seq value)
     :else value))
 

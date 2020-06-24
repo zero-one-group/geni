@@ -69,26 +69,84 @@
 
 (import-vars
   [zero-one.geni.column
-   col
-   ->col-array
-   ->column])
-
-(import-vars
-  [zero-one.geni.sql
+   %
+   &
    &&
    *
    +
    -
-   ->date-col
-   ->timestamp-col
-   ->utc-timestamp
+   ->col-array
+   ->column
    /
    <
    <=
+   <=>
    =
+   =!=
    ===
    >
    >=
+   asc
+   asc-nulls-first
+   asc-nulls-last
+   between
+   bitwise-and
+   bitwise-or
+   bitwise-xor
+   boolean
+   byte
+   cast
+   col
+   contains
+   dec
+   desc
+   desc-nulls-first
+   desc-nulls-last
+   double
+   ends-with
+   even?
+   float
+   get-field
+   get-item
+   hash-code
+   inc
+   int
+   is-nan
+   is-not-null
+   is-null
+   isin
+   like
+   lit
+   long
+   mod
+   nan?
+   neg?
+   not-null?
+   null-count
+   null-rate
+   null?
+   odd?
+   pos?
+   rlike
+   short
+   starts-with
+   zero?
+   |
+   ||])
+
+(import-vars
+  [zero-one.geni.sql
+   !
+   ->date-col
+   ->timestamp-col
+   ->utc-timestamp
+   ;bucket
+   ;days
+   ;hours
+   ;map
+   ;map-from-arrays
+   ;months
+   ;years
    abs
    acos
    add-months
@@ -109,30 +167,21 @@
    array-union
    arrays-overlap
    arrays-zip
-   asc
-   asc-nulls-first
-   asc-nulls-last
    ascii
    asin
    atan
    atan2
    base64
-   between
    bin
    bitwise-not
-   boolean
    broadcast
    bround
-   ;bucket
-   byte
-   cast
    cbrt
    ceil
    collect-list
    collect-set
    concat
    concat-ws
-   contains
    conv
    corr
    cos
@@ -155,19 +204,11 @@
    day-of-month
    day-of-week
    day-of-year
-   ;days
-   dec
    decode
    degrees
    dense-rank
-   desc
-   desc-nulls-first
-   desc-nulls-last
-   double
    element-at
    encode
-   ends-with
-   even?
    exists
    exp
    explode
@@ -175,7 +216,6 @@
    expr
    factorial
    flatten
-   float
    floor
    forall
    format-number
@@ -187,14 +227,10 @@
    hash
    hex
    hour
-   ;hours
    hypot
-   inc
    initcap
    input-file-name
    instr
-   int
-   isin
    kurtosis
    lag
    last-day
@@ -202,42 +238,28 @@
    least
    length
    levenshtein
-   like
-   lit
    locate
    log
    log10
    log1p
    log2
-   long
    lower
    lpad
    ltrim
-   ;map
-   ;map-from-arrays
    md5
    minute
-   mod
    monotonically-increasing-id
    month
-   ;months
    months-between
-   nan?
    nanvl
-   neg?
    negate
    next-day
    not
    ntile
-   null-count
-   null-rate
-   null?
-   odd?
    overlay
    percent-rank
    pi
    pmod
-   pos?
    posexplode
    posexplode-outer
    pow
@@ -250,7 +272,6 @@
    regexp-replace
    reverse
    rint
-   rlike
    round
    row-number
    rpad
@@ -262,7 +283,6 @@
    shift-left
    shift-right
    shift-right-unsigned
-   short
    signum
    sin
    sinh
@@ -275,7 +295,6 @@
    split
    sqr
    sqrt
-   starts-with
    stddev
    stddev-pop
    stddev-samp
@@ -303,10 +322,7 @@
    when
    xxhash64
    year
-   ;years
-   zero?
-   zip-with
-   ||])
+   zip-with])
 
 (import-vars
   [zero-one.geni.dataset

@@ -118,12 +118,14 @@
   [zero-one.geni.ml-recommendation
    als
    alternating-least-squares
+   item-factors
    recommend-for-all-items
    recommend-for-all-users
    recommend-for-item-subset
    recommend-for-user-subset
    recommend-items
-   recommend-users])
+   recommend-users
+   user-factors])
 
 (import-vars
   [zero-one.geni.ml-tuning

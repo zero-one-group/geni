@@ -12,7 +12,7 @@
     [clojure.walk :refer [keywordize-keys]]
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [ensure-coll vector-of-numbers?]])
+    [zero-one.geni.utils :refer [ensure-coll vector-of-doubles?]])
   (:import
     (org.apache.spark.sql Column RowFactory functions)
     (org.apache.spark.sql.types ArrayType DataTypes)
@@ -281,7 +281,7 @@
 
 (defn infer-spark-type [value]
   (cond
-    (vector-of-numbers? value) (VectorUDT.)
+    (vector-of-doubles? value) (VectorUDT.)
     (coll? value) (ArrayType. (infer-spark-type (first value)) true)
     :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
 

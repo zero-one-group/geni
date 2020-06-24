@@ -45,3 +45,7 @@
 (defn recommend-users
   ([model num-users] (recommend-for-all-items model num-users))
   ([model items-df num-users] (recommend-for-item-subset model items-df num-users)))
+
+(defn item-factors [model] (.itemFactors model))
+
+(defn user-factors [model] (.userFactors model))
