@@ -1,45 +1,17 @@
 (ns zero-one.geni.sql
-  (:refer-clojure :exclude [*
-                            +
-                            -
-                            /
-                            <
-                            <=
-                            =
-                            >
-                            >=
-                            alias
-                            boolean
-                            byte
-                            cast
-                            concat
-                            dec
-                            double
-                            even?
+  (:refer-clojure :exclude [concat
                             flatten
-                            float
                             hash
-                            inc
-                            int
-                            last
-                            long
                             map
-                            mod
-                            neg?
                             not
-                            odd?
-                            pos?
                             rand
                             reverse
                             second
                             sequence
-                            short
-                            short
                             struct
-                            when
-                            zero?])
+                            when])
   (:require
-    [zero-one.geni.column :refer [->col-array ->column lit]]
+    [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column functions)))
@@ -254,6 +226,7 @@
 (defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
 (defn not [expr] (functions/not (->column expr)))
+(def ! not)
 (defn randn
   ([] (functions/randn))
   ([seed] (functions/randn seed)))
@@ -274,14 +247,6 @@
 ;(defn hours [expr] (functions/hours (->column expr)))
 ;(defn months [expr] (functions/months (->column expr)))
 ;(defn years [expr] (functions/years (->column expr)))
-
-;;;; Sorting Functions
-(defn asc [expr] (.asc (->column expr)))
-(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
-(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
-(defn desc [expr] (.desc (->column expr)))
-(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
-(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
 
 ;;;; String Functions
 (defn ascii [expr] (functions/ascii (->column expr)))
@@ -355,86 +320,3 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 (def var-samp variance)
-
-;;;; Column Methods
-;; Basics
-(defn cast [expr new-type] (.cast (->column expr) new-type))
-
-;; Booleans
-(defn && [& exprs]
-  (reduce #(.and (->column %1) (->column %2))
-          (lit true)
-          (->col-array exprs)))
-(defn || [& exprs]
-  (reduce #(.or (->column %1) (->column %2))
-          (lit false)
-          (->col-array exprs)))
-(defn- compare-columns [compare-fn expr-0 & exprs]
-  (let [exprs (-> exprs (conj expr-0))]
-    (reduce
-      (fn [acc-col [l-expr r-expr]]
-        (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
-      (lit true)
-      (clojure.core/map vector exprs (rest exprs)))))
-(def < (partial compare-columns #(.lt %1 %2)))
-(def <= (partial compare-columns #(.leq %1 %2)))
-(def === (partial compare-columns #(.equalTo %1 %2)))
-(def > (partial compare-columns #(.gt %1 %2)))
-(def >= (partial compare-columns #(.geq %1 %2)))
-(defn between [expr lower-bound upper-bound]
-  (.between (->column expr) lower-bound upper-bound))
-(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
-
-;; Arithmetic
-(defn + [& exprs]
-  (reduce #(.plus (->column %1) (->column %2))
-          (lit 0)
-          (->col-array exprs)))
-(defn - [& exprs]
-  (reduce #(.minus (->column %1) (->column %2))
-          (->col-array exprs)))
-(defn * [& exprs]
-  (reduce #(.multiply (->column %1) (->column %2))
-          (lit 1)
-          (->col-array exprs)))
-(defn / [& exprs]
-  (reduce #(.divide (->column %1) (->column %2))
-          (->col-array exprs)))
-(defn mod [left-expr right-expr] (.mod (->column left-expr) (->column right-expr)))
-
-;; Missing Data
-(defn nan? [expr] (.isNaN (->column expr)))
-(defn null? [expr] (.isNull (->column expr)))
-(defn null-rate [expr]
-  (-> expr ->column null? (cast "int") functions/mean (.as (str "null_rate(" (name expr) ")"))))
-(defn null-count [expr]
-  (-> expr ->column null? (cast "int") functions/sum (.as (str "null_count(" (name expr) ")"))))
-
-;; Strings
-(defn contains [expr literal] (.contains (->column expr) literal))
-(defn ends-with [expr literal] (.endsWith (->column expr) literal))
-(defn like [expr literal] (.like (->column expr) literal))
-(defn rlike [expr literal] (.rlike (->column expr) literal))
-(defn starts-with [expr literal] (.startsWith (->column expr) literal))
-
-;; Clojure Idioms
-;;;; Arithmetic
-(defn inc [expr] (+ (->column expr) 1))
-(defn dec [expr] (- (->column expr) 1))
-
-;;;; Casting
-(defn short [expr] (cast (->column expr) "short"))
-(defn int [expr] (cast (->column expr) "int"))
-(defn long [expr] (cast (->column expr) "long"))
-(defn float [expr] (cast (->column expr) "float"))
-(defn double [expr] (cast (->column expr) "double"))
-(defn boolean [expr] (cast (->column expr) "boolean"))
-(defn byte [expr] (cast (->column expr) "byte"))
-
-;;;; Predicates
-(defn = [l-expr r-expr] (=== (->column l-expr) (->column r-expr)))
-(defn zero? [expr] (=== (->column expr) 0))
-(defn pos? [expr] (< 0 (->column expr)))
-(defn neg? [expr] (< (->column expr) 0))
-(defn even? [expr] (=== (mod (->column expr) 2) 0))
-(defn odd? [expr] (=== (mod (->column expr) 2) 1))
