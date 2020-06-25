@@ -41,7 +41,6 @@
                             pos?
                             rand
                             remove
-                            replace
                             reverse
                             second
                             sequence
@@ -331,6 +330,7 @@
    agg-all
    approx-quantile
    cache
+   ;checkpoint
    col-regex
    collect
    collect-col
@@ -355,6 +355,7 @@
    group-by
    infer-schema
    infer-struct-field
+   input-files
    intersect
    intersect-all
    is-empty
@@ -373,12 +374,13 @@
    pivot
    print-schema
    random-split
+   rdd
    records->dataset
    remove
    rename-columns
    repartition
    repartition-by-range
-   replace
+   replace-na
    rollup
    sample
    select

@@ -5,7 +5,6 @@
                             filter
                             group-by
                             remove
-                            replace
                             sort
                             take])
   (:require
@@ -18,13 +17,47 @@
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
-;;;; Dataset Methods
+;; TODO: RDD-based functions, streaming-based functions, checkpoints
+
+;;;; Actions
+(defn- collected->maps [collected]
+  (map interop/->clojure collected))
+
+(defn- collected->vectors [collected cols]
+  (map (apply juxt cols) (collected->maps collected)))
+
+(defn collect [dataframe]
+  (->> dataframe .collect collected->maps))
+
+(defn describe [dataframe & col-names]
+  (.describe dataframe (into-array java.lang.String (map name col-names))))
+
+(defn tail [dataframe n-rows]
+  (-> dataframe (.tail n-rows) collected->maps))
+
+(defn take [dataframe n-rows]
+  (-> dataframe (.take n-rows) collected->maps))
+
+(defn show
+  ([dataframe] (show dataframe {}))
+  ([dataframe options]
+   (let [{:keys [num-rows truncate vertical]
+          :or   {num-rows 20
+                 truncate 0
+                 vertical false}} options]
+     (-> dataframe (.showString num-rows truncate vertical) println))))
+
+(defn summary [dataframe & stat-names]
+  (.summary dataframe (into-array java.lang.String (map name stat-names))))
+
 ;; Basic
 (defn cache [dataframe] (.cache dataframe))
 
-(defn column-names [dataframe] (-> dataframe .columns seq))
+;(defn checkpoint
+  ;([dataframe] (.checkpoint dataframe true))
+  ;([dataframe eager] (.checkpoint dataframe eager)))
 
-(defn columns [dataframe] (->> dataframe column-names (map keyword)))
+(defn columns [dataframe] (->> dataframe .columns seq (map keyword)))
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
@@ -37,38 +70,34 @@
   ([dataframe] (.explain dataframe))
   ([dataframe extended] (.explain dataframe extended)))
 
+(defn input-files [dataframe] (seq (.inputFiles dataframe)))
+
 (defn is-empty [dataframe] (.isEmpty dataframe))
 (def empty? is-empty)
 
 (defn is-local [dataframe] (.isLocal dataframe))
 (def local? is-local)
 
-(defn persist [dataframe] (.persist dataframe))
+(defn persist
+  ([dataframe] (.persist dataframe))
+  ([dataframe new-level] (.persist dataframe new-level)))
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))
 
-(defn rename-columns [dataframe rename-map]
-  (reduce
-    (fn [acc-df [old-name new-name]]
-      (.withColumnRenamed acc-df (name old-name) (name new-name)))
-    dataframe
-    rename-map))
+(defn rdd [dataframe] (.rdd dataframe))
 
-(defn show
-  ([dataframe] (show dataframe {}))
-  ([dataframe options]
-   (let [{:keys [num-rows truncate vertical]
-          :or   {num-rows 20
-                 truncate 0
-                 vertical false}} options]
-     (-> dataframe (.showString num-rows truncate vertical) println))))
+(defn storage-level [dataframe] (.storageLevel dataframe))
 
-(defn show-vertical
-  ([dataframe] (show dataframe {:vertical true}))
-  ([dataframe options] (show dataframe (assoc options :vertical true))))
+(defn unpersist
+  ([dataframe] (.unpersist dataframe))
+  ([dataframe blocking] (.unpersist dataframe blocking)))
 
-;; Typed Transformations
+;;;; Streaming
+(defn is-streaming [dataframe] (.isStreaming dataframe))
+(def streaming? is-streaming)
+
+;;;; Typed Transformations
 (defn distinct [dataframe] (.distinct dataframe))
 
 (defn drop-duplicates [dataframe & col-names]
@@ -134,7 +163,7 @@
     (.agg dataframe head (into-array Column tail))))
 
 (defn agg-all [dataframe agg-fn]
-  (let [agg-cols (map agg-fn (column-names dataframe))]
+  (let [agg-cols (map agg-fn (-> dataframe .columns seq))]
     (apply agg dataframe agg-cols)))
 
 (defn col-regex [dataframe col-name] (.colRegex dataframe (name col-name)))
@@ -156,10 +185,6 @@
    (let [join-cols (ensure-coll join-cols)]
      (.join left right (interop/->scala-seq (map name join-cols)) join-type))))
 
-(defn pivot
-  ([grouped expr] (.pivot grouped (->column expr)))
-  ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
-
 (defn rollup [dataframe & exprs]
   (.rollup dataframe (->col-array exprs)))
 
@@ -174,13 +199,15 @@
 (defn with-column-renamed [dataframe old-name new-name]
   (.withColumnRenamed dataframe (name old-name) (name new-name)))
 
-;; Ungrouped
+;;;; Ungrouped
 (defn spark-session [dataframe] (.sparkSession dataframe))
 
 (defn sql-context [dataframe] (.sqlContext dataframe))
 
-(defn is-streaming [dataframe] (.isStreaming dataframe))
-(def streaming? is-streaming)
+;;;; Relational Grouped Dataset
+(defn pivot
+  ([grouped expr] (.pivot grouped (->column expr)))
+  ([grouped expr values] (.pivot grouped (->column expr) (interop/->scala-seq values))))
 
 ;; Stat Functions
 (defn approx-quantile [dataframe col-or-cols probs rel-error]
@@ -194,46 +221,6 @@
     (if seq-col
       (map seq quantiles)
       (seq quantiles))))
-
-;; Actions
-(defn- collected->maps [collected]
-  (map interop/->clojure collected))
-
-(defn- collected->vectors [collected cols]
-  (map (apply juxt cols) (collected->maps collected)))
-
-;;;; Returning Maps
-(defn collect [dataframe]
-  (->> dataframe .collect collected->maps))
-(defn take [dataframe n-rows]
-  (-> dataframe (.take n-rows) collected->maps))
-(defn tail [dataframe n-rows]
-  (-> dataframe (.tail n-rows) collected->maps))
-
-;;;; Returning Vectors
-(defn collect-vals [dataframe]
-  (let [cols (columns dataframe)]
-    (-> dataframe .collect (collected->vectors cols))))
-(defn take-vals [dataframe n-rows]
-  (let [cols (columns dataframe)]
-    (-> dataframe (.take n-rows) (collected->vectors cols))))
-(defn tail-vals [dataframe n-rows]
-  (let [cols (columns dataframe)]
-    (-> dataframe (.tail n-rows) (collected->vectors cols))))
-
-;;;;; Shortcut Returns
-(defn collect-col [dataframe col-name]
-  (map (keyword col-name) (-> dataframe (select col-name) collect)))
-(defn first-vals [dataframe]
-  (-> dataframe (take-vals 1) first))
-(defn last-vals [dataframe]
-  (-> dataframe (tail-vals 1) first))
-
-;;;; Returning Datasets
-(defn describe [dataframe & col-names]
-  (.describe dataframe (into-array java.lang.String (map name col-names))))
-(defn summary [dataframe & stat-names]
-  (.summary dataframe (into-array java.lang.String (map name stat-names))))
 
 ;; NA Functions
 (defn drop-na
@@ -252,12 +239,49 @@
   ([dataframe value cols]
    (-> dataframe .na (.fill value (interop/->scala-seq (map name cols))))))
 
-(defn replace [dataframe cols replacement]
+(defn replace-na [dataframe cols replacement]
   (let [cols (map name (ensure-coll cols))]
     (-> dataframe
         .na
         (.replace (into-array java.lang.String cols)
                   (java.util.HashMap. replacement)))))
+
+;;;; Convenience Functions
+;; Actions
+(defn collect-vals [dataframe]
+  (let [cols (columns dataframe)]
+    (-> dataframe .collect (collected->vectors cols))))
+
+(defn take-vals [dataframe n-rows]
+  (let [cols (columns dataframe)]
+    (-> dataframe (.take n-rows) (collected->vectors cols))))
+
+(defn tail-vals [dataframe n-rows]
+  (let [cols (columns dataframe)]
+    (-> dataframe (.tail n-rows) (collected->vectors cols))))
+
+(defn collect-col [dataframe col-name]
+  (map (keyword col-name) (-> dataframe (select col-name) collect)))
+
+(defn first-vals [dataframe]
+  (-> dataframe (take-vals 1) first))
+
+(defn last-vals [dataframe]
+  (-> dataframe (tail-vals 1) first))
+
+;; Basic
+(defn show-vertical
+  ([dataframe] (show dataframe {:vertical true}))
+  ([dataframe options] (show dataframe (assoc options :vertical true))))
+
+(defn column-names [dataframe] (-> dataframe .columns seq))
+
+(defn rename-columns [dataframe rename-map]
+  (reduce
+    (fn [acc-df [old-name new-name]]
+      (.withColumnRenamed acc-df (name old-name) (name new-name)))
+    dataframe
+    rename-map))
 
 ;;;; Dataset Creation
 (defn ->row [coll]

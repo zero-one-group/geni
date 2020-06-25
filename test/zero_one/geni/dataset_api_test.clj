@@ -9,7 +9,8 @@
   (:import
     (org.apache.spark.sql Dataset
                           SparkSession
-                          SQLContext)))
+                          SQLContext)
+    (org.apache.spark.rdd RDD)))
 
 (fact "On clojure idioms"
   (let [r-50      (range 50)
@@ -61,7 +62,7 @@
     (-> df-50 (g/fill-na -999.0 [:Regionname]) (g/collect-col :BuildingArea) set)
     => #(nil? (% -999.0)))
   (fact "On replace"
-    (-> df-50 (g/replace :Rooms {1 -999}) (g/collect-col :Rooms) set)
+    (-> df-50 (g/replace-na :Rooms {1 -999}) (g/collect-col :Rooms) set)
     => #(% -999)))
 
 (fact "On agg methods" :slow
@@ -319,12 +320,15 @@
             dates   (map #(str (% :Date)) records)]
         (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
 
-(facts "On caching" :slow
+(facts "On caching" ;:slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
     (.. df storageLevel useMemory) => true)
   (let [df (-> df-1 g/persist)]
-    (.. df storageLevel useMemory) => true))
+    (.. df storageLevel useMemory) => true)
+  (g/input-files melbourne-df) => nil?
+  (g/rdd melbourne-df) => #(instance? RDD %))
+  ;(g/checkpoint melbourne-df) => #(instance? Dataset %))
 
 (facts "On repartition" :slow
   (fact "able to repartition by a number"
