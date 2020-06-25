@@ -7,6 +7,7 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
   (:import
+    (org.apache.spark.rdd RDD)
     (org.apache.spark.sql Dataset
                           SparkSession
                           SQLContext)))
@@ -61,7 +62,7 @@
     (-> df-50 (g/fill-na -999.0 [:Regionname]) (g/collect-col :BuildingArea) set)
     => #(nil? (% -999.0)))
   (fact "On replace"
-    (-> df-50 (g/replace :Rooms {1 -999}) (g/collect-col :Rooms) set)
+    (-> df-50 (g/replace-na :Rooms {1 -999}) (g/collect-col :Rooms) set)
     => #(% -999)))
 
 (fact "On agg methods" :slow
@@ -319,12 +320,18 @@
             dates   (map #(str (% :Date)) records)]
         (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
 
-(facts "On caching" :slow
+(facts "On caching" ;:slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
-    (.. df storageLevel useMemory) => true)
+    (.useMemory (g/storage-level df)) => true)
   (let [df (-> df-1 g/persist)]
-    (.. df storageLevel useMemory) => true))
+    (.useMemory (g/storage-level df)) => true)
+  (let [df (-> df-1 g/persist g/unpersist)]
+    (.useMemory (g/storage-level df)) => false)
+  (let [df (-> df-1 g/persist (g/unpersist true))]
+    (.useMemory (g/storage-level df)) => false)
+  (g/input-files melbourne-df) => nil?
+  (g/rdd melbourne-df) => #(instance? RDD %))
 
 (facts "On repartition" :slow
   (fact "able to repartition by a number"
