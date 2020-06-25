@@ -79,8 +79,7 @@
 (def local? is-local)
 
 (defn persist
-  ([dataframe] (.persist dataframe))
-  ([dataframe new-level] (.persist dataframe new-level)))
+  [dataframe] (.persist dataframe))
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))

@@ -7,10 +7,11 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
   (:import
+    (org.apache.spark.rdd RDD)
+    (org.apache.spark.storage StorageLevel)
     (org.apache.spark.sql Dataset
                           SparkSession
-                          SQLContext)
-    (org.apache.spark.rdd RDD)))
+                          SQLContext)))
 
 (fact "On clojure idioms"
   (let [r-50      (range 50)
@@ -323,12 +324,15 @@
 (facts "On caching" ;:slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
-    (.. df storageLevel useMemory) => true)
+    (.useMemory (g/storage-level df)) => true)
   (let [df (-> df-1 g/persist)]
-    (.. df storageLevel useMemory) => true)
+    (.useMemory (g/storage-level df)) => true)
+  (let [df (-> df-1 g/persist g/unpersist)]
+    (.useMemory (g/storage-level df)) => false)
+  (let [df (-> df-1 g/persist (g/unpersist true))]
+    (.useMemory (g/storage-level df)) => false)
   (g/input-files melbourne-df) => nil?
   (g/rdd melbourne-df) => #(instance? RDD %))
-  ;(g/checkpoint melbourne-df) => #(instance? Dataset %))
 
 (facts "On repartition" :slow
   (fact "able to repartition by a number"

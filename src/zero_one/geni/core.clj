@@ -391,6 +391,7 @@
    sort-within-partitions
    spark-session
    sql-context
+   storage-level
    streaming?
    summary
    table->dataset
@@ -400,6 +401,7 @@
    take-vals
    union
    union-by-name
+   unpersist
    where
    with-column
    with-column-renamed])
