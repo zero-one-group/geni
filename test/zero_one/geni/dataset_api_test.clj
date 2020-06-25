@@ -8,7 +8,6 @@
     [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
   (:import
     (org.apache.spark.rdd RDD)
-    (org.apache.spark.storage StorageLevel)
     (org.apache.spark.sql Dataset
                           SparkSession
                           SQLContext)))
