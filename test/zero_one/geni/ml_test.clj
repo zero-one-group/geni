@@ -14,6 +14,7 @@
     (ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
                                    XGBoostRegressor)
     (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        FMClassifier
                                         GBTClassifier
                                         LinearSVC
                                         LogisticRegression
@@ -53,6 +54,7 @@
                                  PolynomialExpansion
                                  QuantileDiscretizer
                                  RegexTokenizer
+                                 RobustScaler
                                  SQLTransformer
                                  StandardScaler
                                  StopWordsRemover
@@ -67,6 +69,7 @@
     (org.apache.spark.ml.recommendation ALS)
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
+                                    FMRegressor
                                     GBTRegressor
                                     GeneralizedLinearRegression
                                     IsotonicRegression
@@ -392,6 +395,10 @@
   => #(instance? RegressionEvaluator %))
 
 (fact "On instantiation - regression"
+  (ml/params (ml/fm-regressor {:factor-size 12}))
+  => #(= (:factor-size %) 12)
+  (ml/fm-regressor {}) => #(instance? FMRegressor %)
+
   (ml/params (ml/isotonic-regression {:label-col "ABC"}))
   => #(= (:label-col %) "ABC")
   (ml/isotonic-regression {})
@@ -428,6 +435,10 @@
   => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
+  (ml/params (ml/fm-classifier {:init-std 10.0}))
+  => #(= (:init-std %) 10.0)
+  (ml/fm-classifier {}) => #(instance? FMClassifier %)
+
   (ml/params (ml/logistic-regression {:thresholds [0.0 0.1]}))
   => #(= (:thresholds %) [0.0 0.1])
   (ml/logistic-regression {})
@@ -470,6 +481,11 @@
   => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
+  (ml/params (ml/robust-scaler {:with-centering true}))
+  => #(= (:with-centering %) true)
+  (ml/robust-scaler {})
+  => #(instance? RobustScaler %)
+
   (ml/params (ml/stop-words-remover {:case-sensitive true}))
   => #(= (:case-sensitive %) true)
   (ml/stop-words-remover {})

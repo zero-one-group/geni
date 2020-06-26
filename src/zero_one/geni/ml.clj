@@ -45,9 +45,9 @@
   [zero-one.geni.ml-feature
    binariser
    binarizer
+   bucketed-random-projection-lsh
    bucketiser
    bucketizer
-   bucketed-random-projection-lsh
    chi-sq-selector
    count-vectoriser
    count-vectorizer
@@ -73,10 +73,11 @@
    quantile-discretizer
    regex-tokeniser
    regex-tokenizer
+   robust-scaler
    sql-transformer
    standard-scaler
-   string-indexer
    stop-words-remover
+   string-indexer
    tokeniser
    tokenizer
    vector-assembler
@@ -87,11 +88,12 @@
 (import-vars
   [zero-one.geni.ml-classification
    decision-tree-classifier
+   fm-classifier
    gbt-classifier
    linear-svc
    logistic-regression
-   multilayer-perceptron-classifier
    mlp-classifier
+   multilayer-perceptron-classifier
    naive-bayes
    one-vs-rest
    random-forest-classifier])
@@ -106,6 +108,7 @@
   [zero-one.geni.ml-regression
    aft-survival-regression
    decision-tree-regressor
+   fm-regressor
    gbt-regressor
    generalised-linear-regression
    generalized-linear-regression
@@ -281,9 +284,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.feature StopWordsRemover))
-  (stop-words-remover {})
-
-  (params (StopWordsRemover.))
+  (import '(org.apache.spark.ml.feature RobustScaler))
+  (params (RobustScaler.))
 
   true)
