@@ -18,7 +18,8 @@
     (org.apache.spark.ml Pipeline
                          PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
-                              Correlation)))
+                              Correlation
+                              KolmogorovSmirnovTest)))
 
 (import-vars
   [zero-one.geni.ml-xgb
@@ -32,22 +33,25 @@
    gmm
    k-means
    lda
-   latent-dirichlet-allocation])
+   latent-dirichlet-allocation
+   power-iteration-clustering])
 
 (import-vars
   [zero-one.geni.ml-evaluation
    binary-classification-evaluator
    clustering-evaluator
    multiclass-classification-evaluator
+   multilabel-classification-evaluator
+   ranking-evaluator
    regression-evaluator])
 
 (import-vars
   [zero-one.geni.ml-feature
    binariser
    binarizer
+   bucketed-random-projection-lsh
    bucketiser
    bucketizer
-   bucketed-random-projection-lsh
    chi-sq-selector
    count-vectoriser
    count-vectorizer
@@ -73,10 +77,11 @@
    quantile-discretizer
    regex-tokeniser
    regex-tokenizer
+   robust-scaler
    sql-transformer
    standard-scaler
-   string-indexer
    stop-words-remover
+   string-indexer
    tokeniser
    tokenizer
    vector-assembler
@@ -87,11 +92,12 @@
 (import-vars
   [zero-one.geni.ml-classification
    decision-tree-classifier
+   fm-classifier
    gbt-classifier
    linear-svc
    logistic-regression
-   multilayer-perceptron-classifier
    mlp-classifier
+   multilayer-perceptron-classifier
    naive-bayes
    one-vs-rest
    random-forest-classifier])
@@ -106,6 +112,7 @@
   [zero-one.geni.ml-regression
    aft-survival-regression
    decision-tree-regressor
+   fm-regressor
    gbt-regressor
    generalised-linear-regression
    generalized-linear-regression
@@ -139,6 +146,9 @@
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
+
+(defn kolmogorov-smirnov-test [dataframe sample-col dist-name params]
+  (KolmogorovSmirnovTest/test dataframe (name sample-col) dist-name (interop/->scala-seq params)))
 
 (defn pipeline [& stages]
   (-> (Pipeline.)
@@ -281,9 +291,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.feature StopWordsRemover))
-  (stop-words-remover {})
-
-  (params (StopWordsRemover.))
+  (import '(org.apache.spark.ml.clustering PowerIterationClustering))
+  (params (PowerIterationClustering.))
 
   true)

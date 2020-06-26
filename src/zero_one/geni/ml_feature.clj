@@ -26,6 +26,7 @@
                                  PolynomialExpansion
                                  QuantileDiscretizer
                                  RegexTokenizer
+                                 RobustScaler
                                  SQLTransformer
                                  StandardScaler
                                  StopWordsRemover
@@ -37,22 +38,21 @@
                                  Word2Vec)))
 
 (defn stop-words-remover [params]
-  (let [defaults {:output-col "stopWords_9a3d7440ac5c__output",
-                    :locale "en_US",
-                    :stop-words default-stop-words
-                    :case-sensitive false}
+  (let [defaults {:locale         "en_US",
+                  :stop-words     default-stop-words
+                  :case-sensitive false}
         props    (merge defaults params)]
     (interop/instantiate StopWordsRemover props)))
 
 (defn chi-sq-selector [params]
-  (let [defaults {:fdr 0.05,
-                  :fpr 0.05,
-                  :label-col "label",
-                  :percentile 0.1,
-                  :selector-type "numTopFeatures",
+  (let [defaults {:fdr              0.05,
+                  :fpr              0.05,
+                  :label-col        "label",
+                  :percentile       0.1,
+                  :selector-type    "numTopFeatures",
                   :num-top-features 50,
-                  :fwe 0.05,
-                  :features-col "features"}
+                  :fwe              0.05,
+                  :features-col     "features"}
         props    (merge defaults params)]
     (interop/instantiate ChiSqSelector props)))
 
@@ -224,3 +224,12 @@
         props    (merge defaults params)]
     (interop/instantiate RegexTokenizer props)))
 (def regex-tokenizer regex-tokeniser)
+
+(defn robust-scaler [params]
+  (let [defaults {:upper          0.75,
+                  :relative-error 0.001,
+                  :with-centering false,
+                  :lower          0.25,
+                  :with-scaling   true}
+        props    (merge defaults params)]
+    (interop/instantiate RobustScaler props)))

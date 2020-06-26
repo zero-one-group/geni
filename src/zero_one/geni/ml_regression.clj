@@ -5,6 +5,7 @@
   (:import
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
+                                    FMRegressor
                                     GBTRegressor
                                     GeneralizedLinearRegression
                                     IsotonicRegression
@@ -127,3 +128,21 @@
                   :feature-index  0}
         props     (-> (merge defaults params))]
     (interop/instantiate IsotonicRegression props)))
+
+(defn fm-regressor [params]
+  (let [defaults {:max-iter            100,
+                  :step-size           1.0,
+                  :tol                 1.0E-6,
+                  :reg-param           0.0,
+                  :seed                891375198,
+                  :mini-batch-fraction 1.0,
+                  :fit-intercept       true,
+                  :label-col           "label",
+                  :factor-size         8,
+                  :fit-linear          true,
+                  :prediction-col      "prediction",
+                  :init-std            0.01,
+                  :features-col        "features",
+                  :solver              "adamW"}
+        props     (-> (merge defaults params))]
+    (interop/instantiate FMRegressor props)))

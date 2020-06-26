@@ -6,6 +6,7 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [create-temp-file!
+                                          df-20
                                           melbourne-df
                                           k-means-df
                                           libsvm-df
@@ -14,6 +15,7 @@
     (ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
                                    XGBoostRegressor)
     (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        FMClassifier
                                         GBTClassifier
                                         LinearSVC
                                         LogisticRegression
@@ -25,10 +27,13 @@
                                     GaussianMixture
                                     KMeans
                                     KMeansModel
-                                    LDA)
+                                    LDA
+                                    PowerIterationClustering)
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
                                     ClusteringEvaluator
                                     MulticlassClassificationEvaluator
+                                    MultilabelClassificationEvaluator
+                                    RankingEvaluator
                                     RegressionEvaluator)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
@@ -53,6 +58,7 @@
                                  PolynomialExpansion
                                  QuantileDiscretizer
                                  RegexTokenizer
+                                 RobustScaler
                                  SQLTransformer
                                  StandardScaler
                                  StopWordsRemover
@@ -67,6 +73,7 @@
     (org.apache.spark.ml.recommendation ALS)
     (org.apache.spark.ml.regression AFTSurvivalRegression
                                     DecisionTreeRegressor
+                                    FMRegressor
                                     GBTRegressor
                                     GeneralizedLinearRegression
                                     IsotonicRegression
@@ -293,7 +300,7 @@
    (fact "Attributes are callable"
      (ml/scale model) => #(pos? %))))
 
-(facts "On K-Means clustering" ;:slow
+(facts "On K-Means clustering" :slow
   (let [estimator   (ml/k-means {})
         model       (ml/fit k-means-df estimator)]
    (fact "Attributes are callable"
@@ -350,6 +357,11 @@
   => #(instance? ALS %))
 
 (fact "On instantiation - clustering"
+  (ml/params (ml/power-iteration-clustering {:init-mode "degree"}))
+  => #(= (:init-mode %) "degree")
+  (ml/power-iteration-clustering {})
+  => #(instance? PowerIterationClustering %)
+
   (ml/params (ml/gaussian-mixture {:features-col "fts"}))
   => #(= (:features-col %) "fts")
   (ml/gmm {})
@@ -371,6 +383,16 @@
   => #(instance? KMeans %))
 
 (fact "On instantiation - evaluator"
+  (ml/params (ml/ranking-evaluator {:k 12}))
+  => #(= (:k %) 12)
+  (ml/ranking-evaluator {})
+  => #(instance? RankingEvaluator %)
+
+  (ml/params (ml/multilabel-classification-evaluator {:label-col "xyz"}))
+  => #(= (:label-col %) "xyz")
+  (ml/multilabel-classification-evaluator {})
+  => #(instance? MultilabelClassificationEvaluator %)
+
   (ml/params (ml/binary-classification-evaluator {:raw-prediction-col "xyz"}))
   => #(= (:raw-prediction-col %) "xyz")
   (ml/binary-classification-evaluator {})
@@ -392,6 +414,10 @@
   => #(instance? RegressionEvaluator %))
 
 (fact "On instantiation - regression"
+  (ml/params (ml/fm-regressor {:factor-size 12}))
+  => #(= (:factor-size %) 12)
+  (ml/fm-regressor {}) => #(instance? FMRegressor %)
+
   (ml/params (ml/isotonic-regression {:label-col "ABC"}))
   => #(= (:label-col %) "ABC")
   (ml/isotonic-regression {})
@@ -428,6 +454,10 @@
   => #(instance? LinearRegression %))
 
 (fact "On instantiation - classification"
+  (ml/params (ml/fm-classifier {:init-std 10.0}))
+  => #(= (:init-std %) 10.0)
+  (ml/fm-classifier {}) => #(instance? FMClassifier %)
+
   (ml/params (ml/logistic-regression {:thresholds [0.0 0.1]}))
   => #(= (:thresholds %) [0.0 0.1])
   (ml/logistic-regression {})
@@ -470,6 +500,11 @@
   => #(instance? DecisionTreeClassifier %))
 
 (fact "On instantiation - features"
+  (ml/params (ml/robust-scaler {:with-centering true}))
+  => #(= (:with-centering %) true)
+  (ml/robust-scaler {})
+  => #(instance? RobustScaler %)
+
   (ml/params (ml/stop-words-remover {:case-sensitive true}))
   => #(= (:case-sensitive %) true)
   (ml/stop-words-remover {})
@@ -713,7 +748,12 @@
       (-> dataset
           (ml/chi-square-test "features" "label")
           g/first-vals
-          first) => #(every? double? %))))
+          first) => #(every? double? %))
+   (fact "able to do KS test"
+     (-> df-20
+         (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])
+         g/first-vals) => #(and (< 0.01 (first %) 0.1)
+                                (< 0.25 (second %) 0.35)))))
 
 (facts "On correlation" :slow
   (let [dataset     (ds/table->dataset

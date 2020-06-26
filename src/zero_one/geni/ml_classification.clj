@@ -4,6 +4,7 @@
     [zero-one.geni.utils :refer [coalesce]])
   (:import
     (org.apache.spark.ml.classification DecisionTreeClassifier
+                                        FMClassifier
                                         GBTClassifier
                                         LinearSVC
                                         LogisticRegression
@@ -54,23 +55,23 @@
     (interop/instantiate DecisionTreeClassifier props)))
 
 (defn random-forest-classifier [params]
-  (let [defaults {:max-bins 32,
-                  :subsampling-rate 1.0,
-                  :min-info-gain 0.0,
-                  :impurity "gini",
-                  :raw-prediction-col "rawPrediction",
-                  :cache-node-ids false,
-                  :seed 207336481,
-                  :label-col "label",
+  (let [defaults {:max-bins                32,
+                  :subsampling-rate        1.0,
+                  :min-info-gain           0.0,
+                  :impurity                "gini",
+                  :raw-prediction-col      "rawPrediction",
+                  :cache-node-ids          false,
+                  :seed                    207336481,
+                  :label-col               "label",
                   :feature-subset-strategy "auto",
-                  :checkpoint-interval 10,
-                  :probability-col "probability",
-                  :max-depth 5,
-                  :max-memory-in-mb 256,
-                  :prediction-col "prediction",
-                  :features-col "features",
-                  :min-instances-per-node 1,
-                  :num-trees 20}
+                  :checkpoint-interval     10,
+                  :probability-col         "probability",
+                  :max-depth               5,
+                  :max-memory-in-mb        256,
+                  :prediction-col          "prediction",
+                  :features-col            "features",
+                  :min-instances-per-node  1,
+                  :num-trees               20}
         props     (merge defaults params)]
     (interop/instantiate RandomForestClassifier props)))
 
@@ -143,12 +144,32 @@
     (interop/instantiate OneVsRest props)))
 
 (defn naive-bayes [params]
-  (let [defaults {:smoothing 1.0,
-                  :prediction-col "prediction",
-                  :features-col "features",
+  (let [defaults {:smoothing          1.0,
+                  :prediction-col     "prediction",
+                  :features-col       "features",
                   :raw-prediction-col "rawPrediction",
-                  :probability-col "probability",
-                  :label-col "label",
-                  :model-type "multinomial"}
+                  :probability-col    "probability",
+                  :label-col          "label",
+                  :model-type         "multinomial"}
         props    (merge defaults params)]
     (interop/instantiate NaiveBayes props)))
+
+(defn fm-classifier [params]
+  (let [defaults {:max-iter            100,
+                  :step-size           1.0,
+                  :tol                 1.0E-6,
+                  :raw-prediction-col  "rawPrediction",
+                  :reg-param           0.0,
+                  :seed                -2050267832,
+                  :mini-batch-fraction 1.0,
+                  :fit-intercept       true,
+                  :label-col           "label",
+                  :factor-size         8,
+                  :probability-col     "probability",
+                  :fit-linear          true,
+                  :prediction-col      "prediction",
+                  :init-std            0.01,
+                  :features-col        "features",
+                  :solver              "adamW"}
+        props     (-> (merge defaults params))]
+    (interop/instantiate FMClassifier props)))
