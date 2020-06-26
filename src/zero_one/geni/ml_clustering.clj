@@ -5,7 +5,8 @@
     (org.apache.spark.ml.clustering BisectingKMeans
                                     GaussianMixture
                                     KMeans
-                                    LDA)))
+                                    LDA
+                                    PowerIterationClustering)))
 
 (defn bisecting-k-means [params]
   (let [defaults {:distance-measure "euclidean",
@@ -59,3 +60,12 @@
         props     (merge defaults params)]
     (interop/instantiate LDA props)))
 (def latent-dirichlet-allocation lda)
+
+(defn power-iteration-clustering [params]
+  (let [defaults {:k         2,
+                  :dst-col   "dst",
+                  :src-col   "src",
+                  :init-mode "random",
+                  :max-iter  20}
+        props     (merge defaults params)]
+    (interop/instantiate PowerIterationClustering props)))

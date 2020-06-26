@@ -6,6 +6,7 @@
     [zero-one.geni.dataset :as ds]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [create-temp-file!
+                                          df-20
                                           melbourne-df
                                           k-means-df
                                           libsvm-df
@@ -26,10 +27,13 @@
                                     GaussianMixture
                                     KMeans
                                     KMeansModel
-                                    LDA)
+                                    LDA
+                                    PowerIterationClustering)
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
                                     ClusteringEvaluator
                                     MulticlassClassificationEvaluator
+                                    MultilabelClassificationEvaluator
+                                    RankingEvaluator
                                     RegressionEvaluator)
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer
@@ -296,7 +300,7 @@
    (fact "Attributes are callable"
      (ml/scale model) => #(pos? %))))
 
-(facts "On K-Means clustering" ;:slow
+(facts "On K-Means clustering" :slow
   (let [estimator   (ml/k-means {})
         model       (ml/fit k-means-df estimator)]
    (fact "Attributes are callable"
@@ -353,6 +357,11 @@
   => #(instance? ALS %))
 
 (fact "On instantiation - clustering"
+  (ml/params (ml/power-iteration-clustering {:init-mode "degree"}))
+  => #(= (:init-mode %) "degree")
+  (ml/power-iteration-clustering {})
+  => #(instance? PowerIterationClustering %)
+
   (ml/params (ml/gaussian-mixture {:features-col "fts"}))
   => #(= (:features-col %) "fts")
   (ml/gmm {})
@@ -374,6 +383,16 @@
   => #(instance? KMeans %))
 
 (fact "On instantiation - evaluator"
+  (ml/params (ml/ranking-evaluator {:k 12}))
+  => #(= (:k %) 12)
+  (ml/ranking-evaluator {})
+  => #(instance? RankingEvaluator %)
+
+  (ml/params (ml/multilabel-classification-evaluator {:label-col "xyz"}))
+  => #(= (:label-col %) "xyz")
+  (ml/multilabel-classification-evaluator {})
+  => #(instance? MultilabelClassificationEvaluator %)
+
   (ml/params (ml/binary-classification-evaluator {:raw-prediction-col "xyz"}))
   => #(= (:raw-prediction-col %) "xyz")
   (ml/binary-classification-evaluator {})
@@ -729,7 +748,12 @@
       (-> dataset
           (ml/chi-square-test "features" "label")
           g/first-vals
-          first) => #(every? double? %))))
+          first) => #(every? double? %))
+   (fact "able to do KS test"
+     (-> df-20
+         (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])
+         g/first-vals) => #(and (< 0.01 (first %) 0.1)
+                                (< 0.25 (second %) 0.35)))))
 
 (facts "On correlation" :slow
   (let [dataset     (ds/table->dataset

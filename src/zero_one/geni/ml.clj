@@ -18,7 +18,8 @@
     (org.apache.spark.ml Pipeline
                          PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
-                              Correlation)))
+                              Correlation
+                              KolmogorovSmirnovTest)))
 
 (import-vars
   [zero-one.geni.ml-xgb
@@ -32,13 +33,16 @@
    gmm
    k-means
    lda
-   latent-dirichlet-allocation])
+   latent-dirichlet-allocation
+   power-iteration-clustering])
 
 (import-vars
   [zero-one.geni.ml-evaluation
    binary-classification-evaluator
    clustering-evaluator
    multiclass-classification-evaluator
+   multilabel-classification-evaluator
+   ranking-evaluator
    regression-evaluator])
 
 (import-vars
@@ -142,6 +146,9 @@
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
+
+(defn kolmogorov-smirnov-test [dataframe sample-col dist-name params]
+  (KolmogorovSmirnovTest/test dataframe (name sample-col) dist-name (interop/->scala-seq params)))
 
 (defn pipeline [& stages]
   (-> (Pipeline.)
@@ -284,7 +291,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.feature RobustScaler))
-  (params (RobustScaler.))
+  (import '(org.apache.spark.ml.clustering PowerIterationClustering))
+  (params (PowerIterationClustering.))
 
   true)

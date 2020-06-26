@@ -5,6 +5,8 @@
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
                                     ClusteringEvaluator
                                     MulticlassClassificationEvaluator
+                                    MultilabelClassificationEvaluator
+                                    RankingEvaluator
                                     RegressionEvaluator)))
 
 (defn binary-classification-evaluator [params]
@@ -15,6 +17,12 @@
 
 (defn multiclass-classification-evaluator [params]
   (interop/instantiate MulticlassClassificationEvaluator params))
+
+(defn multilabel-classification-evaluator [params]
+  (interop/instantiate MultilabelClassificationEvaluator params))
+
+(defn ranking-evaluator [params]
+  (interop/instantiate RankingEvaluator params))
 
 (defn regression-evaluator [params]
   (interop/instantiate RegressionEvaluator params))
