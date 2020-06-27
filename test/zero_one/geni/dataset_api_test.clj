@@ -331,7 +331,15 @@
   (let [df (-> df-1 g/persist (g/unpersist true))]
     (.useMemory (g/storage-level df)) => false)
   (g/input-files melbourne-df) => nil?
-  (g/rdd melbourne-df) => #(instance? RDD %))
+  (g/rdd melbourne-df) => #(instance? RDD %)
+  (let [checkpointed? (fn [df] (-> df
+                                   .queryExecution
+                                   .toRdd
+                                   .toDebugString
+                                   (clojure.string/includes? "CheckpointRDD")))]
+    df-1 => (complement checkpointed?)
+    (g/checkpoint df-1) => checkpointed?
+    (g/checkpoint df-1 true) => checkpointed?))
 
 (facts "On repartition" :slow
   (fact "able to repartition by a number"

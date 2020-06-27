@@ -8,7 +8,8 @@
     (java.io File)))
 
 (defonce spark
-  (g/create-spark-session {:configs {"spark.testing.memory" "2147480000"}}))
+  (g/create-spark-session {:configs {"spark.testing.memory" "2147480000"}
+                           :checkpoint-dir "resources/checkpoint/"}))
 
 (defonce melbourne-df
   (g/cache

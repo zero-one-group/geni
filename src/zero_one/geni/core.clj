@@ -341,7 +341,7 @@
    agg-all
    approx-quantile
    cache
-   ;checkpoint
+   checkpoint
    col-regex
    collect
    collect-col
@@ -505,7 +505,7 @@
 (def to-json (memfn toJSON))
 (def ->json to-json)
 
-(defn create-spark-session [{:keys [app-name master configs log-level]
+(defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
                              :or   {app-name  "Geni App"
                                     master    "local[*]"
                                     configs   {}
@@ -520,6 +520,8 @@
         session      (.getOrCreate configured)
         context      (.sparkContext session)]
     (.setLogLevel context log-level)
+    (clojure.core/when checkpoint-dir
+      (.setCheckpointDir context checkpoint-dir))
     session))
 
 (comment
