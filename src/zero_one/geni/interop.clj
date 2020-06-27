@@ -14,11 +14,15 @@
     (scala Console
            Function0
            Function1
-           Function2)
+           Function2
+           Function3)
     (scala.collection JavaConversions Map Seq)))
 
 (defn scala-seq? [value]
   (instance? Seq value))
+
+(defn scala-map? [value]
+  (instance? Map value))
 
 (defn scala-seq->vec [scala-seq]
   (vec (JavaConversions/seqAsJavaList scala-seq)))
@@ -43,6 +47,9 @@
 
 (defn ->scala-function2 [f]
   (reify Function2 (apply [_ x y] (f x y))))
+
+(defn ->scala-function3 [f]
+  (reify Function3 (apply [_ x y z] (f x y z))))
 
 (defmacro with-scala-out-str [& body]
   `(let [out-buffer# (ByteArrayOutputStream.)]
@@ -93,6 +100,7 @@
     (coll? value)           (map ->clojure value)
     (array? value)          (map ->clojure (seq value))
     (scala-seq? value)      (map ->clojure (scala-seq->vec value))
+    (scala-map? value)      (scala-map->map value)
     (spark-row? value)      (spark-row->map value)
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)

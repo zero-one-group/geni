@@ -23,6 +23,7 @@
                             odd?
                             pos?
                             short
+                            str
                             zero?])
   (:require
     [zero-one.geni.interop :as interop])
@@ -177,10 +178,20 @@
 
 ;; Shortcut Functions
 (defn null-rate [expr]
-  (-> expr ->column null? (cast "int") functions/mean (.as (str "null_rate(" (name expr) ")"))))
+  (-> expr
+      ->column
+      null?
+      (cast "int")
+      functions/mean
+      (.as (clojure.core/str "null_rate(" (name expr) ")"))))
 
 (defn null-count [expr]
-  (-> expr ->column null? (cast "int") functions/sum (.as (str "null_count(" (name expr) ")"))))
+  (-> expr
+      ->column
+      null?
+      (cast "int")
+      functions/sum
+      (.as (clojure.core/str "null_count(" (name expr) ")"))))
 
 ;; Clojure Idioms
 ;;;; Arithmetic
@@ -195,6 +206,7 @@
 (defn double [expr] (cast (->column expr) "double"))
 (defn boolean [expr] (cast (->column expr) "boolean"))
 (defn byte [expr] (cast (->column expr) "byte"))
+(defn str [expr] (cast (->column expr) "string"))
 
 ;;;; Predicates
 (defn = [l-expr r-expr] (=== (->column l-expr) (->column r-expr)))

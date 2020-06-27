@@ -16,12 +16,7 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: map-from-arrays, map-from-entries, map-keys, map-values, map
 ;; TODO: schema-of-json, from-json, to-json, from-csv
-
-;; TODO: support map functions + proper collect for Scala Map
-;(defn map-entries [expr] (functions/map_entries (->column expr)))
-;(defn map-from-entries [expr] (functions/map_from_entries (->column expr)))
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -86,6 +81,15 @@
 (defn flatten [expr] (functions/flatten (->column expr)))
 (defn forall [expr predicate]
   (functions/forall (->column expr) (interop/->scala-function1 predicate)))
+(defn map-concat [& exprs] (functions/map_concat (->col-array exprs)))
+(defn map-entries [expr] (functions/map_entries (->column expr)))
+(defn map-filter [expr predicate]
+  (functions/map_filter (->column expr) (interop/->scala-function2 predicate)))
+(defn map-from-entries [expr] (functions/map_from_entries (->column expr)))
+(defn map-keys [expr] (functions/map_keys (->column expr)))
+(defn map-values [expr] (functions/map_values (->column expr)))
+(defn map-zip-with [left right merge-fn]
+  (functions/map_zip_with (->column left) (->column right) (interop/->scala-function3 merge-fn)))
 (defn posexplode [expr] (functions/posexplode (->column expr)))
 (def posexplode-outer posexplode)
 (defn reverse [expr]
@@ -101,6 +105,10 @@
   ([expr asc] (functions/sort_array (->column expr) asc)))
 (defn transform [expr xform-fn]
   (functions/transform (->column expr) (interop/->scala-function1 xform-fn)))
+(defn transform-keys [expr key-fn]
+  (functions/transform_keys (->column expr) (interop/->scala-function2 key-fn)))
+(defn transform-values [expr key-fn]
+  (functions/transform_values (->column expr) (interop/->scala-function2 key-fn)))
 (defn zip-with [left right merge-fn]
   (functions/zip_with (->column left)
                       (->column right)
@@ -219,9 +227,9 @@
 (defn greatest [& exprs] (functions/greatest (->col-array exprs)))
 (defn input-file-name [] (functions/input_file_name))
 (defn least [& exprs] (functions/least (->col-array exprs)))
-;(defn map [& exprs] (functions/map (->col-array exprs)))
-;(defn map-from-arrays [key-expr val-expr]
-  ;(functions/map_from_arrays (->column key-expr) (->column val-expr)))
+(defn map [& exprs] (functions/map (->col-array exprs)))
+(defn map-from-arrays [key-expr val-expr]
+  (functions/map_from_arrays (->column key-expr) (->column val-expr)))
 (defn monotonically-increasing-id [] (functions/monotonically_increasing_id))
 (defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
