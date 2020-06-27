@@ -66,10 +66,6 @@
          (into {})
          keywordize-keys)))
 
-(defn explain
-  ([dataframe] (.explain dataframe))
-  ([dataframe extended] (.explain dataframe extended)))
-
 (defn input-files [dataframe] (seq (.inputFiles dataframe)))
 
 (defn is-empty [dataframe] (.isEmpty dataframe))
