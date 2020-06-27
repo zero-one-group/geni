@@ -8,6 +8,36 @@
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
 
+(facts "On map functions"
+  (-> df-1
+      (g/with-column
+        :map
+        (g/map-from-entries (g/array (g/struct 1 (g/lit "a"))
+                                     (g/struct 2 (g/lit "b")))))
+      (g/with-column :other (g/map 3 (g/lit "d") 4 (g/lit "e")))
+      (g/select
+        :map
+        {:entries (g/map-entries :map)
+         :filter  (g/map-filter :map (fn [k _] (g/even? k)))
+         :keys    (g/map-keys :map)
+         :values  (g/map-values :map)
+         :zipped  (g/map-zip-with :map :map (fn [_ v1 v2] (g/concat (g/upper v2) v1)))
+         :x-keys  (g/transform-keys :map (fn [k v] (g/concat (g/str k) (g/upper v))))
+         :x-vals  (g/transform-values :map (fn [k _] (g/sqr k)))
+         :concat  (g/map-concat :map :other)
+         :arrays  (g/map-from-arrays (g/array 123 456) (g/array 10.0 20.0))})
+      g/collect
+      first) => {:map {1 "a" 2 "b"}
+                 :entries [{:key 1 :value "a"} {:key 2 :value "b"}]
+                 :filter {2 "b"}
+                 :keys [1 2]
+                 :values ["a" "b"]
+                 :zipped {1 "Aa" 2 "Bb"}
+                 :x-keys {"1A" "a" "2B" "b"}
+                 :x-vals {1 1 2 4}
+                 :arrays {123 10.0 456 20.0}
+                 :concat {1 "a" 2 "b" 3 "d" 4 "e"}})
+
 (fact "On misc functions"
   (-> df-1
       (g/select (g/input-file-name))

@@ -47,6 +47,7 @@
                             short
                             shuffle
                             sort
+                            str
                             struct
                             take
                             when
@@ -129,6 +130,7 @@
    rlike
    short
    starts-with
+   str
    zero?
    |
    ||])
@@ -139,11 +141,20 @@
    ->date-col
    ->timestamp-col
    ->utc-timestamp
+   map-from-entries
+   map-entries
+   transform-values
+   map-concat
+   map-filter
+   map-keys
+   map-values
+   map-zip-with
+   transform-keys
+   map
+   map-from-arrays
    ;bucket
    ;days
    ;hours
-   ;map
-   ;map-from-arrays
    ;months
    ;years
    abs
