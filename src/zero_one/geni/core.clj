@@ -111,6 +111,7 @@
    hash-code
    inc
    int
+   is-in-collection
    is-nan
    is-not-null
    is-null
@@ -359,7 +360,6 @@
    empty?
    except
    except-all
-   explain
    fill-na
    filter
    first-vals
@@ -456,6 +456,12 @@
 (defmethod count :default [expr] (functions/count (->column expr)))
 (defmethod count Dataset [dataset] (.count dataset))
 (defmethod count RelationalGroupedDataset [grouped] (.count grouped))
+
+(defmulti explain (fn [head & _] (class head)))
+(defmethod explain :default [expr extended] (.explain (->column expr) extended))
+(defmethod explain Dataset
+  ([dataset] (.explain dataset))
+  ([dataset extended] (.explain dataset extended)))
 
 (defmulti mean (fn [head & _] (class head)))
 (defmethod mean :default [expr & _] (functions/mean (->column expr)))

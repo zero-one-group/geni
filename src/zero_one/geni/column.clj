@@ -56,7 +56,7 @@
        (mapcat ->col-seq)
        (into-array Column)))
 
-;; TODO: explain->multimethod, is-in-collection,  alias for comparison functions
+;; TODO: explain->multimethod
 ;;;; Column Methods
 (defn % [left-expr right-expr]
   (.mod (->column left-expr) (->column right-expr)))
@@ -127,7 +127,6 @@
 
 (defn cast [expr new-type] (.cast (->column expr) new-type))
 
-;; TODO: literal or column?
 (defn contains [expr literal] (.contains (->column expr) literal))
 
 (defn ends-with [expr literal] (.endsWith (->column expr) literal))
@@ -138,6 +137,8 @@
                                                     (name k)
                                                     (catch Exception _ k))))
 
+(defn is-in-collection [expr coll]
+  (.isInCollection (->column expr) coll))
 
 (defn is-nan [expr] (.isNaN (->column expr)))
 (def nan? is-nan)
