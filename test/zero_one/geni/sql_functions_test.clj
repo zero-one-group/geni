@@ -426,7 +426,18 @@
           (-> (g/lead :Price 1) (g/over window))
           (-> (g/lead :Price 1 -999) (g/over window)))
         g/collect-vals) => #(and (nil? (first (last %)))
-                                 (= -999.0 (second (last %))))))
+                                 (= -999.0 (second (last %)))))
+  (fact "shortcut windowed works"
+    (-> df-20
+        (g/select
+          :SellerG
+          {:rank-by-suburb (g/windowed {:window-col   (g/rank)
+                                        :partition-by :SellerG
+                                        :order-by     (g/desc :Price)})})
+        (g/filter (g/= :rank-by-suburb 1))
+        (g/order-by :SellerG)
+        (g/collect-col :SellerG))
+    => ["Biggin" "Collins" "Greg" "Jellis" "LITTLE" "Nelson"]))
 
 (facts "On windowing" :slow
   (fact "can instantiate empty WindowSpec"

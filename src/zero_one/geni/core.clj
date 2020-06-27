@@ -422,7 +422,8 @@
    over
    unbounded-following
    unbounded-preceeding
-   window])
+   window
+   windowed])
 
 (import-vars
   [zero-one.geni.data-sources

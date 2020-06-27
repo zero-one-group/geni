@@ -320,7 +320,7 @@
             dates   (map #(str (% :Date)) records)]
         (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
 
-(facts "On caching" ;:slow
+(facts "On caching" :slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
     (.useMemory (g/storage-level df)) => true)
