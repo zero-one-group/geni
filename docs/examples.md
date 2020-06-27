@@ -77,7 +77,7 @@ The following examples are taken from [Apache Spark's example page](https://spar
 (letfn [(null-rate [col-name]
           (-> col-name
               g/null?
-              (g/cast "double")
+              g/double
               g/mean
               (g/as col-name)))]
   (-> melbourne-df
@@ -86,6 +86,50 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ; => ({:Car 0.004565537555228277,
 ;      :LandSize 0.0,
 ;      :BuildingArea 0.47496318114874814})
+```
+
+### Window Functions
+
+Every window spec is used with `over` at some point. Use the `windowed` shortcut:
+
+```clojure
+(-> melbourne-df
+    (g/select {:seller :SellerG
+               :price  :Price
+               :ranks  (g/over (g/rank)
+                               (g/window {:partition-by :SellerG
+                                          :order-by     (g/desc :Price)}))})
+    (g/filter (g/= :ranks 1))
+    (g/limit 5)
+    g/show)
+; +--------+---------+-----+
+; |seller  |price    |ranks|
+; +--------+---------+-----+
+; |LITTLE  |1535000.0|1    |
+; |Langwell|1000000.0|1    |
+; |Ristic  |490000.0 |1    |
+; |Ristic  |490000.0 |1    |
+; |S&L     |925000.0 |1    |
+; +--------+---------+-----+
+
+(-> melbourne-df
+    (g/select {:seller :SellerG
+               :price  :Price
+               :ranks  (g/windowed {:window-col (g/rank)
+                                    :partition-by :SellerG
+                                    :order-by     (g/desc :Price)})})
+    (g/filter (g/= :ranks 1))
+    (g/limit 5)
+    g/show)
+; +--------+---------+-----+
+; |seller  |price    |ranks|
+; +--------+---------+-----+
+; |LITTLE  |1535000.0|1    |
+; |Langwell|1000000.0|1    |
+; |Ristic  |490000.0 |1    |
+; |Ristic  |490000.0 |1    |
+; |S&L     |925000.0 |1    |
+; +--------+---------+-----+
 ```
 
 ## MLlib
