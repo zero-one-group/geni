@@ -1,4 +1,4 @@
-FROM clojure:openjdk-8-lein-2.9.1
+FROM clojure:openjdk-11-lein-2.9.1
 
 ENV USER root
 ENV HOME /root

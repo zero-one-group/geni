@@ -428,11 +428,13 @@
 
 (import-vars
   [zero-one.geni.data-sources
+   read-avro!
    read-csv!
    read-json!
    read-libsvm!
    read-parquet!
    read-text!
+   write-avro!
    write-csv!
    write-json!
    write-libsvm!
@@ -537,7 +539,7 @@
                          (appName app-name)
                          (master master))
         configured   (reduce
-                       (fn [s [k v]] (.config s k v))
+                       (fn [s [k v]] (.config s (name k) v))
                        unconfigured
                        configs)
         session      (.getOrCreate configured)

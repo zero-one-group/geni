@@ -3,6 +3,8 @@
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]))
 
+;; TODO: read-edn!, write-edn!
+
 (defn norm-option-key [k]
   (->camelCase (name k)))
 
@@ -13,6 +15,10 @@
                               unconfigured-reader
                               options)]
     (.load configured-reader path)))
+
+(defn read-avro!
+  ([spark-session path] (read-avro! spark-session path {}))
+  ([spark-session path options] (read-data! "avro" spark-session path options)))
 
 (defn read-parquet!
   ([spark-session path] (read-parquet! spark-session path {}))
@@ -69,3 +75,7 @@
 (defn write-text!
   ([dataframe path] (write-text! dataframe path {}))
   ([dataframe path options] (write-data! "text" dataframe path options)))
+
+(defn write-avro!
+  ([dataframe path] (write-avro! dataframe path {}))
+  ([dataframe path options] (write-data! "avro" dataframe path options)))

@@ -14,8 +14,8 @@
 
 (fact "Writer defaults to error" :slow
   (doall
-    (for [write-fn! [g/write-csv!
-                     g/write-json!
+    (for [write-fn! [g/write-avro!
+                     g/write-csv!
                      g/write-json!
                      g/write-parquet!
                      g/write-text!]]
@@ -60,6 +60,16 @@
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! spark temp-file {}))]
     (g/column-names read-df) => (g/column-names write-df)))
+
+(fact "Can read and write avro"
+  (let [temp-file (.toString (create-temp-file! ".avro"))
+        read-df  (do (g/write-avro! write-df temp-file {:mode "overwrite"})
+                     (g/read-avro! spark temp-file))]
+    (g/collect write-df) => (g/collect read-df))
+  (let [temp-file (.toString (create-temp-file! ".avro"))
+        read-df  (do (g/write-avro! write-df temp-file {:mode "overwrite"})
+                     (g/read-avro! spark temp-file {}))]
+    (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write parquet"
   (let [temp-file (.toString (create-temp-file! ".parquet"))
