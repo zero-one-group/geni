@@ -37,64 +37,70 @@
     (interop/instantiate LogisticRegression props)))
 
 (defn decision-tree-classifier [params]
-  (let [defaults {:max-bins               32,
-                  :min-info-gain          0.0,
-                  :impurity               "gini",
-                  :raw-prediction-col     "rawPrediction",
-                  :cache-node-ids         false,
-                  :seed                   159147643,
-                  :label-col              "label",
-                  :checkpoint-interval    10,
-                  :probability-col        "probability",
-                  :max-depth              5,
-                  :max-memory-in-mb       256,
-                  :prediction-col         "prediction",
-                  :features-col           "features",
-                  :min-instances-per-node 1}
+  (let [defaults {:max-bins                     32,
+                  :min-info-gain                0.0,
+                  :impurity                     "gini",
+                  :raw-prediction-col           "rawPrediction",
+                  :cache-node-ids               false,
+                  :seed                         159147643,
+                  :label-col                    "label",
+                  :min-weight-fraction-per-node 0.0,
+                  :leaf-col                     ""
+                  :checkpoint-interval          10,
+                  :probability-col              "probability",
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1}
         props     (merge defaults params)]
     (interop/instantiate DecisionTreeClassifier props)))
 
 (defn random-forest-classifier [params]
-  (let [defaults {:max-bins                32,
-                  :subsampling-rate        1.0,
-                  :min-info-gain           0.0,
-                  :impurity                "gini",
-                  :raw-prediction-col      "rawPrediction",
-                  :cache-node-ids          false,
-                  :seed                    207336481,
-                  :label-col               "label",
-                  :feature-subset-strategy "auto",
-                  :checkpoint-interval     10,
-                  :probability-col         "probability",
-                  :max-depth               5,
-                  :max-memory-in-mb        256,
-                  :prediction-col          "prediction",
-                  :features-col            "features",
-                  :min-instances-per-node  1,
-                  :num-trees               20}
+  (let [defaults {:max-bins                     32,
+                  :subsampling-rate             1.0,
+                  :min-info-gain                0.0,
+                  :impurity                     "gini",
+                  :raw-prediction-col           "rawPrediction",
+                  :cache-node-ids               false,
+                  :seed                         207336481,
+                  :label-col                    "label",
+                  :leaf-col                     ""
+                  :feature-subset-strategy      "auto",
+                  :min-weight-fraction-per-node 0.0,
+                  :checkpoint-interval          10,
+                  :probability-col              "probability",
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1,
+                  :num-trees                    20}
         props     (merge defaults params)]
     (interop/instantiate RandomForestClassifier props)))
 
 (defn gbt-classifier [params]
-  (let [defaults {:max-bins                32,
-                  :subsampling-rate        1.0,
-                  :max-iter                20,
-                  :step-size               0.1,
-                  :min-info-gain           0.0,
-                  :impurity                "gini",
-                  :raw-prediction-col      "rawPrediction",
-                  :cache-node-ids          false,
-                  :seed                    -1287390502,
-                  :label-col               "label",
-                  :feature-subset-strategy "all",
-                  :checkpoint-interval     10,
-                  :probability-col         "probability",
-                  :loss-type               "logistic",
-                  :max-depth               5,
-                  :max-memory-in-mb        256,
-                  :prediction-col          "prediction",
-                  :features-col            "features",
-                  :min-instances-per-node  1}
+  (let [defaults {:max-bins                     32,
+                  :subsampling-rate             1.0,
+                  :max-iter                     20,
+                  :step-size                    0.1,
+                  :min-info-gain                0.0,
+                  :impurity                     "gini",
+                  :raw-prediction-col           "rawPrediction",
+                  :cache-node-ids               false,
+                  :seed                         -1287390502,
+                  :label-col                    "label",
+                  :leaf-col                     ""
+                  :min-weight-fraction-per-node 0.0,
+                  :feature-subset-strategy      "all",
+                  :checkpoint-interval          10,
+                  :probability-col              "probability",
+                  :loss-type                    "logistic",
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1}
         props     (merge defaults params)]
     (interop/instantiate GBTClassifier props)))
 

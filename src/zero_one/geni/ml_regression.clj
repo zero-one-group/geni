@@ -51,58 +51,64 @@
 (def glm generalised-linear-regression)
 
 (defn decision-tree-regressor [params]
-  (let [defaults {:max-bins               32,
-                  :min-info-gain          0.0,
-                  :impurity               "variance",
-                  :cache-node-ids         false,
-                  :seed                   926680331,
-                  :label-col              "label",
-                  :checkpoint-interval    10,
-                  :max-depth              5,
-                  :max-memory-in-mb       256,
-                  :prediction-col         "prediction",
-                  :features-col           "features",
-                  :min-instances-per-node 1}
+  (let [defaults {:max-bins                     32,
+                  :min-info-gain                0.0,
+                  :impurity                     "variance",
+                  :cache-node-ids               false,
+                  :seed                         926680331,
+                  :label-col                    "label",
+                  :leaf-col                     ""
+                  :checkpoint-interval          10,
+                  :min-weight-fraction-per-node 0.0,
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1}
         props     (merge defaults params)]
     (interop/instantiate DecisionTreeRegressor props)))
 
 (defn random-forest-regressor [params]
-  (let [defaults {:max-bins                32,
-                  :subsampling-rate        1.0,
-                  :min-info-gain           0.0,
-                  :impurity                "variance",
-                  :cache-node-ids          false,
-                  :seed                    235498149,
-                  :label-col               "label",
-                  :feature-subset-strategy "auto",
-                  :checkpoint-interval     10,
-                  :max-depth               5,
-                  :max-memory-in-mb        256,
-                  :prediction-col          "prediction",
-                  :features-col            "features",
-                  :min-instances-per-node  1,
-                  :num-trees               20}
+  (let [defaults {:max-bins                     32,
+                  :subsampling-rate             1.0,
+                  :min-info-gain                0.0,
+                  :impurity                     "variance",
+                  :min-weight-fraction-per-node 0.0,
+                  :cache-node-ids               false,
+                  :seed                         235498149,
+                  :label-col                    "label",
+                  :leaf-col                     ""
+                  :feature-subset-strategy      "auto",
+                  :checkpoint-interval          10,
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1,
+                  :num-trees                    20}
         props     (merge defaults params)]
     (interop/instantiate RandomForestRegressor props)))
 
 (defn gbt-regressor [params]
-  (let [defaults {:max-bins                32,
-                  :subsampling-rate        1.0,
-                  :max-iter                20,
-                  :step-size               0.1,
-                  :min-info-gain           0.0,
-                  :impurity                "variance",
-                  :cache-node-ids          false,
-                  :seed                    -131597770,
-                  :label-col               "label",
-                  :feature-subset-strategy "all",
-                  :checkpoint-interval     10,
-                  :loss-type               "squared",
-                  :max-depth               5,
-                  :max-memory-in-mb        256,
-                  :prediction-col          "prediction",
-                  :features-col            "features",
-                  :min-instances-per-node  1}
+  (let [defaults {:max-bins                     32,
+                  :subsampling-rate             1.0,
+                  :max-iter                     20,
+                  :step-size                    0.1,
+                  :min-info-gain                0.0,
+                  :impurity                     "variance",
+                  :cache-node-ids               false,
+                  :seed                         -131597770,
+                  :label-col                    "label",
+                  :leaf-col                     ""
+                  :min-weight-fraction-per-node 0.0,
+                  :feature-subset-strategy      "all",
+                  :checkpoint-interval          10,
+                  :loss-type                    "squared",
+                  :max-depth                    5,
+                  :max-memory-in-mb             256,
+                  :prediction-col               "prediction",
+                  :features-col                 "features",
+                  :min-instances-per-node       1}
         props     (merge defaults params)]
     (interop/instantiate GBTRegressor props)))
 

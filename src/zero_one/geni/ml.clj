@@ -291,7 +291,7 @@
 
 (comment
 
-  (import '(org.apache.spark.ml.clustering PowerIterationClustering))
-  (params (PowerIterationClustering.))
+  (import '(org.apache.spark.ml.classification GBTRegressor))
+  (params (GBTRegressor))
 
   true)
