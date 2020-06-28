@@ -320,9 +320,11 @@
             dates   (map #(str (% :Date)) records)]
         (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
 
-(facts "On caching" :slow
+(facts "On caching" ;:slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
+    (.useMemory (g/storage-level df)) => true)
+  (let [df (-> df-1 g/persist)]
     (.useMemory (g/storage-level df)) => true)
   (let [df (-> df-1 g/persist)]
     (.useMemory (g/storage-level df)) => true)
@@ -330,6 +332,8 @@
     (.useMemory (g/storage-level df)) => false)
   (let [df (-> df-1 g/persist (g/unpersist true))]
     (.useMemory (g/storage-level df)) => false)
+  (let [df (g/persist df-1 g/memory-only-ser-2)]
+    (g/storage-level df)) => g/memory-only-ser-2
   (g/input-files melbourne-df) => nil?
   (g/rdd melbourne-df) => #(instance? RDD %)
   (let [checkpointed? (fn [df] (-> df
