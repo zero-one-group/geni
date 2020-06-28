@@ -17,7 +17,7 @@
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
-;; TODO: RDD-based functions, streaming-based functions, checkpoints
+;; TODO: RDD-based functions, streaming-based functions
 
 ;;;; Actions
 (defn- collected->maps [collected]
@@ -75,7 +75,8 @@
 (def local? is-local)
 
 (defn persist
-  [dataframe] (.persist dataframe))
+  ([dataframe] (.persist dataframe))
+  ([dataframe new-level] (.persist dataframe new-level)))
 
 (defn print-schema [dataframe]
   (-> dataframe .schema .treeString println))

@@ -59,6 +59,7 @@
     [zero-one.geni.data-sources]
     [zero-one.geni.google-sheets]
     [zero-one.geni.interop :as interop]
+    [zero-one.geni.storage]
     [zero-one.geni.sql]
     [zero-one.geni.window])
   (:import
@@ -446,6 +447,21 @@
    write-sheets!
    create-sheets!
    delete-sheets!])
+
+(import-vars
+  [zero-one.geni.storage
+   disk-only
+   disk-only-2
+   memory-and-disk
+   memory-and-disk-2
+   memory-and-disk-ser
+   memory-and-disk-ser-2
+   memory-only
+   memory-only-2
+   memory-only-ser
+   memory-only-ser-2
+   none
+   off-heap])
 
 (defmulti as (fn [head & _] (class head)))
 (defmethod as :default [expr new-name] (.as (->column expr) (name new-name)))
