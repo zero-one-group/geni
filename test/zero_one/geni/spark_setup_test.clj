@@ -11,7 +11,10 @@
 (fact "Test spark session and dataframe"
   spark => #(instance? SparkSession %)
   melbourne-df => #(instance? Dataset %)
-  (-> spark .conf .getAll interop/scala-map->map) => #(= (% "spark.master") "local[*]"))
+  (-> spark .conf .getAll interop/scala-map->map)
+  => #(= (% "spark.master") "local[*]")
+  (-> spark .sparkContext .getCheckpointDir .get)
+  => #(clojure.string/includes? % "resources/checkpoint/"))
 
 (fact "Test primary key is the product of address, date and seller"
   (-> melbourne-df

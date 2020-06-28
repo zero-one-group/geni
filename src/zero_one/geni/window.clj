@@ -34,3 +34,10 @@
 (def unbounded-preceeding (Window/unboundedPreceding))
 
 (def current-row (Window/currentRow))
+
+(defn windowed [options]
+  (over (:window-col options)
+        (window (select-keys options [:partition-by
+                                      :order-by
+                                      :range-between
+                                      :rows-between]))))

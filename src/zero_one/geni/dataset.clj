@@ -53,9 +53,9 @@
 ;; Basic
 (defn cache [dataframe] (.cache dataframe))
 
-;(defn checkpoint
-  ;([dataframe] (.checkpoint dataframe true))
-  ;([dataframe eager] (.checkpoint dataframe eager)))
+(defn checkpoint
+  ([dataframe] (.checkpoint dataframe true))
+  ([dataframe eager] (.checkpoint dataframe eager)))
 
 (defn columns [dataframe] (->> dataframe .columns seq (map keyword)))
 
@@ -65,10 +65,6 @@
          (map interop/scala-tuple->vec)
          (into {})
          keywordize-keys)))
-
-(defn explain
-  ([dataframe] (.explain dataframe))
-  ([dataframe extended] (.explain dataframe extended)))
 
 (defn input-files [dataframe] (seq (.inputFiles dataframe)))
 

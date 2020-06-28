@@ -3,7 +3,12 @@
     [clojure.string]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.core :as g]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20]]))
+
+(fact "On explain"
+  (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) true))
+  => "lead('Suburb, 2, null)\n")
 
 (fact "On hash-code"
   (-> df-1
@@ -71,7 +76,13 @@
           (g/>= 1 0.99 1.01)
           (g/&& true false)
           (g/|| true false))
-        g/collect-vals) => [[true true true false false false true]]))
+        g/collect-vals) => [[true true true false false false true]])
+  (fact "is in collection"
+    (-> df-1
+        (g/select
+          (g/is-in-collection 1 [1 2])
+          (g/is-in-collection 1 [2 3]))
+        g/collect-vals) => [[true false]]))
 
 (fact "On sorting functions" :slow
   (-> df-20

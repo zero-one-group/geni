@@ -111,6 +111,7 @@
    hash-code
    inc
    int
+   is-in-collection
    is-nan
    is-not-null
    is-null
@@ -341,7 +342,7 @@
    agg-all
    approx-quantile
    cache
-   ;checkpoint
+   checkpoint
    col-regex
    collect
    collect-col
@@ -359,7 +360,6 @@
    empty?
    except
    except-all
-   explain
    fill-na
    filter
    first-vals
@@ -422,7 +422,8 @@
    over
    unbounded-following
    unbounded-preceeding
-   window])
+   window
+   windowed])
 
 (import-vars
   [zero-one.geni.data-sources
@@ -455,6 +456,12 @@
 (defmethod count :default [expr] (functions/count (->column expr)))
 (defmethod count Dataset [dataset] (.count dataset))
 (defmethod count RelationalGroupedDataset [grouped] (.count grouped))
+
+(defmulti explain (fn [head & _] (class head)))
+(defmethod explain :default [expr extended] (.explain (->column expr) extended))
+(defmethod explain Dataset
+  ([dataset] (.explain dataset))
+  ([dataset extended] (.explain dataset extended)))
 
 (defmulti mean (fn [head & _] (class head)))
 (defmethod mean :default [expr & _] (functions/mean (->column expr)))
@@ -505,7 +512,7 @@
 (def to-json (memfn toJSON))
 (def ->json to-json)
 
-(defn create-spark-session [{:keys [app-name master configs log-level]
+(defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
                              :or   {app-name  "Geni App"
                                     master    "local[*]"
                                     configs   {}
@@ -520,6 +527,8 @@
         session      (.getOrCreate configured)
         context      (.sparkContext session)]
     (.setLogLevel context log-level)
+    (clojure.core/when checkpoint-dir
+      (.setCheckpointDir context checkpoint-dir))
     session))
 
 (comment
