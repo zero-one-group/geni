@@ -10,6 +10,7 @@
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
                  ;; Spark
+                 [org.apache.spark/spark-avro_2.12 "3.0.0"]
                  [org.apache.spark/spark-core_2.12 "3.0.0"]
                  [org.apache.spark/spark-hive_2.12 "3.0.0"]
                  [org.apache.spark/spark-mllib_2.12 "3.0.0"]

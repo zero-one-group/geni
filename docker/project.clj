@@ -10,6 +10,7 @@
                  [potemkin "0.4.5"]]
   :profiles {:provided
              {:dependencies [;; Spark
+                             [org.apache.spark/spark-avro_2.12 "3.0.0"]
                              [org.apache.spark/spark-core_2.12 "3.0.0"]
                              [org.apache.spark/spark-hive_2.12 "3.0.0"]
                              [org.apache.spark/spark-mllib_2.12 "3.0.0"]
