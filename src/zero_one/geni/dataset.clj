@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [distinct
                             drop
                             empty?
-                            filter
                             group-by
                             remove
                             sort
@@ -104,9 +103,6 @@
 (defn except [dataframe other] (.except dataframe other))
 
 (defn except-all [dataframe other] (.exceptAll dataframe other))
-
-(defn filter [dataframe expr] (.filter dataframe (.cast (->column expr) "boolean")))
-(def where filter)
 
 (defn intersect [dataframe other] (.intersect dataframe other))
 

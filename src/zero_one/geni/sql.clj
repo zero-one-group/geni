@@ -27,7 +27,6 @@
     (org.apache.spark.sql Column functions)))
 
 ;; TODO: schema-of-json, from-json, to-json, from-csv
-;; TODO: array-filter
 
 ;;;; Agg Functions
 (defn approx-count-distinct

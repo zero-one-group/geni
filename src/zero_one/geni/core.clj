@@ -379,7 +379,6 @@
    except
    except-all
    fill-na
-   filter
    first-vals
    group-by
    infer-schema
@@ -431,7 +430,6 @@
    union
    union-by-name
    unpersist
-   where
    with-column
    with-column-renamed])
 
@@ -465,13 +463,15 @@
    coalesce
    count
    explain
+   filter
    first
    last
    max
    mean
    min
    shuffle
-   sum])
+   sum
+   where])
 
 (import-vars
   [zero-one.geni.google-sheets

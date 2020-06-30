@@ -233,3 +233,4 @@ Some code was taken from:
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) - especially in terms of Scala interop.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
 * Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).
+* StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.

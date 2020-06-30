@@ -180,11 +180,14 @@
         (-> (g/monotonically-increasing-id) (g/as "id")))
       (g/collect-col "id")) => (range 20)
   (-> df-1
-      (g/with-column :struct (g/struct :SellerG :Rooms))
       (g/select
-        :struct)
-      g/collect-vals
-      first) => [{:SellerG "Biggin" :Rooms 2}]
+        {:struct (g/struct :SellerG :Rooms)
+         :filtered-1 (g/filter (g/array 1 2 3) g/even?)
+         :filtered-2 (g/filter (g/array -1 0 1 2 3) #(g/< (g/+ %1 %2) 4))})
+      g/collect
+      first) => {:struct     {:SellerG "Biggin" :Rooms 2}
+                 :filtered-1 [2]
+                 :filtered-2 [-1 0 1]}
   (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))
