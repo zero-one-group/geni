@@ -425,6 +425,8 @@
    table->dataset
    tail
    tail-vals
+   head
+   head-vals
    take
    take-vals
    union

@@ -28,6 +28,10 @@
 (defn collect [dataframe]
   (->> dataframe .collect collected->maps))
 
+(defn head
+  ([dataframe] (-> dataframe (.head 1) collected->maps first))
+  ([dataframe n-rows] (-> dataframe (.head n-rows) collected->maps)))
+
 (defn describe [dataframe & col-names]
   (.describe dataframe (into-array java.lang.String (map name col-names))))
 
@@ -243,6 +247,14 @@
 (defn collect-vals [dataframe]
   (let [cols (columns dataframe)]
     (-> dataframe .collect (collected->vectors cols))))
+
+(defn head-vals
+  ([dataframe]
+   (let [cols (columns dataframe)]
+     (-> dataframe (.head 1) (collected->vectors cols) first)))
+  ([dataframe n-rows]
+   (let [cols (columns dataframe)]
+     (-> dataframe (.head n-rows) (collected->vectors cols)))))
 
 (defn take-vals [dataframe n-rows]
   (let [cols (columns dataframe)]
