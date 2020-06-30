@@ -1,15 +1,24 @@
 (ns zero-one.geni.sql
-  (:refer-clojure :exclude [concat
+  (:refer-clojure :exclude [assoc
+                            concat
+                            dissoc
                             flatten
                             hash
+                            keys
                             map
+                            merge
                             not
                             rand
+                            rename-keys
                             reverse
                             second
+                            select-keys
                             sequence
                             struct
-                            when])
+                            update
+                            vals
+                            when
+                            zipmap])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop])
@@ -329,3 +338,44 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 (def var-samp variance)
+
+;; Clojure Idioms
+(defn assoc
+  ([expr k v] (map-concat expr (map k v)))
+  ([expr k v & kvs]
+   (if (even? (count kvs))
+     (let [assoced (assoc expr k v)]
+       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
+     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
+                                            "after map/vector, found odd number"))))))
+
+(defn dissoc [expr & ks]
+  (map-filter expr (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
+
+(def keys map-keys)
+
+(defn merge [expr & ms] (reduce map-concat expr ms))
+
+(defn select-keys [expr ks]
+  (map-filter expr (fn [k _] (.isin k (interop/->scala-seq ks)))))
+
+(defn update [expr k f & args]
+  (transform-values expr (fn [k' v] (when (.equalTo (->column k') (->column k))
+                                      (apply f v args)
+                                      v))))
+
+(def vals map-values)
+
+(def zipmap map-from-arrays)
+
+;; TODO: merge-with + proper null handling,
+;(defn rename-cols [k kmap]
+  ;(conj
+    ;(map (fn [[old-k new-k]]
+           ;(when (.equalTo (->column k) (->column old-k))
+             ;(->column new-k)))
+         ;kmap)
+    ;(->column k)))
+
+;(defn rename-keys [expr kmap]
+  ;(transform-keys expr (fn [k _] (functions/coalesce (->col-array (rename-cols k kmap))))))
