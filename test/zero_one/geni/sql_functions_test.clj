@@ -1,7 +1,7 @@
 (ns zero-one.geni.sql-functions-test
   (:require
     [clojure.string]
-    [midje.sweet :refer [facts fact =>]]
+    [midje.sweet :refer [facts fact => throws]]
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
   (:import
@@ -17,26 +17,43 @@
       (g/with-column :other (g/map 3 (g/lit "d") 4 (g/lit "e")))
       (g/select
         :map
-        {:entries (g/map-entries :map)
+        {:arrays  (g/map-from-arrays (g/array 123 456) (g/array 10.0 20.0))
+         :ass-2   (g/assoc :map 7 (g/lit "x") 3 (g/lit "y"))
+         :assoc   (g/assoc :map 3 (g/lit "c"))
+         :concat  (g/map-concat :map :other)
+         :diss-2  (g/dissoc :other 4 3)
+         :dissoc  (g/dissoc :other 4)
+         :entries (g/map-entries :map)
          :filter  (g/map-filter :map (fn [k _] (g/even? k)))
          :keys    (g/map-keys :map)
+         :merge   (g/merge :map :other (g/map 5 (g/lit "x")))
+         :select  (g/select-keys :other [2 4 1])
+         :update  (g/update :other 4 #(g/concat (g/upper %1) %2) (g/lit "++"))
          :values  (g/map-values :map)
-         :zipped  (g/map-zip-with :map :map (fn [_ v1 v2] (g/concat (g/upper v2) v1)))
          :x-keys  (g/transform-keys :map (fn [k v] (g/concat (g/str k) (g/upper v))))
          :x-vals  (g/transform-values :map (fn [k _] (g/sqr k)))
-         :concat  (g/map-concat :map :other)
-         :arrays  (g/map-from-arrays (g/array 123 456) (g/array 10.0 20.0))})
+         :z-2     (g/map-zip-with :map :other (fn [_ v1 v2] (g/coalesce v1 v2)))
+         :zipped  (g/map-zip-with :map :map (fn [_ v1 v2] (g/concat (g/upper v2) v1)))})
       g/collect
-      first) => {:map {1 "a" 2 "b"}
+      first) => {:arrays  {123 10.0 456 20.0}
+                 :ass-2   {1 "a" 2 "b" 3 "y" 7 "x"}
+                 :assoc   {1 "a" 2 "b" 3 "c"}
+                 :concat  {1 "a" 2 "b" 3 "d" 4 "e"}
+                 :diss-2  {}
+                 :dissoc  {3 "d"}
                  :entries [{:key 1 :value "a"} {:key 2 :value "b"}]
-                 :filter {2 "b"}
-                 :keys [1 2]
-                 :values ["a" "b"]
-                 :zipped {1 "Aa" 2 "Bb"}
-                 :x-keys {"1A" "a" "2B" "b"}
-                 :x-vals {1 1 2 4}
-                 :arrays {123 10.0 456 20.0}
-                 :concat {1 "a" 2 "b" 3 "d" 4 "e"}})
+                 :filter  {2 "b"}
+                 :keys    [1 2]
+                 :map     {1 "a" 2 "b"}
+                 :merge   {1 "a" 2 "b" 3 "d" 4 "e" 5 "x"}
+                 :select  {4 "e"}
+                 :update  {3 "d" 4 "E++"}
+                 :values  ["a" "b"]
+                 :x-keys  {"1A" "a" "2B" "b"}
+                 :x-vals  {1 1 2 4}
+                 :z-2     {1 "a" 2 "b" 3 "d" 4 "e"}
+                 :zipped  {1 "Aa" 2 "Bb"}}
+  (g/assoc :map 7 (g/lit "x") 3) => (throws IllegalArgumentException))
 
 (fact "On misc functions"
   (-> df-1
