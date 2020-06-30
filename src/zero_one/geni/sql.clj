@@ -7,6 +7,7 @@
                             keys
                             map
                             merge
+                            merge-with
                             not
                             rand
                             rename-keys
@@ -356,6 +357,20 @@
 
 (defn merge [expr & ms] (reduce map-concat expr ms))
 
+(def merge-with map-zip-with)
+
+(defn- rename-cols [k kmap]
+  (clojure.core/concat
+    (clojure.core/map
+      (fn [[old-k new-k]]
+        (when (.equalTo (->column k) (->column old-k))
+          (->column new-k)))
+      kmap)
+    [(->column k)]))
+
+(defn rename-keys [expr kmap]
+  (transform-keys expr (fn [k _] (functions/coalesce (->col-array (rename-cols k kmap))))))
+
 (defn select-keys [expr ks]
   (map-filter expr (fn [k _] (.isin k (interop/->scala-seq ks)))))
 
@@ -368,14 +383,3 @@
 
 (def zipmap map-from-arrays)
 
-;; TODO: merge-with + proper null handling,
-;(defn rename-cols [k kmap]
-  ;(conj
-    ;(map (fn [[old-k new-k]]
-           ;(when (.equalTo (->column k) (->column old-k))
-             ;(->column new-k)))
-         ;kmap)
-    ;(->column k)))
-
-;(defn rename-keys [expr kmap]
-  ;(transform-keys expr (fn [k _] (functions/coalesce (->col-array (rename-cols k kmap))))))

@@ -27,6 +27,7 @@
          :filter  (g/map-filter :map (fn [k _] (g/even? k)))
          :keys    (g/map-keys :map)
          :merge   (g/merge :map :other (g/map 5 (g/lit "x")))
+         :renamed (g/rename-keys :map {1 10 2 20})
          :select  (g/select-keys :other [2 4 1])
          :update  (g/update :other 4 #(g/concat (g/upper %1) %2) (g/lit "++"))
          :values  (g/map-values :map)
@@ -46,6 +47,7 @@
                  :keys    [1 2]
                  :map     {1 "a" 2 "b"}
                  :merge   {1 "a" 2 "b" 3 "d" 4 "e" 5 "x"}
+                 :renamed {10 "a" 20 "b"}
                  :select  {4 "e"}
                  :update  {3 "d" 4 "E++"}
                  :values  ["a" "b"]

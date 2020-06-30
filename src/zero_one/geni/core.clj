@@ -3,7 +3,6 @@
                             +
                             -
                             /
-                            ;rename-keys
                             <
                             <=
                             =
@@ -37,6 +36,7 @@
                             map
                             max
                             merge
+                            merge-with
                             min
                             mod
                             neg?
@@ -46,6 +46,7 @@
                             pos?
                             rand
                             remove
+                            rename-keys
                             reverse
                             second
                             select-keys
@@ -153,7 +154,6 @@
    ;days
    ;hours
    ;months
-   ;rename-keys
    ;years
    abs
    acos
@@ -268,6 +268,7 @@
    map-zip-with
    md5
    merge
+   merge-with
    minute
    monotonically-increasing-id
    month
@@ -291,6 +292,7 @@
    rank
    regexp-extract
    regexp-replace
+   rename-keys
    reverse
    rint
    round
