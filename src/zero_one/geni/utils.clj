@@ -29,3 +29,8 @@
   (let [m (first (.getDeclaredMethods (class f)))
         p (.getParameterTypes m)]
     (alength p)))
+
+(defn ->string-map [m]
+  (->> m
+       (map (fn [[k v]] [(name k) (name v)]))
+       (into {})))

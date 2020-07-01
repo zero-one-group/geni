@@ -173,6 +173,11 @@
    array-repeat
    array-sort
    array-union
+   schema-of-csv
+   from-csv
+   to-csv
+   schema-of-json
+   from-json
    arrays-overlap
    arrays-zip
    ascii
@@ -473,6 +478,7 @@
    min
    shuffle
    sum
+   to-json
    where])
 
 (import-vars
@@ -501,9 +507,6 @@
 
 (def to-string (memfn toString))
 (def ->string to-string)
-
-(def to-json (memfn toJSON))
-(def ->json to-json)
 
 (defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
                              :or   {app-name  "Geni App"
