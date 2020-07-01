@@ -227,7 +227,11 @@
           (g/lit [2.0])
           (g/lit ["b"]))
         g/first-vals) => [1 "a" [2.0] ["b"]])
-  (fact "take and take-vals work"
+  (fact "action functions work"
+    (g/head df-20) => map?
+    (g/head df-20 2) => #(= (count %) 2)
+    (g/head-vals df-20) => vector?
+    (g/head-vals df-20 3) => #(and (= (count %) 3) (every? vector? %))
     (g/take df-20 5) => #(and (= (count %) 5) (every? map? %))
     (g/take-vals df-20 10) => #(and (= (count %) 10) (every? vector? %))
     (g/tail df-20 5) => #(and (= (count %) 5) (every? map? %))

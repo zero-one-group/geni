@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [distinct
                             drop
                             empty?
-                            filter
                             group-by
                             remove
                             sort
@@ -28,6 +27,10 @@
 
 (defn collect [dataframe]
   (->> dataframe .collect collected->maps))
+
+(defn head
+  ([dataframe] (-> dataframe (.head 1) collected->maps first))
+  ([dataframe n-rows] (-> dataframe (.head n-rows) collected->maps)))
 
 (defn describe [dataframe & col-names]
   (.describe dataframe (into-array java.lang.String (map name col-names))))
@@ -104,9 +107,6 @@
 (defn except [dataframe other] (.except dataframe other))
 
 (defn except-all [dataframe other] (.exceptAll dataframe other))
-
-(defn filter [dataframe expr] (.filter dataframe (.cast (->column expr) "boolean")))
-(def where filter)
 
 (defn intersect [dataframe other] (.intersect dataframe other))
 
@@ -247,6 +247,14 @@
 (defn collect-vals [dataframe]
   (let [cols (columns dataframe)]
     (-> dataframe .collect (collected->vectors cols))))
+
+(defn head-vals
+  ([dataframe]
+   (let [cols (columns dataframe)]
+     (-> dataframe (.head 1) (collected->vectors cols) first)))
+  ([dataframe n-rows]
+   (let [cols (columns dataframe)]
+     (-> dataframe (.head n-rows) (collected->vectors cols)))))
 
 (defn take-vals [dataframe n-rows]
   (let [cols (columns dataframe)]

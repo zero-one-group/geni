@@ -3,7 +3,6 @@
                             +
                             -
                             /
-                            ;rename-keys
                             <
                             <=
                             =
@@ -37,6 +36,7 @@
                             map
                             max
                             merge
+                            merge-with
                             min
                             mod
                             neg?
@@ -46,6 +46,7 @@
                             pos?
                             rand
                             remove
+                            rename-keys
                             reverse
                             second
                             select-keys
@@ -153,7 +154,6 @@
    ;days
    ;hours
    ;months
-   ;rename-keys
    ;years
    abs
    acos
@@ -268,6 +268,7 @@
    map-zip-with
    md5
    merge
+   merge-with
    minute
    monotonically-increasing-id
    month
@@ -291,6 +292,7 @@
    rank
    regexp-extract
    regexp-replace
+   rename-keys
    reverse
    rint
    round
@@ -377,7 +379,6 @@
    except
    except-all
    fill-na
-   filter
    first-vals
    group-by
    infer-schema
@@ -424,12 +425,13 @@
    table->dataset
    tail
    tail-vals
+   head
+   head-vals
    take
    take-vals
    union
    union-by-name
    unpersist
-   where
    with-column
    with-column-renamed])
 
@@ -463,13 +465,15 @@
    coalesce
    count
    explain
+   filter
    first
    last
    max
    mean
    min
    shuffle
-   sum])
+   sum
+   where])
 
 (import-vars
   [zero-one.geni.google-sheets

@@ -1,15 +1,17 @@
 (ns zero-one.geni.polymorphic
   (:refer-clojure :exclude [alias
                             count
+                            filter
+                            first
+                            last
                             max
                             min
-                            shuffle
-                            first
-                            last])
+                            shuffle])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.dataset]
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.utils :refer [arg-count]])
   (:import
     (org.apache.spark.sql Dataset
                           RelationalGroupedDataset
@@ -74,3 +76,12 @@
   (-> dataframe (zero-one.geni.dataset/tail 1) clojure.core/first))
 (defmethod last :default [expr] (functions/last (->column expr)))
 
+(defmulti filter (fn [head & _] (class head)))
+(defmethod filter Dataset [dataframe expr]
+  (.filter dataframe (.cast (->column expr) "boolean")))
+(defmethod filter :default [expr predicate]
+  (let [scala-predicate (if (= (arg-count predicate) 2)
+                          (interop/->scala-function2 predicate)
+                          (interop/->scala-function1 predicate))]
+    (functions/filter (->column expr) scala-predicate)))
+(def where filter)

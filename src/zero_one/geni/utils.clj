@@ -24,3 +24,8 @@
         (catch ClassNotFoundException _ nil))
     `(do ~@body :succeeded)
     :failed))
+
+(defn arg-count [f]
+  (let [m (first (.getDeclaredMethods (class f)))
+        p (.getParameterTypes m)]
+    (alength p)))

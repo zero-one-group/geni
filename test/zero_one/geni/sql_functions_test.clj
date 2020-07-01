@@ -27,6 +27,7 @@
          :filter  (g/map-filter :map (fn [k _] (g/even? k)))
          :keys    (g/map-keys :map)
          :merge   (g/merge :map :other (g/map 5 (g/lit "x")))
+         :renamed (g/rename-keys :map {1 10 2 20})
          :select  (g/select-keys :other [2 4 1])
          :update  (g/update :other 4 #(g/concat (g/upper %1) %2) (g/lit "++"))
          :values  (g/map-values :map)
@@ -46,6 +47,7 @@
                  :keys    [1 2]
                  :map     {1 "a" 2 "b"}
                  :merge   {1 "a" 2 "b" 3 "d" 4 "e" 5 "x"}
+                 :renamed {10 "a" 20 "b"}
                  :select  {4 "e"}
                  :update  {3 "d" 4 "E++"}
                  :values  ["a" "b"]
@@ -178,11 +180,14 @@
         (-> (g/monotonically-increasing-id) (g/as "id")))
       (g/collect-col "id")) => (range 20)
   (-> df-1
-      (g/with-column :struct (g/struct :SellerG :Rooms))
       (g/select
-        :struct)
-      g/collect-vals
-      first) => [{:SellerG "Biggin" :Rooms 2}]
+        {:struct (g/struct :SellerG :Rooms)
+         :filtered-1 (g/filter (g/array 1 2 3) g/even?)
+         :filtered-2 (g/filter (g/array -1 0 1 2 3) #(g/< (g/+ %1 %2) 4))})
+      g/collect
+      first) => {:struct     {:SellerG "Biggin" :Rooms 2}
+                 :filtered-1 [2]
+                 :filtered-2 [-1 0 1]}
   (-> df-1
       (g/with-column "xs" (g/array [1 2 1]))
       (g/with-column "ys" (g/array [3 2 1]))
