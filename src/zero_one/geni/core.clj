@@ -173,11 +173,6 @@
    array-repeat
    array-sort
    array-union
-   schema-of-csv
-   from-csv
-   to-csv
-   schema-of-json
-   from-json
    arrays-overlap
    arrays-zip
    ascii
@@ -235,6 +230,8 @@
    forall
    format-number
    format-string
+   from-csv
+   from-json
    from-unixtime
    greatest
    grouping
@@ -304,6 +301,8 @@
    row-number
    rpad
    rtrim
+   schema-of-csv
+   schema-of-json
    second
    select-keys
    sequence
@@ -334,6 +333,7 @@
    tan
    tanh
    time-window
+   to-csv
    to-date
    to-timestamp
    to-utc-timestamp
