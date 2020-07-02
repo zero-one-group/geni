@@ -5,8 +5,49 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20 df-50]])
   (:import
+    (java.sql Timestamp)
     (org.apache.spark.sql Dataset)
     (org.apache.spark.sql.expressions WindowSpec)))
+
+(facts "On JSON functions"
+  (-> df-1
+      (g/select
+        {:schema-1 (g/schema-of-json (g/lit "[{\"col\":0}]"))
+         :schema-2 (g/schema-of-json (g/lit "[{\"col\":01}]") {:allowNumericLeadingZeros "true"})
+         :from-1   (g/from-json (g/lit "{\"a\":1, \"b\":0.8}") (g/lit "a INT, b DOUBLE"))
+         :from-2   (g/from-json (g/lit "{\"time\":\"26/08/2015 00:00:00 GMT\"}")
+                                (g/lit "time Timestamp")
+                                {:timestampFormat "dd/MM/yyyy HH:mm:ss z"})
+         :to-1     (g/to-json (g/struct {:a 1 :b 2}))
+         :to-2     (g/to-json (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
+                              {:timestampFormat "dd/MM/yyyy"})})
+      g/collect
+      first) => {:schema-1 "array<struct<col:bigint>>"
+                 :schema-2 "array<struct<col:bigint>>"
+                 :from-1   {:a 1 :b 0.8}
+                 :from-2   {:time (Timestamp. 1440547200000)}
+                 :to-1 "{\"a\":1,\"b\":2}"
+                 :to-2 "{\"time\":\"26/08/2015\"}"})
+
+(facts "On json functions"
+  (-> df-1
+      (g/select
+        {:schema-1 (g/schema-of-csv (g/lit "1,abc"))
+         :schema-2 (g/schema-of-csv (g/lit "1|abc") {:delimiter "|"})
+         :from-1   (g/from-csv (g/lit "1, 0.8") (g/lit "a INT, b DOUBLE"))
+         :from-2   (g/from-csv (g/lit "26/08/2015 00:00:00 GMT")
+                               (g/lit "time Timestamp")
+                               {:timestampFormat "dd/MM/yyyy HH:mm:ss z"})
+         :to-1     (g/to-csv (g/struct {:a 1 :b 2}))
+         :to-2     (g/to-csv (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
+                             {:timestampFormat "dd/MM/yyyy"})})
+      g/collect
+      first) => {:schema-1 "struct<_c0:int,_c1:string>"
+                 :schema-2 "struct<_c0:int,_c1:string>"
+                 :from-1   {:a 1 :b 0.8}
+                 :from-2   {:time (Timestamp. 1440547200000)}
+                 :to-1     "1,2"
+                 :to-2     "26/08/2015"})
 
 (facts "On map functions"
   (-> df-1

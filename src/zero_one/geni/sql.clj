@@ -22,11 +22,10 @@
                             zipmap])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.utils :refer [->string-map]])
   (:import
     (org.apache.spark.sql Column functions)))
-
-;; TODO: schema-of-json, from-json, to-json, from-csv
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -91,6 +90,14 @@
 (defn flatten [expr] (functions/flatten (->column expr)))
 (defn forall [expr predicate]
   (functions/forall (->column expr) (interop/->scala-function1 predicate)))
+(defn from-csv
+  ([expr schema] (functions/from_csv (->column expr) (->column schema) {}))
+  ([expr schema options]
+   (functions/from_csv (->column expr) (->column schema) (->string-map options))))
+(defn from-json
+  ([expr schema] (functions/from_json (->column expr) (->column schema) {}))
+  ([expr schema options]
+   (functions/from_json (->column expr) (->column schema) (->string-map options))))
 (defn map-concat [& exprs] (functions/map_concat (->col-array exprs)))
 (defn map-entries [expr] (functions/map_entries (->column expr)))
 (defn map-filter [expr predicate]
@@ -104,6 +111,12 @@
 (def posexplode-outer posexplode)
 (defn reverse [expr]
   (functions/reverse (->column expr)))
+(defn schema-of-csv
+  ([expr] (functions/schema_of_csv (->column expr)))
+  ([expr options] (functions/schema_of_csv (->column expr) (->string-map options))))
+(defn schema-of-json
+  ([expr] (functions/schema_of_json (->column expr)))
+  ([expr options] (functions/schema_of_json (->column expr) (->string-map options))))
 (defn sequence [start stop step]
   (functions/sequence (->column start) (->column stop) (->column step)))
 (defn size [expr]
@@ -113,6 +126,10 @@
 (defn sort-array
   ([expr] (functions/sort_array (->column expr)))
   ([expr asc] (functions/sort_array (->column expr) asc)))
+(defn to-csv
+  ([expr] (functions/to_csv (->column expr) {}))
+  ([expr options]
+   (functions/to_csv (->column expr) (->string-map options))))
 (defn transform [expr xform-fn]
   (functions/transform (->column expr) (interop/->scala-function1 xform-fn)))
 (defn transform-keys [expr key-fn]
