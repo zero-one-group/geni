@@ -510,6 +510,9 @@
 (def to-string (memfn toString))
 (def ->string to-string)
 
+(def to-debug-string (memfn toDebugString))
+(def ->debug-string to-debug-string)
+
 (defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
                              :or   {app-name  "Geni App"
                                     master    "local[*]"

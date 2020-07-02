@@ -15,6 +15,8 @@
   => #(= (% "spark.master") "local[*]")
   (-> spark .sparkContext .getCheckpointDir .get)
   => #(clojure.string/includes? % "resources/checkpoint/")
+  (-> spark .sparkContext .getConf g/to-debug-string)
+  => #(clojure.string/includes? % "spark.app.id")
   (select-keys (g/spark-conf spark) [:spark.master
                                      :spark.app.name
                                      :spark.testing.memory

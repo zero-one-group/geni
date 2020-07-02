@@ -175,11 +175,17 @@
 (defn group-by [dataframe & exprs]
   (.groupBy dataframe (->col-array exprs)))
 
+(defn- ->join-expr-or-join-cols [expr]
+  (if (instance? Column expr)
+    expr
+    (->> (ensure-coll expr)
+         (map name)
+         interop/->scala-seq)))
+
 (defn join
-  ([left right join-cols] (join left right join-cols "inner"))
-  ([left right join-cols join-type]
-   (let [join-cols (ensure-coll join-cols)]
-     (.join left right (interop/->scala-seq (map name join-cols)) join-type))))
+  ([left right expr] (join left right expr "inner"))
+  ([left right expr join-type]
+   (.join left right (->join-expr-or-join-cols expr) join-type)))
 
 (defn rollup [dataframe & exprs]
   (.rollup dataframe (->col-array exprs)))
