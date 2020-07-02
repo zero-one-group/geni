@@ -230,6 +230,8 @@
    forall
    format-number
    format-string
+   from-csv
+   from-json
    from-unixtime
    greatest
    grouping
@@ -299,6 +301,8 @@
    row-number
    rpad
    rtrim
+   schema-of-csv
+   schema-of-json
    second
    select-keys
    sequence
@@ -329,6 +333,7 @@
    tan
    tanh
    time-window
+   to-csv
    to-date
    to-timestamp
    to-utc-timestamp
@@ -473,6 +478,7 @@
    min
    shuffle
    sum
+   to-json
    where])
 
 (import-vars
@@ -501,9 +507,6 @@
 
 (def to-string (memfn toString))
 (def ->string to-string)
-
-(def to-json (memfn toJSON))
-(def ->json to-json)
 
 (defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
                              :or   {app-name  "Geni App"

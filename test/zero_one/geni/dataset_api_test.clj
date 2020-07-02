@@ -120,10 +120,10 @@
   (-> df-20
       (g/limit 2)
       (g/select :Date :CouncilArea)
-      g/->json
+      g/to-json
       g/collect) => ["{\"Date\":\"3/12/2016\",\"CouncilArea\":\"Yarra\"}"
                      "{\"Date\":\"4/02/2016\",\"CouncilArea\":\"Yarra\"}"]
-  (-> df-1 g/to-json g/collect) => (-> df-1 g/->json g/collect))
+  (-> df-1 g/to-json g/collect) => (-> df-1 g/to-json g/collect))
 
 (facts "On pivot" :slow
   (fact "pivot should return the expected cols"

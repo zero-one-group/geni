@@ -11,7 +11,7 @@
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.dataset]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [arg-count]])
+    [zero-one.geni.utils :refer [->string-map arg-count]])
   (:import
     (org.apache.spark.sql Dataset
                           RelationalGroupedDataset
@@ -85,3 +85,10 @@
                           (interop/->scala-function1 predicate))]
     (functions/filter (->column expr) scala-predicate)))
 (def where filter)
+
+(defmulti to-json (fn [head & _] (class head)))
+(defmethod to-json Dataset [dataframe] (.toJSON dataframe))
+(defmethod to-json :default
+  ([expr] (functions/to_json (->column expr) {}))
+  ([expr options]
+   (functions/to_json (->column expr) (->string-map options))))
