@@ -63,14 +63,16 @@
                             zero?
                             zipmap])
   (:require
+    [clojure.walk]
     [potemkin :refer [import-vars]]
     [zero-one.geni.column]
-    [zero-one.geni.dataset]
     [zero-one.geni.data-sources]
+    [zero-one.geni.dataset]
     [zero-one.geni.google-sheets]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.polymorphic]
-    [zero-one.geni.storage]
     [zero-one.geni.sql]
+    [zero-one.geni.storage]
     [zero-one.geni.window])
   (:import
     (org.apache.spark.sql SparkSession)))
@@ -523,6 +525,15 @@
     (clojure.core/when checkpoint-dir
       (.setCheckpointDir context checkpoint-dir))
     session))
+
+(defn spark-conf [spark-session]
+  (->> spark-session
+       .sparkContext
+       .getConf
+       .getAll
+       (clojure.core/map interop/scala-tuple->vec)
+       (into {})
+       clojure.walk/keywordize-keys))
 
 (comment
 

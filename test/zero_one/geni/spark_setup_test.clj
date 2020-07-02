@@ -14,7 +14,18 @@
   (-> spark .conf .getAll interop/scala-map->map)
   => #(= (% "spark.master") "local[*]")
   (-> spark .sparkContext .getCheckpointDir .get)
-  => #(clojure.string/includes? % "resources/checkpoint/"))
+  => #(clojure.string/includes? % "resources/checkpoint/")
+  (select-keys (g/spark-conf spark) [:spark.master
+                                     :spark.app.name
+                                     :spark.testing.memory
+                                     :spark.sql.adaptive.enabled
+                                     :spark.sql.adaptive.coalescePartitions.enabled])
+  => {:spark.master                                  "local[*]",
+      :spark.app.name                                "Geni App",
+      :spark.testing.memory                          "3147480000",
+      :spark.sql.adaptive.enabled                    "true",
+      :spark.sql.adaptive.coalescePartitions.enabled "true",})
+
 
 (fact "Test primary key is the product of address, date and seller"
   (-> melbourne-df
