@@ -219,6 +219,7 @@ When the optional dependencies are not present, the vars to the corresponding fu
 * [Geni Semantics](docs/semantics.md)
 * [Optional Google-Sheets Integration](docs/google_sheets.md)
 * [Optional XGBoost Support](docs/xgboost.md)
+* [Using Dataproc](docs/dataproc.md)
 
 ## License
 

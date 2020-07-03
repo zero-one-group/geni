@@ -388,6 +388,7 @@
    fill-na
    first-vals
    group-by
+   hint
    infer-schema
    infer-struct-field
    input-files
