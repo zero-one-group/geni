@@ -139,7 +139,7 @@
         (g/pmod 10 -3))
       g/collect-vals) => [["1100" "110" 180.0 3628800 1.0 3 1 1]])
 
-(facts "On string functions" ;:slow
+(facts "On string functions" :slow
   (fact "correct ascii"
     (-> df-1
         (g/select

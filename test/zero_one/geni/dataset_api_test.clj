@@ -218,7 +218,7 @@
         g/columns
         set) => #(nil? (% :SellerG))))
 
-(facts "On actions" ;:slow
+(facts "On actions" :slow
   (fact "correct collection of lits"
     (-> df-1
         (g/select
@@ -324,7 +324,7 @@
             dates   (map #(str (% :Date)) records)]
         (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
 
-(facts "On caching" ;:slow
+(facts "On caching" :slow
   (fact "should keeps data in memory")
   (let [df (-> df-1 g/cache)]
     (.useMemory (g/storage-level df)) => true)
@@ -395,6 +395,13 @@
         count) => 2))
 
 (facts "On join" :slow
+  (fact "joining with join exprs"
+    (-> df-50
+        (g/join df-1
+                (g/= (g/col df-50 :Suburb)
+                     (g/col df-1 :Suburb))
+                "inner")
+        g/count) => 38)
   (fact "normal join works as expected"
     (let [grouped (-> df-50
                       (g/group-by :SellerG :Regionname)
