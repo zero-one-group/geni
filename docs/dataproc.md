@@ -100,7 +100,8 @@ Start an nREPL server and step into a Clojure REPL. A minimal example of `core.c
 (ns app.core
   (:require
     [clojure.main]
-    [nrepl.server])
+    [nrepl.server]
+    [zero-one.geni.core :as g])
   (:gen-class))
 
 (defonce spark (delay (g/create-spark-session {:master "yarn"})))
