@@ -286,6 +286,9 @@
 
 (defn column-names [dataframe] (-> dataframe .columns seq))
 
+(defn hint [dataframe hint-name & args]
+  (.hint dataframe hint-name (interop/->scala-seq args)))
+
 (defn rename-columns [dataframe rename-map]
   (reduce
     (fn [acc-df [old-name new-name]]

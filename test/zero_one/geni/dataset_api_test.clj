@@ -12,6 +12,13 @@
                           SparkSession
                           SQLContext)))
 
+(fact "On Dataset hints"
+  (-> df-1
+      (g/hint "myHint" 100 true)
+      .queryExecution
+      .logical
+      .toString) => #(clojure.string/includes? % "myHint, [100, true]"))
+
 (fact "On clojure idioms"
   (let [r-50      (range 50)
         dataframe (g/records->dataset spark (map (fn [i] {:x i}) r-50))]
