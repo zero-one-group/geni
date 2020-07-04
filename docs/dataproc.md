@@ -86,7 +86,7 @@ lein uberjar && \
 
 Once the uberjar ran the default script successfully, we can jump back to and edit `core.clj` to run our own script.
 
-## Spark REPL
+### Spark REPL
 
 Add an additional nREPL dependency to allow connections from text editors:
 
