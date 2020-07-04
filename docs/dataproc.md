@@ -32,7 +32,7 @@ gcloud dataproc clusters delete geni-cluster --region=asia-southeast1
 
 There may be dangling storage buckets that have to be deleted separately.
 
-## Standalone Applications
+## Running Geni on Yarn
 
 Java should already be installed on the primary node. Install Leiningen using:
 
@@ -75,7 +75,9 @@ Set the master to `yarn`. For instance, the Spark sesssion definition may look l
 (defonce spark (delay (g/create-spark-session {:master "yarn"})))
 ```
 
-Finally create an uberjar and run it on the dataproc cluster using `spark-submit`:
+### Standalone Applications
+
+Create an uberjar and run it on the dataproc cluster using `spark-submit`:
 
 ```bash
 lein uberjar && \
@@ -83,3 +85,41 @@ lein uberjar && \
 ```
 
 Once the uberjar ran the default script successfully, we can jump back to and edit `core.clj` to run our own script.
+
+## Spark REPL
+
+Add an additional nREPL dependency to allow connections from text editors:
+
+```clojure
+[nrepl "0.7.0"]
+```
+
+Start an nREPL server and step into a Clojure REPL. A minimal example of `core.clj` could look like:
+
+```clojure
+(ns app.core
+  (:require
+    [clojure.main]
+    [nrepl.server])
+  (:gen-class))
+
+(defonce spark (delay (g/create-spark-session {:master "yarn"})))
+
+(def port 7888)
+
+(defn -main []
+  (nrepl.server/start-server :port port)
+  (println (str "nREPL server started on port " port))
+  (clojure.main/repl))
+```
+
+Create an uberjar and run it using `spark-submit`:
+
+```bash
+lein uberjar && \
+    spark-submit --class app.core target/uberjar/app-0.0.1-SNAPSHOT-standalone.jar
+```
+
+Once the REPL has started, we simply connect to the server's port. For instance, if you are using [Conjure](https://github.com/Olical/conjure), it is as simple as `:ConjureConnect 7888` for the example above. You may have to change the namespace, such as `(ns app.core)`.
+
+Verify that `(-> @spark .sparkContext .getConf .toDebugString println)` contains `spark.master=yarn`.
