@@ -47,9 +47,14 @@ lein uberjar && \
     spark-submit --class app.core target/uberjar/app-0.0.1-SNAPSHOT-standalone.jar
 ```
 
-By default, the Geni template prints the Spark configuration. Verify that `spark.master` is set to `"yarn"`. Also by default, it starts an nREPL server to port 65204 and steps into a [REPL(-y)](https://github.com/trptcolin/reply). From there, we can connect to the nREPL server using common Clojure text.
+By default, the templated main function:
 
-To submit a standalone application, we can simply jump back to edit `core.clj` and remove the `launch-repl` function.
+1. prints the Spark configuration;
+2. runs a Spark ML example;
+3. starts an nREPL server on port 65204; and
+4. steps into a [REPL(-y)](https://github.com/trptcolin/reply).
+
+Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply jump back to edit `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. Note that it is necessary to run `lein uberjar` every time the app source code is changed.
 
 ## Cleaning Up
 
