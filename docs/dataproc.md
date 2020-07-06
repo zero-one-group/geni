@@ -4,7 +4,6 @@
 
 See the following guide to [setup dataproc on GCP](https://cloud.google.com/solutions/monte-carlo-methods-with-hadoop-spark) an to [create a dataproc cluster](https://cloud.google.com/dataproc/docs/guides/create-cluster#creating_a_cloud_dataproc_cluster). We will be using [Google Cloud SDK](https://cloud.google.com/sdk/install) with the `gcloud` CLI commands.
 
-
 For this example, use the `preview` image version so that the cluster runs Spark 3. For instance, the following `gcloud` command creates a small dataproc cluster called `geni-cluster`:
 
 ```bash
@@ -24,14 +23,6 @@ Then access the primary node using:
 gce geni-cluster-m ssh
 ```
 
-Once finished with the exercise, delete the cluster using:
-
-```
-gcloud dataproc clusters delete geni-cluster --region=asia-southeast1
-```
-
-There may be dangling storage buckets that have to be deleted separately.
-
 ## Running Geni on Yarn
 
 Java should already be installed on the primary node. Install Leiningen using:
@@ -43,84 +34,36 @@ wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein && 
     lein
 ```
 
-Then, create a templated Geni app and step into the directory:
+Then, create a templated Geni app and step into the app directory::
 
 ```bash
-lein new geni app && cd app
+lein new geni app +dataproc && cd app
 ```
 
-Delete all optional dependencies on the `project.clj` file, namely:
-
-```clojure
-;; Optional: Spark XGBoost
-[ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-[ml.dmlc/xgboost4j_2.12 "1.0.0"]
-;; Optional: Google Sheets Integration
-[com.google.api-client/google-api-client "1.30.9"]
-[com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
-[com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
-[com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
-[org.apache.hadoop/hadoop-client "2.7.3"]
-```
-
-Match the Hadoop client installed on the dataproc primary node. At the time of writing, we would need to add the following dependency:
-
-```clojure
-[org.apache.hadoop/hadoop-client "3.2.1"]
-```
-
-Set the master to `yarn`. For instance, the Spark sesssion definition may look like:
-
-```clojure
-(defonce spark (delay (g/create-spark-session {:master "yarn"})))
-```
-
-### Standalone Applications
-
-Create an uberjar and run it on the dataproc cluster using `spark-submit`:
+Create the uberjar and run it using `spark-submit`. This will spawn a Spark session running on YARN:
 
 ```bash
 lein uberjar && \
     spark-submit --class app.core target/uberjar/app-0.0.1-SNAPSHOT-standalone.jar
 ```
 
-Once the uberjar ran the default script successfully, we can jump back to and edit `core.clj` to run our own script.
+By default, the templated main function:
 
-### Spark REPL
+1. prints the Spark configuration;
+2. runs a Spark ML example;
+3. starts an nREPL server on port 65204; and
+4. steps into a [REPL(-y)](https://github.com/trptcolin/reply).
 
-Add an additional nREPL dependency to allow connections from text editors:
+Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply jump back to edit `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. Note that it is necessary to run `lein uberjar` every time the app source code is changed.
 
-```clojure
-[nrepl "0.7.0"]
-```
+## Cleaning Up
 
-Start an nREPL server and step into a Clojure REPL. A minimal example of `core.clj` could look like:
+Once finished with the exercise, the easiest way to clean up is to simply delete the GCP project.
 
-```clojure
-(ns app.core
-  (:require
-    [clojure.main]
-    [nrepl.server]
-    [zero-one.geni.core :as g])
-  (:gen-class))
-
-(defonce spark (delay (g/create-spark-session {:master "yarn"})))
-
-(def port 7888)
-
-(defn -main []
-  (nrepl.server/start-server :port port)
-  (println (str "nREPL server started on port " port))
-  (clojure.main/repl))
-```
-
-Create an uberjar and run it using `spark-submit`:
+Alternatively, delete the cluster using:
 
 ```bash
-lein uberjar && \
-    spark-submit --class app.core target/uberjar/app-0.0.1-SNAPSHOT-standalone.jar
+gcloud dataproc clusters delete geni-cluster --region=asia-southeast1
 ```
 
-Once the REPL has started, we simply connect to the server's port. For instance, if you are using [Conjure](https://github.com/Olical/conjure), it is as simple as `:ConjureConnect 7888` for the example above. You may have to change the namespace, such as `(ns app.core)`.
-
-Verify that `(-> @spark .sparkContext .getConf .toDebugString println)` contains `spark.master=yarn`.
+There may be dangling storage buckets that have to be deleted separately.

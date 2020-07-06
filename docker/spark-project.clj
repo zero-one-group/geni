@@ -16,6 +16,8 @@
                  [org.apache.spark/spark-mllib_2.12 "3.0.0"]
                  [org.apache.spark/spark-sql_2.12 "3.0.0"]
                  [org.apache.spark/spark-streaming_2.12 "3.0.0"]
+                 ;; Optional: Dataproc
+                 [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost
                  [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
                  [ml.dmlc/xgboost4j_2.12 "1.0.0"]
