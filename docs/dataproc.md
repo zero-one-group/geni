@@ -17,7 +17,7 @@ gcloud dataproc clusters create geni-cluster \
     --image-version=preview
 ```
 
-Then access the primary node using:
+This could take a few minutes to run. Then access the primary node using:
 
 ```bash
 gcloud compute ssh ubuntu@geni-cluster-m
@@ -40,21 +40,20 @@ Then, create a templated Geni app and step into the app directory::
 lein new geni app +dataproc && cd app
 ```
 
-Create the uberjar and run it using `spark-submit`. This will spawn a Spark session running on YARN:
+To spawn the Spark REPL, run:
 
 ```bash
-lein uberjar && \
-    spark-submit --class app.core target/uberjar/app-0.0.1-SNAPSHOT-standalone.jar
+lein spark-submit
 ```
 
-By default, the templated main function:
+This is a shortcut to creating an uberjar and running it using `spark-submit`. By default, the templated main function:
 
 1. prints the Spark configuration;
 2. runs a Spark ML example;
 3. starts an nREPL server on port 65204; and
 4. steps into a [REPL(-y)](https://github.com/trptcolin/reply).
 
-Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply edit the `-main` function on `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. Note that it is necessary to run `lein uberjar` every time the app source code is changed.
+Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply edit the `-main` function on `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. 
 
 ## Cleaning Up
 
