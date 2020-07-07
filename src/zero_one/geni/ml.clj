@@ -186,12 +186,7 @@
 (defn binary-summary [model] (.binarySummary model))
 (defn best-model [model] (.bestModel model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
-(defn category-maps [model]
-  (->> model
-       .categoryMaps
-       interop/scala-map->map
-       (map (fn [[k v]] [k (interop/scala-map->map v)]))
-       (into {})))
+(defn category-maps [model] (->> model .categoryMaps interop/scala-map->map))
 (defn category-sizes [model] (seq (.categorySizes model)))
 (defn cluster-centers [model] (->> model .clusterCenters seq (map interop/->clojure)))
 (defn coefficient-matrix [model] (interop/matrix->seqs (.coefficientMatrix model)))

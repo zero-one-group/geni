@@ -29,7 +29,7 @@
                  :to-1 "{\"a\":1,\"b\":2}"
                  :to-2 "{\"time\":\"26/08/2015\"}"})
 
-(facts "On json functions"
+(facts "On CSV functions"
   (-> df-1
       (g/select
         {:schema-1 (g/schema-of-csv (g/lit "1,abc"))
@@ -50,6 +50,22 @@
                  :to-2     "26/08/2015"})
 
 (facts "On map functions"
+  (-> df-1
+      (g/with-column :location (g/struct
+                                 {:address :Address
+                                  :suburbs :Suburb
+                                  :region  :Regionname
+                                  :council :CouncilArea}))
+      (g/group-by :SellerG)
+      (g/agg {:keys   (g/collect-list :Address)
+              :values (g/collect-list :location)})
+      (g/select {:seller :SellerG
+                 :map    (g/map-from-arrays :keys :values)})
+      g/collect) => [{:map {"85 Turner St" {:address "85 Turner St"
+                                            :council "Yarra"
+                                            :region "Northern Metropolitan"
+                                            :suburbs "Abbotsford"}}
+                      :seller "Biggin"}]
   (-> df-1
       (g/with-column
         :map

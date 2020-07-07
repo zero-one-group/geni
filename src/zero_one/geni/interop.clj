@@ -18,6 +18,8 @@
            Function3)
     (scala.collection JavaConversions Map Seq)))
 
+(declare ->clojure)
+
 (defn scala-seq? [value]
   (instance? Seq value))
 
@@ -28,7 +30,9 @@
   (vec (JavaConversions/seqAsJavaList scala-seq)))
 
 (defn scala-map->map [^Map m]
-  (into {} (JavaConversions/mapAsJavaMap m)))
+  (into {}
+    (for [[k v] (JavaConversions/mapAsJavaMap m)]
+      [k (->clojure v)])))
 
 (defn ->scala-seq [coll]
   (JavaConversions/asScalaBuffer (seq coll)))
@@ -88,7 +92,6 @@
 (defn matrix->seqs [matrix]
   (->> matrix .rowIter .toSeq scala-seq->vec (map vector->seq)))
 
-(declare ->clojure)
 (defn spark-row->map [row]
   (let [cols   (->> row .schema .fieldNames (map keyword))
         values (->> row .toSeq scala-seq->vec (map ->clojure))]

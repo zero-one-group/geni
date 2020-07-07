@@ -20,7 +20,7 @@ gcloud dataproc clusters create geni-cluster \
 Then access the primary node using:
 
 ```bash
-gce geni-cluster-m ssh
+gcloud compute ssh ubuntu@geni-cluster-m
 ```
 
 ## Running Geni on Yarn
@@ -54,7 +54,7 @@ By default, the templated main function:
 3. starts an nREPL server on port 65204; and
 4. steps into a [REPL(-y)](https://github.com/trptcolin/reply).
 
-Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply jump back to edit `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. Note that it is necessary to run `lein uberjar` every time the app source code is changed.
+Verify that `spark.master` is set to `"yarn"`. To submit a standalone application, we can simply edit the `-main` function on `core.clj`. Remove the `launch-repl` function to prevent stepping into the REPL. Note that it is necessary to run `lein uberjar` every time the app source code is changed.
 
 ## Cleaning Up
 
