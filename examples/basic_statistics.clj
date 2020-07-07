@@ -2,7 +2,27 @@
   (:require
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.test-resources :refer [spark melbourne-df]]))
+
+
+(def dataframe
+  (-> melbourne-df
+      (g/limit 3)
+      (g/select
+        {:location (g/map (g/lit "suburb") :Suburb
+                          (g/lit "region") :Regionname
+                          (g/lit "council") :CouncilArea
+                          (g/lit "address") :Address)
+         :market   (g/map-from-entries
+                     (g/array (g/struct (g/lit "size") (g/double :Price))
+                              (g/struct (g/lit "price") (g/double :Price))))
+         :coord    (g/map-from-arrays
+                     (g/array (g/lit "lat") (g/lit "long"))
+                     (g/array :Lattitude :Longtitude))})))
+
+(clojure.pprint/pprint (g/collect dataframe))
+
+(g/print-schema melbourne-df)
 
 ;; Correlation
 (def corr-df
