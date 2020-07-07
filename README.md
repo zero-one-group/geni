@@ -220,7 +220,7 @@ When the optional dependencies are not present, the vars to the corresponding fu
 * [Optional Google-Sheets Integration](docs/google_sheets.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Using Dataproc](docs/dataproc.md)
-* [Work with SQL Maps](docs/sql_maps.md)
+* [Working with SQL Maps](docs/sql_maps.md)
 
 ## License
 
