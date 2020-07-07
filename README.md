@@ -183,8 +183,6 @@ Step into the directory, and run the command `lein run`!
 
 ## Installation
 
-Note that Geni wraps Apache Spark 3.0.0, which uses Scala 2.12, which has [incomplete support for JDK 11](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html). JDK 8 is recommended.
-
 Add the following to your `project.clj` dependency:
 
 [![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](http://clojars.org/zero.one/geni)
