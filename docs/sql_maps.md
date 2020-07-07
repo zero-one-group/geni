@@ -42,22 +42,17 @@ We can create map types using `map`, `map-from-entries` and `map-from-arrays` as
 
 ## SQL Map Functions and Synonyms
 
-Note that `map-from-arrays` above is actually the same as Clojure's `zipmap`, and it would be more natural to use the latter in a Clojure codebase. For that reason, Geni includes the following synonyms:
+Note that `map-from-arrays` above is actually the same as Clojure's `zipmap`, and it would be more natural to use the latter in a Clojure codebase. For that reason, Geni includes the following functions:
 
-| Spark Function    | Synonym      |
-| ---               | ---          |
-| `map-concat`      | `merge`      |
-| `map-from-arrays` | `zipmap`     |
-| `map-keys`        | `keys`       |
-| `map-values`      | `vals`       |
-| `map-zip-with`    | `merge-with` |
-
-Moreover Geni makes a number of Clojure's map functions available that are not present in the original Spark functions:
-
-| Geni Function |
-| ---           |
-| `assoc`       |
-| `dissoc`      |
-| `rename-keys` |
-| `select-keys` |
-| `update`      |
+| Geni          | Original Spark    |
+| ---           | ---               |
+| `assoc`       | -                 |
+| `dissoc`      | -                 |
+| `keys`        | `map-keys`        |
+| `merge-with`  | `map-zip-with`    |
+| `merge`       | `map-concat`      |
+| `rename-keys` | -                 |
+| `select-keys` | -                 |
+| `update`      | -                 |
+| `vals`        | `map-values`      |
+| `zipmap`      | `map-from-arrays` |
