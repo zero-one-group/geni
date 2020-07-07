@@ -20,4 +20,29 @@ The easiest way to create a map from a flat tabular data is to use `map-from-arr
     (g/select {:seller :SellerG
                :map    (g/map-from-arrays :keys :values)})
     g/collect)
+; =>
+; [{:map {"25 Bloomburg St" {:address "25 Bloomburg St"
+;                            :council "Yarra"
+;                            :region "Northern Metropolitan"
+;                            :suburbs "Abbotsford"}
+;         "40 Federation La" {:address "40 Federation La"
+;                             :council "Yarra"
+;                             :region "Northern Metropolitan"
+;                             :suburbs "Abbotsford"}
+;         "5 Charles St" {:address "5 Charles St"
+;                         :council "Yarra"
+;                         :region "Northern Metropolitan"
+;                         :suburbs "Abbotsford"}
+;         "85 Turner St" {:address "85 Turner St"
+;                         :council "Yarra"
+;                         :region "Northern Metropolitan"
+;                         :suburbs "Abbotsford"}}
+;   :seller "Biggin"}
+;  {:map {"55a Park St" {:address "55a Park St"
+;                        :council "Yarra"
+;                        :region "Northern Metropolitan"
+;                        :suburbs "Abbotsford"}}
+;   :seller "Nelson"}]
 ```
+
+**TBC**

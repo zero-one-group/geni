@@ -50,18 +50,22 @@
                  :to-2     "26/08/2015"})
 
 (facts "On map functions"
-  ;(-> df-1
-      ;(g/with-column :location (g/struct
-                                 ;{:address :Address
-                                  ;:suburbs :Suburb
-                                  ;:region  :Regionname
-                                  ;:council :CouncilArea}))
-      ;(g/group-by :SellerG)
-      ;(g/agg {:keys   (g/collect-list :Address)
-              ;:values (g/collect-list :location)})
-      ;(g/select {:seller :SellerG
-                 ;:map    (g/map-from-arrays :keys :values)})
-      ;g/collect) => true
+  (-> df-1
+      (g/with-column :location (g/struct
+                                 {:address :Address
+                                  :suburbs :Suburb
+                                  :region  :Regionname
+                                  :council :CouncilArea}))
+      (g/group-by :SellerG)
+      (g/agg {:keys   (g/collect-list :Address)
+              :values (g/collect-list :location)})
+      (g/select {:seller :SellerG
+                 :map    (g/map-from-arrays :keys :values)})
+      g/collect) => [{:map {"85 Turner St" {:address "85 Turner St"
+                                            :council "Yarra"
+                                            :region "Northern Metropolitan"
+                                            :suburbs "Abbotsford"}}
+                      :seller "Biggin"}]
   (-> df-1
       (g/with-column
         :map
@@ -672,4 +676,3 @@
     (-> df-20 (g/select (g/md5 :SellerG)) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha1 :SellerG)) g/distinct g/count) => n-sellers
     (-> df-20 (g/select (g/sha2 :SellerG 256)) g/distinct g/count) => n-sellers))
-
