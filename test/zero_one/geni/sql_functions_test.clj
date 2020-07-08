@@ -50,6 +50,26 @@
                  :to-2     "26/08/2015"})
 
 (facts "On map functions"
+  (-> df-20
+      (g/limit 1)
+      (g/select
+        {:location (g/map (g/lit "suburb") :Suburb
+                          (g/lit "region") :Regionname
+                          (g/lit "council") :CouncilArea
+                          (g/lit "address") :Address)
+         :market   (g/map-from-entries
+                     (g/array (g/struct (g/lit "size") (g/double :Price))
+                              (g/struct (g/lit "price") (g/double :Price))))
+         :coord    (g/map-from-arrays
+                     (g/array (g/lit "lat") (g/lit "long"))
+                     (g/array :Lattitude :Longtitude))})
+      g/collect) => [{:location
+                      {"suburb" "Abbotsford",
+                       "region" "Northern Metropolitan",
+                       "council" "Yarra",
+                       "address" "85 Turner St"},
+                      :market {"size" 1480000.0, "price" 1480000.0},
+                      :coord {"lat" -37.7996, "long" 144.9984}}]
   (-> df-1
       (g/with-column :location (g/struct
                                  {:address :Address
