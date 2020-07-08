@@ -13,6 +13,7 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map arg-count]])
   (:import
+    (org.apache.spark.ml.stat Correlation)
     (org.apache.spark.sql Dataset
                           RelationalGroupedDataset
                           functions)))
@@ -92,3 +93,14 @@
   ([expr] (functions/to_json (->column expr) {}))
   ([expr options]
    (functions/to_json (->column expr) (->string-map options))))
+
+(defmulti corr (fn [head & _] (class head)))
+(defmethod corr :default [l-expr r-expr]
+  (functions/corr (->column l-expr) (->column r-expr)))
+(defmethod corr Dataset
+  ([dataframe col-name]
+   (Correlation/corr dataframe (name col-name)))
+  ([dataframe col-name1 col-name2]
+   (-> dataframe .stat (.corr (name col-name1) (name col-name2))))
+  ([dataframe col-name1 col-name2 method]
+   (-> dataframe .stat (.corr (name col-name1) (name col-name2) method))))

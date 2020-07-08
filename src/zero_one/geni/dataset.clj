@@ -224,6 +224,35 @@
       (map seq quantiles)
       (seq quantiles))))
 
+(defn bloom-filter [dataframe expr expected-num-items num-bits-or-fpp]
+  (-> dataframe
+      .stat
+      (.bloomFilter (->column expr) expected-num-items num-bits-or-fpp)))
+(defn bit-size [bloom] (.bitSize bloom))
+(defn expected-fpp [bloom] (.expectedFpp bloom))
+(defn is-compatible [bloom other] (.isCompatible bloom other))
+(def compatible? is-compatible)
+(defn merge-in-place [bloom other] (.mergeInPlace bloom other))
+(defn might-contain [bloom item] (.mightContain bloom item))
+(defn put [bloom item] (.put bloom item))
+
+(defn count-min-sketch [dataframe expr eps-or-depth confidence-or-width seed]
+  (-> dataframe .stat (.countMinSketch (->column expr) eps-or-depth confidence-or-width seed)))
+
+(defn cov [dataframe col-name1 col-name2]
+  (-> dataframe .stat (.cov (name col-name1) (name col-name2))))
+
+(defn crosstab [dataframe col-name1 col-name2]
+  (-> dataframe .stat (.crosstab (name col-name1) (name col-name2))))
+
+(defn freq-items
+  ([dataframe col-names]
+   (-> dataframe .stat (.freqItems (interop/->scala-seq (map name col-names)))))
+  ([dataframe col-names support]
+   (-> dataframe .stat (.freqItems (interop/->scala-seq (map name col-names)) support))))
+
+;; TODO: work on sampleBy
+
 ;; NA Functions
 (defn drop-na
   ([dataframe]

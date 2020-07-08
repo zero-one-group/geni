@@ -340,8 +340,6 @@
 (defn row-number [] (functions/row_number))
 
 ;;;; Stats Functions
-(defn corr [l-expr r-expr]
-  (functions/corr (->column l-expr) (->column r-expr)))
 (defn covar [l-expr r-expr]
   (functions/covar_samp (->column l-expr) (->column r-expr)))
 (def covar-samp covar)
