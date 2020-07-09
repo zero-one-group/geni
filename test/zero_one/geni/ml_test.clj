@@ -772,7 +772,7 @@
       (-> features-df g/first-vals first) => [1.0 0.0 -2.0 0.0])
     (fact "should be able to calculate correlation"
       (let [corr-matrix (-> features-df
-                            (ml/corr "features")
+                            (g/corr "features")
                             g/first-vals
                             first)]
         (count corr-matrix) => 4

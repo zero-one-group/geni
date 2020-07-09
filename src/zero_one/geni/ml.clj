@@ -18,7 +18,6 @@
     (org.apache.spark.ml Pipeline
                          PipelineStage)
     (org.apache.spark.ml.stat ChiSquareTest
-                              Correlation
                               KolmogorovSmirnovTest)))
 
 (import-vars
@@ -139,10 +138,6 @@
    param-grid
    cross-validator
    train-validation-split])
-
-(defn corr [dataframe col-name]
-  (Correlation/corr dataframe (name col-name)))
-(def correlation corr)
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))

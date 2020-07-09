@@ -194,7 +194,6 @@
    concat
    concat-ws
    conv
-   corr
    cos
    cosh
    count-distinct
@@ -366,6 +365,8 @@
    agg
    agg-all
    approx-quantile
+   bit-size
+   bloom-filter
    cache
    checkpoint
    col-regex
@@ -374,7 +375,11 @@
    collect-vals
    column-names
    columns
+   compatible?
+   count-min-sketch
+   cov
    cross-join
+   crosstab
    cube
    describe
    distinct
@@ -385,15 +390,20 @@
    empty?
    except
    except-all
+   expected-fpp
    fill-na
    first-vals
+   freq-items
    group-by
+   head
+   head-vals
    hint
    infer-schema
    infer-struct-field
    input-files
    intersect
    intersect-all
+   is-compatible
    is-empty
    is-local
    is-streaming
@@ -404,11 +414,14 @@
    limit
    local?
    map->dataset
+   merge-in-place
+   might-contain
    order-by
    partitions
    persist
    pivot
    print-schema
+   put
    random-split
    rdd
    records->dataset
@@ -433,8 +446,6 @@
    table->dataset
    tail
    tail-vals
-   head
-   head-vals
    take
    take-vals
    union
@@ -471,6 +482,7 @@
    alias
    as
    coalesce
+   corr
    count
    explain
    filter

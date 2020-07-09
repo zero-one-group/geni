@@ -84,12 +84,53 @@
     => ["SellerG" "sum(Price)" "sum(Rooms)"]
     (-> grouped g/count g/column-names) => ["SellerG" "count"]))
 
-(fact "On approx-quantile" :slow
-  (-> melbourne-df
-      (g/approx-quantile :Price [0.1 0.9] 0.2)) => #(< (first %) (second %))
-  (-> melbourne-df
-      (g/approx-quantile [:Price] [0.1 0.9] 0.2))
-  => #(< (ffirst %) (second (first %))))
+(facts "On stats functions" :slow
+  (fact "On count-min-sketch"
+    (let [count-min (g/count-min-sketch melbourne-df :Suburb 10 10 10)]
+      (.confidence count-min) => #(< 0.9 %)))
+  (fact "On cov"
+    (g/cov melbourne-df :Price :Rooms) => #(< 290000 % 310000))
+  (fact "On corr"
+    (g/corr melbourne-df :Price :Rooms) => #(< 0.45 % 0.55)
+    (g/corr melbourne-df :Price :Rooms "pearson") => #(< 0.45 % 0.55))
+  (fact "On cross-tab"
+    (-> df-20
+        (g/crosstab :Suburb :SellerG)
+        g/collect) => [{:Biggin 9
+                        :Collins 1
+                        :Greg 1
+                        :Jellis 4
+                        :LITTLE 1
+                        :Nelson 4
+                        :Suburb_SellerG "Abbotsford"}])
+  (fact "On freq-items"
+    (-> df-20
+        (g/freq-items [:Suburb :SellerG])
+        g/collect) => [{:SellerG_freqItems ["LITTLE"
+                                            "Biggin"
+                                            "Nelson"
+                                            "Collins"
+                                            "Greg"
+                                            "Jellis"]
+                        :Suburb_freqItems ["Abbotsford"]}]
+    (-> df-20
+        (g/freq-items [:Suburb :SellerG] 0.5)
+        g/collect) => [{:SellerG_freqItems ["Biggin" "Collins"]
+                        :Suburb_freqItems ["Abbotsford"]}])
+  (fact "On bloom-filter"
+    (let [bloom (-> melbourne-df (g/bloom-filter :Suburb 10 0.01))]
+      (g/bit-size bloom) => 128
+      (g/compatible? bloom bloom) => true
+      (g/expected-fpp bloom) => 1.0
+      (g/merge-in-place bloom bloom) => #(instance? (class bloom) %)
+      (g/might-contain bloom "Reservoir") => boolean?
+      (g/put bloom "xyz") => boolean?))
+  (fact "On approx-quantile"
+    (-> melbourne-df
+        (g/approx-quantile :Price [0.1 0.9] 0.2)) => #(< (first %) (second %))
+    (-> melbourne-df
+        (g/approx-quantile [:Price] [0.1 0.9] 0.2))
+    => #(< (ffirst %) (second (first %)))))
 
 (fact "On random-split" :slow
   (let [[train-df val-df] (-> df-50 (g/random-split [90 10]))]
