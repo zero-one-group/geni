@@ -97,6 +97,9 @@
         values (->> row .toSeq scala-seq->vec (map ->clojure))]
     (zipmap cols values)))
 
+(defn seq->spark-row [s]
+  (Row/fromSeq (->scala-seq s)))
+
 (defn ->clojure [value]
   (cond
     (nil? value)            nil

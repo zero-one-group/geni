@@ -85,9 +85,25 @@
     (-> grouped g/count g/column-names) => ["SellerG" "count"]))
 
 (facts "On stats functions" :slow
+  (-> df-20
+      (g/select {:seller :SellerG :rooms :Rooms})
+      g/distinct
+      (g/limit 5)
+      (g/sample-by (g/struct :seller :rooms)
+                   {["Biggin" 2] 1.0 ["Jellis" 2] 1.0}
+                   36)
+      g/collect) => [{:rooms 2 :seller "Biggin"} {:rooms 2 :seller "Jellis"}]
   (fact "On count-min-sketch"
     (let [count-min (g/count-min-sketch melbourne-df :Suburb 10 10 10)]
-      (.confidence count-min) => #(< 0.9 %)))
+      (g/add count-min "abc") => nil?
+      (g/add count-min "abc" 10) => nil?
+      (g/confidence count-min) => #(< 0.9 %)
+      (g/depth count-min) => 10
+      (g/estimate-count count-min "Abbotsford") => #(< 700 % 775)
+      (g/relative-error count-min) => #(< % 0.3)
+      (g/to-byte-array count-min) => interop/array?
+      (g/total-count count-min) => #(< 10000 %)
+      (g/width count-min) => 10))
   (fact "On cov"
     (g/cov melbourne-df :Price :Rooms) => #(< 290000 % 310000))
   (fact "On corr"

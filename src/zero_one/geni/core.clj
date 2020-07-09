@@ -362,6 +362,7 @@
 (import-vars
   [zero-one.geni.dataset
    ->row
+   add
    agg
    agg-all
    approx-quantile
@@ -376,11 +377,13 @@
    column-names
    columns
    compatible?
+   confidence
    count-min-sketch
    cov
    cross-join
    crosstab
    cube
+   depth
    describe
    distinct
    drop
@@ -388,6 +391,7 @@
    drop-na
    dtypes
    empty?
+   estimate-count
    except
    except-all
    expected-fpp
@@ -425,6 +429,7 @@
    random-split
    rdd
    records->dataset
+   relative-error
    remove
    rename-columns
    repartition
@@ -432,6 +437,7 @@
    replace-na
    rollup
    sample
+   sample-by
    select
    select-expr
    show
@@ -448,9 +454,12 @@
    tail-vals
    take
    take-vals
+   to-byte-array
+   total-count
    union
    union-by-name
    unpersist
+   width
    with-column
    with-column-renamed])
 
