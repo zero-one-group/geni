@@ -237,12 +237,21 @@
 (defn expected-fpp [bloom] (.expectedFpp bloom))
 (defn is-compatible [bloom other] (.isCompatible bloom other))
 (def compatible? is-compatible)
-(defn merge-in-place [bloom other] (.mergeInPlace bloom other))
 (defn might-contain [bloom item] (.mightContain bloom item))
 (defn put [bloom item] (.put bloom item))
 
 (defn count-min-sketch [dataframe expr eps-or-depth confidence-or-width seed]
   (-> dataframe .stat (.countMinSketch (->column expr) eps-or-depth confidence-or-width seed)))
+(defn add
+  ([cms item] (.add cms item))
+  ([cms item cnt] (.add cms item cnt)))
+(defn confidence [cms] (.confidence cms))
+(defn depth [cms] (.depth cms))
+(defn estimate-count [cms item] (.estimateCount cms item))
+(defn relative-error [cms] (.relativeError cms))
+(defn to-byte-array [cms] (.toByteArray cms))
+(defn total-count [cms] (.totalCount cms))
+(defn width [cms] (.width cms))
 
 (defn cov [dataframe col-name1 col-name2]
   (-> dataframe .stat (.cov (name col-name1) (name col-name2))))
@@ -256,7 +265,14 @@
   ([dataframe col-names support]
    (-> dataframe .stat (.freqItems (interop/->scala-seq (map name col-names)) support))))
 
-;; TODO: work on sampleBy
+(defn merge-in-place [bloom-or-cms other] (.mergeInPlace bloom-or-cms other))
+
+(defn sample-by [dataframe expr fractions seed]
+  (let [casted-fractions (->> fractions
+                              (map (fn [[row-seq frac]]
+                                     [(interop/seq->spark-row row-seq) frac]))
+                              (into {}))]
+    (-> dataframe .stat (.sampleBy (->column expr) casted-fractions seed))))
 
 ;; NA Functions
 (defn drop-na
