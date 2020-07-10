@@ -4,6 +4,7 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
+    [zero-one.geni.column :refer [->column]]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.ml-classification]
     [zero-one.geni.ml-clustering]
@@ -16,12 +17,14 @@
     [zero-one.geni.ml-xgb])
   (:import
     (org.apache.spark.ml Pipeline
-                         PipelineStage)
+                         PipelineStage
+                         functions)
     (org.apache.spark.ml.stat ChiSquareTest
                               KolmogorovSmirnovTest)))
 
 (import-vars
   [zero-one.geni.ml-xgb
+   write-native-model!
    xgboost-classifier
    xgboost-regressor])
 
@@ -138,6 +141,11 @@
    param-grid
    cross-validator
    train-validation-split])
+
+(defn vector-to-array
+  ([expr] (vector-to-array (->column expr) "float64"))
+  ([expr dtype] (functions/vector_to_array (->column expr) dtype)))
+(def vector->array vector-to-array)
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
@@ -256,14 +264,14 @@
 (defn write-stage!
   ([stage path] (write-stage! stage path {:overwrite false}))
   ([stage path options]
-   (let [overwrite           (:overwrite options)
-         unconfigured-writer (-> stage
+   (let [unconfigured-writer (-> stage
                                  .write
-                                 (cond-> overwrite .overwrite))
+                                 (cond-> (= (:mode options) "overwrite")
+                                   .overwrite))
          configured-writer    (reduce
                                 (fn [w [k v]] (.option w (name k) v))
                                 unconfigured-writer
-                                (dissoc options :overwrite))]
+                                (dissoc options :mode))]
      (.save configured-writer path))))
 
 (defn load-method? [^java.lang.reflect.Method method]
