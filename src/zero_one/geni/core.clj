@@ -361,6 +361,7 @@
 
 (import-vars
   [zero-one.geni.dataset
+   ->df
    ->row
    add
    agg
@@ -454,6 +455,7 @@
    tail-vals
    take
    take-vals
+   to-df
    to-byte-array
    total-count
    union
@@ -574,12 +576,13 @@
   (autotest :filter (complement :slow))
 
   (require '[clojure.reflect :as r])
+  (import '(org.apache.spark.sql Dataset))
   (->> (r/reflect Dataset)
        :members
-       ;(clojure.core/filter #(= (:name %) 'approxQuantile))
+       (clojure.core/filter #(= (:name %) 'toDF))
        ;(mapv :parameter-types)
-       (mapv :name)
-       clojure.core/sort
+       ;(clojure.core/filter #(= (:name %) 'toDF))
+       ;clojure.core/sort
        pprint)
 
   0)

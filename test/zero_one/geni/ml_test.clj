@@ -84,9 +84,9 @@
 (facts "On reading and writing"
   (let [stage     (ml/vector-assembler {})
         temp-file (.toString (create-temp-file! ".xml"))]
-    (ml/write-stage! stage temp-file {:overwrite true}) => nil
+    (ml/write-stage! stage temp-file {:mode "overwrite"}) => nil
     (ml/write-stage! stage temp-file) => (throws Exception)
-    (ml/write-stage! stage temp-file {:overwrite true
+    (ml/write-stage! stage temp-file {:mode "overwrite"
                                       :persistSubModels "true"}) => nil))
 
 (facts "On feature extraction" :slow
@@ -185,7 +185,7 @@
                                         (= (count %) 3))
     (let [temp-file (.toString (create-temp-file! ".xml"))]
       (slurp temp-file) => ""
-      (ml/write-stage! model temp-file {:overwrite true}) => nil
+      (ml/write-stage! model temp-file {:mode "overwrite"}) => nil
       (slurp temp-file) => #(not= % "")
       (ml/read-stage! KMeansModel temp-file) => #(instance? KMeansModel %))))
 
@@ -326,6 +326,11 @@
      (ml/weights model) => #(every? double? %)
      (ml/gaussians-df model) => #(instance? Dataset %))))
 
+(fact "On XGB native" :slow
+  (let [estimator   (ml/xgboost-classifier {})
+        model       (ml/fit libsvm-df estimator)
+        temp-file   (.toString (create-temp-file! ""))]
+    (ml/write-native-model! model temp-file)) => nil?)
 
 (fact "On instantiation - XGB"
   (ml/params (ml/xgboost-regressor {:num-round 890 :max-bin 222}))
@@ -777,7 +782,12 @@
                             first)]
         (count corr-matrix) => 4
         (count (first corr-matrix)) => 4
-        (every? double? (flatten corr-matrix)) => true))))
+        (every? double? (flatten corr-matrix)) => true))
+    (fact "should be able to calculate correlation"
+      (-> features-df
+          (g/with-column :features-array (ml/vector->array :features))
+          g/dtypes
+          :features-array) => #(includes? % "ArrayType"))))
 
 (fact "On param extraction"
   (ml/params (ml/logistic-regression {})) => {:max-iter 100,

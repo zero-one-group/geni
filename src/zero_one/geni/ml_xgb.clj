@@ -4,7 +4,8 @@
      [zero-one.geni.utils :refer [coalesce with-dynamic-import]]))
 
 (declare xgboost-classifier
-         xgboost-regressor)
+         xgboost-regressor
+         write-native-model!)
 
 (with-dynamic-import
   [[ml.dmlc.xgboost4j.scala.spark XGBoostClassifier XGBoostRegressor]]
@@ -119,4 +120,7 @@
           props     (-> defaults
                         (merge params)
                         (assoc :max-bins max-bin))]
-      (interop/instantiate XGBoostRegressor props))))
+      (interop/instantiate XGBoostRegressor props)))
+
+  (defn write-native-model! [model path]
+    (-> model .nativeBooster (.saveModel path))))

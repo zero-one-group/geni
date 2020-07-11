@@ -12,6 +12,11 @@
                           SparkSession
                           SQLContext)))
 
+(fact "On to-df"
+  (let [dataframe (g/select df-1 :Suburb :Price)]
+    (g/collect (g/to-df dataframe)) => (g/collect dataframe)
+    (g/columns (g/to-df dataframe [:suburb :price])) => [:suburb :price]))
+
 (fact "On Dataset hints"
   (-> df-1
       (g/hint "myHint" 100 true)
