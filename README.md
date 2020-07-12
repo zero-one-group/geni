@@ -109,7 +109,7 @@ Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
 lein new geni <project-name>
 ```
 
-[![asciicast](https://asciinema.org/a/346987.svg)](https://asciinema.org/a/346987?speed=1.75)
+<script src="https://asciinema.org/a/346987.js" id="asciicast-346987" async data-speed=1.75 data-size="big"></script>
 
 ## Installation
 
