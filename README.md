@@ -181,7 +181,7 @@ lein new geni <project-name>
 
 Step into the directory, and run the command `lein run`! Check out the demo:
 
-[![asciicast](https://asciinema.org/a/346984.png)](https://asciinema.org/a/346984?speed=1.5)
+[![asciicast](https://asciinema.org/a/346987.svg)](https://asciinema.org/a/346987?speed=1.5)
 
 ## Installation
 
