@@ -1,5 +1,7 @@
 FROM clojure:openjdk-11-lein-2.9.1
 
+RUN apt-get update && apt-get install libgomp1
+
 ENV USER root
 ENV HOME /root
 
