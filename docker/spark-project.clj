@@ -5,7 +5,7 @@
                  [org.clojure/java.data "1.0.78"]
                  [potemkin "0.4.5"]
                  ;; Dev
-                 [expound "0.8.4"]
+                 [expound "0.8.5"]
                  [lein-cloverage "1.1.2"]
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
@@ -20,10 +20,4 @@
                  [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost
                  [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                 ;; Optional: Google Sheets Integration
-                 [com.google.api-client/google-api-client "1.30.9"]
-                 [com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
-                 [com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
-                 [com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
-                 [org.apache.hadoop/hadoop-client "2.7.3"]])
+                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]])

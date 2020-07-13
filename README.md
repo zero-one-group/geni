@@ -19,7 +19,6 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
-* [Optional Google-Sheets Integration](docs/google_sheets.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Using Dataproc](docs/dataproc.md)
 * [Why?](docs/why.md)
@@ -130,16 +129,10 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.spark/spark-streaming_2.12 "3.0.0"]
                 ;; Optional: Spark XGBoost
                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                ;; Optional: Google Sheets Integration
-                [com.google.api-client/google-api-client "1.30.9"]
-                [com.google.apis/google-api-services-drive "v3-rev197-1.25.0"]
-                [com.google.apis/google-api-services-sheets "v4-rev612-1.25.0"]
-                [com.google.oauth-client/google-oauth-client-jetty "1.30.6"]
-                [org.apache.hadoop/hadoop-client "2.7.3"]]}
+                [ml.dmlc/xgboost4j_2.12 "1.0.0"]]}
 ```
 
-You may also need to install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier` and `g/read-sheets`) will be left unbound.
+You may also need to install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
 
 ## License
 
