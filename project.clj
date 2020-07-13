@@ -23,8 +23,7 @@
                              [com.google.api-client/google-api-client "1.30.10"]
                              [com.google.apis/google-api-services-drive "v3-rev20200618-1.30.10"]
                              [com.google.apis/google-api-services-sheets "v4-rev20200616-1.30.10"]
-                             [com.google.oauth-client/google-oauth-client-jetty "1.31.0"]
-                             [org.apache.hadoop/hadoop-client "2.7.3"]]}
+                             [com.google.oauth-client/google-oauth-client-jetty "1.31.0"]]}
              :dev {:dependencies [[expound "0.8.5"]
                                   [midje "1.9.9"]]
                    :plugins [[lein-cloverage "1.1.2"]

@@ -8,7 +8,10 @@ ENV HOME /root
 ADD spark-project.clj /root/project.clj
 RUN cd /root && lein with-profile +dev deps
 
-RUN bash -c "bash <(curl -s https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo)"
+RUN wget -O clj-kondo.zip https://github.com/borkdude/clj-kondo/releases/download/v2020.06.21/clj-kondo-2020.06.21-linux-amd64.zip &&\
+    unzip -qqo clj-kondo.zip && \
+    rm clj-kondo.zip && \
+    mv clj-kondo /usr/local/bin/
 
 ADD project.clj /root/project.clj
 RUN cd /root && lein with-profile +dev deps
