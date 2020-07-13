@@ -68,7 +68,6 @@
     [zero-one.geni.column]
     [zero-one.geni.data-sources]
     [zero-one.geni.dataset]
-    [zero-one.geni.google-sheets]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.polymorphic]
     [zero-one.geni.sql]
@@ -506,15 +505,6 @@
    sum
    to-json
    where])
-
-(import-vars
-  [zero-one.geni.google-sheets
-   sheet-names!
-   sheet-values!
-   read-sheets!
-   write-sheets!
-   create-sheets!
-   delete-sheets!])
 
 (import-vars
   [zero-one.geni.storage

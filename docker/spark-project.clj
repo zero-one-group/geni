@@ -20,9 +20,4 @@
                  [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost
                  [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]
-                 ;; Optional: Google Sheets Integration
-                 [com.google.api-client/google-api-client "1.30.10"]
-                 [com.google.apis/google-api-services-drive "v3-rev20200618-1.30.10"]
-                 [com.google.apis/google-api-services-sheets "v4-rev20200616-1.30.10"]
-                 [com.google.oauth-client/google-oauth-client-jetty "1.31.0"]])
+                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
