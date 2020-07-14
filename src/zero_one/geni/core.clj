@@ -359,7 +359,6 @@
    zip-with
    zipmap])
 
-;; TODO: some interop functions should be in interop
 (import-vars
   [zero-one.geni.dataset-creation
    table->dataset

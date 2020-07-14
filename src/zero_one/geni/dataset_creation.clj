@@ -3,17 +3,10 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [vector-of-doubles?]])
   (:import
-    (org.apache.spark.sql RowFactory)
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
 ;;;; Dataset Creation
-(defn ->row [coll]
-  (RowFactory/create (into-array Object (map interop/->scala-coll coll))))
-
-(defn ->java-list [coll]
-  (java.util.ArrayList. coll))
-
 (def java-type->spark-type
   {java.lang.Boolean             DataTypes/BooleanType
    java.lang.Byte                DataTypes/ByteType
@@ -50,7 +43,7 @@
 (defn table->dataset [spark table col-names]
   (let [col-names (map name col-names)
         values    (map first-non-nil (transpose table))
-        rows      (->java-list (map ->row table))
+        rows      (interop/->java-list (map interop/seq->spark-row table))
         schema    (infer-schema col-names values)]
     (.createDataFrame spark rows schema)))
 

@@ -10,7 +10,8 @@
                                 DenseMatrix
                                 SparseVector
                                 Vectors)
-    (org.apache.spark.sql Row)
+    (org.apache.spark.sql Row
+                          RowFactory)
     (scala Console
            Function0
            Function1
@@ -19,6 +20,9 @@
     (scala.collection JavaConversions Map Seq)))
 
 (declare ->clojure)
+
+(defn ->java-list [coll]
+  (java.util.ArrayList. coll))
 
 (defn scala-seq? [value]
   (instance? Seq value))
@@ -98,7 +102,7 @@
     (zipmap cols values)))
 
 (defn seq->spark-row [s]
-  (Row/fromSeq (->scala-seq s)))
+  (RowFactory/create (into-array Object (map ->scala-coll s))))
 
 (defn ->clojure [value]
   (cond
