@@ -68,6 +68,7 @@
     [zero-one.geni.column]
     [zero-one.geni.data-sources]
     [zero-one.geni.dataset]
+    [zero-one.geni.dataset-creation]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.polymorphic]
     [zero-one.geni.sql]
@@ -358,10 +359,16 @@
    zip-with
    zipmap])
 
+;; TODO: some interop functions should be in interop
+(import-vars
+  [zero-one.geni.dataset-creation
+   table->dataset
+   map->dataset
+   records->dataset])
+
 (import-vars
   [zero-one.geni.dataset
    ->df
-   ->row
    add
    agg
    agg-all
@@ -402,8 +409,6 @@
    head
    head-vals
    hint
-   infer-schema
-   infer-struct-field
    input-files
    intersect
    intersect-all
@@ -411,13 +416,11 @@
    is-empty
    is-local
    is-streaming
-   java-type->spark-type
    join
    join-with
    last-vals
    limit
    local?
-   map->dataset
    merge-in-place
    might-contain
    order-by
@@ -428,7 +431,6 @@
    put
    random-split
    rdd
-   records->dataset
    relative-error
    remove
    rename-columns
@@ -449,7 +451,6 @@
    storage-level
    streaming?
    summary
-   table->dataset
    tail
    tail-vals
    take

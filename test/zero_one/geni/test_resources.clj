@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :refer [split-lines split]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.dataset :as ds])
+    [zero-one.geni.dataset-creation :as dataset-creation])
   (:import
     (java.io File)))
 
@@ -35,7 +35,7 @@
                :movie-id  (Integer/parseInt (second row))
                :rating    (Float/parseFloat (nth row 2))
                :timestamp (long (Integer/parseInt (nth row 3)))}))
-       (ds/records->dataset spark)))
+       (dataset-creation/records->dataset spark)))
 
 (defn create-temp-file! [extension]
   (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
