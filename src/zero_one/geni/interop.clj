@@ -10,7 +10,8 @@
                                 DenseMatrix
                                 SparseVector
                                 Vectors)
-    (org.apache.spark.sql Row)
+    (org.apache.spark.sql Row
+                          RowFactory)
     (scala Console
            Function0
            Function1
@@ -19,6 +20,9 @@
     (scala.collection JavaConversions Map Seq)))
 
 (declare ->clojure)
+
+(defn ->java-list [coll]
+  (java.util.ArrayList. coll))
 
 (defn scala-seq? [value]
   (instance? Seq value))
@@ -66,6 +70,9 @@
   (let [[x & xs] values]
     (Vectors/dense x (->scala-seq xs))))
 
+(defn ->sparse-vector [size indices values]
+  (SparseVector. size (int-array indices) (double-array values)))
+
 (defn ->scala-coll [value]
   (cond
     (vector-of-doubles? value) (->dense-vector value)
@@ -97,8 +104,8 @@
         values (->> row .toSeq scala-seq->vec (map ->clojure))]
     (zipmap cols values)))
 
-(defn seq->spark-row [s]
-  (Row/fromSeq (->scala-seq s)))
+(defn ->spark-row [s]
+  (RowFactory/create (into-array Object (map ->scala-coll s))))
 
 (defn ->clojure [value]
   (cond
