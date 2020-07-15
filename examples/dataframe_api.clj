@@ -3,25 +3,34 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [melbourne-df]]))
 
-(-> melbourne-df
+(def dataframe melbourne-df)
+
+(-> dataframe
+    (g/group-by :Suburb)
+    g/count
+    (g/order-by (g/desc :count))
+    (g/limit 5)
+    g/show)
+
+(-> dataframe
     (g/filter (g/like :Suburb "%South%"))
     (g/select :Suburb)
     g/distinct
     (g/limit 5)
     g/show)
 
-(-> melbourne-df
+(-> dataframe
     (g/group-by :Suburb)
     (g/agg {:n (g/count "*")})
     (g/order-by (g/desc :n))
     (g/limit 5)
     g/show)
 
-(-> melbourne-df
+(-> dataframe
     (g/select :Suburb :Rooms :Price)
     g/print-schema)
 
-(-> melbourne-df
+(-> dataframe
     (g/describe :Price)
     g/show)
 
@@ -31,7 +40,7 @@
               g/double
               g/mean
               (g/as col-name)))]
-  (-> melbourne-df
+  (-> dataframe
       (g/agg (map null-rate ["Car" "LandSize" "BuildingArea"]))
       g/collect))
 

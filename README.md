@@ -37,15 +37,15 @@ Spark SQL API for grouping and aggregating:
     (g/order-by (g/desc :count))
     (g/limit 5)
     g/show)
-; +--------------+---+
-; |Suburb        |n  |
-; +--------------+---+
-; |Reservoir     |359|
-; |Richmond      |260|
-; |Bentleigh East|249|
-; |Preston       |239|
-; |Brunswick     |222|
-; +--------------+---+
+; +--------------+-----+
+; |Suburb        |count|
+; +--------------+-----+
+; |Reservoir     |359  |
+; |Richmond      |260  |
+; |Bentleigh East|249  |
+; |Preston       |239  |
+; |Brunswick     |222  |
+; +--------------+-----+
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
