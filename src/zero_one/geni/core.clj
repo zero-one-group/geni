@@ -361,9 +361,15 @@
 
 (import-vars
   [zero-one.geni.dataset-creation
-   table->dataset
+   create-dataframe
+   dense
    map->dataset
-   records->dataset])
+   records->dataset
+   row
+   sparse
+   struct-field
+   struct-type
+   table->dataset])
 
 (import-vars
   [zero-one.geni.dataset
