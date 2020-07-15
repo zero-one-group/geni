@@ -56,7 +56,6 @@
        (mapcat ->col-seq)
        (into-array Column)))
 
-;; TODO: explain->multimethod
 ;;;; Column Methods
 (defn % [left-expr right-expr]
   (.mod (->column left-expr) (->column right-expr)))

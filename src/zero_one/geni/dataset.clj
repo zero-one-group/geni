@@ -268,7 +268,7 @@
 (defn sample-by [dataframe expr fractions seed]
   (let [casted-fractions (->> fractions
                               (map (fn [[row-seq frac]]
-                                     [(interop/seq->spark-row row-seq) frac]))
+                                     [(interop/->spark-row row-seq) frac]))
                               (into {}))]
     (-> dataframe .stat (.sampleBy (->column expr) casted-fractions seed))))
 

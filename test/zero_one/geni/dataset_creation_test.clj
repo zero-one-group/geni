@@ -6,7 +6,39 @@
     [zero-one.geni.dataset-creation :as dataset-creation]
     [zero-one.geni.test-resources :refer [spark]])
   (:import
-    (org.apache.spark.sql Dataset)))
+    (org.apache.spark.sql Dataset
+                          Row)
+    (org.apache.spark.sql.types StructField
+                                StructType)
+    (org.apache.spark.ml.linalg DenseVector
+                                SparseVector)))
+
+(facts "On building blocks"
+  (fact "can instantiate vectors"
+    (dataset-creation/dense 0.0 1.0) => #(instance? DenseVector %)
+    (dataset-creation/sparse 2 [1] [1.0]) => #(instance? SparseVector %)
+    (dataset-creation/row [2]) => #(instance? Row %))
+  (fact "can instantiate struct field and type"
+    (let [field (dataset-creation/struct-field :number :integer true)]
+      field => #(instance? StructField %)
+      (dataset-creation/struct-type field) => #(instance? StructType %)))
+  (fact "can instantiate dataframe"
+    (dataset-creation/create-dataframe
+      spark
+      [(dataset-creation/row 32
+                             "horse"
+                             (dataset-creation/dense 1.0 2.0)
+                             (dataset-creation/sparse 4 [1 3] [3.0 4.0]))
+       (dataset-creation/row 64
+                             "mouse"
+                             (dataset-creation/dense 3.0 4.0)
+                             (dataset-creation/sparse 4 [0 2] [1.0 2.0]))]
+      (dataset-creation/struct-type
+        (dataset-creation/struct-field :number :integer true)
+        (dataset-creation/struct-field :word :string true)
+        (dataset-creation/struct-field :dense :vector true)
+        (dataset-creation/struct-field :sparse :vector true)))
+    => #(instance? Dataset %)))
 
 (facts "On map->dataset"
   (fact "should create the right dataset"

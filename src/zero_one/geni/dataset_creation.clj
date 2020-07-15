@@ -6,7 +6,41 @@
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT)))
 
-;;;; Dataset Creation
+(defn dense [& values]
+  (interop/->dense-vector values))
+
+(def sparse interop/->sparse-vector)
+
+(defn row [& values]
+  (interop/->spark-row values))
+
+(def data-type->spark-type
+  {:bool      DataTypes/BooleanType
+   :boolean   DataTypes/BooleanType
+   :byte      DataTypes/ByteType
+   :date      DataTypes/DateType
+   :double    DataTypes/DoubleType
+   :float     DataTypes/FloatType
+   :int       DataTypes/IntegerType
+   :integer   DataTypes/IntegerType
+   :long      DataTypes/LongType
+   :nil       DataTypes/NullType
+   :short     DataTypes/ShortType
+   :string    DataTypes/StringType
+   :timestamp DataTypes/TimestampType
+   :vector    (VectorUDT.)
+   nil        DataTypes/NullType})
+
+(defn struct-field [col-name data-type nullable]
+  (let [spark-type (data-type->spark-type data-type)]
+    (DataTypes/createStructField (name col-name) spark-type nullable)))
+
+(defn struct-type [& fields]
+  (DataTypes/createStructType fields))
+
+(defn create-dataframe [spark rows schema]
+  (.createDataFrame spark rows schema))
+
 (def java-type->spark-type
   {java.lang.Boolean             DataTypes/BooleanType
    java.lang.Byte                DataTypes/ByteType
@@ -43,7 +77,7 @@
 (defn table->dataset [spark table col-names]
   (let [col-names (map name col-names)
         values    (map first-non-nil (transpose table))
-        rows      (interop/->java-list (map interop/seq->spark-row table))
+        rows      (interop/->java-list (map interop/->spark-row table))
         schema    (infer-schema col-names values)]
     (.createDataFrame spark rows schema)))
 
@@ -67,4 +101,3 @@
                         (zipmap col-names (repeat []))
                         records)]
     (map->dataset spark map-of-values)))
-
