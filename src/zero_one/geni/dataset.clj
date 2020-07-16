@@ -86,11 +86,6 @@
 
 (defn storage-level [dataframe] (.storageLevel dataframe))
 
-(defn to-df
-  ([dataframe] (.toDF dataframe))
-  ([dataframe col-names] (.toDF dataframe (interop/->scala-seq (map name col-names)))))
-(def ->df to-df)
-
 (defn unpersist
   ([dataframe] (.unpersist dataframe))
   ([dataframe blocking] (.unpersist dataframe blocking)))

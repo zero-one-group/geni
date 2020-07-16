@@ -373,7 +373,6 @@
 
 (import-vars
   [zero-one.geni.dataset
-   ->df
    add
    agg
    agg-all
@@ -460,7 +459,6 @@
    tail-vals
    take
    take-vals
-   to-df
    to-byte-array
    total-count
    union
@@ -509,6 +507,7 @@
    min
    shuffle
    sum
+   to-df
    to-json
    where])
 
