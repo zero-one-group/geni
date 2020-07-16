@@ -90,12 +90,12 @@
       (g/collect-vals dataset) => [[1 nil] [4 nil]]))
   (let [dataset (dataset-creation/table->dataset
                    spark
-                   [[0.0 [0.5 10.0]]
-                    [0.0 [1.5 20.0]]
-                    [1.0 [1.5 30.0]]
-                    [0.0 [3.5 30.0]]
-                    [0.0 [3.5 40.0]]
-                    [1.0 [3.5 40.0]]]
+                   [[0.0 (g/dense 0.5 10.0)]
+                    [0.0 (g/dense 1.5 20.0)]
+                    [1.0 (g/dense 1.5 30.0)]
+                    [0.0 (g/dense 3.5 30.0)]
+                    [0.0 (g/dense 3.5 40.0)]
+                    [1.0 (g/dense 3.5 40.0)]]
                    [:label :features])]
     (:features (g/dtypes dataset)) => #(includes? % "Vector")))
 

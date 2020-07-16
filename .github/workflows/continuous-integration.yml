@@ -26,7 +26,7 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: sh
-          args: -c "lein cloverage --fail-threshold 90 --codecov --runner :midje"
+          args: -c "lein cloverage --fail-threshold 98 --codecov --runner :midje"
       - uses: codecov/codecov-action@v1
         with:
          file: target/coverage/codecov.json

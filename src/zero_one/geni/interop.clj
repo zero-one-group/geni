@@ -3,15 +3,14 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.java.data :as j]
     [clojure.string :refer [replace-first]]
-    [zero-one.geni.utils :refer [vector-of-doubles?]])
+    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.io ByteArrayOutputStream)
     (org.apache.spark.ml.linalg DenseVector
                                 DenseMatrix
                                 SparseVector
                                 Vectors)
-    (org.apache.spark.sql Row
-                          RowFactory)
+    (org.apache.spark.sql Row)
     (scala Console
            Function0
            Function1
@@ -73,12 +72,6 @@
 (defn ->sparse-vector [size indices values]
   (SparseVector. size (int-array indices) (double-array values)))
 
-(defn ->scala-coll [value]
-  (cond
-    (vector-of-doubles? value) (->dense-vector value)
-    (coll? value) (->scala-seq value)
-    :else value))
-
 (defn array? [value] (.isArray (class value)))
 
 (defn spark-row? [value]
@@ -104,8 +97,8 @@
         values (->> row .toSeq scala-seq->vec (map ->clojure))]
     (zipmap cols values)))
 
-(defn ->spark-row [s]
-  (RowFactory/create (into-array Object (map ->scala-coll s))))
+(defn ->spark-row [x]
+  (Row/fromSeq (->scala-seq x)))
 
 (defn ->clojure [value]
   (cond
@@ -180,3 +173,12 @@
 (defn get-field [instance field-keyword]
   (let [fields (fields-map (class instance))]
     (.invoke (fields field-keyword) instance (into-array []))))
+
+(defn dense [& values]
+  (let [flattened (mapcat ensure-coll values)]
+    (->dense-vector flattened)))
+
+(def sparse ->sparse-vector)
+
+(defn row [& values]
+  (->spark-row values))

@@ -14,7 +14,8 @@
     [zero-one.geni.ml-recommendation]
     [zero-one.geni.ml-regression]
     [zero-one.geni.ml-tuning]
-    [zero-one.geni.ml-xgb])
+    [zero-one.geni.ml-xgb]
+    [zero-one.geni.polymorphic])
   (:import
     (org.apache.spark.ml Pipeline
                          PipelineStage
@@ -147,6 +148,8 @@
   ([expr dtype] (functions/vector_to_array (->column expr) dtype)))
 (def vector->array vector-to-array)
 
+(def corr zero-one.geni.polymorphic/corr)
+
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
 
@@ -177,9 +180,9 @@
 
 (defn approx-nearest-neighbours
   ([dataset model key-v n-nearest]
-   (.approxNearestNeighbors model dataset (interop/->scala-coll key-v) n-nearest))
+   (.approxNearestNeighbors model dataset (interop/dense key-v) n-nearest))
   ([dataset model key-v n-nearest dist-col]
-   (.approxNearestNeighbors model dataset (interop/->scala-coll key-v) n-nearest dist-col)))
+   (.approxNearestNeighbors model dataset (interop/dense key-v) n-nearest dist-col)))
 (defn approx-similarity-join
   ([dataset-a dataset-b model threshold]
    (.approxSimilarityJoin model dataset-a dataset-b threshold))
@@ -262,7 +265,7 @@
 (defn weights [model] (seq (.weights model)))
 
 (defn write-stage!
-  ([stage path] (write-stage! stage path {:overwrite false}))
+  ([stage path] (write-stage! stage path {}))
   ([stage path options]
    (let [unconfigured-writer (-> stage
                                  .write

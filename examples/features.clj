@@ -36,9 +36,9 @@
 (def dataframe
   (g/table->dataset
     spark
-    [[[0.0 1.0 0.0 7.0 0.0]]
-     [[2.0 0.0 3.0 4.0 5.0]]
-     [[4.0 0.0 0.0 6.0 7.0]]]
+    [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
+     [(g/dense 2.0 0.0 3.0 4.0 5.0)]
+     [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
     [:features]))
 
 (def pca
@@ -68,7 +68,7 @@
 (def dataset
   (g/table->dataset
     spark
-    [[0 18 1.0 [0.0 10.0 0.5] 1.0]]
+    [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
     [:id :hour :mobile :user-features :clicked]))
 
 (def assembler

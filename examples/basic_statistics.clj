@@ -28,10 +28,10 @@
 (def corr-df
   (g/table->dataset
     spark
-    [[[1.0 0.0 -2.0 0.0]]
-     [[4.0 5.0 0.0  3.0]]
-     [[6.0 7.0 0.0  8.0]]
-     [[9.0 0.0 1.0  0.0]]]
+    [[(g/dense 1.0 0.0 -2.0 0.0)]
+     [(g/dense 4.0 5.0 0.0  3.0)]
+     [(g/dense 6.0 7.0 0.0  8.0)]
+     [(g/dense 9.0 0.0 1.0  0.0)]]
     [:features]))
 
 (let [corr-kw (keyword "pearson(features)")]
@@ -45,12 +45,12 @@
 (def hypothesis-df
   (g/table->dataset
      spark
-     [[0.0 [0.5 10.0]]
-      [0.0 [1.5 20.0]]
-      [1.0 [1.5 30.0]]
-      [0.0 [3.5 30.0]]
-      [0.0 [3.5 40.0]]
-      [1.0 [3.5 40.0]]]
+     [[0.0 (g/dense 0.5 10.0)]
+      [0.0 (g/dense 1.5 20.0)]
+      [1.0 (g/dense 1.5 30.0)]
+      [0.0 (g/dense 3.5 30.0)]
+      [0.0 (g/dense 3.5 40.0)]
+      [1.0 (g/dense 3.5 40.0)]]
      [:label :features]))
 
 (g/first (ml/chi-square-test hypothesis-df "features" "label"))

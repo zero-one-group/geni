@@ -1,18 +1,11 @@
 (ns zero-one.geni.dataset-creation
   (:require
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [vector-of-doubles?]])
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql.types ArrayType DataTypes)
-    (org.apache.spark.ml.linalg VectorUDT)))
-
-(defn dense [& values]
-  (interop/->dense-vector values))
-
-(def sparse interop/->sparse-vector)
-
-(defn row [& values]
-  (interop/->spark-row values))
+    (org.apache.spark.ml.linalg VectorUDT
+                                DenseVector
+                                SparseVector)))
 
 (def data-type->spark-type
   {:bool      DataTypes/BooleanType
@@ -42,21 +35,22 @@
   (.createDataFrame spark rows schema))
 
 (def java-type->spark-type
-  {java.lang.Boolean             DataTypes/BooleanType
-   java.lang.Byte                DataTypes/ByteType
-   java.lang.Double              DataTypes/DoubleType
-   java.lang.Float               DataTypes/FloatType
-   java.lang.Integer             DataTypes/IntegerType
-   java.lang.Long                DataTypes/LongType
-   java.lang.Short               DataTypes/ShortType
-   java.lang.String              DataTypes/StringType
-   java.sql.Timestamp            DataTypes/TimestampType
-   java.util.Date                DataTypes/DateType
-   nil                           DataTypes/NullType})
+  {java.lang.Boolean  DataTypes/BooleanType
+   java.lang.Byte     DataTypes/ByteType
+   java.lang.Double   DataTypes/DoubleType
+   java.lang.Float    DataTypes/FloatType
+   java.lang.Integer  DataTypes/IntegerType
+   java.lang.Long     DataTypes/LongType
+   java.lang.Short    DataTypes/ShortType
+   java.lang.String   DataTypes/StringType
+   java.sql.Timestamp DataTypes/TimestampType
+   java.util.Date     DataTypes/DateType
+   DenseVector        (VectorUDT.)
+   SparseVector       (VectorUDT.)
+   nil                DataTypes/NullType})
 
 (defn infer-spark-type [value]
   (cond
-    (vector-of-doubles? value) (VectorUDT.)
     (coll? value) (ArrayType. (infer-spark-type (first value)) true)
     :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
 
