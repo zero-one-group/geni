@@ -9,7 +9,6 @@ WARNING! This library is still unstable. Some information here may be outdated. 
 [![CI](https://github.com/zero-one-group/geni/workflows/CI/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
-[![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
 
 ## Overview
@@ -27,7 +26,8 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 * [Why?](docs/why.md)
 * [Working with SQL Maps](docs/sql_maps.md)
 
-Alternatively, chat with us on Slack! [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
+[![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
+[![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
 
 ## Basic Examples
 
