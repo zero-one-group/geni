@@ -15,30 +15,56 @@
 
 (facts "On building blocks"
   (fact "can instantiate vectors"
-    (dataset-creation/dense 0.0 1.0) => #(instance? DenseVector %)
-    (dataset-creation/sparse 2 [1] [1.0]) => #(instance? SparseVector %)
-    (dataset-creation/row [2]) => #(instance? Row %))
+    (g/dense 0.0 1.0) => #(instance? DenseVector %)
+    (g/sparse 2 [1] [1.0]) => #(instance? SparseVector %)
+    (g/row [2]) => #(instance? Row %))
   (fact "can instantiate struct field and type"
-    (let [field (dataset-creation/struct-field :number :integer true)]
+    (let [field (g/struct-field :number :integer true)]
       field => #(instance? StructField %)
-      (dataset-creation/struct-type field) => #(instance? StructType %)))
+      (g/struct-type field) => #(instance? StructType %)))
   (fact "can instantiate dataframe"
-    (dataset-creation/create-dataframe
+    (g/create-dataframe
       spark
-      [(dataset-creation/row 32
-                             "horse"
-                             (dataset-creation/dense 1.0 2.0)
-                             (dataset-creation/sparse 4 [1 3] [3.0 4.0]))
-       (dataset-creation/row 64
-                             "mouse"
-                             (dataset-creation/dense 3.0 4.0)
-                             (dataset-creation/sparse 4 [0 2] [1.0 2.0]))]
-      (dataset-creation/struct-type
-        (dataset-creation/struct-field :number :integer true)
-        (dataset-creation/struct-field :word :string true)
-        (dataset-creation/struct-field :dense :vector true)
-        (dataset-creation/struct-field :sparse :vector true)))
-    => #(instance? Dataset %)))
+      [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
+       (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
+      (g/struct-type
+        (g/struct-field :number :integer true)
+        (g/struct-field :word :string true)
+        (g/struct-field :dense :vector true)
+        (g/struct-field :sparse :vector true)))
+    => #(instance? Dataset %))
+  (fact "can instantiate example dataframes"
+    (let [expected-dtypes {:number "LongType" :word "StringType"}]
+      (g/dtypes
+        (g/to-df
+          spark
+          [[8 "bat"] [64 "mouse"] [-27 "horse"]]
+          [:number :word])) => expected-dtypes
+      (g/dtypes
+        (g/create-dataframe
+          spark
+          [(g/row 8 "bat")
+           (g/row 64 "mouse")
+           (g/row -27 "horse")]
+          (g/struct-type
+            (g/struct-field :number :long true)
+            (g/struct-field :word :string true)))) => expected-dtypes
+      (g/dtypes
+        (g/table->dataset
+          spark
+          [[8 "bat"] [64 "mouse"] [-27 "horse"]]
+          [:number :word])) => expected-dtypes
+      (g/dtypes
+        (g/map->dataset
+          spark
+          {:number [8 64 -27]
+           :word   ["bat" "mouse" "horse"]})) => expected-dtypes
+      (g/dtypes
+        (g/records->dataset
+          spark
+          [{:number   8 :word "bat"}
+           {:number  64 :word "mouse"}
+           {:number -27 :word "horse"}])) => expected-dtypes)))
 
 (facts "On map->dataset"
   (fact "should create the right dataset"

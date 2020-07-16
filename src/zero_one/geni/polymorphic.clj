@@ -10,6 +10,7 @@
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.dataset]
+    [zero-one.geni.dataset-creation]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map arg-count]])
   (:import
@@ -93,6 +94,13 @@
   ([expr] (functions/to_json (->column expr) {}))
   ([expr options]
    (functions/to_json (->column expr) (->string-map options))))
+
+(defmulti to-df (fn [head & _] (class head)))
+(defmethod to-df :default [spark table col-names]
+  (zero-one.geni.dataset-creation/table->dataset spark table col-names))
+(defmethod to-df Dataset
+  ([dataframe] (.toDF dataframe))
+  ([dataframe col-names] (.toDF dataframe (interop/->scala-seq (map name col-names)))))
 
 (defmulti corr (fn [head & _] (class head)))
 (defmethod corr :default [l-expr r-expr]

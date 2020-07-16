@@ -15,10 +15,12 @@ WARNING! This library is still unstable. Some information here may be outdated. 
 
 Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni uses Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations in place of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the docs section on [Geni semantics](docs/semantics.md) for more details.
 
-## Quick Resources
+## Resources
 
+* [Contributing Guide](CONTRIBUTING.md)
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
+* [Manual Dataset Creation](docs/manual_dataset_creation.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Using Dataproc](docs/dataproc.md)
 * [Why?](docs/why.md)
