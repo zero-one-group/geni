@@ -106,7 +106,7 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ## Quick Start
 
-Use [Leiningen](http://leiningen.org/) to create a template of a Geni project:
+Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com/zero-one-group/geni-template) of a Geni project:
 
 ```bash
 lein new geni <project-name>
