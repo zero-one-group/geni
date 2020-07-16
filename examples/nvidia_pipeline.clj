@@ -162,7 +162,7 @@
 ; MAE: 48,558.07, RMSE: 64,288.17
 
 ; Saving and Loading
-(ml/write-stage! pipeline-model "resources/nvidia_pipeline_model")
+(ml/write-stage! pipeline-model "resources/nvidia_pipeline_model" {:mode "overwrite"})
 
 (def same-model
   (ml/read-stage! CrossValidatorModel "resources/nvidia_pipeline_model"))

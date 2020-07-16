@@ -140,7 +140,7 @@
 
 (defn elementwise-product [params]
   (let [params (if (:scaling-vec params)
-                 (update params :scaling-vec interop/->scala-coll)
+                 (update params :scaling-vec interop/dense)
                  params)]
     (interop/instantiate ElementwiseProduct params)))
 

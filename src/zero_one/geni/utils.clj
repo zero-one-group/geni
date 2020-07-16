@@ -5,9 +5,6 @@
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
-(defn vector-of-doubles? [value]
-  (and (vector? value) (every? double? value)))
-
 (defn- import-class
   ([cls] (.importClass *ns* (clojure.lang.RT/classForName (str cls))))
   ([pkg cls] (import-class (str pkg \. cls))))

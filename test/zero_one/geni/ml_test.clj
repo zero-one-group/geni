@@ -95,15 +95,15 @@
     (ml/labels indexer) => ["1.0" "0.0"])
   (let [ds-a     (dataset-creation/table->dataset
                    spark
-                   [[0 [1.0 1.0 1.0 0.0 0.0 0.0]]
-                    [1 [0.0 0.0 0.0 1.0 1.0 1.0]]
-                    [2 [1.0 1.0 0.0 1.0 0.0 0.0]]]
+                   [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
+                    [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
+                    [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
                    [:id :features])
         ds-b     (dataset-creation/table->dataset
                    spark
-                   [[3 [1.0 0.0 1.0 0.0 1.0 0.0]]
-                    [4 [0.0 0.0 1.0 1.0 1.0 0.0]]
-                    [5 [0.0 1.0 1.0 0.0 1.0 0.0]]]
+                   [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
+                    [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
+                    [5 (g/dense 0.0 1.0 1.0 0.0 1.0 0.0)]]
                    [:id :features])
         min-hash (ml/fit ds-a (ml/min-hash-lsh {:input-col "features"
                                                 :output-col "hashes"
@@ -128,9 +128,9 @@
     (ml/vocabulary count-vec) => #(every? string? %))
   (let [dataset (dataset-creation/table->dataset
                   spark
-                  [[[2.0  1.0]]
-                   [[0.0  0.0]]
-                   [[3.0 -1.0]]]
+                  [[(g/dense 2.0  1.0)]
+                   [(g/dense 0.0  0.0)]
+                   [(g/dense 3.0 -1.0)]]
                   [:features])
         pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
     (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
@@ -150,8 +150,8 @@
                   (g/limit libsvm-df 10)
                   (ml/vector-indexer {:input-col "features" :output-col "indexed"}))]
     (ml/category-maps indexer) => #(and (map? %)
-                                        (every? int? (map first %))
-                                        (every? map? (map second %))))
+                                       (every? int? (map first %))
+                                       (every? map? (map second %))))
   (let [model (ml/fit
                (g/limit libsvm-df 10)
                (ml/standard-scaler {:input-col :features
@@ -291,11 +291,11 @@
 (facts "On AFT survival regression" :slow
   (let [dataset   (g/table->dataset
                      spark
-                     [[1.218 1.0 [1.560 -0.605]]
-                      [2.949 0.0 [0.346  2.158]]
-                      [3.627 0.0 [1.380  0.231]]
-                      [0.273 1.0 [0.520  1.151]]
-                      [4.199 0.0 [0.795 -0.226]]]
+                     [[1.218 1.0 (g/dense [1.560 -0.605])]
+                      [2.949 0.0 (g/dense [0.346  2.158])]
+                      [3.627 0.0 (g/dense [1.380  0.231])]
+                      [0.273 1.0 (g/dense [0.520  1.151])]
+                      [4.199 0.0 (g/dense [0.795 -0.226])]]
                      [:label :censor :features])
         estimator (ml/aft-survival-regression {})
         model     (ml/fit dataset estimator)]
@@ -744,12 +744,12 @@
 (facts "On hypothesis testing"
   (let [dataset (dataset-creation/table->dataset
                    spark
-                   [[0.0 [0.5 10.0]]
-                    [0.0 [1.5 20.0]]
-                    [1.0 [1.5 30.0]]
-                    [0.0 [3.5 30.0]]
-                    [0.0 [3.5 40.0]]
-                    [1.0 [3.5 40.0]]]
+                   [[0.0 (g/dense 0.5 10.0)]
+                    [0.0 (g/dense 1.5 20.0)]
+                    [1.0 (g/dense 1.5 30.0)]
+                    [0.0 (g/dense 3.5 30.0)]
+                    [0.0 (g/dense 3.5 40.0)]
+                    [1.0 (g/dense 3.5 40.0)]]
                    [:label :features])]
     (fact "able to do chi-squared test"
       (-> dataset

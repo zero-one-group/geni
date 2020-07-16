@@ -78,6 +78,12 @@
     (org.apache.spark.sql SparkSession)))
 
 (import-vars
+  [zero-one.geni.interop
+   dense
+   row
+   sparse])
+
+(import-vars
   [zero-one.geni.column
    %
    &
@@ -362,11 +368,8 @@
 (import-vars
   [zero-one.geni.dataset-creation
    create-dataframe
-   dense
    map->dataset
    records->dataset
-   row
-   sparse
    struct-field
    struct-type
    table->dataset])
