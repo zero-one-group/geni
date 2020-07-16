@@ -6,10 +6,12 @@ Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) 
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
-[![Continuous Integration](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
+[![CI](https://github.com/zero-one-group/geni/workflows/CI/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
-[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](license.txt)
+[![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
+[![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
+[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
 
 ## Overview
 
