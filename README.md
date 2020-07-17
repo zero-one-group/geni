@@ -17,6 +17,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 ## Resources
 
+**Docs:**
 * [Contributing Guide](CONTRIBUTING.md)
 * [Examples](docs/examples.md)
 * [Geni Semantics](docs/semantics.md)
@@ -25,6 +26,18 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 * [Using Dataproc](docs/dataproc.md)
 * [Why?](docs/why.md)
 * [Working with SQL Maps](docs/sql_maps.md)
+
+**Geni Cookbook:**
+0. [Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md))
+1. Reading and Creating Datasets [TBD]
+2. Selecting Rows and Columns [TBD]
+3. Grouping and Aggregating [TBD]
+4. Combining Datasets: Joins and Unions [TBD]
+5. String Operations [TBD]
+6. Cleaning up Messy Data [TBD]
+7. Timestamps and Dates [TBD]
+8. Windowing Functions [TBD]
+9. Loading Data from SQL Databases [TBD]
 
 [![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
@@ -155,3 +168,4 @@ Some code was taken from:
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
 * Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
+* [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
