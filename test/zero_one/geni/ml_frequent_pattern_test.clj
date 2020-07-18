@@ -11,7 +11,8 @@
                           [[['(1 2) '(3)]]
                            [['(1) '(3 2) '(1 2)]]
                            [['(1 2) '(5)]]]
-                          [:sequence]))
+                          [:sequence])
+                        g/cache)
         prefix-span (ml/prefix-span {:min-support 0.5
                                      :max-pattern-length 5
                                      :max-local-proj-db-size 32000000})]
@@ -25,7 +26,8 @@
                        [[["1" "2" "5"]]
                         [["1" "2" "3" "5"]]
                         [["1" "2"]]]
-                       [:items]))
+                       [:items])
+                     g/cache)
        fp-growth (ml/fp-growth {:items-col      :items
                                 :min-confidence 0.6
                                 :min-support    0.5})

@@ -21,10 +21,10 @@
 (defonce df-50 (g/cache (g/limit melbourne-df 50)))
 
 (defonce libsvm-df
-  (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+  (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt" {:num-features "780"}))
 
 (defonce k-means-df
-  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt" {:num-features "780"}))
 
 (defonce ratings-df
   (->> (slurp "test/resources/sample_movielens_ratings.txt")
