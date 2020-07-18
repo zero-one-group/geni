@@ -17,7 +17,7 @@ An example of using XGBoost for classification:
     training
     (ml/xgboost-classifier {:max-depth 2 :num-round 2})))
 
-(-> testing
+(-> dataframe
     (ml/transform xgb-model)
     (g/select :label :probability)
     (g/limit 5)
