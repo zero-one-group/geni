@@ -75,7 +75,8 @@
     [zero-one.geni.storage]
     [zero-one.geni.window])
   (:import
-    (org.apache.spark.sql SparkSession)))
+    (org.apache.spark.sql SparkSession)
+    (org.apache.log4j Logger Level)))
 
 (import-vars
   [zero-one.geni.interop
@@ -539,16 +540,21 @@
                              :or   {app-name  "Geni App"
                                     master    "local[*]"
                                     configs   {}
-                                    log-level "ERROR"}}]
-  (let [unconfigured (.. (SparkSession/builder)
+                                    log-level "WARN"}}]
+  (let [logger       (Logger/getLogger "org")
+        orig-level   (.getLevel logger)
+        unconfigured (.. (SparkSession/builder)
                          (appName app-name)
                          (master master))
         configured   (reduce
                        (fn [s [k v]] (.config s (name k) v))
                        unconfigured
                        configs)
-        session      (.getOrCreate configured)
+        session      (do
+                       (.setLevel logger (Level/toLevel log-level))
+                       (.getOrCreate configured))
         context      (.sparkContext session)]
+    (.setLevel logger orig-level)
     (.setLogLevel context log-level)
     (clojure.core/when checkpoint-dir
       (.setCheckpointDir context checkpoint-dir))
