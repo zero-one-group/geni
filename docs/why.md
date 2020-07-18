@@ -19,6 +19,8 @@ For many Geni functions, we do not need to make sure that the types line up; onl
 In contrast, we would have to write the following with pure interop:
 
 ```clojure
+(import '(org.apache.spark.sql functions Column))
+
 (-> dataframe
     (.groupBy (into-array Column [(functions/lower (functions/col "SellerG"))
                                   (functions/col "Suburb")
@@ -37,7 +39,7 @@ At times, it can be tricky to figure out the interop , which often times require
 (import '(scala.collection JavaConversions))
 
 (->> (.collect dataframe) ;; .collect returns an array of Spark rows
-     (map #(JavaConversions/seqAsJavaList (.. % toSeq))))
+     (map #(JavaConversions/seqAsJavaList (.toSeq %))))
      ;; returns a seq of seqs - must zipmap with col names to get maps
 ```
 
