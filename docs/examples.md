@@ -74,15 +74,9 @@ The following examples are taken from [Apache Spark's example page](https://spar
 ### Null Rates
 
 ```clojure
-(letfn [(null-rate [col-name]
-          (-> col-name
-              g/null?
-              g/double
-              g/mean
-              (g/as col-name)))]
-  (-> melbourne-df
-      (g/agg (map null-rate [:Car :LandSize :BuildingArea]))
-      g/collect))
+(-> melbourne-df
+    (g/agg (map g/null-rate [:Car :LandSize :BuildingArea]))
+    g/collect))
 ; => ({:Car 0.004565537555228277,
 ;      :LandSize 0.0,
 ;      :BuildingArea 0.47496318114874814})
@@ -144,10 +138,10 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def corr-df
   (g/table->dataset
     spark
-    [[[1.0 0.0 -2.0 0.0]]
-     [[4.0 5.0 0.0  3.0]]
-     [[6.0 7.0 0.0  8.0]]
-     [[9.0 0.0 1.0  0.0]]]
+    [[(g/dense 1.0 0.0 -2.0 0.0)]
+     [(g/dense 4.0 5.0 0.0  3.0)]
+     [(g/dense 6.0 7.0 0.0  8.0)]
+     [(g/dense 9.0 0.0 1.0  0.0)]]
     [:features]))
 
 (let [corr-kw (keyword "pearson(features)")]
@@ -164,12 +158,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def hypothesis-df
   (g/table->dataset
      spark
-     [[0.0 [0.5 10.0]]
-      [0.0 [1.5 20.0]]
-      [1.0 [1.5 30.0]]
-      [0.0 [3.5 30.0]]
-      [0.0 [3.5 40.0]]
-      [1.0 [3.5 40.0]]]
+     [[0.0 (g/dense 0.5 10.0)]
+      [0.0 (g/dense 1.5 20.0)]
+      [1.0 (g/dense 1.5 30.0)]
+      [0.0 (g/dense 3.5 30.0)]
+      [0.0 (g/dense 3.5 40.0)]
+      [1.0 (g/dense 3.5 40.0)]]
      [:label :features]))
 
 (g/first (ml/chi-square-test hypothesis-df :features :label))
@@ -229,9 +223,9 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def dataframe
   (g/table->dataset
     spark
-    [[[0.0 1.0 0.0 7.0 0.0]]
-     [[2.0 0.0 3.0 4.0 5.0]]
-     [[4.0 0.0 0.0 6.0 7.0]]]
+    [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
+     [(g/dense 2.0 0.0 3.0 4.0 5.0)]
+     [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
     [:features]))
 
 (def pca
@@ -282,7 +276,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def dataset
   (g/table->dataset
     spark
-    [[0 18 1.0 [0.0 10.0 0.5] 1.0]]
+    [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
     [:id :hour :mobile :user-features :clicked]))
 
 (def assembler
@@ -375,12 +369,14 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> predictions
     (g/select :predicted-label :label)
-    (g/order-by (g/rand)))
+    (g/order-by (g/rand))
+    (g/limit 5)
+    g/show)
 (println "Test error:" (- 1 (ml/evaluate predictions evaluator)))
 ; +---------------+-----+
 ; |predicted-label|label|
 ; +---------------+-----+
-; |1.0            |1.0  |
+; |0.0            |0.0  |
 ; |1.0            |1.0  |
 ; |1.0            |1.0  |
 ; |1.0            |1.0  |
@@ -427,6 +423,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                                :elastic-net-param 0.8}))
 
 (def lr-model (ml/fit training lr))
+
+(-> training
+    (ml/transform lr-model)
+    (g/select :label :prediction)
+    (g/limit 5)
+    g/show)
 ; +-----+----------+
 ; |label|prediction|
 ; +-----+----------+
@@ -493,11 +495,11 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def train
   (g/table->dataset
     spark
-    [[1.218 1.0 [1.560 -0.605]]
-     [2.949 0.0 [0.346  2.158]]
-     [3.627 0.0 [1.380  0.231]]
-     [0.273 1.0 [0.520  1.151]]
-     [4.199 0.0 [0.795 -0.226]]]
+    [[1.218 1.0 (g/dense 1.560 -0.605)]
+     [2.949 0.0 (g/dense 0.346  2.158)]
+     [3.627 0.0 (g/dense 1.380  0.231)]
+     [0.273 1.0 (g/dense 0.520  1.151)]
+     [4.199 0.0 (g/dense 0.795 -0.226)]]
     [:label :censor :features]))
 
 (def quantile-probabilities [0.3 0.6])
@@ -509,7 +511,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (def aft-model (ml/fit train aft))
 
-(-> train (ml/transform model) g/show)
+(-> train (ml/transform aft-model) g/show)
 ; +-----+------+--------------+------------------+---------------------------------------+
 ; |label|censor|features      |prediction        |quantiles                              |
 ; +-----+------+--------------+------------------+---------------------------------------+
@@ -603,7 +605,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ### Collaborative Filtering
 
 ```clojure
-(defonce ratings-df
+(def ratings-df
   (->> (slurp "test/resources/sample_movielens_ratings.txt")
        clojure.string/split-lines
        (map #(clojure.string/split % #"::"))
@@ -611,7 +613,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
               {:user-id   (Integer/parseInt (first row))
                :movie-id  (Integer/parseInt (second row))
                :rating    (Float/parseFloat (nth row 2))
-               :timestamp (long (Integer/parseInt (nth row 3)))}))
+               :timestamp (clojure.core/long (Integer/parseInt (nth row 3)))}))
        (g/records->dataset spark)))
 
 (def model
