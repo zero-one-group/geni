@@ -34,11 +34,13 @@
     (g/limit 3)
     g/show)
 
-(-> fixed-df
-    (g/limit 3)
-    g/show-vertical)
+(-> fixed-df (g/limit 3) g/show-vertical)
+
 (g/count fixed-df)
+
 (g/print-schema fixed-df)
+
+(-> fixed-df (g/limit 3) g/collect)
 
 ;; 1.2 Selecting and renaming columns
 (-> fixed-df
@@ -64,11 +66,7 @@
                 :rachel-1
                 :st-urbain])))
 
-(-> renamed-df
-    (g/limit 1)
-    g/show-vertical)
+(-> renamed-df (g/limit 3) g/show)
 
 ;; 1.3 Writing Datasets
-(-> renamed-df
-    (g/coalesce 1)
-    (g/write-parquet! "resources/cookbook/bikes.parquet"))
+(g/write-parquet! renamed-df "resources/cookbook/bikes.parquet")

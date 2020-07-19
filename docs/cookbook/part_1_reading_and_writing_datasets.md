@@ -43,14 +43,12 @@ We see that `:spark.master` is set to `local[*]`, which means that the session w
 
 ## 1.2 Reading Data from a CSV File
 
-We can read CSV files using the `g/read-csv!` function. For most cases, we can read CSV data correctly with the defaults. However, in this case, we run into a couple of issues:
+In most cases, we can read CSV data correctly with the default `g/read-csv!` function. However, in this case, we run into a couple of issues:
 
 ```clojure
 (def broken-df (g/read-csv! spark bikes-data-path))
 
-(-> broken-df
-    (g/limit 3)
-    g/show)
+(-> broken-df (g/limit 3) g/show)
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ; |Date;Berri 1;Br�beuf (donn�es non disponibles);C�te-Sainte-Catherine;Maisonneuve 1;Maisonneuve 2;du Parc;Pierre-Dupuy;Rachel1;St-Urbain (donn�es non disponibles)|
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -59,3 +57,188 @@ We can read CSV files using the `g/read-csv!` function. For most cases, we can r
 ; |03/01/2012;135;;2;104;248;89;3;58;                                                                                                                               |
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+
+Firstly, each entire line on the CSV file is treated as a single column. This is due to the misreading of the CSV delimiter or separator. By default, `g/read-csv!` looks for a comma, whereas this file uses the semi colon as the delimiter. Secondly, the CSV header (i.e. column names) contains accented French characters that are not read properly. We fix this by passing additional options to `g/read-csv!`:
+
+```clojure
+(def fixed-df
+  (g/read-csv! spark bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
+
+(-> fixed-df (g/limit 3) g/show)
+; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
+; |Date      |Berri 1|Brébeuf (données non disponibles)|Côte-Sainte-Catherine|Maisonneuve 1|Maisonneuve 2|du Parc|Pierre-Dupuy|Rachel1|St-Urbain (données non disponibles)|
+; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
+; |01/01/2012|35     |null                             |0                    |38           |51           |26     |10          |16     |null                               |
+; |02/01/2012|83     |null                             |1                    |68           |153          |53     |6           |43     |null                               |
+; |03/01/2012|135    |null                             |2                    |104          |248          |89     |3           |58     |null                               |
+; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
+```
+
+That appears to have fixed the two issues! It may be easier to view the data vertically - we can do this by using `g/show-vertical` instead of `g/show`:
+
+```clojure
+(-> fixed-df (g/limit 3) g/show-vertical)
+; -RECORD 0-----------------------------------------
+;  Date                                | 01/01/2012
+;  Berri 1                             | 35
+;  Brébeuf (données non disponibles)   | null
+;  Côte-Sainte-Catherine               | 0
+;  Maisonneuve 1                       | 38
+;  Maisonneuve 2                       | 51
+;  du Parc                             | 26
+;  Pierre-Dupuy                        | 10
+;  Rachel1                             | 16
+;  St-Urbain (données non disponibles) | null
+; -RECORD 1-----------------------------------------
+;  Date                                | 02/01/2012
+;  Berri 1                             | 83
+;  Brébeuf (données non disponibles)   | null
+;  Côte-Sainte-Catherine               | 1
+;  Maisonneuve 1                       | 68
+;  Maisonneuve 2                       | 153
+;  du Parc                             | 53
+;  Pierre-Dupuy                        | 6
+;  Rachel1                             | 43
+;  St-Urbain (données non disponibles) | null
+; -RECORD 2-----------------------------------------
+;  Date                                | 03/01/2012
+;  Berri 1                             | 135
+;  Brébeuf (données non disponibles)   | null
+;  Côte-Sainte-Catherine               | 2
+;  Maisonneuve 1                       | 104
+;  Maisonneuve 2                       | 248
+;  du Parc                             | 89
+;  Pierre-Dupuy                        | 3
+;  Rachel1                             | 58
+;  St-Urbain (données non disponibles) | null
+```
+
+We may also like to inspect the inferred schema of the dataset and count the number of rows:
+
+```clojure
+(g/count fixed-df)
+=> 310
+
+(g/print-schema fixed-df)
+; root
+;  |-- Date: string (nullable = true)
+;  |-- Berri 1: string (nullable = true)
+;  |-- Brébeuf (données non disponibles): string (nullable = true)
+;  |-- Côte-Sainte-Catherine: string (nullable = true)
+;  |-- Maisonneuve 1: string (nullable = true)
+;  |-- Maisonneuve 2: string (nullable = true)
+;  |-- du Parc: string (nullable = true)
+;  |-- Pierre-Dupuy: string (nullable = true)
+;  |-- Rachel1: string (nullable = true)
+;  |-- St-Urbain (données non disponibles): string (nullable = true)
+```
+
+Finally, we can collect the Spark Dataset into a sequence of maps through `g/collect`:
+
+```clojure
+(-> fixed-df (g/limit 3) g/collect)
+=> ({:du Parc "26",
+     :Rachel1 "16",
+     :Pierre-Dupuy "10",
+     :Berri 1 "35",
+     :Maisonneuve 1 "38",
+     :Brébeuf (données non disponibles) nil,
+     :Date "01/01/2012",
+     :Côte-Sainte-Catherine "0",
+     :St-Urbain (données non disponibles) nil,
+     :Maisonneuve 2 "51"}
+    {:du Parc "53",
+     :Rachel1 "43",
+     :Pierre-Dupuy "6",
+     :Berri 1 "83",
+     :Maisonneuve 1 "68",
+     :Brébeuf (données non disponibles) nil,
+     :Date "02/01/2012",
+     :Côte-Sainte-Catherine "1",
+     :St-Urbain (données non disponibles) nil,
+     :Maisonneuve 2 "153"}
+    {:du Parc "89",
+     :Rachel1 "58",
+     :Pierre-Dupuy "3",
+     :Berri 1 "135",
+     :Maisonneuve 1 "104",
+     :Brébeuf (données non disponibles) nil,
+     :Date "03/01/2012",
+     :Côte-Sainte-Catherine "2",
+     :St-Urbain (données non disponibles) nil,
+     :Maisonneuve 2 "248"})
+```
+
+We can see that the column names are keywordised, which may not play so well with non-kebab-case column names. In the next sub-section, we'll see how to address this.
+
+## 1.2 Selecting and Renaming Columns
+
+Suppose we would like to view only the date and Berri-1 column, we could do this through `g/select`:
+
+```clojure
+(-> fixed-df
+    (g/select :Date "Berri 1")
+    (g/limit 3)
+    g/show)
+; +----------+-------+
+; |Date      |Berri 1|
+; +----------+-------+
+; |01/01/2012|35     |
+; |02/01/2012|83     |
+; |03/01/2012|135    |
+; +----------+-------+
+```
+
+The function `g/select` may take strings, keywords and symbols can be used to refer to refer to column names. As a mental model, we can think of a Spark Dataset as a sequence of maps, and, idiomatically in Clojure, the keys of associative maps are typically keywords. For that reason, idiomatic Geni prefers the use of keywords to strings and symbols.
+
+For the reason outlined above, it is preferable to work with kebab-case column names, unlike `:Brébeuf (données non disponibles)` as it contains spaces, parentheses and less importantly capital letters and special characters. One way to rename the columns is to use `g/select` with a map:
+
+```clojure
+(-> fixed-df
+    (g/select {:date "Date" :berri-1 "Berri 1"})
+    (g/limit 3)
+    g/show)
+; +----------+-------+
+; |Date      |Berri 1|
+; +----------+-------+
+; |01/01/2012|35     |
+; |02/01/2012|83     |
+; |03/01/2012|135    |
+; +----------+-------+
+```
+
+However, in this case, particularly after loading a dataset, it can be easier to re-set all the column names using `g/to-df`:
+
+```clojure
+(def renamed-df
+  (-> fixed-df
+      (g/to-df [:date
+                :berri-1
+                :brebeuf
+                :cote-sainte-catherine
+                :maisonneuve-1
+                :maisonneuve-2
+                :du-parc
+                :pierre-dupuy
+                :rachel-1
+                :st-urbain])))
+
+(-> renamed-df (g/limit 3) g/show)
+; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
+; |date      |berri-1|brebeuf|cote-sainte-catherine|maisonneuve-1|maisonneuve-2|du-parc|pierre-dupuy|rachel-1|st-urbain|
+; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
+; |01/01/2012|35     |null   |0                    |38           |51           |26     |10          |16      |null     |
+; |02/01/2012|83     |null   |1                    |68           |153          |53     |6           |43      |null     |
+; |03/01/2012|135    |null   |2                    |104          |248          |89     |3           |58      |null     |
+; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
+```
+
+## 1.3 Writing Datasets
+
+Writing Spark Datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can simply call `g/write-parquet!`:
+
+```clojure
+(g/write-parquet! renamed-df "resources/cookbook/bikes.parquet"))
+```
+
+Analogous read and write functions are available. For instance, `g/write-csv!` to write as a CSV file and `g/read-json!` to read a JSON file.

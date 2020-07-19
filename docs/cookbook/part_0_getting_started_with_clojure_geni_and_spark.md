@@ -39,6 +39,8 @@ Rich Hickey's paper [A History of Clojure](https://download.clojure.org/papers/c
 
 For paid resources, [Purely Functional TV](https://purelyfunctional.tv/) and [Lambda Island](https://lambdaisland.com/) are by far the most popular sources. John Stevenson's [Practicalli](http://practicalli.github.io/clojure/) has recently been picking up momentum as well.
 
+As a matter of style, Geni heavily uses Clojure's threading macro `->`. A basic guide can be found [here](https://clojure.org/guides/threading_macros).
+
 ### Tooling
 
 The Brave Clojure book has a good treatment of Emacs and Cider, which are the dominant IDE of choice for many Clojure developers. Many of the video demos on this guide uses [Neovim](https://neovim.io/) and [Conjure](https://oli.me.uk/getting-started-with-clojure-neovim-and-conjure-in-minutes/).
