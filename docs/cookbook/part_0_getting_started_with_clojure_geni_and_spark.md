@@ -1,8 +1,10 @@
-# Part 0: Getting Started with Clojure, Geni and Spark
+# Cookbook 0: Getting Started with Clojure, Geni and Spark
 
 ## Clojure
 
-In the following guide, we shall assume a starting point of a clean install of a recent version of Ubuntu. It should be straightforward to find analogous commands for other Unix-based systems such as MacOS.
+This cookbook's syllabus is based on the popular [Pandas Cookbook](https://github.com/jvns/pandas-cookbook).
+
+In the following sections, we shall assume a starting point of a clean install of a recent version of Ubuntu. It should be straightforward to find analogous commands for other Unix-based systems such as MacOS.
 
 ### Installation
 
