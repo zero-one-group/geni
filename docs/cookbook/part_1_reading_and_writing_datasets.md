@@ -1,6 +1,6 @@
 # Cookbook 1: Reading and Writing Datasets
 
-As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). First, we download the data:
+As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). First, we download the data:
 
 ```clojure
 (ns geni.cookbook
@@ -25,7 +25,7 @@ As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cook
 ```
 ## 1.1 Creating a Spark Session
 
-To read datasets from any source, we must first create a Spark session. Spark is typically used for large-scale distributed computing. However, we are only going to be looking at smaller datasets, so the default local, single-node Spark will do:
+To read datasets from any source, we must first create a Spark session. Spark is typically used for large-scale distributed computing, but in our case, we are only going to be looking at smaller datasets. Therefore, the default single-node Spark session will do the job:
 
 ```clojure
 (defonce spark (g/create-spark-session {}))
@@ -39,7 +39,7 @@ To read datasets from any source, we must first create a Spark session. Spark is
     :spark.driver.port "64818"}
 ```
 
-We see that `:spark.master` is set to `local[*]`, which means that the session will run on a single node with all available cores.
+We see that the value of `:spark.master` is `local[*]`. This means that the session will run on a single node with all available cores.
 
 ## 1.2 Reading Data from a CSV File
 
@@ -58,7 +58,7 @@ In most cases, we can read CSV data correctly with the default `g/read-csv!` fun
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
 
-Firstly, each entire line on the CSV file is treated as a single column. This is due to the misreading of the CSV delimiter or separator. By default, `g/read-csv!` looks for a comma, whereas this file uses the semi colon as the delimiter. Secondly, the CSV header (i.e. column names) contains accented French characters that are not read properly. We fix this by passing additional options to `g/read-csv!`:
+Firstly, each line on the CSV file is read as a single column. This is due to the misreading of the CSV delimiter or separator. By default, `g/read-csv!` looks for a comma, whereas this file uses the semicolon as the delimiter. Secondly, the column names contain accented French characters that are not read properly. We fix the two issues by passing the `:delimiter` and `:encoding` options to `g/read-csv!`:
 
 ```clojure
 (def fixed-df
@@ -74,7 +74,7 @@ Firstly, each entire line on the CSV file is treated as a single column. This is
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
 ```
 
-That appears to have fixed the two issues! It may be easier to view the data vertically - we can do this by using `g/show-vertical` instead of `g/show`:
+That appears to have fixed the two issues! But it is still quite difficult to read a wide table. We can view the data vertically using `g/show-vertical`:
 
 ```clojure
 (-> fixed-df (g/limit 3) g/show-vertical)
@@ -116,9 +116,6 @@ That appears to have fixed the two issues! It may be easier to view the data ver
 We may also like to inspect the inferred schema of the dataset and count the number of rows:
 
 ```clojure
-(g/count fixed-df)
-=> 310
-
 (g/print-schema fixed-df)
 ; root
 ;  |-- Date: string (nullable = true)
@@ -131,6 +128,9 @@ We may also like to inspect the inferred schema of the dataset and count the num
 ;  |-- Pierre-Dupuy: string (nullable = true)
 ;  |-- Rachel1: string (nullable = true)
 ;  |-- St-Urbain (données non disponibles): string (nullable = true)
+
+(g/count fixed-df)
+=> 310
 ```
 
 Finally, we can collect the Spark Dataset into a sequence of maps through `g/collect`:
@@ -189,9 +189,9 @@ Suppose we would like to view only the date and Berri-1 column, we could do this
 ; +----------+-------+
 ```
 
-The function `g/select` may take strings, keywords and symbols can be used to refer to refer to column names. As a mental model, we can think of a Spark Dataset as a sequence of maps, and, idiomatically in Clojure, the keys of associative maps are typically keywords. For that reason, idiomatic Geni prefers the use of keywords to strings and symbols.
+The function `g/select` may take strings, keywords and symbols as arguments to refer to column names. As a mental model, we can think of a dataset as a sequence of maps, and the keys of associative maps are usually keywords by convention. For that reason, idiomatic Geni prefers the use of keywords to strings and symbols.
 
-For the reason outlined above, it is preferable to work with kebab-case column names, unlike `:Brébeuf (données non disponibles)` as it contains spaces, parentheses and less importantly capital letters and special characters. One way to rename the columns is to use `g/select` with a map:
+It is thus preferable to work with kebab-case column names (unlike `:Brébeuf (données non disponibles)` as it contains spaces, parentheses and less importantly capital letters and special characters). One way to rename the columns is to use `g/select` with a map:
 
 ```clojure
 (-> fixed-df
@@ -207,7 +207,7 @@ For the reason outlined above, it is preferable to work with kebab-case column n
 ; +----------+-------+
 ```
 
-However, in this case, particularly after loading a dataset, it can be easier to re-set all the column names using `g/to-df`:
+However, in this case, it can be easier to re-set all the column names using `g/to-df` particularly after loading a dataset:
 
 ```clojure
 (def renamed-df
@@ -235,10 +235,10 @@ However, in this case, particularly after loading a dataset, it can be easier to
 
 ## 1.3 Writing Datasets
 
-Writing Spark Datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can simply call `g/write-parquet!`:
+Writing datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can invoke `g/write-parquet!`:
 
 ```clojure
 (g/write-parquet! renamed-df "resources/cookbook/bikes.parquet"))
 ```
 
-Analogous read and write functions are available. For instance, `g/write-csv!` to write as a CSV file and `g/read-json!` to read a JSON file.
+Analogous read and write functions are available. For instance, `g/write-avro!` to write as an Avro file and `g/read-json!` to read a JSON file.
