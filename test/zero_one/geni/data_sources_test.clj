@@ -39,7 +39,7 @@
     (set (g/column-names read-df)) => #(not= % #{:Method :Type}))
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
         read-df  (do (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
-                     (g/read-libsvm! spark temp-file {:num-features"780"}))]
+                     (g/read-libsvm! spark temp-file {:num-features "780"}))]
     (g/collect read-df) => (g/collect libsvm-df))
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})

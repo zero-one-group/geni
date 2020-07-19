@@ -95,7 +95,6 @@
                   :max-iter                     20,
                   :step-size                    0.1,
                   :min-info-gain                0.0,
-                  :impurity                     "variance",
                   :cache-node-ids               false,
                   :seed                         -131597770,
                   :label-col                    "label",

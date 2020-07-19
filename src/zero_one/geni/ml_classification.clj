@@ -85,7 +85,6 @@
                   :max-iter                     20,
                   :step-size                    0.1,
                   :min-info-gain                0.0,
-                  :impurity                     "gini",
                   :raw-prediction-col           "rawPrediction",
                   :cache-node-ids               false,
                   :seed                         -1287390502,

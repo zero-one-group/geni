@@ -239,7 +239,7 @@
      (ml/summary model) => (complement nil?)
      (ml/uid model) => string?
      (ml/num-classes model) => 2
-     (ml/num-features model) => 692)
+     (ml/num-features model) => 780)
    (fact "basic param getters"
      (ml/label-col model) => "label"
      (ml/features-col model) => "features"
