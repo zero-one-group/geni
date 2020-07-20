@@ -333,7 +333,7 @@ As before, we can arbitrarily compose `g/limit`:
 ; +-----------------------+---------+
 ```
 
-##  2.4 What's The Most Common Complaint Types?
+## 2.4 What's The Most Common Complaint Types?
 
 To count the number of rows per unique value of a column, we can compose `g/group-by` and `g/count`:
 
@@ -392,4 +392,67 @@ This works, but we are probably interested only in the top 10 complaint types so
 ; |Street Condition      |3473 |
 ; |Illegal Parking       |3343 |
 ; +----------------------+-----+
+```
+
+## 2.5 Selecting Only Noise Complaints
+
+To select for certain rows with a specific column value, we can use `g/filter` and a boolean expression. For instance, the following filters for rows that indicate street-noise complaints:
+
+```clojure
+(-> complaints
+    (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
+    (g/select :complaint-type :borough :created-date :descriptor)
+    (g/limit 3)
+    g/show)
+; +-----------------------+-------------+----------------------+----------------+
+; |complaint-type         |borough      |created-date          |descriptor      |
+; +-----------------------+-------------+----------------------+----------------+
+; |Noise - Street/Sidewalk|QUEENS       |10/31/2013 02:08:41 AM|Loud Talking    |
+; |Noise - Street/Sidewalk|STATEN ISLAND|10/31/2013 12:54:03 AM|Loud Music/Party|
+; |Noise - Street/Sidewalk|STATEN ISLAND|10/31/2013 12:35:18 AM|Loud Talking    |
+; +-----------------------+-------------+----------------------+----------------+
+```
+
+In the form `(g/= :complaint-type (g/lit "Noise - Street/Sidewalk"))`, `:complaint-type` refers to the column named as such and `(g/lit "Noise - Street/Sidewalk")` refers to the literal value of the string `"Noise - Street/Sidewalk"`. Note that we need the `g/lit` there to indicate that it is a literal value, otherwise it will be interpreted as a column.
+
+To combine two boolean expressions, we can use `g/&&` and `g/||` for "and" and "or" respectively. For example, to see street-noise complaints in Brooklyn:
+
+```clojure
+(-> complaints
+    (g/filter (g/&&
+                (g/= :complaint-type (g/lit "Noise - Street/Sidewalk"))
+                (g/= :borough (g/lit "BROOKLYN"))))
+    (g/select :complaint-type :borough :created-date :descriptor)
+    (g/limit 3)
+    g/show)
+; +-----------------------+--------+----------------------+----------------+
+; |complaint-type         |borough |created-date          |descriptor      |
+; +-----------------------+--------+----------------------+----------------+
+; |Noise - Street/Sidewalk|BROOKLYN|10/31/2013 12:30:36 AM|Loud Music/Party|
+; |Noise - Street/Sidewalk|BROOKLYN|10/31/2013 12:05:10 AM|Loud Talking    |
+; |Noise - Street/Sidewalk|BROOKLYN|10/30/2013 11:26:32 PM|Loud Music/Party|
+; +-----------------------+--------+----------------------+----------------+
+```
+
+## 2.6 Which Borough Has The Most Noise Complaints?
+
+To answer this question, we can simply compose the functions from the last two sub-sections:
+
+```clojure
+(-> complaints
+    (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
+    (g/group-by :borough)
+    g/count
+    (g/order-by (g/desc :count))
+    g/show)
+; +-------------+-----+
+; |borough      |count|
+; +-------------+-----+
+; |MANHATTAN    |917  |
+; |BROOKLYN     |456  |
+; |BRONX        |292  |
+; |QUEENS       |226  |
+; |STATEN ISLAND|36   |
+; |Unspecified  |1    |
+; +-------------+-----+
 ```
