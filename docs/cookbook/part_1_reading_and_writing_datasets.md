@@ -1,28 +1,32 @@
 # Cookbook 1: Reading and Writing Datasets
 
-As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). First, we download the data:
+As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). To download the dataset, we use the following setup:
 
 ```clojure
-(ns geni.cookbook
+(ns geni.cookbook-code
   (:require
     [clojure.java.io]
     [clojure.java.shell]
     [zero-one.geni.core :as g]))
 
+(defn download-data! [source-url target-path]
+  (if (-> target-path clojure.java.io/file .exists)
+    :already-exists
+    (do
+      (clojure.java.io/make-parents target-path)
+      (clojure.java.shell/sh "wget" "-O" target-path source-url)
+      :downloaded)))
+```
+
+And actually download the data:
+
+```clojure
+(def bikes-data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/bikes.csv")
 (def bikes-data-path "resources/cookbook/bikes.csv")
-
-(defn download-bikes-data! []
-  (let [data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/bikes.csv"]
-    (if (-> bikes-data-path clojure.java.io/file .exists)
-      :already-exists
-      (do
-        (clojure.java.io/make-parents bikes-data-path)
-        (clojure.java.shell/sh "wget" "-O" bikes-data-path data-url)
-        :downloaded))))
-
-(download-bikes-data!)
+(download-data! bikes-data-url bikes-data-path)
 => :downloaded
 ```
+
 ## 1.1 Creating a Spark Session
 
 To read datasets from any source, we must first create a Spark session. Spark is typically used for large-scale distributed computing, but in our case, we are only going to be looking at smaller datasets. Therefore, the default single-node Spark session will do the job:
