@@ -31,7 +31,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 **Geni Cookbook:**
 
 0. [Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)
-1. Reading and Creating Datasets [TBD]
+1. [Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)
 2. Selecting Rows and Columns [TBD]
 3. Grouping and Aggregating [TBD]
 4. Combining Datasets: Joins and Unions [TBD]

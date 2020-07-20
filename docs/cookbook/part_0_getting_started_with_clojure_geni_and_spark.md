@@ -1,8 +1,10 @@
-# Part 0: Getting Started with Clojure, Geni and Spark
+# Cookbook 0: Getting Started with Clojure, Geni and Spark
 
 ## Clojure
 
-In the following guide, we shall assume a starting point of a clean install of a recent version of Ubuntu. It should be straightforward to find analogous commands for other Unix-based systems such as MacOS.
+This cookbook's syllabus is based on the popular [Pandas Cookbook](https://github.com/jvns/pandas-cookbook).
+
+In the following sections, we shall assume a starting point of a clean install of a recent version of Ubuntu. It should be straightforward to find analogous commands for other Unix-based systems such as MacOS.
 
 ### Installation
 
@@ -36,6 +38,8 @@ The [Brave Clojure](https://www.braveclojure.com/) book is available for free an
 Rich Hickey's paper [A History of Clojure](https://download.clojure.org/papers/clojure-hopl-iv-final.pdf) is particularly useful to understand the founding principles of the language and the problem it tries to solve. He has given helpful talks including [Clojure for Java Programmers](https://www.youtube.com/watch?v=P76Vbsk_3J0), [Clojure Made Simple](https://www.youtube.com/watch?v=VSdnJDO-xdg) and [Simple Made Easy](https://www.youtube.com/watch?v=oytL881p-nQ).
 
 For paid resources, [Purely Functional TV](https://purelyfunctional.tv/) and [Lambda Island](https://lambdaisland.com/) are by far the most popular sources. John Stevenson's [Practicalli](http://practicalli.github.io/clojure/) has recently been picking up momentum as well.
+
+As a matter of style, Geni heavily uses Clojure's threading macro `->`. A basic guide can be found [here](https://clojure.org/guides/threading_macros).
 
 ### Tooling
 
