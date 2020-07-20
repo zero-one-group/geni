@@ -22,7 +22,6 @@
 (g/spark-conf spark)
 
 ;; 1.2 Reading Data from a CSV File
-
 (def broken-df (g/read-csv! spark bikes-data-path))
 (-> broken-df
     (g/limit 3)
@@ -201,3 +200,26 @@
     (g/group-by :weekday)
     (g/agg {:n-cyclists (g/sum :berri-1)})
     g/show)
+
+;; Part 4: Reading and Writing Datasets
+
+;; TODO: delete month by month and union + discuss union-by-name
+;; TODO: other parts of the tutorials
+;; TODO: line up the days of the month with joins
+;; TODO: pivot instead of joins
+
+(defn weather-data-url [year month]
+  (str "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?"
+       "format=csv&stationID=5415&Year=" year "&Month=" month
+       "&timeframe=1&submit=Download+Data"))
+
+(defn weather-data-path [year month]
+  (str "resources/cookbook/weather/weather-" year "-" month ".csv"))
+
+(defn weather-data [year month]
+  (download-data! (weather-data-url year month) (weather-data-path year month))
+  (g/read-csv! spark (weather-data-path year month) {:inferSchema "true"}))
+
+(def weather (weather-data 2012 3))
+(g/print-schema weather)
+(g/count weather)
