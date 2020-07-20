@@ -66,7 +66,9 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
 
 ```clojure
 (def fixed-df
-  (g/read-csv! spark bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
+  (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                      :encoding "ISO-8859-1"
+                                      :inferSchema "true"}))
 
 (-> fixed-df (g/limit 3) g/show)
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
@@ -78,7 +80,7 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
 ```
 
-That appears to have fixed the two issues! But it is still quite difficult to read a wide table. We can view the data vertically using `g/show-vertical`:
+Note that we also added the option `:inferSchema` to turn on automatic schema inference. It appears that we have fixed the issues! But it is still quite difficult to read a wide table. We can view the data vertically using `g/show-vertical`:
 
 ```clojure
 (-> fixed-df (g/limit 3) g/show-vertical)

@@ -127,7 +127,7 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 (require '[clojure.string])
 
 (defn normalise-column-names [dataset]
-  (let [new-columns (->> raw-complaints
+  (let [new-columns (->> dataset
                          g/column-names
                          (map #(clojure.string/replace % #"\((.*?)\)" ""))
                          (map camel-snake-kebab.core/->kebab-case))]
