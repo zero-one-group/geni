@@ -29,7 +29,9 @@
     g/show)
 
 (def fixed-df
-  (g/read-csv! spark bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
+  (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                      :encoding "ISO-8859-1"
+                                      :inferSchema "true"}))
 (-> fixed-df
     (g/limit 3)
     g/show)
@@ -94,7 +96,7 @@
 (require '[clojure.string])
 
 (defn normalise-column-names [dataset]
-  (let [new-columns (->> raw-complaints
+  (let [new-columns (->> dataset
                          g/column-names
                          (map #(clojure.string/replace % #"\((.*?)\)" ""))
                          (map camel-snake-kebab.core/->kebab-case))]
@@ -167,4 +169,35 @@
     (g/group-by :borough)
     g/count
     (g/order-by (g/desc :count))
+    g/show)
+
+;; Part 3: Grouping and Aggregating
+(def bikes
+  (normalise-column-names
+    (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                        :encoding "ISO-8859-1"
+                                        :inferSchema "true"})))
+
+;; 3.1 Adding a Weekday Column
+(g/dtypes bikes)
+
+(def berri-bikes
+  (-> bikes
+      (g/with-column :date (g/to-date :date "dd/M/yyyy"))
+      (g/with-column :weekday (g/date-format :date "EEEE"))
+      (g/select :date :weekday :berri-1)))
+
+(g/dtypes berri-bikes)
+
+(g/show berri-bikes)
+
+;; 3.2 Adding Up The Cyclists By Weekday
+(-> berri-bikes
+    (g/group-by :weekday)
+    (g/sum :berri-1)
+    g/show)
+
+(-> berri-bikes
+    (g/group-by :weekday)
+    (g/agg {:n-cyclists (g/sum :berri-1)})
     g/show)
