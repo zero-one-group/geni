@@ -1,6 +1,6 @@
 # Cookbook 2: Selecting Rows and Columns
 
-As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%202%20-%20Selecting%20data%20&%20finding%20the%20most%20common%20complaint%20type.ipynb), we are going to use the 311 service requests data from [NYC Open Data](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9). We download the dataset using the utility function defined in Part 1:
+As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%202%20-%20Selecting%20data%20&%20finding%20the%20most%20common%20complaint%20type.ipynb), we are going to use the 311 service requests data from [NYC Open Data](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9). We download the dataset using the `download-data!` utility function defined in Part 1:
 
 ```clojure
 (def complaints-data-url
@@ -53,10 +53,10 @@ and load the CSV dataset:
 By default, Spark only shows the top 20 rows. We can see that there are 111069 rows and 52 columns:
 
 ```clojure
-(count (g/columns raw-complaints))
+(g/count raw-complaints)
 => 111069
 
-(g/count raw-complaints)
+(count (g/columns raw-complaints))
 => 52
 ```
 
@@ -118,18 +118,22 @@ As before, we can check out the schema:
 ;  |-- Location: string (nullable = true)
 ```
 
-The fact that the column names are not in kebab case is typical. We can deal with it programmatically by i) converting to kebab case and ii) deleting everything inside parantheses. For the former, we can use the awesome [camel-snake-kebab](https://github.com/clj-commons/camel-snake-kebab) library, and for the latter, we do a simple regex replace:
+The fact that the column names are not in kebab case is typical.
+
+Most datasets we see will not have kebab-case columns. We can deal with it programmatically by i) converting to kebab case and ii) deleting everything inside parantheses. For the former, we can use the awesome [camel-snake-kebab](https://github.com/clj-commons/camel-snake-kebab) library, and for the latter, we do a simple regex replace. We define a new utility function `normalise-column-names`:
 
 ```clojure
 (require '[camel-snake-kebab.core])
 (require '[clojure.string])
 
-(def complaints
+(defn normalise-column-names [dataset]
   (let [new-columns (->> raw-complaints
                          g/column-names
                          (map #(clojure.string/replace % #"\((.*?)\)" ""))
                          (map camel-snake-kebab.core/->kebab-case))]
-    (g/to-df raw-complaints new-columns)))
+    (g/to-df dataset new-columns)))
+
+(def complaints (normalise-column-names raw-complaints))
 
 (g/print-schema complaints)
 ; root
@@ -306,7 +310,7 @@ The function `g/select` is variadic:
 ; only showing top 20 rows
 ```
 
-We can arbitrarily compose `g/limit`:
+As before, we can arbitrarily compose `g/limit`:
 
 ```clojure
 (-> complaints

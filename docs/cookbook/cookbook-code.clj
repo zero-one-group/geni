@@ -93,6 +93,13 @@
 (require '[camel-snake-kebab.core])
 (require '[clojure.string])
 
+(defn normalise-column-names [dataset]
+  (let [new-columns (->> raw-complaints
+                         g/column-names
+                         (map #(clojure.string/replace % #"\((.*?)\)" ""))
+                         (map camel-snake-kebab.core/->kebab-case))]
+    (g/to-df dataset new-columns)))
+
 (def complaints
   (let [new-columns (->> raw-complaints
                          g/column-names
