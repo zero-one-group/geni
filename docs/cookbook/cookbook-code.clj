@@ -145,3 +145,26 @@
     (g/order-by (g/desc :count))
     (g/limit 10)
     g/show)
+
+;; 2.5 Selecting Only Noise Complaints
+(-> complaints
+    (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
+    (g/select :complaint-type :borough :created-date :descriptor)
+    (g/limit 3)
+    g/show)
+
+(-> complaints
+    (g/filter (g/&&
+                (g/= :complaint-type (g/lit "Noise - Street/Sidewalk"))
+                (g/= :borough (g/lit "BROOKLYN"))))
+    (g/select :complaint-type :borough :created-date :descriptor)
+    (g/limit 3)
+    g/show)
+
+;; 2.6 Which Borough Has The Most Noise Complaints?
+(-> complaints
+    (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
+    (g/group-by :borough)
+    g/count
+    (g/order-by (g/desc :count))
+    g/show)
