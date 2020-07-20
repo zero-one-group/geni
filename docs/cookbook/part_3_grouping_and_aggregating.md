@@ -1,6 +1,6 @@
 # Cookbook 3: Grouping and Aggregating
 
-In this section, We reuse the Montréal cyclists data from part 1 of this cookbook:
+In this section, we reuse the Montréal cyclists data from part 1 of this cookbook:
 
 ```clojure
 (def bikes
@@ -90,7 +90,7 @@ To add up the cyclists by weekday, we compose `g/group-by` with `g/sum`:
 ; +---------+------------+
 ```
 
-We may not like the default `sum(berri-1)`. We can rename it using `g/select` in part 1. Alternatively, we can do an aggregate using `g/agg` with a rename map:
+We may not like the default `sum(berri-1)`. We can rename it using `g/select` in part 1 or, alternatively, we can do an aggregate using `g/agg` with a rename map:
 
 ```clojure
 (-> berri-bikes
