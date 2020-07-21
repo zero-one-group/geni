@@ -297,8 +297,60 @@ columns-to-select
 ;; 4.5 Reading Multiple Files at Once
 (mapv (partial weather-data 2012) (range 1 13))
 
-(-> (g/read-csv! spark "resources/cookbook/weather")
+(def unioned
+  (-> (g/read-csv! spark "resources/cookbook/weather" {:inferSchema "true"})
+      normalise-column-names
+      (g/select (g/columns weather-mar-2012))))
+
+(-> unioned
     (g/group-by :year :month)
     g/count
     (g/order-by :year :month)
     g/show)
+
+(g/write-csv! unioned "resources/cookbook/weather-2012.csv")
+
+;; Part 5: String Operations
+(def weather-2012
+  (g/read-csv! spark "resources/cookbook/weather-2012.csv" {:inferSchema "true"}))
+
+;; 5.1 Finding The Snowiest Months
+(-> weather-2012
+    (g/filter (g/like (g/lower :weather) "%snow%"))
+    (g/select :weather)
+    g/distinct
+    g/show)
+
+(-> weather-2012
+    (g/filter (g/like (g/lower :weather) "%snow%"))
+    (g/group-by :year :month)
+    (g/agg {:n-days (g/count-distinct :day)})
+    (g/order-by :year :month)
+    g/show)
+
+;; 5.2 Putting Snowiness and Temperature Together
+(-> weather-2012
+    (g/group-by :year :month)
+    (g/agg
+      {:n-snow-days (g/count-distinct
+                     (g/when (g/like (g/lower :weather) "%snow%") :day))
+       :n-days      (g/count-distinct :day)
+       :mean-temp   (g/mean :temp)})
+    (g/order-by :year :month)
+    (g/select {:year      :year
+               :month     :month
+               :snowiness (g/format-number (g// :n-snow-days :n-days) 2)
+               :mean-temp (g/format-number :mean-temp 1)})
+    g/show)
+
+;; 5.3 Finding Temperatures of Common Weather Descriptions
+(-> weather-2012
+    (g/with-column :weather-description (g/explode (g/split :weather ",")))
+    (g/group-by :weather-description)
+    (g/agg {:mean-temp (g/mean :temp)
+            :n-days    (g/count-distinct :year :month :day)})
+    (g/order-by (g/desc :mean-temp))
+    (g/select {:weather-description :weather-description
+               :mean-temp (g/format-number :mean-temp 1)
+               :n-days :n-days})
+    (g/show {:num-rows 25}))
