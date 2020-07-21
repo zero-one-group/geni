@@ -130,6 +130,7 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
   (let [new-columns (->> dataset
                          g/column-names
                          (map #(clojure.string/replace % #"\((.*?)\)" ""))
+                         (map #(clojure.string/replace % #"/" ""))
                          (map camel-snake-kebab.core/->kebab-case))]
     (g/to-df dataset new-columns)))
 
@@ -190,6 +191,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- longitude: string (nullable = true)
 ;  |-- location: string (nullable = true)
 ```
+
+We additionally remove the `/` character, as it may cause problems with Clojure namespaces.
 
 ## 2.2 Selecting Columns and Rows
 

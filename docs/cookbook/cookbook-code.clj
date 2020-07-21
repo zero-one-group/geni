@@ -98,6 +98,7 @@
   (let [new-columns (->> dataset
                          g/column-names
                          (map #(clojure.string/replace % #"\((.*?)\)" ""))
+                         (map #(clojure.string/replace % #"/" ""))
                          (map camel-snake-kebab.core/->kebab-case))]
     (g/to-df dataset new-columns)))
 
@@ -203,11 +204,7 @@
 
 ;; Part 4: Reading and Writing Datasets
 
-;; TODO: delete month by month and union + discuss union-by-name
-;; TODO: other parts of the tutorials
-;; TODO: line up the days of the month with joins
-;; TODO: pivot instead of joins
-
+;; 4.1 Downloading One Month of Data
 (defn weather-data-url [year month]
   (str "https://climate.weather.gc.ca/climate_data/bulk_data_e.html?"
        "format=csv&stationID=5415&Year=" year "&Month=" month
@@ -218,8 +215,90 @@
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
-  (g/read-csv! spark (weather-data-path year month) {:inferSchema "true"}))
+  (normalise-column-names
+    (g/read-csv! spark (weather-data-path year month) {:inferSchema "true"})))
 
-(def weather (weather-data 2012 3))
-(g/print-schema weather)
-(g/count weather)
+(def raw-weather-mar-2012 (weather-data 2012 3))
+(g/print-schema raw-weather-mar-2012)
+(g/count raw-weather-mar-2012)
+
+;; 4.2 Dropping Columns with Nulls
+(g/show raw-weather-mar-2012)
+
+(def null-counts
+  (-> raw-weather-mar-2012
+      (g/agg (->> (g/column-names raw-weather-mar-2012)
+                  (map #(vector % (g/null-count %)))
+                  (into {})))
+      g/first))
+
+null-counts
+
+(def columns-without-nulls
+  (->> null-counts
+       (filter #(zero? (second %)))
+       (map first)))
+
+(def columns-to-select
+  (filter (set columns-without-nulls) (g/columns raw-weather-mar-2012)))
+
+columns-to-select
+
+(def weather-mar-2012
+  (-> raw-weather-mar-2012
+      (g/select columns-to-select)
+      (g/drop :longitude
+              :latitude
+              :station-name
+              :climate-id
+              :time
+              :data-quality)))
+(g/show weather-mar-2012)
+
+;; 4.3 Getting the Temperature by Hour of Day
+(-> weather-mar-2012
+    (g/with-column :hour (g/hour (g/to-timestamp :date-time "yyyy-M-d HH:mm")))
+    (g/group-by :hour)
+    (g/agg {:mean-temp (g/mean :temp)})
+    (g/order-by :hour)
+    (g/show {:num-rows 25}))
+
+;; 4.3 Combining Monthly Data
+(def weather-oct-2012
+  (-> (weather-data 2012 10)
+      (g/select (g/columns weather-mar-2012))))
+
+(def weather-unioned
+  (g/union weather-mar-2012 weather-oct-2012))
+
+(g/count weather-unioned)
+
+(-> weather-unioned
+    (g/group-by :year :month)
+    g/count
+    g/show)
+
+;; 4.4 Joining by Day of Month
+(defn average-by-day-of-month [dataset new-col-name]
+  (-> dataset
+      (g/group-by :day)
+      (g/agg {new-col-name (g/mean :temp)})))
+
+(def joined
+  (g/join
+    (average-by-day-of-month weather-mar-2012 :mean-temp-mar-2012)
+    (average-by-day-of-month weather-oct-2012 :mean-temp-oct-2012)
+    :day))
+
+(-> joined
+    (g/order-by :day)
+    (g/show {:num-rows 25}))
+
+;; 4.5 Reading Multiple Files at Once
+(doall (for [month (range 1 13)] (weather-data 2012 month)))
+
+(-> (g/read-csv! spark "resources/cookbook/weather")
+    (g/group-by :year :month)
+    g/count
+    (g/order-by :year :month)
+    g/show)
