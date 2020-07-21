@@ -167,6 +167,7 @@
 (defn cube [dataframe & exprs]
   (.cube dataframe (->col-array exprs)))
 
+;; TODO: must be mapcattable
 (defn drop [dataframe & col-names]
   (.drop dataframe (into-array java.lang.String (map name col-names))))
 
