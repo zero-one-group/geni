@@ -295,7 +295,7 @@ columns-to-select
     (g/show {:num-rows 25}))
 
 ;; 4.5 Reading Multiple Files at Once
-(doall (for [month (range 1 13)] (weather-data 2012 month)))
+(mapv (partial weather-data 2012) (range 1 13))
 
 (-> (g/read-csv! spark "resources/cookbook/weather")
     (g/group-by :year :month)
