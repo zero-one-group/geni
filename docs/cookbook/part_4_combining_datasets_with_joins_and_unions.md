@@ -4,7 +4,7 @@ As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cook
 
 ## 4.1 Downloading One Month of Data
 
-We can download the data by hitting the right URL query. We can programmatically setup the query and load the daat as follows:
+We can download the data by hitting the right URL query. We can programmatically setup the query and load the data as follows:
 
 ```clojure
 (defn weather-data-url [year month]
@@ -90,7 +90,7 @@ Looking through the data, we notice that some columns contain mostly nulls:
 ; only showing top 20 rows
 ```
 
-To find out the null counts of each column, we can do a aggregate operation using `g/agg` and calculating the counts using `g/null-count`:
+To find out the null counts of each column, we can do an aggregate operation using `g/agg` and calculate the counts using `g/null-count`:
 
 ```clojure
 (def null-counts
@@ -240,11 +240,11 @@ To extract the hour of day, we must first create a timestamp column using `g/to-
 ; |23  |2.63225806451613   |
 ; +----+-------------------+
 ```
- Notice that `g/show` takes an optional map options, where we can specify the number of rows.
+ Notice that `g/show` takes an optional map of options, where we can specify the number of rows.
 
 ## 4.4 Combining Monthly Data
 
-To vertically stack datasets, we use `g/union` and `g/union-by-name`. The former is used when all the columns line up, and the latter is used when the order of the columns are not necessarily the same. In this case, we can do a select operation first and use `g/union`:
+To vertically stack datasets, we use `g/union` and `g/union-by-name`. The former is used when all the columns line up, and the latter is used when the order of the columns are not necessarily in the same order. In this case, we can do a select operation first and use `g/union`:
 
 ```clojure
 (def weather-oct-2012
@@ -278,7 +278,7 @@ To verify that the vertical stacking (or union) operation is successful, we chec
 The function `g/read-csv!` can actually read a directory containing multiple CSV files. For instance, we may download all 2012 monthly data:
 
 ```clojure
-(doall (for [month (range 1 13)] (weather-data 2012 month)))
+(mapv (partial weather-data 2012) (range 1 13))
 ```
 
 and we can simply set the CSV path to the directory path:
@@ -305,5 +305,4 @@ and we can simply set the CSV path to the directory path:
 ; |2012|11   |720  |
 ; |2012|12   |744  |
 ; +----+-----+-----+
-nil
 ```
