@@ -311,11 +311,12 @@
     (-> df-20 (g/select :Address) g/last) => {:Address "42 Valiant St"}
     (-> df-20 (g/select :Address) g/last-vals) => ["42 Valiant St"]))
 
-(facts "On drop" :slow
+(facts "On drop" ;:slow
   (fact "dropped columns should no longer exist"
     (let [original-columns (-> melbourne-df g/columns set)
           columns-to-drop  #{:Suburb :Price :YearBuilt}
-          dropped-columns  (-> (apply g/drop melbourne-df columns-to-drop)
+          dropped-columns  (-> melbourne-df
+                               (g/drop columns-to-drop)
                                g/columns
                                set)]
       (clojure.set/subset? columns-to-drop original-columns) => true
