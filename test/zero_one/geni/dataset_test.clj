@@ -26,7 +26,7 @@
 
 (fact "On clojure idioms"
   (let [r-50      (range 50)
-        dataframe (g/records->dataset spark (map (fn [i] {:x i}) r-50))]
+        dataframe (g/records->dataset @spark (map (fn [i] {:x i}) r-50))]
     (-> dataframe (g/collect-col :x)) => r-50
     (-> dataframe g/shuffle (g/collect-col :x)) => #(and (not= % r-50)
                                                          (= (set %) (set r-50)))))

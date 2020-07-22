@@ -6,9 +6,13 @@
     [zero-one.geni.test-resources :refer [spark]])
   (:gen-class))
 
+;; TODO: back to 100% test coverage
 (defn -main [& _]
-  (clojure.pprint/pprint (g/spark-conf spark))
-  (zero-one.geni.repl/launch-repl)
+  (clojure.pprint/pprint (g/spark-conf @spark))
+  (let [port    (+ 65001 (rand-int 500))
+        welcome (zero-one.geni.repl/spark-welcome-note (.version @spark))]
+    (println welcome)
+    (zero-one.geni.repl/launch-repl port '(ns zero-one.geni.main)))
   (System/exit 0))
 
 (comment

@@ -7,7 +7,7 @@
 
 (facts "On Prefix-Span training"
   (let [dataset     (-> (g/table->dataset
-                          spark
+                          @spark
                           [[['(1 2) '(3)]]
                            [['(1) '(3 2) '(1 2)]]
                            [['(1 2) '(5)]]]
@@ -22,7 +22,7 @@
 
 (facts "On FP-Growth training"
  (let [dataset   (-> (g/table->dataset
-                      spark
+                      @spark
                        [[["1" "2" "5"]]
                         [["1" "2" "3" "5"]]
                         [["1" "2"]]]

@@ -94,13 +94,13 @@
                                                       :output-col :indexed-label}))]
     (ml/labels indexer) => ["1.0" "0.0"])
   (let [ds-a     (dataset-creation/table->dataset
-                   spark
+                   @spark
                    [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
                     [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
                     [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
                    [:id :features])
         ds-b     (dataset-creation/table->dataset
-                   spark
+                   @spark
                    [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
                     [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
                     [5 (g/dense 0.0 1.0 1.0 0.0 1.0 0.0)]]
@@ -122,12 +122,12 @@
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6) => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6 "JaccardDistance") => #(instance? Dataset %))
   (let [dataset   (dataset-creation/table->dataset
-                    spark
+                    @spark
                     [[0 ["a" "b" "c"]]] [:id :words])
         count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
     (ml/vocabulary count-vec) => #(every? string? %))
   (let [dataset (dataset-creation/table->dataset
-                  spark
+                  @spark
                   [[(g/dense 2.0  1.0)]
                    [(g/dense 0.0  0.0)]
                    [(g/dense 3.0 -1.0)]]
@@ -135,7 +135,7 @@
         pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
     (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
   (let [dataset (dataset-creation/table->dataset
-                  spark
+                  @spark
                   [[0.0  1.0]
                    [0.0  0.0]
                    [0.0  1.0]
@@ -290,7 +290,7 @@
 
 (facts "On AFT survival regression" :slow
   (let [dataset   (g/table->dataset
-                     spark
+                     @spark
                      [[1.218 1.0 (g/dense [1.560 -0.605])]
                       [2.949 0.0 (g/dense [0.346  2.158])]
                       [3.627 0.0 (g/dense [1.380  0.231])]
@@ -679,7 +679,7 @@
 (facts "On pipeline" :slow
   (fact "should be able to fit the example stages" :slow
     (let [dataset     (dataset-creation/table->dataset
-                        spark
+                        @spark
                         [[0, "a b c d e spark", 1.0]
                          [1, "b d", 0.0]
                          [2, "spark f g h", 1.0],
@@ -702,7 +702,7 @@
       (:prediction dtypes) => "DoubleType"))
   (fact "should be able to fit the idf example" :slow
     (let [dataset     (dataset-creation/table->dataset
-                        spark
+                        @spark
                         [[0.0 "Hi I heard about Spark"]
                          [0.0 "I wish Java could use case classes"]
                          [1.0 "Logistic regression models are neat"]]
@@ -723,7 +723,7 @@
       (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
   (fact "should be able to fit the word2vec example" :slow
     (let [dataset     (dataset-creation/table->dataset
-                        spark
+                        @spark
                         [["Hi I heard about Spark"]
                          ["I wish Java could use case classes"]
                          ["Logistic regression models are neat"]]
@@ -743,7 +743,7 @@
 
 (facts "On hypothesis testing"
   (let [dataset (dataset-creation/table->dataset
-                   spark
+                   @spark
                    [[0.0 (g/dense 0.5 10.0)]
                     [0.0 (g/dense 1.5 20.0)]
                     [1.0 (g/dense 1.5 30.0)]
@@ -764,7 +764,7 @@
 
 (facts "On correlation" :slow
   (let [dataset     (dataset-creation/table->dataset
-                       spark
+                       @spark
                        [[1.0 0.0 -2.0 0.0]
                         [4.0 5.0 0.0  3.0]
                         [6.0 7.0 0.0  8.0]

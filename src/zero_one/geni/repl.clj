@@ -1,5 +1,6 @@
 (ns zero-one.geni.repl
   (:require
+    [clojure.string]
     [clojure.java.io :as io]
     [nrepl.server]
     [reply.main]))
@@ -15,23 +16,22 @@
     (assert (and host port) "host and/or port not specified for REPL client")
     (reply.main/launch-nrepl opts)))
 
-(defn retry
-  "Source: https://stackoverflow.com/questions/12068640/retrying-something-3-times-before-throwing-an-exception-in-clojure"
-  [retries f & args]
-  (let [res (try {:value (apply f args)}
-                 (catch Exception e
-                   (if (zero? retries)
-                     (throw e)
-                     {:exception e})))]
-    (if (:exception res)
-      (recur (dec retries) f args)
-      (:value res))))
+(defn spark-welcome-note [version]
+  (clojure.string/join
+    "\n"
+    ["Spark session available as a Delay object - use `@spark`."
+     "Welcome to"
+     "      ____              __"
+     "     / __/__  ___ _____/ /__"
+     "    _\\ \\/ _ \\/ _ `/ __/  '_/"
+     (str "   /___/ .__/\\_,_/_/ /_/\\_\\   version " version)
+     "      /_/"]))
 
-(defn launch-repl
-  ([] (retry 5 #(launch-repl (+ 65001 (rand-int 500)))))
-  ([port]
-   (let [server (nrepl.server/start-server :port port)]
-     (doto (io/file ".nrepl-port") .deleteOnExit (spit port))
-     (println (str "nREPL server started on port " port))
-     (client {:port port :custom-eval '(ns zero-one.geni.main)})
-     (nrepl.server/stop-server server))))
+(defn launch-repl [port custom-eval]
+  (let [server (nrepl.server/start-server :port port)]
+    (doto (io/file ".nrepl-port") .deleteOnExit (spit port))
+    (println (str "nREPL server started on port " port))
+    (client {:port port
+             :custom-prompt (fn [n] (str "geni-repl (" n ")\nλ "))
+             :custom-eval custom-eval})
+    (nrepl.server/stop-server server)))

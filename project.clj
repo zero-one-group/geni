@@ -31,4 +31,11 @@
          :plugins [[lein-cloverage "1.1.2"]
                    [lein-midje "3.2.1"]]}}
   :repl-options {:init-ns zero-one.geni.main}
-  :main ^:skip-aot zero-one.geni.main)
+  :main ^:skip-aot zero-one.geni.main
+  :aliases {"coverage" ["cloverage"
+                        "--fail-threshold"
+                        "99"
+                        "--codecov"
+                        "--html"
+                        "--runner"
+                        ":midje"]})
