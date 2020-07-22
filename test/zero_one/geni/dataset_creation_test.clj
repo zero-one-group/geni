@@ -24,7 +24,7 @@
       (g/struct-type field) => #(instance? StructType %)))
   (fact "can instantiate dataframe"
     (g/create-dataframe
-      @spark
+      spark
       [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
        (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
       (g/struct-type
@@ -37,12 +37,12 @@
     (let [expected-dtypes {:number "LongType" :word "StringType"}]
       (g/dtypes
         (g/to-df
-          @spark
+          spark
           [[8 "bat"] [64 "mouse"] [-27 "horse"]]
           [:number :word])) => expected-dtypes
       (g/dtypes
         (g/create-dataframe
-          @spark
+          spark
           [(g/row 8 "bat")
            (g/row 64 "mouse")
            (g/row -27 "horse")]
@@ -51,17 +51,17 @@
             (g/struct-field :word :string true)))) => expected-dtypes
       (g/dtypes
         (g/table->dataset
-          @spark
+          spark
           [[8 "bat"] [64 "mouse"] [-27 "horse"]]
           [:number :word])) => expected-dtypes
       (g/dtypes
         (g/map->dataset
-          @spark
+          spark
           {:number [8 64 -27]
            :word   ["bat" "mouse" "horse"]})) => expected-dtypes
       (g/dtypes
         (g/records->dataset
-          @spark
+          spark
           [{:number   8 :word "bat"}
            {:number  64 :word "mouse"}
            {:number -27 :word "horse"}])) => expected-dtypes)))
@@ -69,7 +69,7 @@
 (facts "On map->dataset"
   (fact "should create the right dataset"
     (let [dataset (dataset-creation/map->dataset
-                    @spark
+                    spark
                     {:a [1 4]
                      :b [2.0 5.0]
                      :c ["a" "b"]})]
@@ -78,18 +78,18 @@
       (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]]))
   (fact "should create the right schema even with nils"
     (let [dataset (dataset-creation/map->dataset
-                    @spark
+                    spark
                     {:a [nil 4]
                      :b [2.0 5.0]})]
       (g/collect-vals dataset) => [[nil 2.0] [4 5.0]]))
   (fact "should create the right null column"
     (let [dataset (dataset-creation/map->dataset
-                    @spark
+                    spark
                     {:a [1 4]
                      :b [nil nil]})]
       (g/collect-vals dataset) => [[1 nil] [4 nil]]))
   (let [dataset (dataset-creation/table->dataset
-                   @spark
+                   spark
                    [[0.0 (g/dense 0.5 10.0)]
                     [0.0 (g/dense 1.5 20.0)]
                     [1.0 (g/dense 1.5 30.0)]
@@ -102,7 +102,7 @@
 (facts "On records->dataset"
   (fact "should create the right dataset"
     (let [dataset (dataset-creation/records->dataset
-                    @spark
+                    spark
                     [{:a 1 :b 2.0 :c "a"}
                      {:a 4 :b 5.0 :c "b"}])]
       (instance? Dataset dataset) => true
@@ -110,7 +110,7 @@
       (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]]))
   (fact "should create the right dataset even with missing keys"
     (let [dataset (dataset-creation/records->dataset
-                    @spark
+                    spark
                     [{:a 1 :c "a"}
                      {:a 4 :b 5.0}])]
       (g/column-names dataset) => ["a" "c" "b"]
@@ -119,7 +119,7 @@
 (facts "On table->dataset"
   (fact "should create the right dataset"
     (let [dataset (dataset-creation/table->dataset
-                    @spark
+                    spark
                     [[1 2.0 "a"]
                      [4 5.0 "b"]]
                     [:a :b :c])]

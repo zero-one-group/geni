@@ -9,19 +9,19 @@
     (org.apache.spark.sql Dataset SparkSession)))
 
 (fact "Test spark session and dataframe"
-  @spark => #(instance? SparkSession %)
+  spark => #(instance? SparkSession %)
   melbourne-df => #(instance? Dataset %)
-  (-> @spark .conf .getAll interop/scala-map->map)
+  (-> spark .conf .getAll interop/scala-map->map)
   => #(= (% "spark.master") "local[*]")
-  (-> @spark .sparkContext .getCheckpointDir .get)
+  (-> spark .sparkContext .getCheckpointDir .get)
   => #(clojure.string/includes? % "resources/checkpoint/")
-  (-> @spark .sparkContext .getConf g/to-debug-string)
+  (-> spark .sparkContext .getConf g/to-debug-string)
   => #(clojure.string/includes? % "spark.app.id")
-  (select-keys (g/spark-conf @spark) [:spark.master
-                                      :spark.app.name
-                                      :spark.testing.memory
-                                      :spark.sql.adaptive.enabled
-                                      :spark.sql.adaptive.coalescePartitions.enabled])
+  (select-keys (g/spark-conf spark) [:spark.master
+                                     :spark.app.name
+                                     :spark.testing.memory
+                                     :spark.sql.adaptive.enabled
+                                     :spark.sql.adaptive.coalescePartitions.enabled])
   => {:spark.master                                  "local[*]",
       :spark.app.name                                "Geni App",
       :spark.testing.memory                          "3147480000",

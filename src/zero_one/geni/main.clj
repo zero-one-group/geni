@@ -1,19 +1,26 @@
 (ns zero-one.geni.main
   (:require
     [clojure.pprint]
-    [zero-one.geni.repl]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [spark]])
+    [zero-one.geni.repl :as repl]
+    [zero-one.geni.core :as g])
   (:gen-class))
 
-;; TODO: back to 100% test coverage
-(defn -main [& _]
-  (clojure.pprint/pprint (g/spark-conf @spark))
+;; TODO: figure out how to get back to 100% test coverage
+(defonce spark
+  (g/create-spark-session
+    {:configs {:spark.testing.memory "3147480000"
+               :spark.sql.adaptive.enabled "true"
+               :spark.sql.adaptive.coalescePartitions.enabled "true"}
+     :checkpoint-dir "resources/checkpoint/"}))
+
+(defn -main [& args]
+  (clojure.pprint/pprint (g/spark-conf spark))
   (let [port    (+ 65001 (rand-int 500))
-        welcome (zero-one.geni.repl/spark-welcome-note (.version @spark))]
+        welcome (repl/spark-welcome-note (.version spark))]
     (println welcome)
-    (zero-one.geni.repl/launch-repl port '(ns zero-one.geni.main)))
-  (System/exit 0))
+    (when (empty? args)
+      (repl/launch-repl {:port port :custom-eval '(ns zero-one.geni.main)})
+      (System/exit 0))))
 
 (comment
 

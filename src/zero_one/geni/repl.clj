@@ -8,13 +8,22 @@
 (def default-opts {:color true :history-file ".nrepl-history"})
 
 (defn client [opts]
-  (let [port (or (:port opts) (try
-                                (slurp ".nrepl-port")
-                                (catch Throwable _)))
+  (let [port (:port opts)
         host (or (:host opts) "127.0.0.1")
         opts (assoc (merge default-opts opts) :attach (str host ":" port))]
-    (assert (and host port) "host and/or port not specified for REPL client")
-    (reply.main/launch-nrepl opts)))
+    (when-not (:dummy opts)
+      (reply.main/launch-nrepl opts))))
+
+(defn geni-prompt [ns-]
+  (str "geni-repl (" ns- ")\nλ "))
+
+(defn launch-repl [opts]
+  (let [port   (:port opts)
+        server (nrepl.server/start-server :port port)]
+    (doto (io/file ".nrepl-port") .deleteOnExit (spit port))
+    (println (str "nREPL server started on port " port))
+    (client (assoc opts :custom-prompt geni-prompt))
+    (nrepl.server/stop-server server)))
 
 (defn spark-welcome-note [version]
   (clojure.string/join
@@ -27,11 +36,3 @@
      (str "   /___/ .__/\\_,_/_/ /_/\\_\\   version " version)
      "      /_/"]))
 
-(defn launch-repl [port custom-eval]
-  (let [server (nrepl.server/start-server :port port)]
-    (doto (io/file ".nrepl-port") .deleteOnExit (spit port))
-    (println (str "nREPL server started on port " port))
-    (client {:port port
-             :custom-prompt (fn [n] (str "geni-repl (" n ")\nλ "))
-             :custom-eval custom-eval})
-    (nrepl.server/stop-server server)))
