@@ -9,7 +9,7 @@
 (require '[net.cgrand.parsley.fold])
 
 ;; TODO: figure out how to get back to 100% test coverage
-(defonce spark
+(def spark
   (g/create-spark-session
     {:configs {:spark.testing.memory "3147480000"
                :spark.sql.adaptive.enabled "true"
