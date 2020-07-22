@@ -5,6 +5,9 @@
     [zero-one.geni.core :as g])
   (:gen-class))
 
+;; Removes the pesky ns warning that takes up the first line of the REPL.
+(require '[net.cgrand.parsley.fold])
+
 ;; TODO: figure out how to get back to 100% test coverage
 (defonce spark
   (g/create-spark-session
