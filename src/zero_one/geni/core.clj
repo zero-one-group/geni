@@ -573,25 +573,3 @@
        (clojure.core/map interop/scala-tuple->vec)
        (into {})
        clojure.walk/keywordize-keys))
-
-(comment
-
-  (require '[zero-one.geni.test-resources :refer [spark melbourne-df]])
-  (def dataframe melbourne-df)
-  (-> dataframe count)
-  (-> dataframe print-schema)
-
-  (require '[midje.repl :refer [autotest]])
-  (autotest :filter (complement :slow))
-
-  (require '[clojure.reflect :as r])
-  (import '(org.apache.spark.sql Dataset))
-  (->> (r/reflect Dataset)
-       :members
-       (clojure.core/filter #(= (:name %) 'toDF))
-       ;(mapv :parameter-types)
-       ;(clojure.core/filter #(= (:name %) 'toDF))
-       ;clojure.core/sort
-       pprint)
-
-  0)
