@@ -1,3 +1,5 @@
+.nrepl-history
+
 *.DS_Store*
 .clj-kondo/.cache
 
