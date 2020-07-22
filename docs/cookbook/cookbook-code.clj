@@ -418,7 +418,7 @@ columns-to-select
 (-> fixed-dashed-zips
     (g/select (g/upper :city))
     g/value-counts
-    (g/show {:num-rows 50}))
+    (g/show {:num-rows 40}))
 
 ;; 6.4 All In One Form
 (-> complaints
