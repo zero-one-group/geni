@@ -284,7 +284,12 @@ The function `g/read-csv!` can actually read a directory containing multiple CSV
 and we can simply set the CSV path to the directory path:
 
 ```clojure
-(-> (g/read-csv! spark "resources/cookbook/weather")
+(def weather-2012
+  (-> (g/read-csv! spark "resources/cookbook/weather" {:inferSchema "true"})
+      normalise-column-names
+      (g/select (g/columns weather-mar-2012))))
+
+(-> weather-2012
     (g/group-by :year :month)
     g/count
     (g/order-by :year :month)
@@ -305,4 +310,10 @@ and we can simply set the CSV path to the directory path:
 ; |2012|11   |720  |
 ; |2012|12   |744  |
 ; +----+-----+-----+
+```
+
+Finally, we can save the aggregated dataset for future use:
+
+```clojure
+(g/write-csv! weather-2012 "resources/cookbook/weather-2012.csv")
 ```
