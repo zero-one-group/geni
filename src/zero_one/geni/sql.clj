@@ -291,7 +291,7 @@
 (defn encode [expr charset] (functions/encode (->column expr) charset))
 (defn format-number [expr decimal-places]
   (functions/format_number (->column expr) decimal-places))
-(defn format-string [fmt exprs] ;; TODO: should be variadic
+(defn format-string [fmt & exprs]
   (functions/format_string fmt (->col-array exprs)))
 (defn initcap [expr] (functions/initcap (->column expr)))
 (defn instr [expr substr] (functions/instr (->column expr) substr))

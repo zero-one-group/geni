@@ -468,6 +468,7 @@
    union
    union-by-name
    unpersist
+   value-counts
    width
    with-column
    with-column-renamed])

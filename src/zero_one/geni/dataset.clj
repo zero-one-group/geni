@@ -167,9 +167,9 @@
 (defn cube [dataframe & exprs]
   (.cube dataframe (->col-array exprs)))
 
-;; TODO: must be mapcattable
 (defn drop [dataframe & col-names]
-  (.drop dataframe (into-array java.lang.String (map name col-names))))
+  (let [flattened (mapcat ensure-coll col-names)]
+    (.drop dataframe (into-array java.lang.String (map name flattened)))))
 
 (defn group-by [dataframe & exprs]
   (.groupBy dataframe (->col-array exprs)))
@@ -343,3 +343,9 @@
 ;; Clojure Idioms
 (defn remove [dataframe expr]
   (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))
+
+;; Pandas Idioms
+(defn value-counts [dataframe]
+  (-> dataframe
+      (group-by (columns dataframe))
+      (agg {:count (functions/count "*")})))

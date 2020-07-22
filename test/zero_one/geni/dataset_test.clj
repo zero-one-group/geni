@@ -315,7 +315,8 @@
   (fact "dropped columns should no longer exist"
     (let [original-columns (-> melbourne-df g/columns set)
           columns-to-drop  #{:Suburb :Price :YearBuilt}
-          dropped-columns  (-> (apply g/drop melbourne-df columns-to-drop)
+          dropped-columns  (-> melbourne-df
+                               (g/drop columns-to-drop)
                                g/columns
                                set)]
       (clojure.set/subset? columns-to-drop original-columns) => true
