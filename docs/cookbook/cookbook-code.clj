@@ -69,7 +69,9 @@
 
 (-> renamed-df (g/limit 3) g/show)
 
-;; 1.3 Writing Datasets
+;; 1.3 Describing Columns
+
+;; 1.4 Writing Datasets
 (g/write-parquet! renamed-df "resources/cookbook/bikes.parquet")
 
 ;; Part 2: Selecting Rows and Columns
