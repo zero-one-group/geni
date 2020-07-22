@@ -388,6 +388,7 @@
     (-> df-1
         (g/select
           (g/format-string "(Rooms=%d, SellerG=%s)" [:Rooms :SellerG])
+          (g/format-string "(Rooms=%d, SellerG=%s)" :Rooms :SellerG)
           (g/concat (g/lower :SellerG) (g/lit "-") (g/upper :Suburb))
           (-> (g/lit "1") (g/lpad 3 "0") (g/rpad 5 "."))
           (-> (g/lit "0") (g/lpad 3 " ") (g/rpad 5 " ") g/ltrim g/rtrim)
@@ -395,6 +396,7 @@
           (-> (g/lit "abcdefghi") (g/regexp-replace (g/lit "fgh") (g/lit "XYZ")))
           (-> :Regionname (g/regexp-extract "(.*) (.*)" 2)))
         g/collect-vals) => [["(Rooms=2, SellerG=Biggin)"
+                             "(Rooms=2, SellerG=Biggin)"
                              "biggin-ABBOTSFORD"
                              "001.."
                              "0"
@@ -451,6 +453,18 @@
         (g/expm1 0)
         (g/log10 10))
       g/collect-vals) => [[true 1.0 0.0 1.0]])
+
+(fact "On value-counts" :slow
+  (-> df-20
+      (g/select :SellerG :Suburb)
+      g/value-counts
+      (g/order-by (g/desc :count) :SellerG :Suburb)
+      g/collect) => [{:SellerG "Biggin"  :Suburb "Abbotsford" :count 9}
+                     {:SellerG "Jellis"  :Suburb "Abbotsford" :count 4}
+                     {:SellerG "Nelson"  :Suburb "Abbotsford" :count 4}
+                     {:SellerG "Collins" :Suburb "Abbotsford" :count 1}
+                     {:SellerG "Greg"    :Suburb "Abbotsford" :count 1}
+                     {:SellerG "LITTLE"  :Suburb "Abbotsford" :count 1}])
 
 (facts "On group-by + agg functions" :slow
   (let [summary (-> df-20
