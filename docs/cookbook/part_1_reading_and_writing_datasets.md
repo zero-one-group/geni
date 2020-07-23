@@ -218,16 +218,16 @@ However, in this case, it can be easier to re-set all the column names using `g/
 ```clojure
 (def renamed-df
   (-> fixed-df
-      (g/to-df [:date
-                :berri-1
-                :brebeuf
-                :cote-sainte-catherine
-                :maisonneuve-1
-                :maisonneuve-2
-                :du-parc
-                :pierre-dupuy
-                :rachel-1
-                :st-urbain])))
+      (g/to-df :date
+               :berri-1
+               :brebeuf
+               :cote-sainte-catherine
+               :maisonneuve-1
+               :maisonneuve-2
+               :du-parc
+               :pierre-dupuy
+               :rachel-1
+               :st-urbain)))
 
 (-> renamed-df (g/limit 3) g/show)
 ; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+

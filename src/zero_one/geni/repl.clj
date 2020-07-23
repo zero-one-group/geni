@@ -28,7 +28,7 @@
 (defn spark-welcome-note [version]
   (clojure.string/join
     "\n"
-    ["Spark session available as a Delay object - use `@spark`."
+    ["Spark session available as `spark`."
      "Welcome to"
      "      ____              __"
      "     / __/__  ___ _____/ /__"

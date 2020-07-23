@@ -160,7 +160,9 @@
 (defn day-of-month [expr] (functions/dayofmonth (->column expr)))
 (defn day-of-week [expr] (functions/dayofweek (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
-(defn from-unixtime [expr] (functions/from_unixtime (->column expr)))
+(defn from-unixtime
+  ([expr] (functions/from_unixtime (->column expr)))
+  ([expr fmt] (functions/from_unixtime (->column expr) fmt)))
 (defn hour [expr] (functions/hour (->column expr)))
 (defn last-day [expr] (functions/last_day (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
