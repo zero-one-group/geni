@@ -11,8 +11,7 @@
   (let [port (:port opts)
         host (or (:host opts) "127.0.0.1")
         opts (assoc (merge default-opts opts) :attach (str host ":" port))]
-    (when-not (:dummy opts)
-      (reply.main/launch-nrepl opts))))
+    (reply.main/launch-nrepl opts)))
 
 (defn geni-prompt [ns-]
   (str "geni-repl (" ns- ")\nλ "))
@@ -22,7 +21,7 @@
         server (nrepl.server/start-server :port port)]
     (doto (io/file ".nrepl-port") .deleteOnExit (spit port))
     (println (str "nREPL server started on port " port))
-    (client (assoc opts :custom-prompt geni-prompt))
+    (client (merge {:custom-prompt geni-prompt} opts))
     (nrepl.server/stop-server server)))
 
 (defn spark-welcome-note [version]

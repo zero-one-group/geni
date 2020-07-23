@@ -38,4 +38,6 @@
                         "--codecov"
                         "--html"
                         "--runner"
-                        ":midje"]})
+                        ":midje"
+                        "--ns-exclude-regex"
+                        "zero-one.geni.main"]})
