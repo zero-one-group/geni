@@ -348,4 +348,5 @@
 (defn value-counts [dataframe]
   (-> dataframe
       (group-by (columns dataframe))
-      (agg {:count (functions/count "*")})))
+      (agg {:count (functions/count "*")})
+      (order-by (.desc (->column :count)))))

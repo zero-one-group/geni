@@ -239,7 +239,26 @@ However, in this case, it can be easier to re-set all the column names using `g/
 ; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
 ```
 
-## 1.3 Writing Datasets
+## 1.3 Describing Columns
+
+We can get descriptions of numeric columns using `g/describe`:
+
+```clojure
+(-> renamed-df
+    g/describe
+    g/show)
+; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
+; |summary|date      |berri-1          |brebeuf|cote-sainte-catherine|maisonneuve-1     |maisonneuve-2    |du-parc           |pierre-dupuy      |rachel-1          |st-urbain|
+; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
+; |count  |310       |310              |0      |310                  |310               |310              |310               |310               |310               |0        |
+; |mean   |null      |2985.048387096774|null   |1233.3516129032257   |1983.3258064516128|3510.261290322581|1862.983870967742 |1054.3064516129032|2873.483870967742 |null     |
+; |stddev |null      |2169.271061762149|null   |944.6431881884916    |1450.715170237464 |2484.959788723178|1332.5432662293993|1064.0292047222817|2039.3155043485128|null     |
+; |min    |01/01/2012|32               |null   |0                    |33                |47               |18                |0                 |0                 |null     |
+; |max    |31/10/2012|7077             |null   |3124                 |4999              |8222             |4510              |4386              |6595              |null     |
+; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
+```
+
+## 1.4 Writing Datasets
 
 Writing datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can invoke `g/write-parquet!`:
 
