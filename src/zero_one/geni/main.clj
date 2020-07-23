@@ -1,24 +1,18 @@
 (ns zero-one.geni.main
   (:require
     [clojure.pprint]
-    [zero-one.geni.repl :as repl]
-    [zero-one.geni.core :as g])
+    [zero-one.geni.core :as g]
+    [zero-one.geni.defaults :refer [spark]]
+    [zero-one.geni.repl :as repl])
   (:gen-class))
 
 ;; Removes the pesky ns warning that takes up the first line of the REPL.
 (require '[net.cgrand.parsley.fold])
 
-(def spark
-  (g/create-spark-session
-    {:configs {:spark.testing.memory "3147480000"
-               :spark.sql.adaptive.enabled "true"
-               :spark.sql.adaptive.coalescePartitions.enabled "true"}
-     :checkpoint-dir "resources/checkpoint/"}))
-
 (defn -main [& _]
-  (clojure.pprint/pprint (g/spark-conf spark))
+  (clojure.pprint/pprint (g/spark-conf @spark))
   (let [port    (+ 65001 (rand-int 500))
-        welcome (repl/spark-welcome-note (.version spark))]
+        welcome (repl/spark-welcome-note (.version @spark))]
     (println welcome)
     (repl/launch-repl {:port port :custom-eval '(ns zero-one.geni.main)})
     (System/exit 0)))
