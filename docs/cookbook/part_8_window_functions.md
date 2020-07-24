@@ -27,7 +27,7 @@ This part is based on [Databricks' post on window functions](https://databricks.
 
 ## 8.1 The Best and Second Best in Every Category
 
-The easiest way to define a windowed column is to use `g/windowed`. The function accepts a map that expects `:window-col` and optionally `:partition-by`, `:order-by`, `:range-between` and `rows-between`. Consider the following example:
+The easiest way to define a windowed column is to use `g/windowed`. The function accepts a map that expects `:window-col` and optionally `:partition-by`, `:order-by`, `:range-between` and `:rows-between`. Consider the following example:
 
 ```clojure
 (def rank-by-category
