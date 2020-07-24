@@ -1,29 +1,21 @@
 (ns zero-one.geni.main
   (:require
     [clojure.pprint]
-    [zero-one.geni.repl :as repl]
-    [zero-one.geni.core :as g])
+    [zero-one.geni.core :as g]
+    [zero-one.geni.defaults :refer [spark]]
+    [zero-one.geni.repl :as repl])
   (:gen-class))
 
 ;; Removes the pesky ns warning that takes up the first line of the REPL.
 (require '[net.cgrand.parsley.fold])
 
-;; TODO: figure out how to get back to 100% test coverage
-(def spark
-  (g/create-spark-session
-    {:configs {:spark.testing.memory "3147480000"
-               :spark.sql.adaptive.enabled "true"
-               :spark.sql.adaptive.coalescePartitions.enabled "true"}
-     :checkpoint-dir "resources/checkpoint/"}))
-
-(defn -main [& args]
-  (clojure.pprint/pprint (g/spark-conf spark))
+(defn -main [& _]
+  (clojure.pprint/pprint (g/spark-conf @spark))
   (let [port    (+ 65001 (rand-int 500))
-        welcome (repl/spark-welcome-note (.version spark))]
+        welcome (repl/spark-welcome-note (.version @spark))]
     (println welcome)
-    (when (empty? args)
-      (repl/launch-repl {:port port :custom-eval '(ns zero-one.geni.main)})
-      (System/exit 0))))
+    (repl/launch-repl {:port port :custom-eval '(ns zero-one.geni.main)})
+    (System/exit 0)))
 
 (comment
 
@@ -33,7 +25,7 @@
   (-> dataframe g/print-schema)
 
   (require '[midje.repl :refer [autotest]])
-  (autotest :filter (complement :slow))
+  (autotest :filter (every-pred (complement :slow) (complement :repl)))
 
   (require '[clojure.reflect :as r])
   (import '(org.apache.spark.sql Dataset))
@@ -44,5 +36,6 @@
        ;(clojure.core/filter #(= (:name %) 'toDF))
        ;clojure.core/sort
        pprint)
+
 
   0)
