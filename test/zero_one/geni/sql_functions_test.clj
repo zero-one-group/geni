@@ -635,7 +635,7 @@
     (-> df-1
         (g/select (g/from-unixtime 1 "yyyy/MM/d HH:mm"))
         g/collect-vals
-        ffirst) => #(.contains % "1970/01/1 07:00")
+        ffirst) => #(.contains % "1970/01/1 ")
     (-> df-1
         (g/select (g/quarter (g/lit "2020-05-12")))
         g/collect-vals
