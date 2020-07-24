@@ -7,7 +7,7 @@
     (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel)))
 
 (def raw-input
-  (-> (g/read-csv! spark "target/iris.data" {:header false})
+  (-> (g/read-csv! spark "data/iris.data" {:header false})
       (g/select {:sepal-length (g/double :_c0)
                  :sepal-width  (g/double :_c1)
                  :petal-length (g/double :_c2)

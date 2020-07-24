@@ -13,7 +13,7 @@ We can download the data by hitting the right URL query. We can programmatically
        "&timeframe=1&submit=Download+Data"))
 
 (defn weather-data-path [year month]
-  (str "target/cookbook/weather/weather-" year "-" month ".csv"))
+  (str "data/cookbook/weather/weather-" year "-" month ".csv"))
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
@@ -285,7 +285,7 @@ and we can simply set the CSV path to the directory path:
 
 ```clojure
 (def weather-2012
-  (-> (g/read-csv! spark "target/cookbook/weather" {:inferSchema "true"})
+  (-> (g/read-csv! spark "data/cookbook/weather" {:inferSchema "true"})
       normalise-column-names
       (g/select (g/columns weather-mar-2012))))
 
@@ -315,5 +315,5 @@ and we can simply set the CSV path to the directory path:
 Finally, we can save the aggregated dataset for future use:
 
 ```clojure
-(g/write-csv! weather-2012 "target/cookbook/weather-2012.csv")
+(g/write-csv! weather-2012 "data/cookbook/weather-2012.csv")
 ```

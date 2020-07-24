@@ -9,7 +9,7 @@ We download the data as in [part 2 of the cookbook](part_2_selecting_rows_and_co
   "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/popularity-contest")
 
 (def popularity-contest-data-path
-  "target/cookbook/popularity-contest.csv")
+  "data/cookbook/popularity-contest.csv")
 
 (download-data! popularity-contest-data-url popularity-contest-data-path)
 => :downloaded

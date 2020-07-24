@@ -7,7 +7,7 @@ As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cook
   "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/311-service-requests.csv")
 
 (def complaints-data-path
-  "target/cookbook/complaints.csv")
+  "data/cookbook/complaints.csv")
 
 (download-data! complaints-data-url complaints-data-path)
 => :downloaded
