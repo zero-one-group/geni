@@ -28,8 +28,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 * [Why?](docs/why.md)
 * [Working with SQL Maps](docs/sql_maps.md)
 
-<details>
-<summary>**Geni Cookbook:**</summary>
+**Geni Cookbook:**
 
 0. [Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)
 1. [Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)
@@ -41,7 +40,6 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
 8. Window Functions [TBD]
 9. Loading Data from SQL Databases [TBD]
-</details>
 
 [![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
