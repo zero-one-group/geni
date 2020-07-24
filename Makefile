@@ -4,6 +4,9 @@ build:
 	cp project.clj docker/project.clj
 	docker build -f docker/Dockerfile -t $(DOCKERNAME) docker
 
+docker-pull:
+	docker pull $(DOCKERNAME)
+
 dock: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		/bin/bash
