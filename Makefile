@@ -21,7 +21,7 @@ docker-push: build
 
 coverage: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		lein cloverage --fail-threshold 90 --codecov --html --runner :midje
+		lein coverage
 
 lint: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
