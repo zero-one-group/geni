@@ -72,7 +72,7 @@
 ;; 1.3 Describing Columns
 
 ;; 1.4 Writing Datasets
-(g/write-parquet! renamed-df "data/cookbook/bikes.parquet")
+(g/write-parquet! renamed-df "data/cookbook/bikes.parquet" {:mode "overwrite"})
 
 ;; Part 2: Selecting Rows and Columns
 (def complaints-data-url
@@ -310,7 +310,7 @@ columns-to-select
     (g/order-by :year :month)
     g/show)
 
-(g/write-csv! unioned "data/cookbook/weather-2012.csv")
+(g/write-csv! unioned "data/cookbook/weather-2012.csv" {:mode "overwrite"})
 
 ;; Part 5: String Operations
 (def weather-2012
