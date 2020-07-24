@@ -14,7 +14,7 @@
 
 ;; Part 1: Reading and Writing Datasets
 (def bikes-data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/bikes.csv")
-(def bikes-data-path "resources/cookbook/bikes.csv")
+(def bikes-data-path "target/cookbook/bikes.csv")
 (download-data! bikes-data-url bikes-data-path)
 
 ;; 1.1 Creating a Spark Session
@@ -72,13 +72,13 @@
 ;; 1.3 Describing Columns
 
 ;; 1.4 Writing Datasets
-(g/write-parquet! renamed-df "resources/cookbook/bikes.parquet")
+(g/write-parquet! renamed-df "target/cookbook/bikes.parquet")
 
 ;; Part 2: Selecting Rows and Columns
 (def complaints-data-url
   "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/311-service-requests.csv")
 (def complaints-data-path
-  "resources/cookbook/complaints.csv")
+  "target/cookbook/complaints.csv")
 (download-data! complaints-data-url complaints-data-path)
 
 (def raw-complaints
@@ -213,7 +213,7 @@
        "&timeframe=1&submit=Download+Data"))
 
 (defn weather-data-path [year month]
-  (str "resources/cookbook/weather/weather-" year "-" month ".csv"))
+  (str "target/cookbook/weather/weather-" year "-" month ".csv"))
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
@@ -300,7 +300,7 @@ columns-to-select
 (mapv (partial weather-data 2012) (range 1 13))
 
 (def unioned
-  (-> (g/read-csv! spark "resources/cookbook/weather" {:inferSchema "true"})
+  (-> (g/read-csv! spark "target/cookbook/weather" {:inferSchema "true"})
       normalise-column-names
       (g/select (g/columns weather-mar-2012))))
 
@@ -310,11 +310,11 @@ columns-to-select
     (g/order-by :year :month)
     g/show)
 
-(g/write-csv! unioned "resources/cookbook/weather-2012.csv")
+(g/write-csv! unioned "target/cookbook/weather-2012.csv")
 
 ;; Part 5: String Operations
 (def weather-2012
-  (g/read-csv! spark "resources/cookbook/weather-2012.csv" {:inferSchema "true"}))
+  (g/read-csv! spark "target/cookbook/weather-2012.csv" {:inferSchema "true"}))
 
 ;; 5.1 Finding The Snowiest Months
 (-> weather-2012
@@ -361,7 +361,7 @@ columns-to-select
 
 ;(def complaints
   ;(normalise-column-names
-    ;(g/read-csv! spark "resources/cookbook/complaints.csv" {:inferSchema "true"})))
+    ;(g/read-csv! spark "target/cookbook/complaints.csv" {:inferSchema "true"})))
 
 ;; 6.1 Messy Zip Codes
 (-> complaints g/dtypes :incident-zip)
@@ -439,7 +439,7 @@ columns-to-select
   "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/popularity-contest")
 
 (def popularity-contest-data-path
-  "resources/cookbook/popularity-contest.csv")
+  "target/cookbook/popularity-contest.csv")
 
 (download-data! popularity-contest-data-url popularity-contest-data-path)
 

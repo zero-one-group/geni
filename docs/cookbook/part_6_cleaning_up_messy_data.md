@@ -5,7 +5,7 @@ As in [part 2 of the cookbook](part_2_selecting_rows_and_columns.md), we are goi
 ```clojure
 (def complaints
   (normalise-column-names
-    (g/read-csv! spark "resources/cookbook/complaints.csv" {:inferSchema "true"})))
+    (g/read-csv! spark "target/cookbook/complaints.csv" {:inferSchema "true"})))
 ```
 
 ## 6.1 Messy Zip Codes

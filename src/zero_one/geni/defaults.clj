@@ -8,4 +8,4 @@
       {:configs {:spark.testing.memory "3147480000"
                  :spark.sql.adaptive.enabled "true"
                  :spark.sql.adaptive.coalescePartitions.enabled "true"}
-       :checkpoint-dir "resources/checkpoint/"})))
+       :checkpoint-dir "target/checkpoint/"})))

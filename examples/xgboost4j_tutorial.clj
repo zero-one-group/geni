@@ -7,7 +7,7 @@
     (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel)))
 
 (def raw-input
-  (-> (g/read-csv! spark "resources/iris.data" {:header false})
+  (-> (g/read-csv! spark "target/iris.data" {:header false})
       (g/select {:sepal-length (g/double :_c0)
                  :sepal-width  (g/double :_c1)
                  :petal-length (g/double :_c2)
@@ -55,9 +55,9 @@
         :class-index
         (g/element-at (ml/vector->array "probability") 1))))
 
-(ml/write-stage! xgb-classifier-model "resources/xgb_classification_model" {:mode "overwrite"})
+(ml/write-stage! xgb-classifier-model "target/xgb_classification_model" {:mode "overwrite"})
 
 (def xgb-classifier-model-2
-  (ml/read-stage! XGBoostClassificationModel "resources/xgb_classification_model"))
+  (ml/read-stage! XGBoostClassificationModel "target/xgb_classification_model"))
 
-(ml/write-native-model! xgb-classifier-model "resources/native_xgb_classification_model")
+(ml/write-native-model! xgb-classifier-model "target/native_xgb_classification_model")

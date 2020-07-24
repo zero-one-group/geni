@@ -14,7 +14,7 @@
   (-> spark .conf .getAll interop/scala-map->map)
   => #(= (% "spark.master") "local[*]")
   (-> spark .sparkContext .getCheckpointDir .get)
-  => #(clojure.string/includes? % "resources/checkpoint/")
+  => #(clojure.string/includes? % "target/checkpoint/")
   (-> spark .sparkContext .getConf g/to-debug-string)
   => #(clojure.string/includes? % "spark.app.id")
   (select-keys (g/spark-conf spark) [:spark.master

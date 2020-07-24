@@ -22,7 +22,7 @@ And actually download the data:
 
 ```clojure
 (def bikes-data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/bikes.csv")
-(def bikes-data-path "resources/cookbook/bikes.csv")
+(def bikes-data-path "target/cookbook/bikes.csv")
 (download-data! bikes-data-url bikes-data-path)
 => :downloaded
 ```
@@ -263,7 +263,7 @@ We can get descriptions of numeric columns using `g/describe`:
 Writing datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can invoke `g/write-parquet!`:
 
 ```clojure
-(g/write-parquet! renamed-df "resources/cookbook/bikes.parquet"))
+(g/write-parquet! renamed-df "target/cookbook/bikes.parquet"))
 ```
 
 Analogous read and write functions are available. For instance, `g/write-avro!` to write as an Avro file and `g/read-json!` to read a JSON file.
