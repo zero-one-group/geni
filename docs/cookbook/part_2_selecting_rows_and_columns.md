@@ -192,6 +192,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- location: string (nullable = true)
 ```
 
+Note that the function `g/to-df` may take, as arguments, column names in a variadic way, a list of column names or a combination of the two.
+
 We additionally remove the `/` character, as it may cause problems with Clojure namespaces.
 
 ## 2.2 Selecting Columns and Rows

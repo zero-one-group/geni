@@ -12,7 +12,7 @@
     [zero-one.geni.dataset]
     [zero-one.geni.dataset-creation]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [->string-map arg-count]])
+    [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
   (:import
     (org.apache.spark.ml.stat Correlation)
     (org.apache.spark.sql Dataset
@@ -100,7 +100,11 @@
   (zero-one.geni.dataset-creation/table->dataset spark table col-names))
 (defmethod to-df Dataset
   ([dataframe] (.toDF dataframe))
-  ([dataframe col-names] (.toDF dataframe (interop/->scala-seq (map name col-names)))))
+  ([dataframe & col-names]
+   (.toDF dataframe (->> col-names
+                         (mapcat ensure-coll)
+                         (map name)
+                         interop/->scala-seq))))
 
 (defmulti corr (fn [head & _] (class head)))
 (defmethod corr :default [l-expr r-expr]

@@ -37,7 +37,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 4. [Combining Datasets with Joins and Unions](docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md)
 5. [String Operations](docs/cookbook/part_5_string_operations.md)
 6. [Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)
-7. Timestamps and Dates [TBD]
+7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
 8. Windowing Functions [TBD]
 9. Loading Data from SQL Databases [TBD]
 
