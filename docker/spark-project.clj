@@ -19,6 +19,9 @@
                  [org.apache.spark/spark-sql_2.12 "3.0.0"]
                  [org.apache.spark/spark-streaming_2.12 "3.0.0"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+                 ; Databases
+                 [org.postgresql/postgresql "42.2.14"]
+                 [org.xerial/sqlite-jdbc "3.32.3.1"]
                  ;; Optional: Dataproc
                  [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost
