@@ -1,4 +1,4 @@
-# Cookbook 9: Loading Data From SQL Databases
+# Cookbook 9: Reading From and Writing To SQL Databases
 
 In this part of the cookbook, we use the well-known [Chinook sample SQLite database](https://www.sqlitetutorial.net/sqlite-sample-database/). We must first download the zipped database file and unzip it:
 
@@ -64,3 +64,5 @@ Writing to SQLite databases has a similar format to reading it:
                 :dbtable "tracks"})
 => nil
 ```
+
+The drivers `"com.mysql.jdbc.Driver"` and `"org.postgresql.Driver"` can be used for MySQL and PostgreSQL respectively.
