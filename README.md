@@ -38,7 +38,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 5. [String Operations](docs/cookbook/part_5_string_operations.md)
 6. [Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)
 7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
-8. Windowing Functions [TBD]
+8. [Window Functions](docs/cookbook/part_8_window_functions.md)
 9. Loading Data from SQL Databases [TBD]
 
 [![cljdoc badge](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
@@ -155,7 +155,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]]}
 ```
 
-You may also need to install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
+You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
 
 ## License
 
@@ -171,4 +171,5 @@ Some code was taken from:
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
 * Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
-* [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
+* [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
+* Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
