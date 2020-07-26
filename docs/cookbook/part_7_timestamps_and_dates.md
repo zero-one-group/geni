@@ -1,4 +1,4 @@
-# Cookbook 7: Timestamps and Dates 
+# CB7: Timestamps and Dates 
 
 Spark (and thus Geni) has many timestamp and datetime functions - for more detail, check out [Spark's SQL functions docs](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/functions$.html). In this part, we look into one particular case of handling Unix timestamps. As usual, we get the data from the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb) on the author's popularity-contest file. The explanation of the data can be found [here](http://popcon.ubuntu.com/README).
 

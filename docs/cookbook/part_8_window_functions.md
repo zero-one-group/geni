@@ -1,4 +1,4 @@
-# Cookbook 8: Window Functions
+# CB8: Window Functions
 
 This part is based on [Databricks' post on window functions](https://databricks.com/blog/2015/07/15/introducing-window-functions-in-spark-sql.html). Window functions allow us to perform grouped operations such as aggregations, ranking and lagging without having to do a separate group-by and join. We are going to use a synthetic dataset:
 
