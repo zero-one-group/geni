@@ -130,7 +130,7 @@ Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com
 lein new geni <project-name>
 ```
 
-[![asciicast](https://asciinema.org/a/346987.svg)](https://asciinema.org/a/346987?speed=1.75)
+[![asciicast](https://asciinema.org/a/349721.svg)](https://asciinema.org/a/349721?speed=1.75)
 
 ## Installation
 
