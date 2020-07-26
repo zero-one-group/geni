@@ -485,6 +485,7 @@
   [zero-one.geni.data-sources
    read-avro!
    read-csv!
+   read-jdbc!
    read-json!
    read-libsvm!
    read-parquet!
@@ -494,7 +495,8 @@
    write-json!
    write-libsvm!
    write-parquet!
-   write-text!])
+   write-text!
+   write-jdbc!])
 
 (import-vars
   [zero-one.geni.polymorphic

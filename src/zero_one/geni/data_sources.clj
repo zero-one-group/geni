@@ -5,15 +5,15 @@
 
 ;; TODO: read-edn!, write-edn!
 
-(defn norm-option-key [k]
-  (->camelCase (name k)))
+(defn configure-reader-or-writer [unconfigured options]
+  (reduce
+    (fn [r [k v]] (.option r (->camelCase (name  k)) v))
+    unconfigured
+    options))
 
 (defn read-data! [format spark-session path options]
   (let [unconfigured-reader (.. spark-session read (format format))
-        configured-reader   (reduce
-                              (fn [r [k v]] (.option r (norm-option-key k) v))
-                              unconfigured-reader
-                              options)]
+        configured-reader   (configure-reader-or-writer unconfigured-reader options)]
     (.load configured-reader path)))
 
 (defn read-avro!
@@ -44,14 +44,18 @@
   ([spark-session path] (read-text! spark-session path {}))
   ([spark-session path options] (read-data! "text" spark-session path options)))
 
+(defn read-jdbc! [spark-session options]
+  (let [unconfigured-reader (.. spark-session sqlContext read (format "jdbc"))
+        configured-reader   (configure-reader-or-writer unconfigured-reader options)]
+    (.load configured-reader)))
+
 (defn write-data! [format dataframe path options]
   (let [mode                (:mode options)
         unconfigured-writer (-> dataframe
                                 (.write)
                                 (.format format)
                                 (cond-> mode (.mode mode)))
-        configured-writer   (reduce
-                              (fn [w [k v]] (.option w (norm-option-key k) v))
+        configured-writer   (configure-reader-or-writer
                               unconfigured-writer
                               (dissoc options :mode))]
     (.save configured-writer path)))
@@ -79,3 +83,14 @@
 (defn write-avro!
   ([dataframe path] (write-avro! dataframe path {}))
   ([dataframe path options] (write-data! "avro" dataframe path options)))
+
+(defn write-jdbc! [dataframe options]
+  (let [mode                (:mode options)
+        unconfigured-writer (-> dataframe
+                                (.write)
+                                (.format "jdbc")
+                                (cond-> mode (.mode mode)))
+        configured-writer   (configure-reader-or-writer
+                              unconfigured-writer
+                              (dissoc options :mode))]
+    (.save configured-writer)))
