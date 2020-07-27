@@ -11,41 +11,41 @@
     unconfigured
     options))
 
-(defn read-data! [format spark-session path options]
-  (let [unconfigured-reader (.. spark-session read (format format))
+(defn read-data! [format spark path options]
+  (let [unconfigured-reader (.. spark read (format format))
         configured-reader   (configure-reader-or-writer unconfigured-reader options)]
     (.load configured-reader path)))
 
 (defn read-avro!
-  ([spark-session path] (read-avro! spark-session path {}))
-  ([spark-session path options] (read-data! "avro" spark-session path options)))
+  ([spark path] (read-avro! spark path {}))
+  ([spark path options] (read-data! "avro" spark path options)))
 
 (defn read-parquet!
-  ([spark-session path] (read-parquet! spark-session path {}))
-  ([spark-session path options] (read-data! "parquet" spark-session path options)))
+  ([spark path] (read-parquet! spark path {}))
+  ([spark path options] (read-data! "parquet" spark path options)))
 
 (def default-options
   {:csv {"header" "true"}})
 
 (defn read-csv!
-  ([spark-session path] (read-csv! spark-session path (:csv default-options)))
-  ([spark-session path options]
-   (read-data! "csv" spark-session path (merge (:csv default-options) options))))
+  ([spark path] (read-csv! spark path (:csv default-options)))
+  ([spark path options]
+   (read-data! "csv" spark path (merge (:csv default-options) options))))
 
 (defn read-libsvm!
-  ([spark-session path] (read-libsvm! spark-session path {}))
-  ([spark-session path options] (read-data! "libsvm" spark-session path options)))
+  ([spark path] (read-libsvm! spark path {}))
+  ([spark path options] (read-data! "libsvm" spark path options)))
 
 (defn read-json!
-  ([spark-session path] (read-json! spark-session path {}))
-  ([spark-session path options] (read-data! "json" spark-session path options)))
+  ([spark path] (read-json! spark path {}))
+  ([spark path options] (read-data! "json" spark path options)))
 
 (defn read-text!
-  ([spark-session path] (read-text! spark-session path {}))
-  ([spark-session path options] (read-data! "text" spark-session path options)))
+  ([spark path] (read-text! spark path {}))
+  ([spark path options] (read-data! "text" spark path options)))
 
-(defn read-jdbc! [spark-session options]
-  (let [unconfigured-reader (.. spark-session sqlContext read (format "jdbc"))
+(defn read-jdbc! [spark options]
+  (let [unconfigured-reader (.. spark sqlContext read (format "jdbc"))
         configured-reader   (configure-reader-or-writer unconfigured-reader options)]
     (.load configured-reader)))
 

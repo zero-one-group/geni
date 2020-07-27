@@ -11,6 +11,7 @@
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.dataset]
     [zero-one.geni.dataset-creation]
+    [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
   (:import
@@ -18,6 +19,8 @@
     (org.apache.spark.sql Dataset
                           RelationalGroupedDataset
                           functions)))
+
+(def default-spark zero-one.geni.defaults/spark)
 
 (defmulti as (fn [head & _] (class head)))
 (defmethod as :default [expr new-name] (.as (->column expr) (name new-name)))
@@ -96,8 +99,11 @@
    (functions/to_json (->column expr) (->string-map options))))
 
 (defmulti to-df (fn [head & _] (class head)))
-(defmethod to-df :default [spark table col-names]
-  (zero-one.geni.dataset-creation/table->dataset spark table col-names))
+(defmethod to-df :default
+  ([table col-names]
+   (to-df @default-spark table col-names))
+  ([spark table col-names]
+   (zero-one.geni.dataset-creation/table->dataset spark table col-names)))
 (defmethod to-df Dataset
   ([dataframe] (.toDF dataframe))
   ([dataframe & col-names]

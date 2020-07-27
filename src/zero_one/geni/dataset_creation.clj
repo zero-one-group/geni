@@ -1,11 +1,14 @@
 (ns zero-one.geni.dataset-creation
   (:require
+    [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql.types ArrayType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT
                                 DenseVector
                                 SparseVector)))
+
+(def default-spark zero-one.geni.defaults/spark)
 
 (def data-type->spark-type
   {:bool      DataTypes/BooleanType
@@ -31,8 +34,9 @@
 (defn struct-type [& fields]
   (DataTypes/createStructType fields))
 
-(defn create-dataframe [spark rows schema]
-  (.createDataFrame spark rows schema))
+(defn create-dataframe
+  ([rows schema] (create-dataframe @default-spark rows schema))
+  ([spark rows schema] (.createDataFrame spark rows schema)))
 
 (def java-type->spark-type
   {java.lang.Boolean  DataTypes/BooleanType
@@ -68,17 +72,21 @@
 (defn transpose [xs]
   (apply map list xs))
 
-(defn table->dataset [spark table col-names]
-  (let [col-names (map name col-names)
-        values    (map first-non-nil (transpose table))
-        rows      (interop/->java-list (map interop/->spark-row table))
-        schema    (infer-schema col-names values)]
-    (.createDataFrame spark rows schema)))
+(defn table->dataset
+  ([table col-names] (table->dataset @default-spark table col-names))
+  ([spark table col-names]
+   (let [col-names (map name col-names)
+         values    (map first-non-nil (transpose table))
+         rows      (interop/->java-list (map interop/->spark-row table))
+         schema    (infer-schema col-names values)]
+     (.createDataFrame spark rows schema))))
 
-(defn map->dataset [spark map-of-values]
-  (let [table     (transpose (vals map-of-values))
-        col-names (keys map-of-values)]
-    (table->dataset spark table col-names)))
+(defn map->dataset
+  ([map-of-values] (map->dataset @default-spark map-of-values))
+  ([spark map-of-values]
+   (let [table     (transpose (vals map-of-values))
+         col-names (keys map-of-values)]
+     (table->dataset spark table col-names))))
 
 (defn conj-record [map-of-values record]
   (let [col-names (keys map-of-values)]
@@ -88,10 +96,12 @@
       map-of-values
       col-names)))
 
-(defn records->dataset [spark records]
-  (let [col-names     (-> (map keys records) flatten clojure.core/distinct)
-        map-of-values (reduce
-                        conj-record
-                        (zipmap col-names (repeat []))
-                        records)]
-    (map->dataset spark map-of-values)))
+(defn records->dataset
+  ([records] (records->dataset @default-spark records))
+  ([spark records]
+   (let [col-names     (-> (map keys records) flatten clojure.core/distinct)
+         map-of-values (reduce
+                         conj-record
+                         (zipmap col-names (repeat []))
+                         records)]
+     (map->dataset spark map-of-values))))
