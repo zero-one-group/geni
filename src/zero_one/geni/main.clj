@@ -2,12 +2,15 @@
   (:require
     [clojure.pprint]
     [zero-one.geni.core :as g]
-    [zero-one.geni.defaults :refer [spark]]
+    [zero-one.geni.defaults]
     [zero-one.geni.repl :as repl])
   (:gen-class))
 
 ;; Removes the pesky ns warning that takes up the first line of the REPL.
 (require '[net.cgrand.parsley.fold])
+
+(def spark
+  (future @zero-one.geni.defaults/spark))
 
 (defn -main [& _]
   (clojure.pprint/pprint (g/spark-conf @spark))

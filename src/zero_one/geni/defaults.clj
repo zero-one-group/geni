@@ -1,10 +1,10 @@
 (ns zero-one.geni.defaults
   (:require
-    [zero-one.geni.core :as g]))
+    [zero-one.geni.spark]))
 
 (def spark
-  (future
-    (g/create-spark-session
+  (delay
+    (zero-one.geni.spark/create-spark-session
       {:configs {:spark.testing.memory "3147480000"
                  :spark.sql.adaptive.enabled "true"
                  :spark.sql.adaptive.coalescePartitions.enabled "true"}
