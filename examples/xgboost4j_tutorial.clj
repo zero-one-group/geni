@@ -1,13 +1,23 @@
 (ns examples.xgboost4j-tutorial
   (:require
+    [clojure.java.io]
+    [clojure.java.shell]
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]])
+    [zero-one.geni.ml :as ml])
   (:import
     (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel)))
 
+(def iris-path "data/iris.data")
+
+(when-not (-> iris-path clojure.java.io/file .exists)
+  (clojure.java.shell/sh
+    "wget"
+    "-O"
+    iris-path
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"))
+
 (def raw-input
-  (-> (g/read-csv! spark "data/iris.data" {:header false})
+  (-> (g/read-csv! iris-path {:header false})
       (g/select {:sepal-length (g/double :_c0)
                  :sepal-width  (g/double :_c1)
                  :petal-length (g/double :_c2)

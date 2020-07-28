@@ -1,10 +1,9 @@
 (ns examples.xgboost
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 ;; XGBoost Classifier
 (def xgb-classifier-model

@@ -1,11 +1,10 @@
 (ns examples.regression
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
 ;; Linear Regression
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/linear-regression {:max-iter 10
                                :reg-param 0.8
@@ -24,7 +23,7 @@
 (ml/intercept lr-model)
 
 ;; Random Forest Regression
-(def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def data (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def feature-indexer
   (ml/fit data (ml/vector-indexer {:input-col :features
@@ -56,7 +55,6 @@
 ;; Survival Regression
 (def train
   (g/table->dataset
-    spark
     [[1.218 1.0 (g/dense 1.560 -0.605)]
      [2.949 0.0 (g/dense 0.346  2.158)]
      [3.627 0.0 (g/dense 1.380  0.231)]

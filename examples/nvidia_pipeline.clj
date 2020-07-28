@@ -1,14 +1,13 @@
 (ns examples.nvidia-pipeline
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]])
+    [zero-one.geni.ml :as ml])
   (:import
     (org.apache.spark.ml.tuning CrossValidatorModel)))
 
 ;; Load Data
 (def dataframe
-  (-> (g/read-parquet! spark "test/resources/housing.parquet")
+  (-> (g/read-parquet! "test/resources/housing.parquet")
       (g/with-column :rooms_per_house (g// :total_rooms :households))
       (g/with-column :population_per_house (g// :population :households))
       (g/with-column :bedrooms_per_house (g// :total_bedrooms :households))
@@ -164,5 +163,6 @@
 ; Saving and Loading
 (ml/write-stage! pipeline-model "target/nvidia_pipeline_model" {:mode "overwrite"})
 
+;; TODO: NoSuchElementException
 (def same-model
   (ml/read-stage! CrossValidatorModel "target/nvidia_pipeline_model"))
