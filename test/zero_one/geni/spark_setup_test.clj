@@ -24,7 +24,6 @@
                                      :spark.sql.adaptive.coalescePartitions.enabled])
   => {:spark.master                                  "local[*]",
       :spark.app.name                                "Geni App",
-      :spark.testing.memory                          "3147480000",
       :spark.sql.adaptive.enabled                    "true",
       :spark.sql.adaptive.coalescePartitions.enabled "true",})
 
