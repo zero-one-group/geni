@@ -54,6 +54,9 @@ Spark SQL API for grouping and aggregating:
 ```clojure
 (require '[zero-one.geni.core :as g])
 
+(g/count dataframe)
+=> 13580
+
 (g/print-schema dataframe)
 ; root
 ;  |-- Suburb: string (nullable = true)
@@ -117,6 +120,29 @@ Spark SQL API for grouping and aggregating:
 ; |Preston       |239  |20       |902800   |
 ; |Brunswick     |222  |21       |1013171  |
 ; +--------------+-----+---------+---------+
+
+(-> dataframe
+    (g/select {:address  :Address
+               :date     (g/to-date :Date "d/MM/yyyy")
+               :location (g/struct {:lat :Lattitude :long :Longtitude})})
+    g/shuffle
+    (g/limit 5)
+    g/collect)
+=> ({:address "114 Shields St",
+     :date #inst "2016-05-21T17:00:00.000-00:00",
+     :location {:lat -37.7847, :long 144.9341}}
+    {:address "129 Glenlyon Rd",
+     :date #inst "2017-05-05T17:00:00.000-00:00",
+     :location {:lat -37.7723, :long 144.9694}}
+    {:address "48 Lyons St",
+     :date #inst "2016-04-15T17:00:00.000-00:00",
+     :location {:lat -37.8955, :long 145.0515}}
+    {:address "3/31 Clapham St",
+     :date #inst "2017-05-19T17:00:00.000-00:00",
+     :location {:lat -37.7549, :long 144.9979}}
+    {:address "327 Hull Rd",
+     :date #inst "2017-09-08T17:00:00.000-00:00",
+     :location {:lat -37.78329, :long 145.32271}})
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
