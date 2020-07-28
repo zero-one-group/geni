@@ -1,6 +1,6 @@
 (def spark-deps
   '[;; Spark
-    [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+    ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
     [org.apache.spark/spark-avro_2.12 "3.0.0"]
     [org.apache.spark/spark-core_2.12 "3.0.0"]
     [org.apache.spark/spark-hive_2.12 "3.0.0"]
