@@ -25,6 +25,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 * [Manual Dataset Creation](docs/manual_dataset_creation.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Using Dataproc](docs/dataproc.md)
+* [Where's The Spark Session?](docs/spark_session.md)
 * [Why?](docs/why.md)
 * [Working with SQL Maps](docs/sql_maps.md)
 
