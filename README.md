@@ -53,6 +53,52 @@ Spark SQL API for grouping and aggregating:
 ```clojure
 (require '[zero-one.geni.core :as g])
 
+(g/print-schema dataframe)
+; root
+;  |-- Suburb: string (nullable = true)
+;  |-- Address: string (nullable = true)
+;  |-- Rooms: long (nullable = true)
+;  |-- Type: string (nullable = true)
+;  |-- Price: double (nullable = true)
+;  |-- Method: string (nullable = true)
+;  |-- SellerG: string (nullable = true)
+;  |-- Date: string (nullable = true)
+;  |-- Distance: double (nullable = true)
+;  |-- Postcode: double (nullable = true)
+;  |-- Bedroom2: double (nullable = true)
+;  |-- Bathroom: double (nullable = true)
+;  |-- Car: double (nullable = true)
+;  |-- Landsize: double (nullable = true)
+;  |-- BuildingArea: double (nullable = true)
+;  |-- YearBuilt: double (nullable = true)
+;  |-- CouncilArea: string (nullable = true)
+;  |-- Lattitude: double (nullable = true)
+;  |-- Longtitude: double (nullable = true)
+;  |-- Regionname: string (nullable = true)
+;  |-- Propertycount: double (nullable = true)
+
+(-> dataframe (g/limit 5) g/show)
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+; |Suburb    |Address         |Rooms|Type|Price    |Method|SellerG|Date     |Distance|Postcode|Bedroom2|Bathroom|Car|Landsize|BuildingArea|YearBuilt|CouncilArea|Lattitude|Longtitude|Regionname           |Propertycount|
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+; |Abbotsford|85 Turner St    |2    |h   |1480000.0|S     |Biggin |3/12/2016|2.5     |3067.0  |2.0     |1.0     |1.0|202.0   |null        |null     |Yarra      |-37.7996 |144.9984  |Northern Metropolitan|4019.0       |
+; |Abbotsford|25 Bloomburg St |2    |h   |1035000.0|S     |Biggin |4/02/2016|2.5     |3067.0  |2.0     |1.0     |0.0|156.0   |79.0        |1900.0   |Yarra      |-37.8079 |144.9934  |Northern Metropolitan|4019.0       |
+; |Abbotsford|5 Charles St    |3    |h   |1465000.0|SP    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |0.0|134.0   |150.0       |1900.0   |Yarra      |-37.8093 |144.9944  |Northern Metropolitan|4019.0       |
+; |Abbotsford|40 Federation La|3    |h   |850000.0 |PI    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |1.0|94.0    |null        |null     |Yarra      |-37.7969 |144.9969  |Northern Metropolitan|4019.0       |
+; |Abbotsford|55a Park St     |4    |h   |1600000.0|VB    |Nelson |4/06/2016|2.5     |3067.0  |3.0     |1.0     |2.0|120.0   |142.0       |2014.0   |Yarra      |-37.8072 |144.9941  |Northern Metropolitan|4019.0       |
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+
+(-> dataframe (g/describe :Landsize :Rooms :Price) g/show)
+; +-------+-----------------+------------------+-----------------+
+; |summary|Landsize         |Rooms             |Price            |
+; +-------+-----------------+------------------+-----------------+
+; |count  |13580            |13580             |13580            |
+; |mean   |558.4161266568483|2.9379970544919   |1075684.079455081|
+; |stddev |3990.669241109034|0.9557479384215565|639310.7242960163|
+; |min    |0.0              |1                 |85000.0          |
+; |max    |433014.0         |10                |9000000.0        |
+; +-------+-----------------+------------------+-----------------+
+
 (-> dataframe
     (g/group-by :Suburb)
     g/count
