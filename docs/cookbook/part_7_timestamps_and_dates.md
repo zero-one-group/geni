@@ -19,7 +19,7 @@ We load, rename and remove the final row, which should not be part of the datase
 
 ```clojure
 (def popularity-contest
-  (-> (g/read-csv! spark popularity-contest-data-path {:delimiter " "})
+  (-> (g/read-csv! popularity-contest-data-path {:delimiter " "})
       (g/to-df :access-time :creation-time :package-name :mru-program :tag)
       (g/remove (g/= :access-time (g/lit "END-POPULARITY-CONTEST-0")))))
 

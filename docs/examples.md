@@ -7,12 +7,6 @@ The examples assume the following required namespaces:
 (require '[zero-one.geni.ml :as ml])
 ```
 
-and a spark session, which can be defined as:
-
-```clojure
-(defonce spark (g/create-spark-session {}))
-```
-
 Example datasets can be found in the `test/resources` directory.
 
 ## Dataframe API
@@ -137,7 +131,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def corr-df
   (g/table->dataset
-    spark
     [[(g/dense 1.0 0.0 -2.0 0.0)]
      [(g/dense 4.0 5.0 0.0  3.0)]
      [(g/dense 6.0 7.0 0.0  8.0)]
@@ -157,7 +150,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def hypothesis-df
   (g/table->dataset
-     spark
      [[0.0 (g/dense 0.5 10.0)]
       [0.0 (g/dense 1.5 20.0)]
       [1.0 (g/dense 1.5 30.0)]
@@ -179,7 +171,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def sentence-data
   (g/table->dataset
-    spark
     [[0.0 "Hi I heard about Spark"]
      [0.0 "I wish Java could use case classes"]
      [1.0 "Logistic regression models are neat"]]
@@ -222,7 +213,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def dataframe
   (g/table->dataset
-    spark
     [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
      [(g/dense 2.0 0.0 3.0 4.0 5.0)]
      [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
@@ -275,7 +265,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def dataset
   (g/table->dataset
-    spark
     [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
     [:id :hour :mobile :user-features :clicked]))
 
@@ -299,7 +288,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### Logistic Regression
 
 ```clojure
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/logistic-regression {:max-iter 10
                                  :reg-param 0.3
@@ -332,7 +321,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### Gradient Boosted Tree Classifier
 
 ```clojure
-(def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def data (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def split-data (g/random-split data [0.7 0.3]))
 (def train-data (first split-data))
@@ -388,7 +377,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### XGBoost Classifier
 
 ```clojure
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def xgb-model
   (ml/fit
@@ -416,7 +405,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### Linear Regression
 
 ```clojure
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/linear-regression {:max-iter 10
                                :reg-param 0.8
@@ -449,7 +438,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### Random Forest Regression
 
 ```clojure
-(def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def data (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def feature-indexer
   (ml/fit data (ml/vector-indexer {:input-col :features
@@ -494,7 +483,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def train
   (g/table->dataset
-    spark
     [[1.218 1.0 (g/dense 1.560 -0.605)]
      [2.949 0.0 (g/dense 0.346  2.158)]
      [3.627 0.0 (g/dense 1.380  0.231)]
@@ -526,7 +514,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 #### XGBoost Regressor
 
 ```clojure
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def xgb-model
   (ml/fit
@@ -555,7 +543,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 ```clojure
 (def dataset
-  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+  (g/read-libsvm! "test/resources/sample_kmeans_data.txt"))
 
 (def model
   (ml/fit dataset (ml/k-means {:k 2 :seed 1})))
@@ -575,7 +563,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 ```clojure
 (def dataset
-  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+  (g/read-libsvm! "test/resources/sample_kmeans_data.txt"))
 
 (def model
   (ml/fit dataset (ml/lda {:k 10 :max-iter 10})))
@@ -614,7 +602,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                :movie-id  (Integer/parseInt (second row))
                :rating    (Float/parseFloat (nth row 2))
                :timestamp (clojure.core/long (Integer/parseInt (nth row 3)))}))
-       (g/records->dataset spark)))
+       g/records->dataset)))
 
 (def model
   (ml/fit ratings-df (ml/als {:max-iter   5
@@ -665,7 +653,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def training
   (g/table->dataset
-    spark
     [[0  "a b c d e spark"  1.0]
      [1  "b d"              0.0]
      [2  "spark f g h"      1.0]
@@ -708,7 +695,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (def testing
   (g/table->dataset
-    spark
     [[4 "spark i j k"]
      [5 "l m n"]
      [6 "mapreduce spark"]
@@ -742,7 +728,6 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def dataset
   (-> (g/table->dataset
-        spark
         [['("1" "2" "5")]
          ['("1" "2" "3" "5")]
          ['("1" "2")]]
