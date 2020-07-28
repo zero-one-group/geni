@@ -11,7 +11,7 @@
 (def write-df
   (-> melbourne-df (g/select :Method :Type) (g/limit 5)))
 
-(fact "Writer defaults to error" ;:slow
+(fact "Writer defaults to error" :slow
   (doall
     (for [write-fn! [g/write-avro!
                      g/write-csv!
@@ -33,7 +33,7 @@
     (g/write-jdbc! write-df (assoc options :mode "overwrite"))
     (g/write-jdbc! write-df options) => (throws AnalysisException)))
 
-(fact "Can read with options" ;:slow
+(fact "Can read with options" :slow
   (let [read-df (g/read-parquet!
                   "test/resources/melbourne_housing_snapshot.parquet"
                   {"mergeSchema" "true"})]
