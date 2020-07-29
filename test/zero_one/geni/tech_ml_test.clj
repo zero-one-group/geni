@@ -18,6 +18,7 @@
       (g/assoc :always-ten 10)
       (g/collect-col :always-ten)
       set) => #{10}
+  (-> dummy-df (g/assoc :always-ten 10 :always-two)) => (throws  Exception)
   (-> dummy-df
       (g/assoc :always-ten 10
                :always-two 2)
