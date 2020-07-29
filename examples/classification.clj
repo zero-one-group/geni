@@ -1,11 +1,10 @@
 (ns examples.classification
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
 ;; Logistic Regression
-(def training (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def lr (ml/logistic-regression {:max-iter 10
                                  :reg-param 0.3
@@ -24,7 +23,7 @@
 (ml/intercept lr-model)
 
 ;; Gradient-Boosted Tree Classifier
-(def data (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt"))
+(def data (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
 (def split-data (g/random-split data [0.7 0.3]))
 (def train-data (first split-data))

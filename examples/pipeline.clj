@@ -3,11 +3,8 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]))
 
-(defonce spark (g/create-spark-session {}))
-
 (def training-set
   (g/table->dataset
-    spark
     [[0 "a b c d e spark"  1.0]
      [1 "b d"              0.0]
      [2 "spark f g h"      1.0]
@@ -28,7 +25,6 @@
 
 (def test-set
   (g/table->dataset
-    spark
     [[4 "spark i j k"]
      [5 "l m n"]
      [6 "spark hadoop spark"]

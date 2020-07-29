@@ -5,7 +5,6 @@ This part is based on [Databricks' post on window functions](https://databricks.
 ```clojure
 (def product-revenue
   (g/table->dataset
-    spark
     [["Thin"       "Cell phone" 6000]
      ["Normal"     "Tablet"     1500]
      ["Mini"       "Tablet"     5500]

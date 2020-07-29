@@ -16,7 +16,7 @@ As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cook
 and load the CSV dataset:
 
 ```clojure
-(def raw-complaints (g/read-csv! spark complaints-data-path))
+(def raw-complaints (g/read-csv! complaints-data-path))
 ```
 
 ## 2.1 What's Even In It?

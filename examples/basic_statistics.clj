@@ -1,8 +1,9 @@
 (ns examples.basic-statistics
   (:require
+    [clojure.pprint]
     [zero-one.geni.core :as g]
     [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark melbourne-df]]))
+    [zero-one.geni.test-resources :refer [melbourne-df]]))
 
 
 (def dataframe
@@ -27,7 +28,6 @@
 ;; Correlation
 (def corr-df
   (g/table->dataset
-    spark
     [[(g/dense 1.0 0.0 -2.0 0.0)]
      [(g/dense 4.0 5.0 0.0  3.0)]
      [(g/dense 6.0 7.0 0.0  8.0)]
@@ -44,14 +44,13 @@
 ;; Hypothesis Testing
 (def hypothesis-df
   (g/table->dataset
-     spark
-     [[0.0 (g/dense 0.5 10.0)]
-      [0.0 (g/dense 1.5 20.0)]
-      [1.0 (g/dense 1.5 30.0)]
-      [0.0 (g/dense 3.5 30.0)]
-      [0.0 (g/dense 3.5 40.0)]
-      [1.0 (g/dense 3.5 40.0)]]
-     [:label :features]))
+    [[0.0 (g/dense 0.5 10.0)]
+     [0.0 (g/dense 1.5 20.0)]
+     [1.0 (g/dense 1.5 30.0)]
+     [0.0 (g/dense 3.5 30.0)]
+     [0.0 (g/dense 3.5 40.0)]
+     [1.0 (g/dense 3.5 40.0)]]
+    [:label :features]))
 
 (g/first (ml/chi-square-test hypothesis-df "features" "label"))
 ; => {:pValues (0.6872892787909721 0.6822703303362126),

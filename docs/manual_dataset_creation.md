@@ -4,7 +4,6 @@ In order to manually create a instance of a Dataset, we must first create a Spar
 
 ```clojure
 (require '[zero-one.geni.core :as g])
-(defonce spark (g/create-spark-session {}))
 ```
 
 In a production setting, we typically would not be manually instantiating our own Spark Dataset. However, it can be useful for testing and example purposes. Geni provides two main ways to do this, namely the usual [Spark way](https://medium.com/@mrpowers/manually-creating-spark-dataframes-b14dae906393) and a couple of shortcuts inspired by [Pandas dataframe creation](https://www.geeksforgeeks.org/different-ways-to-create-pandas-dataframe/).
@@ -44,12 +43,10 @@ val someDF = spark.createDataFrame(
 In Geni, the above Scala codes would translate to the following respectively:
 
 ```clojure
-(g/to-df spark
-         [[8 "bat"] [64 "mouse"] [-27 "horse"]]
+(g/to-df [[8 "bat"] [64 "mouse"] [-27 "horse"]]
          [:number :word])
 
-(g/create-dataframe spark
-                    [(g/row 8 "bat")
+(g/create-dataframe [(g/row 8 "bat")
                      (g/row 64 "mouse")
                      (g/row -27 "horse")]
                     (g/struct-type
@@ -62,24 +59,21 @@ In Geni, the above Scala codes would translate to the following respectively:
 In Pandas, we could create DataFrames using a nested list (or a table). Geni provides `table->dataset`, which coincidentally is identical to `to-df`:
 
 ```clojure
-(g/table->dataset spark
-                  [[8 "bat"] [64 "mouse"] [-27 "horse"]]
+(g/table->dataset [[8 "bat"] [64 "mouse"] [-27 "horse"]]
                   [:number :word])
 ```
 
 The second method is to use a dictionary (i.e. map) of column name to column values:
 
 ```clojure
-(g/map->dataset spark
-                {:number [8 64 -27]
+(g/map->dataset {:number [8 64 -27]
                  :word   ["bat" "mouse" "horse"]})
 ```
 
 The third and final method is to use a list of dictionaries with fixed keys (i.e. a seq of records):
 
 ```clojure
-(g/records->dataset spark
-                    [{:number   8 :word "bat"}
+(g/records->dataset [{:number   8 :word "bat"}
                      {:number  64 :word "mouse"}
                      {:number -27 :word "horse"}])
 ```

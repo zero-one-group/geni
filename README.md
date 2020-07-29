@@ -25,6 +25,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 * [Manual Dataset Creation](docs/manual_dataset_creation.md)
 * [Optional XGBoost Support](docs/xgboost.md)
 * [Using Dataproc](docs/dataproc.md)
+* [Where's The Spark Session?](docs/spark_session.md)
 * [Why?](docs/why.md)
 * [Working with SQL Maps](docs/sql_maps.md)
 
@@ -53,21 +54,95 @@ Spark SQL API for grouping and aggregating:
 ```clojure
 (require '[zero-one.geni.core :as g])
 
+(g/count dataframe)
+=> 13580
+
+(g/print-schema dataframe)
+; root
+;  |-- Suburb: string (nullable = true)
+;  |-- Address: string (nullable = true)
+;  |-- Rooms: long (nullable = true)
+;  |-- Type: string (nullable = true)
+;  |-- Price: double (nullable = true)
+;  |-- Method: string (nullable = true)
+;  |-- SellerG: string (nullable = true)
+;  |-- Date: string (nullable = true)
+;  |-- Distance: double (nullable = true)
+;  |-- Postcode: double (nullable = true)
+;  |-- Bedroom2: double (nullable = true)
+;  |-- Bathroom: double (nullable = true)
+;  |-- Car: double (nullable = true)
+;  |-- Landsize: double (nullable = true)
+;  |-- BuildingArea: double (nullable = true)
+;  |-- YearBuilt: double (nullable = true)
+;  |-- CouncilArea: string (nullable = true)
+;  |-- Lattitude: double (nullable = true)
+;  |-- Longtitude: double (nullable = true)
+;  |-- Regionname: string (nullable = true)
+;  |-- Propertycount: double (nullable = true)
+
+(-> dataframe (g/limit 5) g/show)
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+; |Suburb    |Address         |Rooms|Type|Price    |Method|SellerG|Date     |Distance|Postcode|Bedroom2|Bathroom|Car|Landsize|BuildingArea|YearBuilt|CouncilArea|Lattitude|Longtitude|Regionname           |Propertycount|
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+; |Abbotsford|85 Turner St    |2    |h   |1480000.0|S     |Biggin |3/12/2016|2.5     |3067.0  |2.0     |1.0     |1.0|202.0   |null        |null     |Yarra      |-37.7996 |144.9984  |Northern Metropolitan|4019.0       |
+; |Abbotsford|25 Bloomburg St |2    |h   |1035000.0|S     |Biggin |4/02/2016|2.5     |3067.0  |2.0     |1.0     |0.0|156.0   |79.0        |1900.0   |Yarra      |-37.8079 |144.9934  |Northern Metropolitan|4019.0       |
+; |Abbotsford|5 Charles St    |3    |h   |1465000.0|SP    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |0.0|134.0   |150.0       |1900.0   |Yarra      |-37.8093 |144.9944  |Northern Metropolitan|4019.0       |
+; |Abbotsford|40 Federation La|3    |h   |850000.0 |PI    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |1.0|94.0    |null        |null     |Yarra      |-37.7969 |144.9969  |Northern Metropolitan|4019.0       |
+; |Abbotsford|55a Park St     |4    |h   |1600000.0|VB    |Nelson |4/06/2016|2.5     |3067.0  |3.0     |1.0     |2.0|120.0   |142.0       |2014.0   |Yarra      |-37.8072 |144.9941  |Northern Metropolitan|4019.0       |
+; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+
+(-> dataframe (g/describe :Landsize :Rooms :Price) g/show)
+; +-------+-----------------+------------------+-----------------+
+; |summary|Landsize         |Rooms             |Price            |
+; +-------+-----------------+------------------+-----------------+
+; |count  |13580            |13580             |13580            |
+; |mean   |558.4161266568483|2.9379970544919   |1075684.079455081|
+; |stddev |3990.669241109034|0.9557479384215565|639310.7242960163|
+; |min    |0.0              |1                 |85000.0          |
+; |max    |433014.0         |10                |9000000.0        |
+; +-------+-----------------+------------------+-----------------+
+
 (-> dataframe
     (g/group-by :Suburb)
-    g/count
+    (g/agg {:count     (g/count "*")
+            :n-sellers (g/count-distinct :SellerG)
+            :avg-price (g/int (g/mean :Price))})
     (g/order-by (g/desc :count))
     (g/limit 5)
     g/show)
-; +--------------+-----+
-; |Suburb        |count|
-; +--------------+-----+
-; |Reservoir     |359  |
-; |Richmond      |260  |
-; |Bentleigh East|249  |
-; |Preston       |239  |
-; |Brunswick     |222  |
-; +--------------+-----+
+; +--------------+-----+---------+---------+
+; |Suburb        |count|n-sellers|avg-price|
+; +--------------+-----+---------+---------+
+; |Reservoir     |359  |18       |690008   |
+; |Richmond      |260  |22       |1083564  |
+; |Bentleigh East|249  |21       |1085591  |
+; |Preston       |239  |20       |902800   |
+; |Brunswick     |222  |21       |1013171  |
+; +--------------+-----+---------+---------+
+
+(-> dataframe
+    (g/select {:address :Address
+               :date    (g/to-date :Date "d/MM/yyyy")
+               :coord   (g/struct {:lat :Lattitude :long :Longtitude})})
+    g/shuffle
+    (g/limit 5)
+    g/collect)
+=> ({:address "114 Shields St",
+     :date #inst "2016-05-21T17:00:00.000-00:00",
+     :coord {:lat -37.7847, :long 144.9341}}
+    {:address "129 Glenlyon Rd",
+     :date #inst "2017-05-05T17:00:00.000-00:00",
+     :coord {:lat -37.7723, :long 144.9694}}
+    {:address "48 Lyons St",
+     :date #inst "2016-04-15T17:00:00.000-00:00",
+     :coord {:lat -37.8955, :long 145.0515}}
+    {:address "3/31 Clapham St",
+     :date #inst "2017-05-19T17:00:00.000-00:00",
+     :coord {:lat -37.7549, :long 144.9979}}
+    {:address "327 Hull Rd",
+     :date #inst "2017-09-08T17:00:00.000-00:00",
+     :coord {:lat -37.78329, :long 145.32271}})
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
@@ -78,7 +153,6 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
 
 (def training-set
   (g/table->dataset
-    spark
     [[0 "a b c d e spark"  1.0]
      [1 "b d"              0.0]
      [2 "spark f g h"      1.0]
@@ -99,7 +173,6 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
 
 (def test-set
   (g/table->dataset
-    spark
     [[4 "spark i j k"]
      [5 "l m n"]
      [6 "spark hadoop spark"]

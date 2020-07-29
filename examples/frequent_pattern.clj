@@ -1,12 +1,10 @@
 (ns examples.classification
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
 (def dataset
   (-> (g/table->dataset
-        spark
         [['("1" "2" "5")]
          ['("1" "2" "3" "5")]
          ['("1" "2")]]

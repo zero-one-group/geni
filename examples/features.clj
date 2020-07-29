@@ -4,12 +4,9 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [libsvm-df]]))
 
-(defonce spark (g/create-spark-session {}))
-
 ;; Tokeniser, Hashing TF and IDF
 (def sentence-data
   (g/table->dataset
-    spark
     [[0.0 "Hi I heard about Spark"]
      [0.0 "I wish Java could use case classes"]
      [1.0 "Logistic regression models are neat"]]
@@ -35,7 +32,6 @@
 ;; PCA
 (def dataframe
   (g/table->dataset
-    spark
     [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
      [(g/dense 2.0 0.0 3.0 4.0 5.0)]
      [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
@@ -67,7 +63,6 @@
 ;; Vector Assembler
 (def dataset
   (g/table->dataset
-    spark
     [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
     [:id :hour :mobile :user-features :clicked]))
 

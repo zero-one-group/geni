@@ -1,12 +1,11 @@
 (ns examples.clustering
   (:require
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
 ;; K-Means
 (def dataset
-  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+  (g/read-libsvm! "test/resources/sample_kmeans_data.txt"))
 
 (def model
   (ml/fit dataset (ml/k-means {:k 2 :seed 1})))
@@ -21,7 +20,7 @@
 
 ;; LDA
 (def dataset
-  (g/read-libsvm! spark "test/resources/sample_kmeans_data.txt"))
+  (g/read-libsvm! "test/resources/sample_kmeans_data.txt"))
 
 (def model
   (ml/fit dataset (ml/lda {:k 10 :max-iter 10})))

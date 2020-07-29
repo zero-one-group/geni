@@ -5,7 +5,6 @@
 (def spark
   (delay
     (zero-one.geni.spark/create-spark-session
-      {:configs {:spark.testing.memory "3147480000"
-                 :spark.sql.adaptive.enabled "true"
+      {:configs {:spark.sql.adaptive.enabled "true"
                  :spark.sql.adaptive.coalescePartitions.enabled "true"}
        :checkpoint-dir "target/checkpoint/"})))

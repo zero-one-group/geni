@@ -2,8 +2,7 @@
   (:require
     [clojure.string]
     [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [spark]]))
+    [zero-one.geni.ml :as ml]))
 
 (defonce ratings-df
   (->> (slurp "test/resources/sample_movielens_ratings.txt")
@@ -14,7 +13,7 @@
                :movie-id  (Integer/parseInt (second row))
                :rating    (Float/parseFloat (nth row 2))
                :timestamp (long (Integer/parseInt (nth row 3)))}))
-       (g/records->dataset spark)))
+       (g/records->dataset)))
 
 (def model
   (ml/fit ratings-df (ml/als {:max-iter   5

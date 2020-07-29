@@ -27,30 +27,12 @@ And actually download the data:
 => :downloaded
 ```
 
-## 1.1 Creating a Spark Session
-
-To read datasets from any source, we must first create a Spark session. Spark is typically used for large-scale distributed computing, but in our case, we are only going to be looking at smaller datasets. Therefore, the default single-node Spark session will do the job:
-
-```clojure
-(defonce spark (g/create-spark-session {}))
-
-(g/spark-conf spark)
-=> {:spark.app.name "Geni App",
-    :spark.driver.host ...,
-    :spark.app.id "local-1595132475689",
-    :spark.master "local[*]",
-    :spark.executor.id "driver",
-    :spark.driver.port "64818"}
-```
-
-We see that the value of `:spark.master` is `local[*]`. This means that the session will run on a single node with all available cores.
-
-## 1.2 Reading Data from a CSV File
+## 1.1 Reading Data from a CSV File
 
 In most cases, we can read CSV data correctly with the default `g/read-csv!` function. However, in this case, we run into a couple of issues:
 
 ```clojure
-(def broken-df (g/read-csv! spark bikes-data-path))
+(def broken-df (g/read-csv! bikes-data-path))
 
 (-> broken-df (g/limit 3) g/show)
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -66,9 +48,9 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
 
 ```clojure
 (def fixed-df
-  (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                      :encoding "ISO-8859-1"
-                                      :inferSchema "true"}))
+  (g/read-csv! bikes-data-path {:delimiter ";"
+                                :encoding "ISO-8859-1"
+                                :inferSchema "true"}))
 
 (-> fixed-df (g/limit 3) g/show)
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
