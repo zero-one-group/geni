@@ -1,13 +1,38 @@
 (ns zero-one.geni.tech-ml-test
   (:require
-    [midje.sweet :refer [fact throws =>]]
+    [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [create-temp-file! melbourne-df]]))
 
 (def dummy-df
   (-> melbourne-df (g/select :Method) (g/limit 5)))
 
-(fact "On ->dataset"
+(fact "On rand-nth"
+  (g/rand-nth dummy-df) => map?
+  (g/rand-nth melbourne-df) => map?
+  (g/rand-nth (g/limit melbourne-df 1)) => map?
+  (g/rand-nth (g/limit melbourne-df 2)) => map?)
+
+(fact "On assoc and dissoc"
+  (-> dummy-df
+      (g/assoc :always-ten 10)
+      (g/collect-col :always-ten)
+      set) => #{10}
+  (-> dummy-df
+      (g/assoc :always-ten 10
+               :always-two 2)
+      g/columns) => [:Method :always-ten :always-two]
+  (-> dummy-df
+      (g/assoc :always-ten 10)
+      (g/dissoc :Method)
+      g/columns) => [:always-ten]
+  (-> dummy-df
+      (g/assoc :always-ten 10)
+      (g/dissoc :Method
+                :always-ten)
+      g/columns) => [])
+
+(facts "On ->dataset"
   (fact "->dataset with sequence of maps"
     (g/collect (g/->dataset [{:a 1 :b 2} {:a 2 :c 3}]))
     => [{:a 1 :b 2 :c nil} {:a 2 :b nil :c 3}])

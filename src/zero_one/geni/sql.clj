@@ -1,7 +1,5 @@
 (ns zero-one.geni.sql
-  (:refer-clojure :exclude [assoc
-                            concat
-                            dissoc
+  (:refer-clojure :exclude [concat
                             flatten
                             hash
                             keys
@@ -357,18 +355,6 @@
 (def var-samp variance)
 
 ;; Clojure Idioms
-(defn assoc
-  ([expr k v] (map-concat expr (map k v)))
-  ([expr k v & kvs]
-   (if (even? (count kvs))
-     (let [assoced (assoc expr k v)]
-       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
-     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
-                                            "after map/vector, found odd number"))))))
-
-(defn dissoc [expr & ks]
-  (map-filter expr (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
-
 (def keys map-keys)
 
 (defn merge [expr & ms] (reduce map-concat expr ms))

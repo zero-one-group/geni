@@ -3,6 +3,7 @@
                             drop
                             empty?
                             group-by
+                            rand-nth
                             remove
                             sort
                             take])
@@ -347,12 +348,22 @@
 (defn remove [dataframe expr]
   (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))
 
+(defn rand-nth [dataframe]
+  (let [small-frac (min 1.0 (/ 10.0 (.count dataframe)))]
+    (-> dataframe
+        (sample small-frac)
+        (limit 1)
+        head)))
+
 ;; Pandas Idioms
 (defn value-counts [dataframe]
   (-> dataframe
       (group-by (columns dataframe))
       (agg {:count (functions/count "*")})
       (order-by (.desc (->column :count)))))
+
+(defn shape [dataframe]
+  [(.count dataframe) (count (.columns dataframe))])
 
 ;; Tech ML API
 (defn apply-options [dataset options]
@@ -380,3 +391,5 @@
   ([records options] (apply-options (->dataset records) options)))
 
 (def name-value-seq->dataset dataset-creation/map->dataset)
+
+(def select-columns select)
