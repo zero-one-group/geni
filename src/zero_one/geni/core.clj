@@ -73,7 +73,6 @@
     [zero-one.geni.spark]
     [zero-one.geni.sql]
     [zero-one.geni.storage]
-    [zero-one.geni.tech-ml]
     [zero-one.geni.window]))
 
 (import-vars
@@ -380,6 +379,7 @@
 
 (import-vars
   [zero-one.geni.dataset
+   ->dataset
    add
    agg
    agg-all
@@ -434,6 +434,7 @@
    local?
    merge-in-place
    might-contain
+   name-value-seq->dataset
    order-by
    partitions
    persist
@@ -535,11 +536,6 @@
    memory-only-ser-2
    none
    off-heap])
-
-(import-vars
-  [zero-one.geni.tech-ml
-   ->dataset
-   name-value-seq->dataset])
 
 (def to-string (memfn toString))
 (def ->string to-string)
