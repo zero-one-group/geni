@@ -73,6 +73,7 @@
     [zero-one.geni.spark]
     [zero-one.geni.sql]
     [zero-one.geni.storage]
+    [zero-one.geni.tech-ml]
     [zero-one.geni.window]))
 
 (import-vars
@@ -534,6 +535,11 @@
    memory-only-ser-2
    none
    off-heap])
+
+(import-vars
+  [zero-one.geni.tech-ml
+   ->dataset
+   name-value-seq->dataset])
 
 (def to-string (memfn toString))
 (def ->string to-string)
