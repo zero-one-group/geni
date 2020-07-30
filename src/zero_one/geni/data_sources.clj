@@ -17,7 +17,7 @@
     options))
 
 (def default-options
-  {"csv" {"header" "true"}})
+  {"csv" {:header "true" :inferSchema "true"}})
 
 (defn read-data! [format-name spark path options]
   (let [defaults            (default-options format-name)

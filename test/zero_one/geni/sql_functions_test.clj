@@ -454,18 +454,6 @@
         (g/log10 10))
       g/collect-vals) => [[true 1.0 0.0 1.0]])
 
-(fact "On value-counts" :slow
-  (-> df-20
-      (g/select :SellerG :Suburb)
-      g/value-counts
-      (g/order-by (g/desc :count) :SellerG :Suburb)
-      g/collect) => [{:SellerG "Biggin"  :Suburb "Abbotsford" :count 9}
-                     {:SellerG "Jellis"  :Suburb "Abbotsford" :count 4}
-                     {:SellerG "Nelson"  :Suburb "Abbotsford" :count 4}
-                     {:SellerG "Collins" :Suburb "Abbotsford" :count 1}
-                     {:SellerG "Greg"    :Suburb "Abbotsford" :count 1}
-                     {:SellerG "LITTLE"  :Suburb "Abbotsford" :count 1}])
-
 (facts "On group-by + agg functions" :slow
   (let [summary (-> df-20
                     (g/agg

@@ -45,6 +45,7 @@
                             partition-by
                             pos?
                             rand
+                            rand-nth
                             remove
                             rename-keys
                             reverse
@@ -188,7 +189,6 @@
    arrays-zip
    ascii
    asin
-   assoc
    atan
    atan2
    base64
@@ -226,7 +226,6 @@
    decode
    degrees
    dense-rank
-   dissoc
    element-at
    encode
    exists
@@ -379,6 +378,7 @@
 
 (import-vars
   [zero-one.geni.dataset
+   ->dataset
    add
    agg
    agg-all
@@ -433,12 +433,14 @@
    local?
    merge-in-place
    might-contain
+   name-value-seq->dataset
    order-by
    partitions
    persist
    pivot
    print-schema
    put
+   rand-nth
    random-split
    rdd
    relative-error
@@ -452,6 +454,7 @@
    sample-by
    select
    select-expr
+   shape
    show
    show-vertical
    sort
@@ -504,9 +507,11 @@
   [zero-one.geni.polymorphic
    alias
    as
+   assoc
    coalesce
    corr
    count
+   dissoc
    explain
    filter
    first

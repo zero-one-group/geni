@@ -1,6 +1,8 @@
 (ns zero-one.geni.polymorphic
   (:refer-clojure :exclude [alias
+                            assoc
                             count
+                            dissoc
                             filter
                             first
                             last
@@ -13,6 +15,7 @@
     [zero-one.geni.dataset-creation]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
+    [zero-one.geni.sql :as sql]
     [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
   (:import
     (org.apache.spark.ml.stat Correlation)
@@ -122,3 +125,31 @@
    (-> dataframe .stat (.corr (name col-name1) (name col-name2))))
   ([dataframe col-name1 col-name2 method]
    (-> dataframe .stat (.corr (name col-name1) (name col-name2) method))))
+
+(defmulti assoc (fn [head & _] (class head)))
+(defmethod assoc :default
+  ([expr k v] (sql/map-concat expr (sql/map k v)))
+  ([expr k v & kvs]
+   (if (even? (clojure.core/count kvs))
+     (let [assoced (assoc expr k v)]
+       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
+     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
+                                            "after map/vector, found odd number"))))))
+(defmethod assoc Dataset
+  ([dataframe k v] (.withColumn dataframe (name k) (->column v)))
+  ([dataframe k v & kvs]
+   (if (even? (clojure.core/count kvs))
+     (let [assoced (assoc dataframe k v)]
+       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
+     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
+                                            "after map/vector, found odd number"))))))
+
+(defmulti dissoc (fn [head & _] (class head)))
+(defmethod dissoc :default [expr & ks]
+  (sql/map-filter
+    expr
+    (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
+(defmethod dissoc Dataset [dataframe & col-names]
+  (apply zero-one.geni.dataset/drop dataframe col-names))
+
+;; TODO: add update
