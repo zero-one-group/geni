@@ -365,6 +365,19 @@
 (defn shape [dataframe]
   [(.count dataframe) (count (.columns dataframe))])
 
+(defn nlargest [dataframe n-rows expr]
+  (-> dataframe
+      (order-by (.desc (->column expr)))
+      (limit n-rows)))
+
+(defn nsmallest [dataframe n-rows expr]
+  (-> dataframe
+      (order-by (->column expr))
+      (limit n-rows)))
+
+(defn nunique [dataframe]
+  (agg-all dataframe #(functions/countDistinct (->column %) (into-array Column []))))
+
 ;; Tech ML API
 (defn apply-options [dataset options]
   (-> dataset

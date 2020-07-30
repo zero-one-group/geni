@@ -378,6 +378,9 @@
 
 (import-vars
   [zero-one.geni.dataset
+   nlargest
+   nsmallest
+   nunique
    ->dataset
    add
    agg
