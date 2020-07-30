@@ -49,7 +49,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 All examples below use the Melbourne housing market data available for free on [Kaggle](https://www.kaggle.com/anthonypino/melbourne-housing-market).
 
-Spark SQL API for grouping and aggregating:
+Spark SQL API for data wrangling:
 
 ```clojure
 (require '[zero-one.geni.core :as g])

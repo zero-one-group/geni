@@ -4,20 +4,47 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [df-20]]))
 
+(fact "On interquartile range"
+  (-> df-20
+      (g/limit 5)
+      (g/group-by :SellerG)
+      (g/agg (g/iqr :Price))
+      g/collect) => [{:SellerG "Biggin" (keyword "iqr(Price)") 615000.0}
+                     {:SellerG "Nelson" (keyword "iqr(Price)") 0.0}]
+  (-> df-20
+      (g/select :SellerG :Price :Rooms)
+      (g/group-by :SellerG)
+      (g/iqr :Price :Rooms)
+      g/dtypes) => {:SellerG "StringType"
+                    (keyword "iqr(Price)") "DoubleType"
+                    (keyword "iqr(Rooms)") "LongType"}
+  (-> df-20
+      (g/select :SellerG :Price :Rooms)
+      (g/group-by :SellerG)
+      (g/iqr [:Price :Rooms])
+      g/dtypes) => {:SellerG "StringType"
+                    (keyword "iqr(Price)") "DoubleType"
+                    (keyword "iqr(Rooms)") "LongType"})
+
 (fact "On quantile and median"
+  (-> df-20
+      (g/group-by :SellerG)
+      (g/agg (g/quantile :Price 0.25))
+      g/dtypes) => {:SellerG "StringType"
+                    (keyword "quantile(Price, 0.25)") "DoubleType"}
   (-> df-20
       (g/group-by :SellerG)
       (g/agg (g/quantile :Price [0.25 0.75]))
       g/dtypes) => {:SellerG "StringType"
-                    (keyword "quantile(Price, (0.25, 0.75))")
+                    (keyword "quantile(Price, array(0.25, 0.75))")
                     "ArrayType(DoubleType,false)"}
   (-> df-20
       (g/select :SellerG :Price :Rooms)
       (g/group-by :SellerG)
       (g/quantile [0.25 0.75] [:Price :Rooms])
       g/column-names) => ["SellerG"
-                          "quantile(Price, (0.25, 0.75))"
-                          "quantile(Rooms, (0.25, 0.75))"]
+                          "quantile(Price, array(0.25, 0.75))"
+                          "quantile(Rooms, array(0.25, 0.75))"]
   (-> df-20
       (g/group-by :SellerG)
       (g/agg (g/median :Price))

@@ -158,12 +158,24 @@
 ;; Pandas
 (defmulti quantile (fn [head & _] (class head)))
 (defmethod quantile :default [col-name percs]
-  (let [percs-str   (str "(" (clojure.string/join ", " (map str percs)) ")")
-        median-expr (str "percentile_approx(" (name col-name) " , array" percs-str ")")
+  (let [percs-str   (if (coll? percs)
+                      (str "array(" (clojure.string/join ", " (map str percs)) ")")
+                      (str percs))
+        median-expr (str "percentile_approx(" (name col-name) ", " percs-str ")")
         median-name (str "quantile(" (name col-name) ", " percs-str ")")]
     (as (sql/expr median-expr) median-name)))
 (defmethod quantile RelationalGroupedDataset [grouped percs col-names]
   (zero-one.geni.dataset/agg grouped (map #(quantile % percs) col-names)))
+
+(defmulti iqr (fn [head & _] (class head)))
+(defmethod iqr :default [col-name]
+  (as (.minus (quantile col-name 0.75) (quantile col-name 0.25))
+      (str "iqr(" (name col-name) ")")))
+(defmethod iqr RelationalGroupedDataset [grouped & col-names]
+  (zero-one.geni.dataset/agg grouped (->> col-names
+                                          (mapcat ensure-coll)
+                                          (map iqr))))
+(def interquartile-range iqr)
 
 (defmulti median (fn [head & _] (class head)))
 (defmethod median :default [col-name]

@@ -518,6 +518,8 @@
    explain
    filter
    first
+   interquartile-range
+   iqr
    last
    max
    mean
