@@ -106,7 +106,7 @@
                       (g/read-text! temp-file))]
     (g/collect-vals write-df) => (g/collect-vals read-df)))
 
-(fact "Can read and write jdbc"
+(fact "Can read and write jdbc" :slow
   (let [write-df  (g/select write-df :Type)
         temp-file (.toString (create-temp-file! ".text"))
         read-df   (do

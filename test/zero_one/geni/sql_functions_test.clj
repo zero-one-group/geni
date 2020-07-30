@@ -208,7 +208,7 @@
         g/distinct
         g/collect-vals) => [["bots" "A" "otsford" "A132"]]))
 
-(facts "On agg functions"
+(facts "On agg functions" :slow
   (-> df-20
       (g/cube :SellerG :Regionname)
       (g/agg (g/grouping-id :SellerG :Regionname))
@@ -251,7 +251,7 @@
 (fact "On broadcast"
   (-> melbourne-df g/broadcast) => #(instance? Dataset %))
 
-(fact "On array functions"
+(fact "On array functions" :slow
   (-> df-20
       (g/select
         (-> (g/monotonically-increasing-id) (g/as "id")))

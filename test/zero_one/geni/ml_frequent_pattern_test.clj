@@ -5,7 +5,7 @@
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [spark]]))
 
-(facts "On Prefix-Span training"
+(facts "On Prefix-Span training" :slow
   (let [dataset     (-> (g/table->dataset
                           spark
                           [[['(1 2) '(3)]]
@@ -20,7 +20,7 @@
         (ml/find-patterns prefix-span)
         g/column-names) => ["sequence" "freq"]))
 
-(facts "On FP-Growth training"
+(facts "On FP-Growth training" :slow
  (let [dataset   (-> (g/table->dataset
                       spark
                        [[["1" "2" "5"]]

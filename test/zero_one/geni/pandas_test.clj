@@ -4,7 +4,7 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [df-20]]))
 
-(fact "On interquartile range"
+(fact "On interquartile range" :slow
   (-> df-20
       (g/limit 5)
       (g/group-by :SellerG)
@@ -26,7 +26,7 @@
                     (keyword "iqr(Price)") "DoubleType"
                     (keyword "iqr(Rooms)") "LongType"})
 
-(fact "On quantile and median"
+(fact "On quantile and median" :slow
   (-> df-20
       (g/group-by :SellerG)
       (g/agg (g/quantile :Price 0.25))
@@ -60,7 +60,7 @@
       (g/median :Price :Rooms)
       g/column-names) => ["SellerG" "median(Price)" "median(Rooms)"])
 
-(fact "On nlargest, nsmallest and nunique"
+(fact "On nlargest, nsmallest and nunique" :slow
   (-> df-20
       (g/nlargest 3 :Price)
       (g/collect-col :Price)) => [1876000.0 1636000.0 1600000.0]
@@ -72,10 +72,7 @@
       g/nunique
       g/first) => {(keyword "count(SellerG)") 6 (keyword "count(Suburb)")  1})
 
-(fact "On shape"
-  (g/shape df-20) => [20 21])
-
-(fact "On value-counts"
+(fact "On value-counts" :slow
   (-> df-20
       (g/select :SellerG :Suburb)
       g/value-counts
@@ -87,3 +84,5 @@
                      {:SellerG "Greg"    :Suburb "Abbotsford" :count 1}
                      {:SellerG "LITTLE"  :Suburb "Abbotsford" :count 1}])
 
+(fact "On shape"
+  (g/shape df-20) => [20 21])

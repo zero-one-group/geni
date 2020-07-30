@@ -13,11 +13,11 @@
 (def melbourne-df
   (g/cache (g/read-parquet! spark "test/resources/melbourne_housing_snapshot.parquet")))
 
-(def df-1 (g/cache (g/limit melbourne-df 1)))
+(def df-1 (g/limit melbourne-df 1))
 
-(def df-20 (g/cache (g/limit melbourne-df 20)))
+(def df-20 (g/limit melbourne-df 20))
 
-(def df-50 (g/cache (g/limit melbourne-df 50)))
+(def df-50 (g/limit melbourne-df 50))
 
 (def libsvm-df
   (g/read-libsvm! spark "test/resources/sample_libsvm_data.txt" {:num-features "780"}))
