@@ -8,13 +8,10 @@
                             sort
                             take])
   (:require
-    [clojure.string :as string]
     [clojure.walk :refer [keywordize-keys]]
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [ensure-coll]]
-    [zero-one.geni.data-sources :as data-sources]
-    [zero-one.geni.dataset-creation :as dataset-creation])
+    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql Column functions)))
 
@@ -354,55 +351,3 @@
         (sample small-frac)
         (limit 1)
         head)))
-
-;; Pandas Idioms
-(defn value-counts [dataframe]
-  (-> dataframe
-      (group-by (columns dataframe))
-      (agg {:count (functions/count "*")})
-      (order-by (.desc (->column :count)))))
-
-(defn shape [dataframe]
-  [(.count dataframe) (count (.columns dataframe))])
-
-(defn nlargest [dataframe n-rows expr]
-  (-> dataframe
-      (order-by (.desc (->column expr)))
-      (limit n-rows)))
-
-(defn nsmallest [dataframe n-rows expr]
-  (-> dataframe
-      (order-by (->column expr))
-      (limit n-rows)))
-
-(defn nunique [dataframe]
-  (agg-all dataframe #(functions/countDistinct (->column %) (into-array Column []))))
-
-;; Tech ML API
-(defn apply-options [dataset options]
-  (-> dataset
-      (cond-> (:column-whitelist options)
-        (select (map name (:column-whitelist options))))
-      (cond-> (:n-records options)
-        (limit (:n-records options)))))
-
-(defmulti ->dataset (fn [head & _] (class head)))
-
-;; TODO: support excel files
-(defmethod ->dataset java.lang.String
-  ([path]
-   (cond
-     (string/includes? path ".avro") (data-sources/read-avro! path)
-     (string/includes? path ".csv") (data-sources/read-csv! path)
-     (string/includes? path ".json") (data-sources/read-json! path)
-     (string/includes? path ".parquet") (data-sources/read-parquet! path)
-     :else (throw (Exception. "Unsupported file format."))))
-  ([path options] (apply-options (->dataset path) options)))
-
-(defmethod ->dataset :default
-  ([records] (dataset-creation/records->dataset records))
-  ([records options] (apply-options (->dataset records) options)))
-
-(def name-value-seq->dataset dataset-creation/map->dataset)
-
-(def select-columns select)

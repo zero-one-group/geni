@@ -69,6 +69,7 @@
     [zero-one.geni.data-sources]
     [zero-one.geni.dataset-creation]
     [zero-one.geni.dataset]
+    [zero-one.geni.foreign]
     [zero-one.geni.interop]
     [zero-one.geni.polymorphic]
     [zero-one.geni.spark]
@@ -378,10 +379,6 @@
 
 (import-vars
   [zero-one.geni.dataset
-   nlargest
-   nsmallest
-   nunique
-   ->dataset
    add
    agg
    agg-all
@@ -436,7 +433,6 @@
    local?
    merge-in-place
    might-contain
-   name-value-seq->dataset
    order-by
    partitions
    persist
@@ -457,7 +453,6 @@
    sample-by
    select
    select-expr
-   shape
    show
    show-vertical
    sort
@@ -476,7 +471,6 @@
    union
    union-by-name
    unpersist
-   value-counts
    width
    with-column
    with-column-renamed])
@@ -546,6 +540,17 @@
    memory-only-ser-2
    none
    off-heap])
+
+(import-vars
+  [zero-one.geni.foreign
+   ->dataset
+   name-value-seq->dataset
+   nlargest
+   nsmallest
+   nunique
+   select-columns
+   shape
+   value-counts])
 
 (def to-string (memfn toString))
 (def ->string to-string)
