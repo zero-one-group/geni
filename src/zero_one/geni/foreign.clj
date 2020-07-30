@@ -34,9 +34,6 @@
                                 (->column %)
                                 (into-array Column []))))
 
-;(defn qcut [dataframe expr num-or-probs]
-  ;...)
-
 ;; Tech ML
 (defn apply-options [dataset options]
   (-> dataset
