@@ -4,8 +4,7 @@
     [zero-one.geni.dataset :as dataset]
     [zero-one.geni.data-sources :as data-sources]
     [zero-one.geni.dataset-creation :as dataset-creation]
-    [zero-one.geni.column :refer [->column]]
-    [zero-one.geni.ml :as ml])
+    [zero-one.geni.column :refer [->column]])
   (:import
     (org.apache.spark.sql Column functions)))
 
