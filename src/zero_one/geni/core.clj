@@ -521,7 +521,9 @@
    last
    max
    mean
+   median
    min
+   quantile
    shuffle
    sum
    to-df

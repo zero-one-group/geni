@@ -10,6 +10,7 @@
                             min
                             shuffle])
   (:require
+    [clojure.string]
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.dataset]
     [zero-one.geni.dataset-creation]
@@ -126,6 +127,8 @@
   ([dataframe col-name1 col-name2 method]
    (-> dataframe .stat (.corr (name col-name1) (name col-name2) method))))
 
+;; Tech ML
+;; TODO: add update
 (defmulti assoc (fn [head & _] (class head)))
 (defmethod assoc :default
   ([expr k v] (sql/map-concat expr (sql/map k v)))
@@ -152,4 +155,20 @@
 (defmethod dissoc Dataset [dataframe & col-names]
   (apply zero-one.geni.dataset/drop dataframe col-names))
 
-;; TODO: add update
+;; Pandas
+(defmulti quantile (fn [head & _] (class head)))
+(defmethod quantile :default [col-name percs]
+  (let [percs-str   (str "(" (clojure.string/join ", " (map str percs)) ")")
+        median-expr (str "percentile_approx(" (name col-name) " , array" percs-str ")")
+        median-name (str "quantile(" (name col-name) ", " percs-str ")")]
+    (as (sql/expr median-expr) median-name)))
+(defmethod quantile RelationalGroupedDataset [grouped percs col-names]
+  (zero-one.geni.dataset/agg grouped (map #(quantile % percs) col-names)))
+
+(defmulti median (fn [head & _] (class head)))
+(defmethod median :default [col-name]
+  (let [median-expr (str "percentile_approx(" (name col-name) " , 0.5)")
+        median-name (str "median(" (name col-name) ")")]
+    (as (sql/expr median-expr) median-name)))
+(defmethod median RelationalGroupedDataset [grouped & col-names]
+  (zero-one.geni.dataset/agg grouped (map median col-names)))
