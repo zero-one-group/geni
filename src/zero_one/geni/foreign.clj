@@ -1,10 +1,10 @@
 (ns zero-one.geni.foreign
   (:require
     [clojure.string :as string]
-    [zero-one.geni.dataset :as dataset]
+    [zero-one.geni.column :refer [->column]]
     [zero-one.geni.data-sources :as data-sources]
-    [zero-one.geni.dataset-creation :as dataset-creation]
-    [zero-one.geni.column :refer [->column]])
+    [zero-one.geni.dataset :as dataset]
+    [zero-one.geni.dataset-creation :as dataset-creation])
   (:import
     (org.apache.spark.sql Column functions)))
 
