@@ -7,7 +7,7 @@
 (def dummy-df
   (-> melbourne-df (g/select :Method) (g/limit 5)))
 
-(fact "On rand-nth"
+(fact "On rand-nth" :slow
   (g/rand-nth dummy-df) => map?
   (g/rand-nth melbourne-df) => map?
   (g/rand-nth (g/limit melbourne-df 1)) => map?
@@ -33,7 +33,7 @@
                 :always-ten)
       g/columns) => [])
 
-(facts "On ->dataset"
+(facts "On ->dataset" :slow
   (fact "->dataset with sequence of maps"
     (g/collect (g/->dataset [{:a 1 :b 2} {:a 2 :c 3}]))
     => [{:a 1 :b 2 :c nil} {:a 2 :b nil :c 3}])

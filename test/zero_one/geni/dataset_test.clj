@@ -17,7 +17,7 @@
     (g/collect (g/to-df dataframe)) => (g/collect dataframe)
     (g/columns (g/to-df dataframe [:suburb :price])) => [:suburb :price]))
 
-(fact "On Dataset hints"
+(fact "On Dataset hints" :slow
   (-> df-1
       (g/hint "myHint" 100 true)
       .queryExecution

@@ -26,7 +26,7 @@
         (g/get-item :xs (int 1)))
       g/collect-vals) => [["Biggin" 1480000.0 -2.0]])
 
-(facts "On comparison and boolean functions"
+(facts "On comparison and boolean functions" :slow
   (fact "null checks"
     (-> df-1
         (g/select
@@ -102,7 +102,7 @@
       (g/collect-col :BuildingArea)
       last) => nil?)
 
-(fact "On clojure idioms"
+(fact "On clojure idioms" :slow
   (-> df-1
       (g/select
         (g/inc 1)
