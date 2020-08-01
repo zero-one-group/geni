@@ -340,6 +340,7 @@
 (defn skewness [expr] (functions/skewness (->column expr)))
 (defn stddev [expr] (functions/stddev (->column expr)))
 (def stddev-samp stddev)
+(def std stddev)
 (defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
 (defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
 (defn var-pop [expr] (functions/var_pop (->column expr)))
