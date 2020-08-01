@@ -118,11 +118,14 @@
      (apply polymorphic/coalesce whenned-cols)))
 
 (defn condp [pred expr & clauses]
-  (let [default    (when (clojure.core/odd? (count clauses))
-                     (last clauses))
+  (let [default      (when (clojure.core/odd? (count clauses))
+                       (last clauses))
         test-exprs   (take-nth 2 clauses)
         then-cols    (take-nth 2 (rest clauses))
-        whenned-cols (map #(sql/when (pred (column/->column %1) (column/->column expr)) %2)
+        whenned-cols (map #(sql/when
+                             (pred (column/->column %1)
+                                   (column/->column expr))
+                             %2)
                           test-exprs
                           then-cols)]
      (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
