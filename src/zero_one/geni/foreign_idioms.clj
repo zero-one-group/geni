@@ -23,20 +23,25 @@
                                 (str low)
                                 (str high))))))
 
-(defn random-choice [choices probs]
-  (assert (= (count choices) (count probs))
-          "random-choice args must have same lengths.")
-  (assert (< (Math/abs (- (apply + probs) 1.0)) 1e-4)
-          "random-choice probs must some to one.")
-  (let [rand-col    (column/->column (sql/rand))
-        cum-probs   (reductions + probs)
-        choice-cols (map (fn [choice prob]
-                           (sql/when (column/< rand-col (+ prob 1e-6))
-                             (column/->column choice)))
-                         choices
-                         cum-probs)]
-    (.as (apply polymorphic/coalesce choice-cols)
-         (format "choice(%s, %s)" (str choices) (str probs)))))
+(defn random-choice
+  ([choices]
+   (let [n-choices (count choices)]
+     (random-choice choices (take n-choices (repeat (/ 1.0 n-choices))))))
+  ([choices probs]
+   (assert (and (= (count choices) (count probs))
+                (every? pos? probs))
+           "random-choice args must have same lengths.")
+   (assert (< (Math/abs (- (apply + probs) 1.0)) 1e-4)
+           "random-choice probs must some to one.")
+   (let [rand-col    (column/->column (sql/rand))
+         cum-probs   (reductions + probs)
+         choice-cols (map (fn [choice prob]
+                            (sql/when (column/< rand-col (+ prob 1e-6))
+                              (column/->column choice)))
+                          choices
+                          cum-probs)]
+     (.as (apply polymorphic/coalesce choice-cols)
+          (format "choice(%s, %s)" (str choices) (str probs))))))
 
 ;; Pandas
 (defn value-counts [dataframe]
