@@ -2,22 +2,14 @@
   (:refer-clojure :exclude [concat
                             flatten
                             hash
-                            keys
                             map
-                            merge
-                            merge-with
                             not
                             rand
-                            rename-keys
                             reverse
                             second
-                            select-keys
                             sequence
                             struct
-                            update
-                            vals
-                            when
-                            zipmap])
+                            when])
   (:require
     [zero-one.geni.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
@@ -272,7 +264,7 @@
 (defn struct [& exprs] (functions/struct (->col-array exprs)))
 (defn when
   ([condition if-expr]
-   (functions/when condition (->column if-expr)))
+   (functions/when (->column condition) (->column if-expr)))
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
@@ -353,35 +345,3 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 (def var-samp variance)
-
-;; Clojure Idioms
-(def keys map-keys)
-
-(defn merge [expr & ms] (reduce map-concat expr ms))
-
-(def merge-with map-zip-with)
-
-(defn- rename-cols [k kmap]
-  (clojure.core/concat
-    (clojure.core/map
-      (fn [[old-k new-k]]
-        (when (.equalTo (->column k) (->column old-k))
-          (->column new-k)))
-      kmap)
-    [(->column k)]))
-
-(defn rename-keys [expr kmap]
-  (transform-keys expr (fn [k _] (functions/coalesce (->col-array (rename-cols k kmap))))))
-
-(defn select-keys [expr ks]
-  (map-filter expr (fn [k _] (.isin k (interop/->scala-seq ks)))))
-
-(defn update [expr k f & args]
-  (transform-values expr (fn [k' v] (when (.equalTo (->column k') (->column k))
-                                      (apply f v args)
-                                      v))))
-
-(def vals map-values)
-
-(def zipmap map-from-arrays)
-

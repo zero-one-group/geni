@@ -3,8 +3,6 @@
                             drop
                             empty?
                             group-by
-                            rand-nth
-                            remove
                             sort
                             take])
   (:require
@@ -13,7 +11,7 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-    (org.apache.spark.sql Column functions)))
+    (org.apache.spark.sql Column)))
 
 ;; TODO: RDD-based functions, streaming-based functions
 
@@ -340,14 +338,3 @@
       (.withColumnRenamed acc-df (name old-name) (name new-name)))
     dataframe
     rename-map))
-
-;; Clojure Idioms
-(defn remove [dataframe expr]
-  (.filter dataframe (-> expr ->column (.cast "boolean") functions/not)))
-
-(defn rand-nth [dataframe]
-  (let [small-frac (min 1.0 (/ 10.0 (.count dataframe)))]
-    (-> dataframe
-        (sample small-frac)
-        (limit 1)
-        head)))

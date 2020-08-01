@@ -192,26 +192,3 @@
       (cast "int")
       functions/sum
       (.as (clojure.core/str "null_count(" (name expr) ")"))))
-
-;; Clojure Idioms
-;;;; Arithmetic
-(defn inc [expr] (+ (->column expr) 1))
-(defn dec [expr] (- (->column expr) 1))
-
-;;;; Casting
-(defn short [expr] (cast (->column expr) "short"))
-(defn int [expr] (cast (->column expr) "int"))
-(defn long [expr] (cast (->column expr) "long"))
-(defn float [expr] (cast (->column expr) "float"))
-(defn double [expr] (cast (->column expr) "double"))
-(defn boolean [expr] (cast (->column expr) "boolean"))
-(defn byte [expr] (cast (->column expr) "byte"))
-(defn str [expr] (cast (->column expr) "string"))
-
-;;;; Predicates
-(defn = [l-expr r-expr] (=== (->column l-expr) (->column r-expr)))
-(defn zero? [expr] (=== (->column expr) 0))
-(defn pos? [expr] (< 0 (->column expr)))
-(defn neg? [expr] (< (->column expr) 0))
-(defn even? [expr] (=== (mod (->column expr) 2) 0))
-(defn odd? [expr] (=== (mod (->column expr) 2) 1))

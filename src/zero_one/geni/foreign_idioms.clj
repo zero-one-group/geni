@@ -1,4 +1,4 @@
-(ns zero-one.geni.foreign
+(ns zero-one.geni.foreign-idioms
   (:require
     [clojure.string :as string]
     [zero-one.geni.column :as column]
@@ -11,9 +11,6 @@
   (:import
     (org.apache.spark.sql Column functions)))
 
-;; TODO: random-choice
-;; TODO: Clojure's if, cond, case
-
 ;; NumPy
 (defn clip [expr low high]
   (let [col (column/->column expr)]
@@ -25,6 +22,26 @@
                                 (.toString col)
                                 (str low)
                                 (str high))))))
+
+(defn random-choice
+  ([choices]
+   (let [n-choices (count choices)]
+     (random-choice choices (take n-choices (repeat (/ 1.0 n-choices))))))
+  ([choices probs]
+   (assert (and (= (count choices) (count probs))
+                (every? pos? probs))
+           "random-choice args must have same lengths.")
+   (assert (< (Math/abs (- (apply + probs) 1.0)) 1e-4)
+           "random-choice probs must some to one.")
+   (let [rand-col    (column/->column (sql/rand))
+         cum-probs   (reductions + probs)
+         choice-cols (map (fn [choice prob]
+                            (sql/when (column/< rand-col (+ prob 1e-6))
+                              (column/->column choice)))
+                          choices
+                          cum-probs)]
+     (.as (apply polymorphic/coalesce choice-cols)
+          (format "choice(%s, %s)" (str choices) (str probs))))))
 
 ;; Pandas
 (defn value-counts [dataframe]
@@ -55,7 +72,8 @@
   (if (coll? num-buckets-or-probs)
     (do
       (assert (and (apply < num-buckets-or-probs)
-                   (every? #(< 0.0 % 1.0) num-buckets-or-probs)))
+                   (every? #(< 0.0 % 1.0) num-buckets-or-probs))
+              "Probs array must be increasing and in the unit interval.")
       num-buckets-or-probs)
     (map #(/ (inc %) (double num-buckets-or-probs)) (range (dec num-buckets-or-probs)))))
 

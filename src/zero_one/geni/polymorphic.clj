@@ -8,7 +8,8 @@
                             last
                             max
                             min
-                            shuffle])
+                            shuffle
+                            update])
   (:require
     [clojure.string]
     [zero-one.geni.column :refer [->col-array ->column]]
@@ -128,7 +129,6 @@
    (-> dataframe .stat (.corr (name col-name1) (name col-name2) method))))
 
 ;; Tech ML
-;; TODO: add update
 (defmulti assoc (fn [head & _] (class head)))
 (defmethod assoc :default
   ([expr k v] (sql/map-concat expr (sql/map k v)))
@@ -154,6 +154,16 @@
     (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
 (defmethod dissoc Dataset [dataframe & col-names]
   (apply zero-one.geni.dataset/drop dataframe col-names))
+
+(defmulti update (fn [head & _] (class head)))
+(defmethod update :default [expr k f & args]
+  (sql/transform-values
+    expr
+    (fn [k' v] (sql/when (.equalTo (->column k') (->column k))
+                 (apply f v args)
+                 v))))
+(defmethod update Dataset [dataframe k f & args]
+  (zero-one.geni.dataset/with-column dataframe k (apply f k args)))
 
 ;; Pandas
 (defmulti quantile (fn [head & _] (class head)))
