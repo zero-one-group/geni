@@ -4,7 +4,7 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [df-20]]))
 
-(fact "On cut"
+(fact "On cut" :slow
   (-> df-20
       (g/with-column :cut (g/cut :Price [1e6]))
       (g/collect-col :cut)
@@ -12,7 +12,7 @@
                 "Price[1000000.0, Infinity]"}
   (g/cut :Price [1.1e6 1e6]) => (throws AssertionError))
 
-(fact "On qcut"
+(fact "On qcut" :slow
   (-> df-20
       (g/with-column :qcut (g/qcut :Price 4))
       (g/collect-col :qcut)
