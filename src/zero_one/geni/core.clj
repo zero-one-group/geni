@@ -503,6 +503,7 @@
    sum
    to-df
    to-json
+   update
    where])
 
 (import-vars
@@ -548,7 +549,6 @@
    select-keys
    short
    str
-   update
    vals
    zero?
    zipmap])
@@ -563,6 +563,7 @@
    nsmallest
    nunique
    qcut
+   random-choice
    select-columns
    shape
    value-counts])

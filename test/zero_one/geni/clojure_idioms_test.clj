@@ -4,6 +4,11 @@
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [df-20]]))
 
+(fact "On update"
+  (-> (g/table->dataset (mapv vector (range 5)) [:i])
+      (g/update :i g/+ 1 2 3)
+      (g/collect-col :i)) => [6 7 8 9 10])
+
 (fact "On cond" :slow
   (-> df-20
       (g/with-column :cond (g/cond

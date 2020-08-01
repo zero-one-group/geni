@@ -25,7 +25,6 @@
                             select-keys
                             short
                             str
-                            update
                             vals
                             zero?
                             zipmap])
@@ -91,13 +90,6 @@
 
 (defn select-keys [expr ks]
   (sql/map-filter expr (fn [k _] (.isin k (interop/->scala-seq ks)))))
-
-(defn update [expr k f & args]
-  (sql/transform-values
-    expr
-    (fn [k' v] (sql/when (.equalTo (column/->column k') (column/->column k))
-                 (apply f v args)
-                 v))))
 
 (def vals sql/map-values)
 
