@@ -65,11 +65,12 @@
                             zipmap])
   (:require
     [potemkin :refer [import-vars]]
+    [zero-one.geni.clojure-idioms]
     [zero-one.geni.column]
     [zero-one.geni.data-sources]
     [zero-one.geni.dataset-creation]
     [zero-one.geni.dataset]
-    [zero-one.geni.foreign]
+    [zero-one.geni.foreign-idioms]
     [zero-one.geni.interop]
     [zero-one.geni.polymorphic]
     [zero-one.geni.spark]
@@ -102,7 +103,6 @@
    <
    <=
    <=>
-   =
    =!=
    ===
    >
@@ -114,24 +114,16 @@
    bitwise-and
    bitwise-or
    bitwise-xor
-   boolean
-   byte
    cast
    col
    contains
-   dec
    desc
    desc-nulls-first
    desc-nulls-last
-   double
    ends-with
-   even?
-   float
    get-field
    get-item
    hash-code
-   inc
-   int
    is-in-collection
    is-nan
    is-not-null
@@ -139,21 +131,14 @@
    isin
    like
    lit
-   long
    mod
    nan?
-   neg?
    not-null?
    null-count
    null-rate
    null?
-   odd?
-   pos?
    rlike
-   short
    starts-with
-   str
-   zero?
    |
    ||])
 
@@ -253,7 +238,6 @@
    initcap
    input-file-name
    instr
-   keys
    kurtosis
    lag
    last-day
@@ -279,8 +263,6 @@
    map-values
    map-zip-with
    md5
-   merge
-   merge-with
    minute
    monotonically-increasing-id
    month
@@ -304,7 +286,6 @@
    rank
    regexp-extract
    regexp-replace
-   rename-keys
    reverse
    rint
    round
@@ -314,7 +295,6 @@
    schema-of-csv
    schema-of-json
    second
-   select-keys
    sequence
    sha1
    sha2
@@ -355,9 +335,7 @@
    unbase64
    unhex
    unix-timestamp
-   update
    upper
-   vals
    var-pop
    var-samp
    variance
@@ -365,8 +343,7 @@
    when
    xxhash64
    year
-   zip-with
-   zipmap])
+   zip-with])
 
 (import-vars
   [zero-one.geni.dataset-creation
@@ -439,11 +416,9 @@
    pivot
    print-schema
    put
-   rand-nth
    random-split
    rdd
    relative-error
-   remove
    rename-columns
    repartition
    repartition-by-range
@@ -542,7 +517,36 @@
    off-heap])
 
 (import-vars
-  [zero-one.geni.foreign
+  [zero-one.geni.clojure-idioms
+   =
+   boolean
+   byte
+   dec
+   double
+   even?
+   float
+   inc
+   int
+   keys
+   long
+   merge
+   merge-with
+   neg?
+   odd?
+   pos?
+   rand-nth
+   remove
+   rename-keys
+   select-keys
+   short
+   str
+   update
+   vals
+   zero?
+   zipmap])
+
+(import-vars
+  [zero-one.geni.foreign-idioms
    ->dataset
    clip
    cut

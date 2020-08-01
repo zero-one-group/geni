@@ -1,4 +1,4 @@
-(ns zero-one.geni.foreign
+(ns zero-one.geni.foreign-idioms
   (:require
     [clojure.string :as string]
     [zero-one.geni.column :as column]
