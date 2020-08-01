@@ -1,8 +1,33 @@
 (ns zero-one.geni.pandas-test
   (:require
-    [midje.sweet :refer [fact =>]]
+    [midje.sweet :refer [throws fact =>]]
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [df-20]]))
+
+(fact "On cut" :slow
+  (-> df-20
+      (g/with-column :cut (g/cut :Price [1e6]))
+      (g/collect-col :cut)
+      set) => #{"Price[-Infinity, 1000000.0]"
+                "Price[1000000.0, Infinity]"}
+  (g/cut :Price [1.1e6 1e6]) => (throws AssertionError))
+
+(fact "On qcut" :slow
+  (-> df-20
+      (g/with-column :qcut (g/qcut :Price 4))
+      (g/collect-col :qcut)
+      set) => #{"Price[0.0, 0.25]"
+                "Price[0.25, 0.5]"
+                "Price[0.5, 0.75]"
+                "Price[0.75, 1.0]"}
+  (-> df-20
+      (g/with-column :qcut (g/qcut :Price [0.1 0.9]))
+      (g/collect-col :qcut)
+      set) => #{"Price[0.0, 0.1]"
+                "Price[0.1, 0.9]"
+                "Price[0.9, 1.0]"}
+  (g/qcut :Price [0.9 0.1]) => (throws AssertionError)
+  (g/qcut :Price [0.8 1.2]) => (throws AssertionError))
 
 (fact "On interquartile range" :slow
   (-> df-20
