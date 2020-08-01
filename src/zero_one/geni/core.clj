@@ -544,10 +544,13 @@
 (import-vars
   [zero-one.geni.foreign
    ->dataset
+   clip
+   cut
    name-value-seq->dataset
    nlargest
    nsmallest
    nunique
+   qcut
    select-columns
    shape
    value-counts])

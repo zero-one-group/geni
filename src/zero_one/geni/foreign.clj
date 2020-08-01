@@ -1,37 +1,92 @@
 (ns zero-one.geni.foreign
   (:require
     [clojure.string :as string]
-    [zero-one.geni.column :refer [->column]]
+    [zero-one.geni.column :as column]
     [zero-one.geni.data-sources :as data-sources]
     [zero-one.geni.dataset :as dataset]
-    [zero-one.geni.dataset-creation :as dataset-creation])
+    [zero-one.geni.dataset-creation :as dataset-creation]
+    [zero-one.geni.polymorphic :as polymorphic]
+    [zero-one.geni.sql :as sql]
+    [zero-one.geni.window :as window])
   (:import
     (org.apache.spark.sql Column functions)))
+
+;; TODO: random-choice
+;; TODO: Clojure's if, cond, case
+
+;; NumPy
+(defn clip [expr low high]
+  (let [col (column/->column expr)]
+    (-> (polymorphic/coalesce
+          (sql/when (column/<= col low) low)
+          (sql/when (column/<= high col) high)
+          col)
+        (polymorphic/as (format "clip(%s, %s, %s)"
+                                (.toString col)
+                                (str low)
+                                (str high))))))
 
 ;; Pandas
 (defn value-counts [dataframe]
   (-> dataframe
       (dataset/group-by (dataset/columns dataframe))
       (dataset/agg {:count (functions/count "*")})
-      (dataset/order-by (.desc (->column :count)))))
+      (dataset/order-by (.desc (column/->column :count)))))
 
 (defn shape [dataframe]
   [(.count dataframe) (count (.columns dataframe))])
 
 (defn nlargest [dataframe n-rows expr]
   (-> dataframe
-      (dataset/order-by (.desc (->column expr)))
+      (dataset/order-by (.desc (column/->column expr)))
       (dataset/limit n-rows)))
 
 (defn nsmallest [dataframe n-rows expr]
   (-> dataframe
-      (dataset/order-by (->column expr))
+      (dataset/order-by (column/->column expr))
       (dataset/limit n-rows)))
 
 (defn nunique [dataframe]
   (dataset/agg-all dataframe #(functions/countDistinct
-                                (->column %)
+                                (column/->column %)
                                 (into-array Column []))))
+
+(defn- resolve-probs [num-buckets-or-probs]
+  (if (coll? num-buckets-or-probs)
+    (do
+      (assert (and (apply < num-buckets-or-probs)
+                   (every? #(< 0.0 % 1.0) num-buckets-or-probs)))
+      num-buckets-or-probs)
+    (map #(/ (inc %) (double num-buckets-or-probs)) (range (dec num-buckets-or-probs)))))
+
+(defn qcut [expr num-buckets-or-probs]
+  (let [probs     (resolve-probs num-buckets-or-probs)
+        col       (column/->column expr)
+        rank-col  (window/windowed {:window-col (sql/percent-rank) :order-by col})
+        qcut-cols (map (fn [low high]
+                         (sql/when (column/<= low rank-col high)
+                           (column/lit (format "%s[%s, %s]"
+                                               (.toString col)
+                                               (str low)
+                                               (str high)))))
+                       (concat [0.0] probs)
+                       (concat probs [1.0]))]
+    (.as (apply polymorphic/coalesce qcut-cols)
+         (format "qcut(%s, %s)" (.toString col) (str probs)))))
+
+(defn cut [expr bins]
+  (assert (apply < bins))
+  (let [col      (column/->column expr)
+        cut-cols (map (fn [low high]
+                        (sql/when (column/<= low col high)
+                          (column/lit (format "%s[%s, %s]"
+                                              (.toString col)
+                                              (str low)
+                                              (str high)))))
+                      (concat [Double/NEGATIVE_INFINITY] bins)
+                      (concat bins [Double/POSITIVE_INFINITY]))]
+    (.as (apply polymorphic/coalesce cut-cols)
+         (format "cut(%s, %s)" (.toString col) (str bins)))))
 
 ;; Tech ML
 (defn apply-options [dataset options]
