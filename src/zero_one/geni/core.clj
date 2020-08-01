@@ -12,8 +12,11 @@
                             assoc
                             boolean
                             byte
+                            case
                             cast
                             concat
+                            cond
+                            condp
                             count
                             dec
                             dissoc
@@ -28,6 +31,7 @@
                             float
                             group-by
                             hash
+                            if
                             inc
                             int
                             keys
@@ -521,10 +525,14 @@
    =
    boolean
    byte
+   case
+   cond
+   condp
    dec
    double
    even?
    float
+   if
    inc
    int
    keys

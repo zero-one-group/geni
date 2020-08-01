@@ -55,7 +55,8 @@
   (if (coll? num-buckets-or-probs)
     (do
       (assert (and (apply < num-buckets-or-probs)
-                   (every? #(< 0.0 % 1.0) num-buckets-or-probs)))
+                   (every? #(< 0.0 % 1.0) num-buckets-or-probs))
+              "Probs array must be increasing and in the unit interval.")
       num-buckets-or-probs)
     (map #(/ (inc %) (double num-buckets-or-probs)) (range (dec num-buckets-or-probs)))))
 

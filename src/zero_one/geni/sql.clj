@@ -264,7 +264,7 @@
 (defn struct [& exprs] (functions/struct (->col-array exprs)))
 (defn when
   ([condition if-expr]
-   (functions/when condition (->column if-expr)))
+   (functions/when (->column condition) (->column if-expr)))
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 

@@ -2,10 +2,14 @@
   (:refer-clojure :exclude [=
                             boolean
                             byte
+                            case
+                            cond
+                            condp
                             dec
                             double
                             even?
                             float
+                            if
                             inc
                             int
                             keys
@@ -29,6 +33,7 @@
     [zero-one.geni.column :as column]
     [zero-one.geni.dataset :as dataset]
     [zero-one.geni.interop :as interop]
+    [zero-one.geni.polymorphic :as polymorphic]
     [zero-one.geni.sql :as sql])
   (:import
     (org.apache.spark.sql functions)))
@@ -97,3 +102,35 @@
 (def vals sql/map-values)
 
 (def zipmap sql/map-from-arrays)
+
+;; Common Macros
+(def if sql/when)
+
+(defn cond [& clauses]
+  (let [predicates   (take-nth 2 clauses)
+        then-cols    (take-nth 2 (rest clauses))
+        whenned-cols (map (fn [pred then]
+                            ;; clojure.core/if not available for some reason.
+                            ;; this is a workaround using a map lookup with a default.
+                            ({:else (column/->column then)} pred (sql/when pred then)))
+                          predicates
+                          then-cols)]
+     (apply polymorphic/coalesce whenned-cols)))
+
+(defn condp [pred expr & clauses]
+  (let [default    (when (clojure.core/odd? (count clauses))
+                     (last clauses))
+        test-exprs   (take-nth 2 clauses)
+        then-cols    (take-nth 2 (rest clauses))
+        whenned-cols (map #(sql/when (pred (column/->column %1) (column/->column expr)) %2)
+                          test-exprs
+                          then-cols)]
+     (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
+
+(defn case [expr & clauses]
+  (let [default    (when (clojure.core/odd? (count clauses))
+                     (last clauses))
+        match-cols (take-nth 2 clauses)
+        then-cols  (take-nth 2 (rest clauses))
+        whenned-cols (map #(sql/when (column/=== %1 expr) %2) match-cols then-cols)]
+     (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
