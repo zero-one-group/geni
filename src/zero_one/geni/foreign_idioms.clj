@@ -1,5 +1,4 @@
 (ns zero-one.geni.foreign-idioms
-  (:refer-clojure :exclude [rand-int])
   (:require
     [clojure.string :as string]
     [zero-one.geni.column :as column]
@@ -25,27 +24,26 @@
                                 (str high))))))
 
 ;; TODO: rand-exponential
-(defn rand-uniform
-  ([] (rand-uniform 0.0 1.0))
-  ([seed] (rand-uniform 0.0 1.0 seed))
+(defn random-uniform
+  ([] (random-uniform 0.0 1.0))
+  ([seed] (random-uniform 0.0 1.0 seed))
   ([low high]
-   (assert (< low high) "args must be sorted")
-   (let [length (- high low)]
-     (column/+ low (column/* length (sql/rand)))))
+   (let [length (Math/abs (- high low))
+         base   (min high low)]
+     (column/+ base (column/* length (sql/rand)))))
   ([low high seed]
-   (assert (< low high) "args must be sorted")
-   (let [length (- high low)]
-     (column/+ low (column/* length (sql/rand seed))))))
+   (let [length (Math/abs (- high low))
+         base   (min high low)]
+     (column/+ base (column/* length (sql/rand seed))))))
+(def random-unif)
 
-(defn rand-int
-  ([] (rand-int 0 Long/MAX_VALUE))
-  ([seed] (rand-int 0 Long/MAX_VALUE seed))
+(defn random-int
+  ([] (random-int 0 (dec Integer/MAX_VALUE)))
+  ([seed] (random-int 0 (dec Integer/MAX_VALUE) seed))
   ([low high]
-   (let [length (Math/abs (- low high))]
-     (column/cast (column/+ low (column/* length (sql/rand))) "long")))
+   (column/cast (column/- (random-uniform low high) 1) "long"))
   ([low high seed]
-   (let [length (Math/abs (- low high))]
-     (column/cast (column/+ low (column/* length (sql/rand seed))) "long"))))
+   (column/cast (column/- (random-uniform low high seed) 1) "long")))
 
 (defn random-choice
   ([choices]

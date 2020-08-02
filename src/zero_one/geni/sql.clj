@@ -213,6 +213,7 @@
 (defn log2 [expr] (functions/log2 (->column expr)))
 (defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
 (defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
+(def ** pow)
 (defn radians [expr] (functions/radians (->column expr)))
 (defn rint [expr] (functions/rint (->column expr)))
 (defn round [expr] (functions/round (->column expr)))
