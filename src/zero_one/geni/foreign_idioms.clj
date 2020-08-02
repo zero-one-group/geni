@@ -23,25 +23,34 @@
                                 (str low)
                                 (str high))))))
 
-;; TODO: rand-exponential
 (defn random-uniform
   ([] (random-uniform 0.0 1.0))
-  ([seed] (random-uniform 0.0 1.0 seed))
-  ([low high]
-   (let [length (Math/abs (- high low))
-         base   (min high low)]
-     (column/+ base (column/* length (sql/rand)))))
+  ([low high] (random-uniform low high (rand-int Integer/MAX_VALUE)))
   ([low high seed]
    (let [length (Math/abs (- high low))
          base   (min high low)]
      (column/+ base (column/* length (sql/rand seed))))))
-(def random-unif)
+(def runiform random-uniform)
+(def runif random-uniform)
+
+(defn random-norm
+  ([] (random-norm 0.0 1.0))
+  ([mu sigma] (random-norm mu sigma (rand-int Integer/MAX_VALUE)))
+  ([mu sigma seed] (column/+ mu (column/* sigma (sql/randn seed)))))
+(def rnorm random-norm)
+
+(defn random-exp
+  ([] (random-exp 1.0))
+  ([rate] (random-exp rate (rand-int Integer/MAX_VALUE)))
+  ([rate seed] (-> (sql/rand seed)
+                   sql/log
+                   (column/* -1.0)
+                   (column// rate))))
+(def rexp random-exp)
 
 (defn random-int
   ([] (random-int 0 (dec Integer/MAX_VALUE)))
-  ([seed] (random-int 0 (dec Integer/MAX_VALUE) seed))
-  ([low high]
-   (column/cast (column/- (random-uniform low high) 1) "long"))
+  ([low high] (random-int low high (rand-int Integer/MAX_VALUE)))
   ([low high seed]
    (column/cast (column/- (random-uniform low high seed) 1) "long")))
 
@@ -49,13 +58,14 @@
   ([choices]
    (let [n-choices (count choices)]
      (random-choice choices (take n-choices (repeat (/ 1.0 n-choices))))))
-  ([choices probs]
+  ([choices probs] (random-choice choices probs (rand-int Integer/MAX_VALUE)))
+  ([choices probs seed]
    (assert (and (= (count choices) (count probs))
                 (every? pos? probs))
            "random-choice args must have same lengths.")
    (assert (< (Math/abs (- (apply + probs) 1.0)) 1e-4)
            "random-choice probs must some to one.")
-   (let [rand-col    (column/->column (sql/rand))
+   (let [rand-col    (column/->column (sql/rand seed))
          cum-probs   (reductions + probs)
          choice-cols (map (fn [choice prob]
                             (sql/when (column/< rand-col (+ prob 1e-6))
@@ -64,6 +74,7 @@
                           cum-probs)]
      (.as (apply polymorphic/coalesce choice-cols)
           (format "choice(%s, %s)" (str choices) (str probs))))))
+(def rchoice random-choice)
 
 ;; Pandas
 (defn value-counts [dataframe]

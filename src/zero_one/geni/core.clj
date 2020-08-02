@@ -566,9 +566,15 @@
    nunique
    qcut
    random-choice
+   random-exp
    random-int
-   random-unif
+   random-norm
    random-uniform
+   rchoice
+   rexp
+   rnorm
+   runif
+   runiform
    select-columns
    shape
    value-counts])
