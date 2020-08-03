@@ -52,7 +52,10 @@
   ([] (random-int 0 (dec Integer/MAX_VALUE)))
   ([low high] (random-int low high (rand-int Integer/MAX_VALUE)))
   ([low high seed]
-   (column/cast (column/- (random-uniform low high seed) 1) "long")))
+   (let [length (Math/abs (- high low))
+         base   (min high low)
+         ->long #(column/cast % "long")]
+     (column/+ (->long base) (->long (column/* length (sql/rand seed)))))))
 
 (defn random-choice
   ([choices]

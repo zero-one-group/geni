@@ -2,7 +2,9 @@
   (:refer-clojure :exclude [partition-by sort-by])
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]
-    [zero-one.geni.defaults])
+    [zero-one.geni.defaults]
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql SparkSession)))
 
@@ -82,15 +84,21 @@
          configured-reader   (configure-reader-or-writer unconfigured-reader options)]
      (.load configured-reader))))
 
+(defn- partition-by-arg [partition-id]
+  (into-array java.lang.String (map name (ensure-coll partition-id))))
+
 (defn write-data! [format dataframe path options]
   (let [mode                (:mode options)
+        partition-id        (:partition-by options)
         unconfigured-writer (-> dataframe
                                 (.write)
                                 (.format format)
-                                (cond-> mode (.mode mode)))
+                                (cond-> mode (.mode mode))
+                                (cond-> partition-id
+                                  (.partitionBy (partition-by-arg partition-id))))
         configured-writer   (configure-reader-or-writer
                               unconfigured-writer
-                              (dissoc options :mode))]
+                              (dissoc options :mode :partition-by))]
     (.save configured-writer path)))
 
 (defn write-parquet!
