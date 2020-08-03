@@ -7,7 +7,7 @@
 (def skeleton-df
   (g/cache (g/table->dataset (repeat (int 2e6) [1]) [:dummy])))
 
-(def transaction-id-col
+(defn transaction-id-col []
   (g/concat (g/str (g/random-int))
             (g/lit "-")
             (g/str (g/random-int))
@@ -33,24 +33,24 @@
 (doall
   (for [month (range 1 13)]
     (-> skeleton-df
-        (g/with-column :transaction-id transaction-id-col)
-        (g/with-column :member-id (g/int (g/rexp 5e-6)))
-        (g/with-column :quantity (g/int (g/inc (g/rexp))))
-        (g/with-column :unit-price (g/pow 2 (g/random-int 16 20)))
-        (g/with-column :style-id (g/int (g/rexp 1e-2)))
-        (g/with-column :brand-id (g/int (g/rexp 1e-2)))
-        (g/with-column :year 2019)
-        (g/with-column :month month)
-        (g/with-column :day (g/random-int 1 (inc (max-days month))))
+        (g/select
+          {:trx-id    (transaction-id-col)
+           :member-id (g/int (g/rexp 5e-6))
+           :quantity  (g/int (g/inc (g/rexp)))
+           :price     (g/pow 2 (g/random-int 16 20))
+           :style-id  (g/int (g/rexp 1e-2))
+           :brand-id  (g/int (g/rexp 1e-2))
+           :year      2019
+           :month     month
+           :day       (g/random-int 1 (inc (max-days month)))})
         (g/with-column :date (g/to-date date-col))
-        (g/drop :dummy)
         (g/coalesce 1)
         (g/write-parquet! data-path {:mode "append"}))))
 
 (comment
 
   (-> (g/read-parquet! data-path)
-      (g/group-by :member-id)
+      (g/group-by :trx-id)
       g/count
       (g/describe :count)
       g/show)
