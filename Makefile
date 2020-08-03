@@ -30,4 +30,9 @@ lint: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		clj-kondo --lint src test --cache false
 
+template-test: build
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+		bash -c "cd lein-template && lein new geni temporary && cd temporary && lein test"
+
+
 ci: coverage lint
