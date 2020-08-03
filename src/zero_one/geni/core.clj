@@ -319,6 +319,7 @@
    split
    sqr
    sqrt
+   std
    stddev
    stddev-pop
    stddev-samp
