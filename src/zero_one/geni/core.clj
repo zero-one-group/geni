@@ -49,6 +49,7 @@
                             partition-by
                             pos?
                             rand
+                            rand-int
                             rand-nth
                             remove
                             rename-keys
@@ -149,6 +150,7 @@
 (import-vars
   [zero-one.geni.sql
    !
+   **
    ->date-col
    ->timestamp-col
    ->utc-timestamp
@@ -565,6 +567,15 @@
    nunique
    qcut
    random-choice
+   random-exp
+   random-int
+   random-norm
+   random-uniform
+   rchoice
+   rexp
+   rnorm
+   runif
+   runiform
    select-columns
    shape
    value-counts])

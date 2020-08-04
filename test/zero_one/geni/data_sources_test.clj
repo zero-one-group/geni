@@ -118,3 +118,12 @@
                                    :url     (str "jdbc:sqlite:" temp-file)
                                    :dbtable "housing"}))]
     (g/collect-vals write-df) => (g/collect-vals read-df)))
+
+(fact "Can write parquet with :partition-by option" :slow
+  (let [temp-file (.toString (create-temp-file! ".parquet"))
+        read-df  (do (g/write-parquet!
+                       write-df
+                       temp-file
+                       {:mode "overwrite" :partition-by [:Method]})
+                     (g/read-parquet! temp-file))]
+    (set (g/collect write-df)) => (set (g/collect read-df))))

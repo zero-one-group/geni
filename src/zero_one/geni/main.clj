@@ -32,12 +32,12 @@
 
   (require '[clojure.reflect :as r])
   (import '(org.apache.spark.sql Dataset))
-  (->> (r/reflect Dataset)
+  (->> (r/reflect (.write dataframe))
        :members
-       (clojure.core/filter #(= (:name %) 'toDF))
+       (clojure.core/filter #(= (:name %) 'partitionBy))
        ;(mapv :parameter-types)
        ;(clojure.core/filter #(= (:name %) 'toDF))
        ;clojure.core/sort
-       pprint)
+       clojure.pprint/pprint)
 
   0)

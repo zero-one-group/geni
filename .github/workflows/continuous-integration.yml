@@ -28,6 +28,8 @@ jobs:
           entrypoint: lein
           args: coverage
       - uses: codecov/codecov-action@v1
+        env:
+            CODECOV_TOKEN: bb12d419-f860-48ff-a3bf-8fca4114cc3d
         with:
          file: target/coverage/codecov.json
          fail_ci_if_error: true
