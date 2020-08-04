@@ -12,12 +12,19 @@
 (def spark
   (future @zero-one.geni.defaults/spark))
 
+(def init-eval
+  '(do
+     (require 'zero-one.geni.main
+              '[zero-one.geni.core :as g]
+              '[zero-one.geni.ml :as ml])
+     (def spark zero-one.geni.main/spark)))
+
 (defn -main [& _]
   (clojure.pprint/pprint (g/spark-conf @spark))
   (let [port    (+ 65001 (rand-int 500))
         welcome (repl/spark-welcome-note (.version @spark))]
     (println welcome)
-    (repl/launch-repl {:port port :custom-eval '(ns zero-one.geni.main)})
+    (repl/launch-repl {:port port :custom-eval init-eval})
     (System/exit 0)))
 
 (comment
