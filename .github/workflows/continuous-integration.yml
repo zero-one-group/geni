@@ -37,8 +37,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: lint
         uses: docker://zeroonetechnology/geni:latest
-        env:
-            CODECOV_TOKEN: e7e84614-f102-4476-92a7-868201863f28
         with:
           entrypoint: clj-kondo
           args: --lint src test
