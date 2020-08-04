@@ -3,7 +3,6 @@
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]
     [zero-one.geni.defaults]
-    [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql SparkSession)))
