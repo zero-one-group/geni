@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: lint
+      - name: template-unit-test
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: sh
