@@ -1,6 +1,6 @@
-(ns zero-one.geni.window
+(ns zero-one.geni.core.window
   (:require
-    [zero-one.geni.column :refer [->col-array]]
+    [zero-one.geni.core.column :refer [->col-array]]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql.expressions Window)))

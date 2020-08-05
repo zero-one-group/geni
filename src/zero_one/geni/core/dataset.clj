@@ -1,4 +1,4 @@
-(ns zero-one.geni.dataset
+(ns zero-one.geni.core.dataset
   (:refer-clojure :exclude [distinct
                             drop
                             empty?
@@ -7,7 +7,7 @@
                             take])
   (:require
     [clojure.walk :refer [keywordize-keys]]
-    [zero-one.geni.column :refer [->col-array ->column]]
+    [zero-one.geni.core.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import

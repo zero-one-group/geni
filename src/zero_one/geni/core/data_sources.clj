@@ -1,4 +1,4 @@
-(ns zero-one.geni.data-sources
+(ns zero-one.geni.core.data-sources
   (:refer-clojure :exclude [partition-by sort-by])
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]

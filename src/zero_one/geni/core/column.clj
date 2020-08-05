@@ -1,4 +1,4 @@
-(ns zero-one.geni.column
+(ns zero-one.geni.core.column
   (:refer-clojure :exclude [*
                             +
                             -

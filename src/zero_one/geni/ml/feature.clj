@@ -1,7 +1,7 @@
 (ns zero-one.geni.ml.feature
   (:require
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.default-stop-words :refer [default-stop-words]])
+    [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
   (:import
     (org.apache.spark.ml.feature Binarizer
                                  Bucketizer

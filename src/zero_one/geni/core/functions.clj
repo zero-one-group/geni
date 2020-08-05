@@ -1,4 +1,4 @@
-(ns zero-one.geni.sql
+(ns zero-one.geni.core.functions
   (:refer-clojure :exclude [concat
                             flatten
                             hash
@@ -11,7 +11,7 @@
                             struct
                             when])
   (:require
-    [zero-one.geni.column :refer [->col-array ->column]]
+    [zero-one.geni.core.column :refer [->col-array ->column]]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map]])
   (:import
