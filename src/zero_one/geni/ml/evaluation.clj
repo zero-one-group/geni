@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-evaluation
+(ns zero-one.geni.ml.evaluation
   (:require
     [zero-one.geni.interop :as interop])
   (:import

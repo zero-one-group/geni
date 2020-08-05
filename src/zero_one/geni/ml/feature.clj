@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-feature
+(ns zero-one.geni.ml.feature
   (:require
     [zero-one.geni.interop :as interop]
     [zero-one.geni.default-stop-words :refer [default-stop-words]])

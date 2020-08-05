@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-regression
+(ns zero-one.geni.ml.regression
   (:require
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [coalesce]])
