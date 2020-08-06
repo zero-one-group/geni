@@ -3,7 +3,6 @@
     [clojure.string :refer [includes?]]
     [midje.sweet :refer [facts fact => throws]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.dataset-creation :as dataset-creation]
     [zero-one.geni.ml :as ml]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           df-20
@@ -93,13 +92,13 @@
   (let [indexer (ml/fit libsvm-df (ml/string-indexer {:input-col :label
                                                       :output-col :indexed-label}))]
     (ml/labels indexer) => ["1.0" "0.0"])
-  (let [ds-a     (dataset-creation/table->dataset
+  (let [ds-a     (g/table->dataset
                    spark
                    [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
                     [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
                     [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
                    [:id :features])
-        ds-b     (dataset-creation/table->dataset
+        ds-b     (g/table->dataset
                    spark
                    [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
                     [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
@@ -121,12 +120,12 @@
       "distCol") => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6) => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6 "JaccardDistance") => #(instance? Dataset %))
-  (let [dataset   (dataset-creation/table->dataset
+  (let [dataset   (g/table->dataset
                     spark
                     [[0 ["a" "b" "c"]]] [:id :words])
         count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
     (ml/vocabulary count-vec) => #(every? string? %))
-  (let [dataset (dataset-creation/table->dataset
+  (let [dataset (g/table->dataset
                   spark
                   [[(g/dense 2.0  1.0)]
                    [(g/dense 0.0  0.0)]
@@ -134,7 +133,7 @@
                   [:features])
         pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
     (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
-  (let [dataset (dataset-creation/table->dataset
+  (let [dataset (g/table->dataset
                   spark
                   [[0.0  1.0]
                    [0.0  0.0]
@@ -678,7 +677,7 @@
 
 (facts "On pipeline" :slow
   (fact "should be able to fit the example stages" :slow
-    (let [dataset     (dataset-creation/table->dataset
+    (let [dataset     (g/table->dataset
                         spark
                         [[0, "a b c d e spark", 1.0]
                          [1, "b d", 0.0]
@@ -701,7 +700,7 @@
       (:probability dtypes) => #(includes? % "Vector")
       (:prediction dtypes) => "DoubleType"))
   (fact "should be able to fit the idf example" :slow
-    (let [dataset     (dataset-creation/table->dataset
+    (let [dataset     (g/table->dataset
                         spark
                         [[0.0 "Hi I heard about Spark"]
                          [0.0 "I wish Java could use case classes"]
@@ -722,7 +721,7 @@
       (->> transformed g/collect-vals flatten) => #(every? double? %)
       (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
   (fact "should be able to fit the word2vec example" :slow
-    (let [dataset     (dataset-creation/table->dataset
+    (let [dataset     (g/table->dataset
                         spark
                         [["Hi I heard about Spark"]
                          ["I wish Java could use case classes"]
@@ -742,7 +741,7 @@
       (->> transformed g/collect-vals flatten) => #(every? double? %))))
 
 (facts "On hypothesis testing"
-  (let [dataset (dataset-creation/table->dataset
+  (let [dataset (g/table->dataset
                    spark
                    [[0.0 (g/dense 0.5 10.0)]
                     [0.0 (g/dense 1.5 20.0)]
@@ -763,7 +762,7 @@
                                 (< 0.25 (second %) 0.35)))))
 
 (facts "On correlation" :slow
-  (let [dataset     (dataset-creation/table->dataset
+  (let [dataset     (g/table->dataset
                        spark
                        [[1.0 0.0 -2.0 0.0]
                         [4.0 5.0 0.0  3.0]

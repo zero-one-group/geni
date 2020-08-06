@@ -1,4 +1,4 @@
-(ns zero-one.geni.clojure-idioms
+(ns zero-one.geni.core.clojure-idioms
   (:refer-clojure :exclude [=
                             boolean
                             byte
@@ -29,11 +29,11 @@
                             zero?
                             zipmap])
   (:require
-    [zero-one.geni.column :as column]
-    [zero-one.geni.dataset :as dataset]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.polymorphic :as polymorphic]
-    [zero-one.geni.sql :as sql])
+    [zero-one.geni.core.column :as column]
+    [zero-one.geni.core.dataset :as dataset]
+    [zero-one.geni.core.polymorphic :as polymorphic]
+    [zero-one.geni.core.functions :as sql]
+    [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql functions)))
 

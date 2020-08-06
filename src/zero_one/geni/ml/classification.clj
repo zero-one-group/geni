@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-classification
+(ns zero-one.geni.ml.classification
   (:require
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [coalesce]])

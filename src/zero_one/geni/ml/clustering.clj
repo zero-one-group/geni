@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-clustering
+(ns zero-one.geni.ml.clustering
   (:require
     [zero-one.geni.interop :as interop])
   (:import

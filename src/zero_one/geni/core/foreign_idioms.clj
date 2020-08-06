@@ -1,13 +1,13 @@
-(ns zero-one.geni.foreign-idioms
+(ns zero-one.geni.core.foreign-idioms
   (:require
     [clojure.string :as string]
-    [zero-one.geni.column :as column]
-    [zero-one.geni.data-sources :as data-sources]
-    [zero-one.geni.dataset :as dataset]
-    [zero-one.geni.dataset-creation :as dataset-creation]
-    [zero-one.geni.polymorphic :as polymorphic]
-    [zero-one.geni.sql :as sql]
-    [zero-one.geni.window :as window])
+    [zero-one.geni.core.column :as column]
+    [zero-one.geni.core.data-sources :as data-sources]
+    [zero-one.geni.core.dataset :as dataset]
+    [zero-one.geni.core.dataset-creation :as dataset-creation]
+    [zero-one.geni.core.polymorphic :as polymorphic]
+    [zero-one.geni.core.functions :as sql]
+    [zero-one.geni.core.window :as window])
   (:import
     (org.apache.spark.sql Column functions)))
 

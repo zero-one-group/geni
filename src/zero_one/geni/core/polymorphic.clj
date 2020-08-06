@@ -1,4 +1,4 @@
-(ns zero-one.geni.polymorphic
+(ns zero-one.geni.core.polymorphic
   (:refer-clojure :exclude [alias
                             assoc
                             count
@@ -12,12 +12,12 @@
                             update])
   (:require
     [clojure.string]
-    [zero-one.geni.column :refer [->col-array ->column]]
-    [zero-one.geni.dataset]
-    [zero-one.geni.dataset-creation]
+    [zero-one.geni.core.column :refer [->col-array ->column]]
+    [zero-one.geni.core.dataset :as dataset]
+    [zero-one.geni.core.dataset-creation :as dataset-creation]
+    [zero-one.geni.core.functions :as sql]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.sql :as sql]
     [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
   (:import
     (org.apache.spark.ml.stat Correlation)
@@ -74,16 +74,16 @@
 (defmethod shuffle :default [expr]
   (functions/shuffle (->column expr)))
 (defmethod shuffle Dataset [dataframe]
-  (zero-one.geni.dataset/sort dataframe (functions/randn)))
+  (dataset/sort dataframe (functions/randn)))
 
 (defmulti first class)
 (defmethod first Dataset [dataframe]
-  (-> dataframe (zero-one.geni.dataset/take 1) clojure.core/first))
+  (-> dataframe (dataset/take 1) clojure.core/first))
 (defmethod first :default [expr] (functions/first (->column expr)))
 
 (defmulti last class)
 (defmethod last Dataset [dataframe]
-  (-> dataframe (zero-one.geni.dataset/tail 1) clojure.core/first))
+  (-> dataframe (dataset/tail 1) clojure.core/first))
 (defmethod last :default [expr] (functions/last (->column expr)))
 
 (defmulti filter (fn [head & _] (class head)))
@@ -108,7 +108,7 @@
   ([table col-names]
    (to-df @default-spark table col-names))
   ([spark table col-names]
-   (zero-one.geni.dataset-creation/table->dataset spark table col-names)))
+   (dataset-creation/table->dataset spark table col-names)))
 (defmethod to-df Dataset
   ([dataframe] (.toDF dataframe))
   ([dataframe & col-names]
@@ -153,7 +153,7 @@
     expr
     (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
 (defmethod dissoc Dataset [dataframe & col-names]
-  (apply zero-one.geni.dataset/drop dataframe col-names))
+  (apply dataset/drop dataframe col-names))
 
 (defmulti update (fn [head & _] (class head)))
 (defmethod update :default [expr k f & args]
@@ -163,7 +163,7 @@
                  (apply f v args)
                  v))))
 (defmethod update Dataset [dataframe k f & args]
-  (zero-one.geni.dataset/with-column dataframe k (apply f k args)))
+  (dataset/with-column dataframe k (apply f k args)))
 
 ;; Pandas
 (defmulti quantile (fn [head & _] (class head)))
@@ -175,16 +175,16 @@
         median-name (str "quantile(" (name col-name) ", " percs-str ")")]
     (as (sql/expr median-expr) median-name)))
 (defmethod quantile RelationalGroupedDataset [grouped percs col-names]
-  (zero-one.geni.dataset/agg grouped (map #(quantile % percs) col-names)))
+  (dataset/agg grouped (map #(quantile % percs) col-names)))
 
 (defmulti iqr (fn [head & _] (class head)))
 (defmethod iqr :default [col-name]
   (as (.minus (quantile col-name 0.75) (quantile col-name 0.25))
       (str "iqr(" (name col-name) ")")))
 (defmethod iqr RelationalGroupedDataset [grouped & col-names]
-  (zero-one.geni.dataset/agg grouped (->> col-names
-                                          (mapcat ensure-coll)
-                                          (map iqr))))
+  (dataset/agg grouped (->> col-names
+                            (mapcat ensure-coll)
+                            (map iqr))))
 (def interquartile-range iqr)
 
 (defmulti median (fn [head & _] (class head)))
@@ -193,4 +193,4 @@
         median-name (str "median(" (name col-name) ")")]
     (as (sql/expr median-expr) median-name)))
 (defmethod median RelationalGroupedDataset [grouped & col-names]
-  (zero-one.geni.dataset/agg grouped (map median col-names)))
+  (dataset/agg grouped (map median col-names)))
