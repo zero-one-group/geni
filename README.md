@@ -216,7 +216,7 @@ java -jar <uberjar-name>
 
 The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
 
-### Demo Screencasts
+### Screencast Demos
 
 <table>
     <tr>
