@@ -206,7 +206,9 @@ Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com
 lein new geni <project-name>
 ```
 
-[![asciicast](https://asciinema.org/a/349721.svg){:height="50%" width="50%"}](https://asciinema.org/a/349721?theme=monokai&speed=1.75)
+<!--[![asciicast](https://asciinema.org/a/349721.svg){:height="50%" width="50%"}](https://asciinema.org/a/349721?theme=monokai&speed=1.75)-->
+
+<a href="https://asciinema.org/a/349721?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.png" width="300"/></a>
 
 ### Geni REPL Uberjar
 
@@ -218,7 +220,9 @@ java -jar <uberjar-name>
 
 The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
 
-[![asciicast](https://asciinema.org/a/352138.svg){:height="50%" width="50%"}](https://asciinema.org/a/352138?theme=monokai&speed=1.75)
+<!--[![asciicast](https://asciinema.org/a/352138.svg){:height="50%" width="50%"}](https://asciinema.org/a/352138?theme=monokai&speed=1.75)-->
+
+<a href="https://asciinema.org/a/352138?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.png" width="300"/></a>
 
 ## Installation
 
