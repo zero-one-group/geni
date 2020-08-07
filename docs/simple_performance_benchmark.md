@@ -80,12 +80,10 @@ The full scripts can be found [here](https://github.com/zero-one-group/geni-perf
 
 The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981.
 
-```bash
 | Runtime (s) | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
 | ---         | ---         | ---   | ---          | ---   |
 | Pandas      | 587         | x73.4 | 1,132        | x29.0 |
 | Geni        | 8           | x1.0  | 39           | x1.0  |
-```
 
 When run on only one month of data, Geni is 73x faster than Pandas. When run on the full dataset, Geni is 29x faster than Pandas. Much of the gap is due to Pandas not using all of the available cores on the machine, which should account for, at most, 12x in performance gains.
 
