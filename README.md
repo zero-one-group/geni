@@ -220,11 +220,11 @@ The uberjar app prints the default `SparkSession` instance, starts an nREPL serv
 <table>
     <tr>
         <th>Leiningen</th>
-        <th>Uberjar</th>
+        <td> <a href="https://asciinema.org/a/349721?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg" width="400"/></a> </td>
     </tr>
     <tr>
-        <td> <a href="https://asciinema.org/a/349721?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg" width="350"/></a> </td>
-        <td> <a href="https://asciinema.org/a/352138?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg" width="350"/></a> </td>
+        <th>Uberjar</th>
+        <td> <a href="https://asciinema.org/a/352138?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg" width="400"/></a> </td>
     </tr>
 </table>
 
