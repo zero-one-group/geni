@@ -199,13 +199,36 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ## Quick Start
 
+### Leiningen Template
+
 Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com/zero-one-group/geni-template) of a Geni project:
 
 ```bash
 lein new geni <project-name>
 ```
 
-[![asciicast](https://asciinema.org/a/349721.svg)](https://asciinema.org/a/349721?speed=1.75)
+### Geni REPL Uberjar
+
+Download the latest Geni REPL uberjar from the [release](https://github.com/zero-one-group/geni/releases) page. Run the uberjar as follows:
+
+```bash
+java -jar <uberjar-name>
+```
+
+The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
+
+### Screencast Demos
+
+<table>
+    <tr>
+        <th>Leiningen</th>
+        <th>Uberjar</th>
+    </tr>
+    <tr>
+        <td> <a href="https://asciinema.org/a/349721?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
+        <td> <a href="https://asciinema.org/a/352138?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
+    </tr>
+</table>
 
 ## Installation
 
