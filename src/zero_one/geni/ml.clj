@@ -4,18 +4,18 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
     [potemkin :refer [import-vars]]
-    [zero-one.geni.column :refer [->column]]
+    [zero-one.geni.core.column :as column]
+    [zero-one.geni.core.polymorphic :as polymorphic]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml-classification]
-    [zero-one.geni.ml-clustering]
-    [zero-one.geni.ml-evaluation]
-    [zero-one.geni.ml-feature]
-    [zero-one.geni.ml-fpm]
-    [zero-one.geni.ml-recommendation]
-    [zero-one.geni.ml-regression]
-    [zero-one.geni.ml-tuning]
-    [zero-one.geni.ml-xgb]
-    [zero-one.geni.polymorphic])
+    [zero-one.geni.ml.classification]
+    [zero-one.geni.ml.clustering]
+    [zero-one.geni.ml.evaluation]
+    [zero-one.geni.ml.feature]
+    [zero-one.geni.ml.fpm]
+    [zero-one.geni.ml.recommendation]
+    [zero-one.geni.ml.regression]
+    [zero-one.geni.ml.tuning]
+    [zero-one.geni.ml.xgb])
   (:import
     (org.apache.spark.ml Pipeline
                          PipelineStage
@@ -24,13 +24,13 @@
                               KolmogorovSmirnovTest)))
 
 (import-vars
-  [zero-one.geni.ml-xgb
+  [zero-one.geni.ml.xgb
    write-native-model!
    xgboost-classifier
    xgboost-regressor])
 
 (import-vars
-  [zero-one.geni.ml-clustering
+  [zero-one.geni.ml.clustering
    bisecting-k-means
    gaussian-mixture
    gmm
@@ -40,7 +40,7 @@
    power-iteration-clustering])
 
 (import-vars
-  [zero-one.geni.ml-evaluation
+  [zero-one.geni.ml.evaluation
    binary-classification-evaluator
    clustering-evaluator
    multiclass-classification-evaluator
@@ -49,7 +49,7 @@
    regression-evaluator])
 
 (import-vars
-  [zero-one.geni.ml-feature
+  [zero-one.geni.ml.feature
    binariser
    binarizer
    bucketed-random-projection-lsh
@@ -93,7 +93,7 @@
    word2vec])
 
 (import-vars
-  [zero-one.geni.ml-classification
+  [zero-one.geni.ml.classification
    decision-tree-classifier
    fm-classifier
    gbt-classifier
@@ -106,13 +106,13 @@
    random-forest-classifier])
 
 (import-vars
-  [zero-one.geni.ml-fpm
+  [zero-one.geni.ml.fpm
    fp-growth
    frequent-pattern-growth
    prefix-span])
 
 (import-vars
-  [zero-one.geni.ml-regression
+  [zero-one.geni.ml.regression
    aft-survival-regression
    decision-tree-regressor
    fm-regressor
@@ -125,7 +125,7 @@
    random-forest-regressor])
 
 (import-vars
-  [zero-one.geni.ml-recommendation
+  [zero-one.geni.ml.recommendation
    als
    alternating-least-squares
    item-factors
@@ -138,17 +138,17 @@
    user-factors])
 
 (import-vars
-  [zero-one.geni.ml-tuning
+  [zero-one.geni.ml.tuning
    param-grid
    cross-validator
    train-validation-split])
 
 (defn vector-to-array
-  ([expr] (vector-to-array (->column expr) "float64"))
-  ([expr dtype] (functions/vector_to_array (->column expr) dtype)))
+  ([expr] (vector-to-array (column/->column expr) "float64"))
+  ([expr dtype] (functions/vector_to_array (column/->column expr) dtype)))
 (def vector->array vector-to-array)
 
-(def corr zero-one.geni.polymorphic/corr)
+(def corr polymorphic/corr)
 
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))

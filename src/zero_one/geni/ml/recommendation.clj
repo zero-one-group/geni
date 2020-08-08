@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-recommendation
+(ns zero-one.geni.ml.recommendation
   (:require
     [zero-one.geni.interop :as interop])
   (:import

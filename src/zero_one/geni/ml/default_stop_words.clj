@@ -1,4 +1,4 @@
-(ns zero-one.geni.default-stop-words)
+(ns zero-one.geni.ml.default-stop-words)
 
 (def default-stop-words
   ["i"

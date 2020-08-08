@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-xgb
+(ns zero-one.geni.ml.xgb
   (:require
      [zero-one.geni.interop :as interop]
      [zero-one.geni.utils :refer [coalesce with-dynamic-import]]))

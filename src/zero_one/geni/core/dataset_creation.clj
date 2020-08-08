@@ -1,4 +1,4 @@
-(ns zero-one.geni.dataset-creation
+(ns zero-one.geni.core.dataset-creation
   (:require
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop])

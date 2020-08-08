@@ -70,18 +70,18 @@
                             zipmap])
   (:require
     [potemkin :refer [import-vars]]
-    [zero-one.geni.clojure-idioms]
-    [zero-one.geni.column]
-    [zero-one.geni.data-sources]
-    [zero-one.geni.dataset-creation]
-    [zero-one.geni.dataset]
-    [zero-one.geni.foreign-idioms]
+    [zero-one.geni.core.clojure-idioms]
+    [zero-one.geni.core.column]
+    [zero-one.geni.core.data-sources]
+    [zero-one.geni.core.dataset-creation]
+    [zero-one.geni.core.dataset]
+    [zero-one.geni.core.foreign-idioms]
+    [zero-one.geni.core.polymorphic]
+    [zero-one.geni.core.functions]
+    [zero-one.geni.core.storage]
+    [zero-one.geni.core.window]
     [zero-one.geni.interop]
-    [zero-one.geni.polymorphic]
-    [zero-one.geni.spark]
-    [zero-one.geni.sql]
-    [zero-one.geni.storage]
-    [zero-one.geni.window]))
+    [zero-one.geni.spark]))
 
 (import-vars
   [zero-one.geni.interop
@@ -95,7 +95,7 @@
    spark-conf])
 
 (import-vars
-  [zero-one.geni.column
+  [zero-one.geni.core.column
    %
    &
    &&
@@ -148,7 +148,7 @@
    ||])
 
 (import-vars
-  [zero-one.geni.sql
+  [zero-one.geni.core.functions
    !
    **
    ->date-col
@@ -353,7 +353,7 @@
    zip-with])
 
 (import-vars
-  [zero-one.geni.dataset-creation
+  [zero-one.geni.core.dataset-creation
    create-dataframe
    map->dataset
    records->dataset
@@ -362,7 +362,7 @@
    table->dataset])
 
 (import-vars
-  [zero-one.geni.dataset
+  [zero-one.geni.core.dataset
    add
    agg
    agg-all
@@ -458,7 +458,7 @@
    with-column-renamed])
 
 (import-vars
-  [zero-one.geni.window
+  [zero-one.geni.core.window
    over
    unbounded-following
    unbounded-preceeding
@@ -466,7 +466,7 @@
    windowed])
 
 (import-vars
-  [zero-one.geni.data-sources
+  [zero-one.geni.core.data-sources
    read-avro!
    read-csv!
    read-jdbc!
@@ -483,7 +483,7 @@
    write-jdbc!])
 
 (import-vars
-  [zero-one.geni.polymorphic
+  [zero-one.geni.core.polymorphic
    alias
    as
    assoc
@@ -510,7 +510,7 @@
    where])
 
 (import-vars
-  [zero-one.geni.storage
+  [zero-one.geni.core.storage
    disk-only
    disk-only-2
    memory-and-disk
@@ -525,7 +525,7 @@
    off-heap])
 
 (import-vars
-  [zero-one.geni.clojure-idioms
+  [zero-one.geni.core.clojure-idioms
    =
    boolean
    byte
@@ -557,7 +557,7 @@
    zipmap])
 
 (import-vars
-  [zero-one.geni.foreign-idioms
+  [zero-one.geni.core.foreign-idioms
    ->dataset
    clip
    cut

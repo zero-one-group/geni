@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-tuning
+(ns zero-one.geni.ml.tuning
   (:require
     [zero-one.geni.interop :as interop])
   (:import
