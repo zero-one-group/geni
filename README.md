@@ -222,10 +222,10 @@ The uberjar app prints the default `SparkSession` instance, starts an nREPL serv
 Run the following command:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni-repl)
+bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
 ```
 
-to install the `geni-repl` command to `/usr/local/bin`.
+to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
 
 ### Screencast Demos
 
