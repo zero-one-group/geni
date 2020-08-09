@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# TODO: installer for this script in the next PR
+
+# download the latest version of Geni REPL
+# install script inspired by borkdude's clj-kondo
+# link: https://github.com/borkdude/clj-kondo
+
+set -euo pipefail
+
+print_help() {
+    echo "Runs the Geni REPL + starts an nREPL server with an .nrepl-port file."
+    echo -e
+    echo "Downloads the uberjar to ~/.geni/geni-repl-uberjar.jar if it is not found."
+    echo -e
+    echo "Usage:"
+    echo "install [--force-download]"
+    exit 1
+}
+
+force_download=false
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    if [[ -z "${2:-}" ]]; then
+        print_help
+    fi
+
+    case $key in
+        --force-download)
+            force_download=true
+            shift
+            ;;
+    esac
+done
+
+# TODO: fix in the next PR
+# version="$(curl -s https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)"
+version=0.0.21
+
+original_dir="$PWD"
+download_dir="/tmp"
+download_url="https://github.com/zero-one-group/geni/releases/download/v$version/geni-repl-uberjar-$version.jar"
+uberjar_dir="$HOME/.geni"
+uberjar_name="geni-repl-uberjar.jar"
+
+# TODO: add a force re-download flag
+mkdir -p "$uberjar_dir"
+cd "$uberjar_dir"
+if [[ ! -f "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
+    cd "$download_dir"
+    echo -e "Downloading $download_url to $download_dir ..."
+    wget -O "$uberjar_name" "$download_url"
+    echo "Moving $download_dir/$uberjar_name to $uberjar_dir/$uberjar_name"
+    mv -f "$uberjar_name" "$uberjar_dir/$uberjar_name"
+    echo "Successfully downloaded Geni REPL uberjar in $uberjar_dir/$uberjar_name"
+fi
+
+cd "$original_dir"
+java -jar $uberjar_dir/$uberjar_name || \
+    echo "Failed running uberjar, try running with --force-download flag."
