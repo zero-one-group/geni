@@ -199,7 +199,7 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ## Quick Start
 
-### Geni REPL Executable Script
+### Install Geni
 
 Run the following command:
 
@@ -209,7 +209,7 @@ bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/s
 
 to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
 
-### Geni REPL Uberjar
+### Uberjar
 
 Download the latest Geni REPL uberjar from the [release](https://github.com/zero-one-group/geni/releases) page. Run the uberjar as follows:
 
@@ -233,8 +233,8 @@ lein new geni <project-name>
 
 <table>
     <tr>
-        <th>Geni REPL Executable Script</th>
-        <th>Geni REPL Uberjar</th>
+        <th>Install Geni</th>
+        <th>Uberjar</th>
         <th>Leiningen Template</th>
     </tr>
     <tr>
