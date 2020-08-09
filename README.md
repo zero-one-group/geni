@@ -6,7 +6,7 @@ Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) 
 
 WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
 
-[![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/commits/develop)
+[![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
 [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
@@ -206,6 +206,8 @@ Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com
 ```bash
 lein new geni <project-name>
 ```
+
+`cd` into the project directory and do `lein run`. The templated app runs a Spark ML example, and then steps into a Clojure REPL-y with an `.nrepl-port` file.
 
 ### Geni REPL Uberjar
 
