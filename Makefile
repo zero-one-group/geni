@@ -38,5 +38,4 @@ install-geni-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		scripts/test-install-geni
 
-
 ci: coverage lint
