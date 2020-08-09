@@ -207,6 +207,8 @@ Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com
 lein new geni <project-name>
 ```
 
+`cd` into the project directory and do `lein run`. The templated app runs a Spark ML example, and then steps into a Clojure REPL-y with an `.nrepl-port` file.
+
 ### Geni REPL Uberjar
 
 Download the latest Geni REPL uberjar from the [release](https://github.com/zero-one-group/geni/releases) page. Run the uberjar as follows:
