@@ -199,15 +199,15 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ## Quick Start
 
-### Leiningen Template
+### Geni REPL Executable Script
 
-Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com/zero-one-group/geni-template) of a Geni project:
+Run the following command:
 
 ```bash
-lein new geni <project-name>
+bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
 ```
 
-`cd` into the project directory and do `lein run`. The templated app runs a Spark ML example, and then steps into a Clojure REPL-y with an `.nrepl-port` file.
+to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
 
 ### Geni REPL Uberjar
 
@@ -219,28 +219,28 @@ java -jar <uberjar-name>
 
 The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
 
-### Geni REPL Executable Script
+### Leiningen Template
 
-Run the following command:
+Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com/zero-one-group/geni-template) of a Geni project:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
+lein new geni <project-name>
 ```
 
-to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
+`cd` into the project directory and do `lein run`. The templated app runs a Spark ML example, and then steps into a Clojure REPL-y with an `.nrepl-port` file.
 
 ### Screencast Demos
 
 <table>
     <tr>
-        <th>Leiningen Template</th>
-        <th>Geni REPL Uberjar</th>
         <th>Geni REPL Executable Script</th>
+        <th>Geni REPL Uberjar</th>
+        <th>Leiningen Template</th>
     </tr>
     <tr>
-        <td> <a href="https://asciinema.org/a/349721?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
-        <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/352458?t=4&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352458.svg"/></a> </td>
+        <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
+        <td> <a href="https://asciinema.org/a/349721?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
     </tr>
 </table>
 
