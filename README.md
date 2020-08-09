@@ -217,12 +217,22 @@ java -jar <uberjar-name>
 
 The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
 
+### Geni REPL Executable Script
+
+Run the following command:
+
+```bash
+bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
+```
+
+to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
+
 ### Screencast Demos
 
 <table>
     <tr>
-        <th>Leiningen</th>
-        <th>Uberjar</th>
+        <th>Leiningen Template</th>
+        <th>Geni REPL Uberjar</th>
     </tr>
     <tr>
         <td> <a href="https://asciinema.org/a/349721?theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>

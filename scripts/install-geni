@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+original_dir="$PWD"
+download_dir="/tmp"
+download_url="https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni"
+install_dir="/usr/local/bin"
+
+echo -e "Downloading $download_url to $download_dir ..."
+wget -O "$download_dir/geni" "$download_url"
+chmod +x "$download_dir/geni"
+echo "Moving $download_dir/geni to $install_dir/geni"
+mv -f "$download_dir/geni" "$install_dir/geni"
+
+echo "Successfully installed geni in $install_dir!"
+if ! [ -x "$(command -v geni)" ]; then
+    echo "geni not found! Make sure $install_dir is part of your \$PATH."
+    exit 1
+fi
