@@ -33,9 +33,7 @@ do
     esac
 done
 
-# TODO: fix in the next PR
-# version="$(curl -s https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)"
-version=0.0.21
+version=$(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
 
 original_dir="$PWD"
 download_dir="/tmp"

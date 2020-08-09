@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+original_dir="$PWD"
+download_dir="/tmp"
+download_url="https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni-repl"
+install_dir="/usr/local/bin"
+
+echo -e "Downloading $download_url to $download_dir ..."
+wget -O "$download_dir/geni-repl" "$download_url"
+chmod +x "$download_dir/geni-repl"
+echo "Moving $download_dir/geni-repl to $install_dir/geni-repl"
+mv -f "$download_dir/geni-repl" "$install_dir/geni-repl"
+
+echo "Successfully installed geni-repl in $install_dir!"
+if ! [ -x "$(command -v geni-repl)" ]; then
+    echo "geni-repl not found! Make sure $install_dir is part of your \$PATH."
+    exit 1
+fi
