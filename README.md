@@ -235,10 +235,12 @@ lein new geni <project-name>
 
 <table>
     <tr>
+        <th>Install</th>
         <th>Uberjar</th>
-        <th>Leiningen Template</th>
+        <th>Leiningen</th>
     </tr>
     <tr>
+        <td> <a href="https://asciinema.org/a/352552?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352552.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/349721?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
     </tr>
