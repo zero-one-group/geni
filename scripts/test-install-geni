@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
-bash -c scripts/install-geni
+wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
+chmod a+x geni
+mv geni /usr/local/bin/
 exit | geni

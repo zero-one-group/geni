@@ -201,13 +201,15 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ### Install Geni
 
-Run the following command:
+Install the `geni` script to `/usr/local/bin` with:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
+wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
+chmod a+x geni
+sudo mv geni /usr/local/bin/
 ```
 
-to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
+The command `geni` downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
 
 ### Uberjar
 
@@ -233,12 +235,10 @@ lein new geni <project-name>
 
 <table>
     <tr>
-        <th>Install Geni</th>
         <th>Uberjar</th>
         <th>Leiningen Template</th>
     </tr>
     <tr>
-        <td> <a href="https://asciinema.org/a/352458?t=4&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352458.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/349721?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
     </tr>
@@ -271,7 +271,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]]}
 ```
 
-You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
+You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4J models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
 
 ## License
 
