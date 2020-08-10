@@ -201,13 +201,15 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 
 ### Install Geni
 
-Run the following command:
+Install the `geni` script to `/usr/local/bin` with:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/anthony-khong/geni/fix-sudo-mv-in-install-script/scripts/install-geni | bash
+wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
+chmod a+x geni
+sudo mv geni /usr/local/bin/
 ```
 
-to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`. Should the above command give you a permission-denied error, try swapping `bash` with `sudo bash`.
+The command `geni` downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
 
 ### Uberjar
 
