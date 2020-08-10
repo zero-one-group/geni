@@ -204,10 +204,10 @@ More detailed examples can be found [here](examples/README.md).There is also a o
 Run the following command:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/install-geni)
+wget -qO- https://raw.githubusercontent.com/anthony-khong/geni/fix-sudo-mv-in-install-script/scripts/install-geni | bash
 ```
 
-to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
+to install the `geni` command to `/usr/local/bin`. The script downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`. Should the above command give you a permission-denied error, try swapping `bash` with `sudo bash`.
 
 ### Uberjar
 
@@ -271,7 +271,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]]}
 ```
 
-You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4j models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
+You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4J models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
 
 ## License
 

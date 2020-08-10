@@ -10,7 +10,7 @@ install_dir="/usr/local/bin"
 mkdir -p "$download_dir"
 echo -e "Downloading $download_url to $download_dir ..."
 wget -O "$download_dir/geni" "$download_url"
-chmod +x "$download_dir/geni"
+chmod a+x "$download_dir/geni"
 echo "Moving $download_dir/geni to $install_dir/geni"
 mv -f "$download_dir/geni" "$install_dir/geni"
 
