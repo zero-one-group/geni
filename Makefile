@@ -39,3 +39,7 @@ install-geni-test: build
 		scripts/test-install-geni
 
 ci: coverage lint
+
+pre-release-test: coverage lint
+
+post-release-test: template-test install-geni-test
