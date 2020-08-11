@@ -50,6 +50,7 @@ or spin up a REPL by running `lein repl` and run:
 - Bump the version in `project.clj`.
 - Check the pre-release CI steps with `make pre-release-test`.
 - Deploy the main library with `lein deploy clojars`.
+- Push the newly built container to DockerHub.
 - Merge the library version-bump branch.
 - Create a new release on GitHub with a summary of all the changes and the new uberjar uploaded.
 
