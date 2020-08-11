@@ -42,3 +42,22 @@ or spin up a REPL by running `lein repl` and run:
 (require '[midje.repl :refer [autotest]])
 (autotest :filter (complement :slow))
 ```
+
+## Deployment Checklist
+
+### Library
+
+- Bump the version in `project.clj`.
+- Check the pre-release CI steps with `make pre-release-test`.
+- Deploy the main library with `lein deploy clojars`.
+- Merge the library version-bump branch.
+- Create a new release on GitHub with a summary of all the changes.
+
+### Installation
+
+- Bump the versions in:
+    - `lein-template`'s `project.clj`;
+    - `lein-template`'s `resources/.../project.clj`; and
+    - `resources/GENI_REPL_RELEASED_VERSION`.
+- Check the post-release CI steps with `make post-release-test`.
+- Merge the install version-bump branch.
