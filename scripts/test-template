@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+template_dir="lein-template"
+app_name="temporary"
+
+cd "$template_dir"
+lein new geni "$app_name" --force
+cd "$app_name"
+lein test
