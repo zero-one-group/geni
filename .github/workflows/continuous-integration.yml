@@ -49,7 +49,7 @@ jobs:
       - name: template-unit-test
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: scipts/test-template
+          entrypoint: scripts/test-template
   install-geni:
     runs-on: ubuntu-latest
     steps:
