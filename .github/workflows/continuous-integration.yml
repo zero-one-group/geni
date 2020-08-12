@@ -49,8 +49,7 @@ jobs:
       - name: template-unit-test
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: sh
-          args: -c "cd lein-template && lein new geni temporary && cd temporary && lein test"
+          entrypoint: scipts/test-template
   install-geni:
     runs-on: ubuntu-latest
     steps:

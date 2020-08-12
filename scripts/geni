@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# TODO: installer for this script in the next PR
 
 # download the latest version of Geni REPL
 # install script inspired by borkdude's clj-kondo

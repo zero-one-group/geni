@@ -32,7 +32,7 @@ lint: build
 
 template-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		bash -c "cd lein-template && lein new geni temporary && cd temporary && lein test"
+		scripts/test-template
 
 install-geni-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
