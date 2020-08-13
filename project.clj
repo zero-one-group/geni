@@ -38,6 +38,7 @@
                    [lein-midje "3.2.1"]]
          :aot [zero-one.geni.rdd.function]}}
   :repl-options {:init-ns zero-one.geni.main}
+  :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :main ^:skip-aot zero-one.geni.main
   :aliases {"coverage" ["cloverage"
