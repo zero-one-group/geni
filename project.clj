@@ -9,6 +9,8 @@
     [org.apache.spark/spark-mllib_2.12 "3.0.0"]
     [org.apache.spark/spark-sql_2.12 "3.0.0"]
     [org.apache.spark/spark-streaming_2.12 "3.0.0"]
+    [yieldbot/serializable-fn "0.1.2"
+     :exclusions [com.twitter/chill-java]]
     ; Databases
     [mysql/mysql-connector-java "8.0.21"]
     [org.postgresql/postgresql "42.2.14"]
@@ -35,7 +37,9 @@
    :dev {:dependencies [[expound "0.8.5"]
                         [midje "1.9.9"]]
          :plugins [[lein-cloverage "1.1.2"]
-                   [lein-midje "3.2.1"]]}}
+                   [lein-midje "3.2.1"]]
+         :aot [zero-one.geni.rdd.function]}}
+  :java-source-paths ["src/java"]
   :repl-options {:init-ns zero-one.geni.main}
   :main ^:skip-aot zero-one.geni.main
   :aliases {"coverage" ["cloverage"

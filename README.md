@@ -285,9 +285,10 @@ Geni is licensed under Apache License v2.0, see [LICENSE](LICENSE).
 
 Some code was taken from:
 
-* [finagle-clojure](https://github.com/finagle/finagle-clojure) - especially in terms of Scala interop.
+* [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
 * Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
+* [Flambo](https://github.com/sorenmacbeth/flambo) for RDD functions.

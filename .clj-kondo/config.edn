@@ -1,4 +1,6 @@
 {:skip-comments true
+ :lint-as {zero-one.geni.rdd.core/sfn clojure.core/fn}
  :linters
   {:unresolved-symbol
-    {:exclude [(zero-one.geni.utils/with-dynamic-import)]}}}
+    {:exclude [(zero-one.geni.utils/with-dynamic-import)
+               (zero-one.geni.rdd.function/gen-function)]}}}

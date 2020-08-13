@@ -2,11 +2,11 @@
   (:refer-clojure :exclude [map
                             reduce])
   (:require
-    [zero-one.geni.defaults])
+    [serializable.fn :as sfn]
+    [zero-one.geni.defaults]
+    [zero-one.geni.rdd.function :as function])
   (:import
     (org.apache.spark.api.java JavaSparkContext)
-    (org.apache.spark.api.java.function Function
-                                        Function2)
     (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context [spark]
@@ -25,17 +25,20 @@
   ([spark path] (-> spark java-spark-context (.textFile path)))
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
-(defn ->function [f]
-  (reify Function (call [_ x] (f x))))
+(defmacro sfn [& body]
+  `(sfn/fn ~@body))
 
-(defn ->function2 [f]
-  (reify Function2 (call [_ x y] (f x y))))
+(defn map [rdd f]
+  (.map rdd (function/function (sfn [x] (f x)))))
 
-(defn map [rdd f] (.map rdd (->function f)))
+(defn reduce [rdd f]
+  (.reduce rdd (function/function2 (sfn [x y] (f x y)))))
 
-(defn reduce [rdd f] (.reduce rdd (->function2 f)))
+(defn collect [rdd] (-> rdd .collect seq))
 
 (comment
+
+  (require '[zero-one.geni.rdd.function :as function])
 
   (def default-sc (java-spark-context @zero-one.geni.defaults/spark))
 
@@ -45,20 +48,19 @@
 
   (text-file "test/resources/rdd.txt" 10)
 
-  (.collect (map lines count))
+  (-> lines
+      (map count)
+      collect)
 
-  (reduce (map lines count) (fn [x y] (+ x y)))
+  (-> lines
+      (map count)
+      (reduce +))
 
-  (reduce lines (fn [x y] 1))
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
-  (->> (r/reflect Function)
+  (->> (r/reflect lines)
       :members
-      ;(clojure.core/filter #(= (:name %) 'map))
-      ;(mapv :parameter-types)
-      ;(clojure.core/filter #(= (:name %) 'toDF))
-      ;clojure.core/sort
       clojure.pprint/pprint)
 
   true)
