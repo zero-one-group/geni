@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [map
                             reduce])
   (:require
-    [serializable.fn :as sfn]
     [zero-one.geni.defaults]
     [zero-one.geni.rdd.function :as function])
   (:import
@@ -26,12 +25,10 @@
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
 (defn map [rdd f]
-  (let [sfn (sfn/fn [x] (f x))]
-    (.map rdd (function/function sfn))))
+  (.map rdd (function/function f)))
 
 (defn reduce [rdd f]
-  (let [sfn (sfn/fn [x y] (f x y))]
-    (.reduce rdd (function/function2 sfn))))
+  (.reduce rdd (function/function2 f)))
 
 (defn collect [rdd] (-> rdd .collect seq))
 
