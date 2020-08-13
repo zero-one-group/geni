@@ -5,8 +5,6 @@
     [org.apache.spark.serializer SerializerInstance]
     [scala.reflect ClassTag$]))
 
-(set! *warn-on-reflection* true)
-
 (def ^:no-doc OBJECT-CLASS-TAG
   (.apply ClassTag$/MODULE$ java.lang.Object))
 

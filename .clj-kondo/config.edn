@@ -1,5 +1,5 @@
 {:skip-comments true
- :lint-as {zero-one.geni.rdd.core/sfn clojure.core/fn}
+ :lint-as {serializable.fn/fn clojure.core/fn}
  :linters
   {:unresolved-symbol
     {:exclude [(zero-one.geni.utils/with-dynamic-import)

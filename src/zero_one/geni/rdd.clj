@@ -1,4 +1,4 @@
-(ns zero-one.geni.rdd.core
+(ns zero-one.geni.rdd
   (:refer-clojure :exclude [map
                             reduce])
   (:require
@@ -25,28 +25,25 @@
   ([spark path] (-> spark java-spark-context (.textFile path)))
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
-(defmacro sfn [& body]
-  `(sfn/fn ~@body))
-
 (defn map [rdd f]
-  (.map rdd (function/function (sfn [x] (f x)))))
+  (let [sfn (sfn/fn [x] (f x))]
+    (.map rdd (function/function sfn))))
 
 (defn reduce [rdd f]
-  (.reduce rdd (function/function2 (sfn [x y] (f x y)))))
+  (let [sfn (sfn/fn [x y] (f x y))]
+    (.reduce rdd (function/function2 sfn))))
 
 (defn collect [rdd] (-> rdd .collect seq))
 
 (comment
 
-  (require '[zero-one.geni.rdd.function :as function])
-
   (def default-sc (java-spark-context @zero-one.geni.defaults/spark))
 
   (parallelise [1 2 3 4 5])
 
-  (def lines (text-file "test/resources/rdd.txt"))
-
   (text-file "test/resources/rdd.txt" 10)
+
+  (def lines (text-file "test/resources/rdd.txt"))
 
   (-> lines
       (map count)
@@ -55,7 +52,6 @@
   (-> lines
       (map count)
       (reduce +))
-
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
