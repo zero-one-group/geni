@@ -37,6 +37,7 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (every-pred (complement :slow) (complement :repl)))
 
+  (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
   (import '(org.apache.spark.sql Dataset))
   (->> (r/reflect (.write dataframe))
