@@ -16,19 +16,30 @@ print_help() {
     exit 1
 }
 
+script_path=false
 force_download=false
 while [[ $# -gt 0 ]]
 do
     key="$1"
-    if [[ -z "${2:-}" ]]; then
-        print_help
-    fi
-
     case $key in
+        --submit)
+            script_path="$2"
+            shift
+            shift
+            ;;
         --force-download)
             force_download=true
             shift
             ;;
+        --help)
+            print_help
+            shift
+            ;;
+        *)
+            echo "Unrecognised option!"
+            echo -e
+            print_help
+            exit 1
     esac
 done
 
@@ -40,7 +51,6 @@ download_url="https://github.com/zero-one-group/geni/releases/download/v$version
 uberjar_dir="$HOME/.geni"
 uberjar_name="geni-repl-uberjar.jar"
 
-# TODO: add a force re-download flag
 mkdir -p "$uberjar_dir"
 cd "$uberjar_dir"
 if [[ ! -f "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
@@ -53,6 +63,14 @@ if [[ ! -f "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
     echo "Successfully downloaded Geni REPL uberjar in $uberjar_dir/$uberjar_name"
 fi
 
-cd "$original_dir"
-java -jar $uberjar_dir/$uberjar_name || \
+fail_message() {
     echo "Failed running uberjar, try running with --force-download flag."
+    exit 1
+}
+
+cd "$original_dir"
+if [[ "$script_path" = false ]]; then
+    java -jar $uberjar_dir/$uberjar_name || fail_message
+else
+    java -jar $uberjar_dir/$uberjar_name $script_path || fail_message
+fi

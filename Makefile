@@ -28,7 +28,7 @@ coverage: build
 
 lint: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		clj-kondo --lint src test --cache false
+		clj-kondo --lint src/zero_one test/zero_one --cache false
 
 template-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
@@ -38,8 +38,8 @@ install-geni-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		scripts/test-install-geni
 
-ci: coverage lint
+geni-cli-test: build
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+		scripts/test-geni
 
-pre-release-test: coverage lint
-
-post-release-test: template-test install-geni-test
+pre-release-test: coverage lint geni-cli-test template-test install-geni-test

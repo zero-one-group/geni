@@ -41,7 +41,7 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: clj-kondo
-          args: --lint src test
+          args: --lint src/zero_one test/zero_one --cache false
   lein-template:
     runs-on: ubuntu-latest
     steps:
@@ -58,3 +58,11 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/test-install-geni
+  geni-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install-geni-test
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: scripts/test-geni
