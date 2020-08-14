@@ -291,4 +291,4 @@ Some code was taken from:
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
-* [Sparkling](https://github.com/gorillalabs/sparkling) for serialisable functions for the RDD API.
+* [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for serialisable functions for the RDD API.

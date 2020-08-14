@@ -3,8 +3,10 @@
                             reduce])
   (:require
     [zero-one.geni.defaults]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.rdd.function :as function])
   (:import
+    (scala Tuple2)
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
@@ -24,31 +26,31 @@
   ([spark path] (-> spark java-spark-context (.textFile path)))
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
+;; Transformations
 (defn map [rdd f]
   (.map rdd (function/function f)))
 
 (defn reduce [rdd f]
   (.reduce rdd (function/function2 f)))
 
-(defn collect [rdd] (-> rdd .collect seq))
+(defn map-to-pair [rdd f]
+  (.mapToPair rdd (function/pair-function f)))
+
+;; Actions
+(defn collect [rdd] (-> rdd .collect seq interop/->clojure))
 
 (comment
 
-  (def default-sc (java-spark-context @zero-one.geni.defaults/spark))
+  (ns zero-one.geni.rdd)
 
-  (parallelise [1 2 3 4 5])
-
-  (text-file "test/resources/rdd.txt" 10)
+  (require '[zero-one.geni.aot-functions :as aot])
 
   (def lines (text-file "test/resources/rdd.txt"))
 
   (-> lines
-      (map count)
-      collect)
-
-  (-> lines
-      (map count)
-      (reduce +))
+      (map-to-pair aot/to-pair)
+      collect
+      first)
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
