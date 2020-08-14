@@ -17,7 +17,8 @@
   '(do
      (require 'zero-one.geni.main
               '[zero-one.geni.core :as g]
-              '[zero-one.geni.ml :as ml])
+              '[zero-one.geni.ml :as ml]
+              '[zero-one.geni.rdd :as rdd])
      (def spark zero-one.geni.main/spark)))
 
 (defn custom-stream [script-path]

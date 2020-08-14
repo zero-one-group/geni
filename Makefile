@@ -28,7 +28,7 @@ coverage: build
 
 lint: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		clj-kondo --lint src/zero_one test/zero_one --cache false
+		clj-kondo --lint src/clojure/zero_one test/zero_one --cache false
 
 template-test: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \

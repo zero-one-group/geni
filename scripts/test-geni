@@ -13,8 +13,12 @@ fi
 
 scripts/geni --submit test/resources/geni_test_script.clj > .geni-stdout
 cat .geni-stdout
+if ! grep -q "2709" .geni-stdout ; then
+    echo "Geni submit failed (RDD)!"
+    exit 1
+fi
 if ! grep -q "| spark f g h" .geni-stdout ; then
-    echo "Geni submit failed!"
+    echo "Geni submit failed (Spark ML)!"
     exit 1
 fi
 
@@ -24,3 +28,5 @@ if ! grep -q "Cannot find file some/non/existent/file.clj!" .geni-stdout ; then
     echo "Geni submit failed!"
     exit 1
 fi
+
+echo "Geni CLI test passed!"

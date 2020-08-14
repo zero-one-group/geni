@@ -1,3 +1,7 @@
+(-> (rdd/text-file "test/resources/rdd.txt" 1)
+    (rdd/map count)
+    (rdd/reduce +)
+    println)
 
 (def training-set
   (future
