@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+lein uberjar
+mkdir -p ~/.geni
+cp target/geni-*-standalone.jar ~/.geni/geni-repl-uberjar.jar
+
+exit | scripts/geni > .geni-stdout
+cat .geni-stdout
+if ! grep -q "nREPL server started" .geni-stdout ; then
+    echo "Geni REPL failed to start!"
+    exit 1
+fi
+
+scripts/geni --submit test/resources/geni_test_script.clj > .geni-stdout
+cat .geni-stdout
+if ! grep -q "| spark f g h" .geni-stdout ; then
+    echo "Geni submit failed!"
+    exit 1
+fi
+
+(scripts/geni --submit some/non/existent/file.clj || true) > .geni-stdout
+cat .geni-stdout
+if ! grep -q "Cannot find file some/non/existent/file.clj!" .geni-stdout ; then
+    echo "Geni submit failed!"
+    exit 1
+fi
