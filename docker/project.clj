@@ -36,7 +36,8 @@
                         [midje "1.9.9"]]
          :plugins [[lein-cloverage "1.1.2"]
                    [lein-midje "3.2.1"]]
-         :aot [zero-one.geni.rdd.function]}}
+         :aot [zero-one.geni.rdd.function
+               zero-one.geni.aot-functions]}}
   :repl-options {:init-ns zero-one.geni.main}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
