@@ -1,5 +1,6 @@
 (ns zero-one.geni.main
   (:require
+    [clojure.java.io]
     [clojure.pprint]
     [zero-one.geni.core :as g]
     [zero-one.geni.defaults]
@@ -19,13 +20,24 @@
               '[zero-one.geni.ml :as ml])
      (def spark zero-one.geni.main/spark)))
 
-(defn -main [& _]
+(defn custom-stream [script-path]
+  (try
+    (-> (str (slurp script-path) "\nexit\n")
+        (.getBytes "UTF-8")
+        (java.io.ByteArrayInputStream.))
+    (catch Exception _
+      (println (str "Cannot find file " script-path "!"))
+      (System/exit 1))))
+
+(defn -main [& args]
   (clojure.pprint/pprint (g/spark-conf @spark))
-  (let [port    (+ 65001 (rand-int 500))
-        welcome (repl/spark-welcome-note (.version @spark))]
-    (println welcome)
-    (repl/launch-repl {:port port :custom-eval init-eval})
-    (System/exit 0)))
+  (println (repl/spark-welcome-note (.version @spark)))
+  (let [script-path (if (empty? args) nil (first args))]
+    (repl/launch-repl (merge {:port (+ 65001 (rand-int 500))
+                              :custom-eval init-eval}
+                             (when script-path
+                               {:input-stream (custom-stream script-path)}))))
+  (System/exit 0))
 
 (comment
 
