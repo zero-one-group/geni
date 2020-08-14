@@ -15,7 +15,16 @@
         (rdd/reduce +)) => 2709
     (-> (rdd/parallelise [1 2 3 4 5])
         (rdd/reduce *)) => 120)
-  (fact "map-to-pair + collect work"
+  (fact "map-to-pair + reduce-by-key + collect work"
+    (-> (rdd/text-file "test/resources/rdd.txt")
+        (rdd/map-to-pair aot/to-pair)
+        (rdd/reduce-by-key +)
+        rdd/collect) => [["Alice’s Adventures in Wonderland" 18]
+                         ["at no cost and with" 27]
+                         ["of anyone anywhere" 27]
+                         ["by Lewis Carroll" 18]
+                         ["Project Gutenberg’s" 9]
+                         ["This eBook is for the use" 27]]
     (-> (rdd/text-file "test/resources/rdd.txt")
         (rdd/map-to-pair aot/to-pair)
         rdd/collect) => #(and (every? vector? %)

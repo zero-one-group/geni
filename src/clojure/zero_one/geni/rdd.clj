@@ -6,7 +6,6 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.rdd.function :as function])
   (:import
-    (scala Tuple2)
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
@@ -36,6 +35,9 @@
 (defn map-to-pair [rdd f]
   (.mapToPair rdd (function/pair-function f)))
 
+(defn reduce-by-key [rdd f]
+  (.reduceByKey rdd (function/function2 f)))
+
 ;; Actions
 (defn collect [rdd] (-> rdd .collect seq interop/->clojure))
 
@@ -49,8 +51,8 @@
 
   (-> lines
       (map-to-pair aot/to-pair)
-      collect
-      first)
+      (.reduceByKey (function/function2 +))
+      collect)
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
