@@ -15,7 +15,8 @@
            Function0
            Function1
            Function2
-           Function3)
+           Function3
+           Tuple2)
     (scala.collection JavaConversions Map Seq)))
 
 (declare ->clojure)
@@ -28,6 +29,9 @@
 
 (defn scala-map? [value]
   (instance? Map value))
+
+(defn scala-tuple2? [value]
+  (instance? Tuple2 value))
 
 (defn scala-seq->vec [scala-seq]
   (vec (JavaConversions/seqAsJavaList scala-seq)))
@@ -111,6 +115,7 @@
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)
+    (scala-tuple2? value)   [(._1 value) (._2 value)]
     :else                   value))
 
 (defn setter? [^java.lang.reflect.Method method]
