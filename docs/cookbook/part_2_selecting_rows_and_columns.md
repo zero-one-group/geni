@@ -1,4 +1,4 @@
-# CB02: Selecting Rows and Columns
+# CB-02: Selecting Rows and Columns
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%202%20-%20Selecting%20data%20&%20finding%20the%20most%20common%20complaint%20type.ipynb), we are going to use the 311 service requests data from [NYC Open Data](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9). We download the dataset using the `download-data!` utility function defined in Part 1:
 

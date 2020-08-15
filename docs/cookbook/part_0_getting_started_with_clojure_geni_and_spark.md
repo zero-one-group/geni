@@ -1,4 +1,4 @@
-# CB00: Getting Started with Clojure, Geni and Spark
+# CB-00: Getting Started with Clojure, Geni and Spark
 
 ## Clojure
 

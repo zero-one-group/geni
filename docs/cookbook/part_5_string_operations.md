@@ -1,4 +1,4 @@
-# CB05: String Operations
+# CB-05: String Operations
 
 In this part of the cookbook, we are going to use the cleaned dataset from the previous part:
 

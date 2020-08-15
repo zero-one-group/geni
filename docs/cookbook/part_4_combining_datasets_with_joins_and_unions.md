@@ -1,4 +1,4 @@
-# CB04: Combining Datasets with Joins and Unions
+# CB-04: Combining Datasets with Joins and Unions
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%205%20-%20Combining%20dataframes%20and%20scraping%20Canadian%20weather%20data.ipynb), we are going to use the Canadian historical weather data, which is freely available [here](https://climate.weather.gc.ca/). 
 

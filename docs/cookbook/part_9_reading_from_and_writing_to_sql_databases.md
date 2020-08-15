@@ -1,4 +1,4 @@
-# CB09: Reading From and Writing To SQL Databases
+# CB-09: Reading From and Writing To SQL Databases
 
 In this part of the cookbook, we use the well-known [Chinook sample SQLite database](https://www.sqlitetutorial.net/sqlite-sample-database/). We must first download the zipped database file and unzip it:
 
