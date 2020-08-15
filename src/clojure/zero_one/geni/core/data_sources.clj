@@ -2,9 +2,12 @@
   (:refer-clojure :exclude [partition-by sort-by])
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]
+    [clojure.string :as string]
     [zero-one.geni.defaults]
+    [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
+    (java.text Normalizer Normalizer$Form)
     (org.apache.spark.sql SparkSession)))
 
 ;; TODO: read-edn!, write-edn!
@@ -18,15 +21,36 @@
     options))
 
 (def default-options
-  {"csv" {:header "true" :inferSchema "true"}})
+  {"csv" {:header "true" :infer-schema "true"}})
+
+(defn deaccent [string]
+  ;; Source: https://gist.github.com/maio/e5f85d69c3f6ca281ccd
+  (let [normalized (Normalizer/normalize string Normalizer$Form/NFD)]
+    (string/replace normalized #"\p{InCombiningDiacriticalMarks}+" "")))
+
+(defn remove-punctuations [string]
+  (string/replace string #"[.,\/#!$%\^&\*;:{}=\_`~()]" ""))
+
+(defn normalise-column-names [dataset]
+  (let [new-columns (->> dataset
+                         .columns
+                         (map remove-punctuations)
+                         (map deaccent)
+                         (map camel-snake-kebab.core/->kebab-case))]
+    (.toDF dataset (interop/->scala-seq new-columns))))
 
 (defn read-data! [format-name spark path options]
-  (let [defaults            (default-options format-name)
+  (let [config-options      (dissoc options :kebab-columns)
+        defaults            (default-options format-name)
         unconfigured-reader (.. spark read (format format-name))
         configured-reader   (configure-reader-or-writer
                               unconfigured-reader
-                              (merge defaults options))]
-    (.load configured-reader path)))
+                              (merge defaults config-options))
+        finalise-fn         (comp
+                              (if (:kebab-columns options)
+                                normalise-column-names
+                                identity))]
+    (finalise-fn (.load configured-reader path))))
 
 (defmulti read-avro! (fn [head & _] (class head)))
 (defmethod read-avro! :default
