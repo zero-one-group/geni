@@ -1,4 +1,4 @@
-# CB3: Grouping and Aggregating
+# CB03: Grouping and Aggregating
 
 In this section, we reuse the Montréal cyclists data from part 1 of this cookbook:
 

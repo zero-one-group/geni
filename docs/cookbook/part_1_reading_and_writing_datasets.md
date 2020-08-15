@@ -1,4 +1,4 @@
-# CB1: Reading and Writing Datasets
+# CB01: Reading and Writing Datasets
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). To download the dataset, we use the following setup:
 
