@@ -41,7 +41,7 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: clj-kondo
-          args: --lint src/zero_one test/zero_one --cache false
+          args: --lint src/clojure/zero_one test/zero_one --cache false
   lein-template:
     runs-on: ubuntu-latest
     steps:
