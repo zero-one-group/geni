@@ -181,8 +181,7 @@
 (def bikes
   (normalise-column-names
     (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                        :encoding "ISO-8859-1"
-                                        :inferSchema "true"})))
+                                        :encoding "ISO-8859-1"})))
 
 ;; 3.1 Adding a Weekday Column
 (g/dtypes bikes)
@@ -222,7 +221,7 @@
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
   (normalise-column-names
-    (g/read-csv! spark (weather-data-path year month) {:inferSchema "true"})))
+    (g/read-csv! spark (weather-data-path year month))))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 (g/print-schema raw-weather-mar-2012)
@@ -304,7 +303,7 @@ columns-to-select
 (mapv (partial weather-data 2012) (range 1 13))
 
 (def unioned
-  (-> (g/read-csv! spark "data/cookbook/weather" {:inferSchema "true"})
+  (-> (g/read-csv! spark "data/cookbook/weather")
       normalise-column-names
       (g/select (g/columns weather-mar-2012))))
 
@@ -318,7 +317,7 @@ columns-to-select
 
 ;; Part 5: String Operations
 (def weather-2012
-  (g/read-csv! spark "data/cookbook/weather-2012.csv" {:inferSchema "true"}))
+  (g/read-csv! spark "data/cookbook/weather-2012.csv"))
 
 ;; 5.1 Finding The Snowiest Months
 (-> weather-2012
@@ -365,7 +364,7 @@ columns-to-select
 
 ;(def complaints
   ;(normalise-column-names
-    ;(g/read-csv! spark "data/cookbook/complaints.csv" {:inferSchema "true"})))
+    ;(g/read-csv! spark "data/cookbook/complaints.csv")))
 
 ;; 6.1 Messy Zip Codes
 (-> complaints g/dtypes :incident-zip)

@@ -18,7 +18,7 @@ We can download the data by hitting the right URL query. We can programmatically
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
   (normalise-column-names
-    (g/read-csv! (weather-data-path year month) {:inferSchema "true"})))
+    (g/read-csv! (weather-data-path year month))))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 
@@ -285,7 +285,7 @@ and we can simply set the CSV path to the directory path:
 
 ```clojure
 (def weather-2012
-  (-> (g/read-csv! "data/cookbook/weather" {:inferSchema "true"})
+  (-> (g/read-csv! "data/cookbook/weather")
       normalise-column-names
       (g/select (g/columns weather-mar-2012))))
 
