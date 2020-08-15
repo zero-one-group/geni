@@ -72,7 +72,7 @@ In another part of the script, we would like to put together a customer profile 
 
 ## 10.2 Caching Intermediate Results
 
-At this point, the dataset `member-profile` is derived from several possibly expensive computational steps. One thing we must bear in mind when working with Spark datasets is that Spark won't save (some) intermediate results unless specifically asked. So that if we were to use a dataset such as `member-profile` in further computations, Spark will re-do the two group-by operations and the one join operation. This means that we can potentially save time by telling Spark which datasets to cache using `g/cache`.
+At this point, the dataset `member-profile` is derived from several possibly expensive computational steps. Spark does not save the intermediate results unless specifically asked. So that if we were to use a dataset such as `member-profile` in further computations, Spark will re-do the two group-by operations and the one join operation. This means that we can potentially save time by telling Spark which datasets to cache using `g/cache`.
 
 To illustrate this effect, let's suppose the dataset `member-profile` is used in five other computations, which we replace with a dummy `g/write-parquet!` operation over a loop:
 
