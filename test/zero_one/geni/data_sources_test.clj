@@ -1,6 +1,6 @@
 (ns zero-one.geni.data-sources-test
   (:require
-    [midje.sweet :refer [fact => throws]]
+    [midje.sweet :refer [facts fact => throws]]
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           melbourne-df
@@ -10,6 +10,49 @@
 
 (def write-df
   (-> melbourne-df (g/select :Method :Type) (g/limit 5)))
+
+(facts "On options" :slow
+  (fact "infer-schema can be turned off"
+    (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 5))
+          temp-file (.toString (create-temp-file! ".csv"))
+          read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
+                       (g/read-csv! temp-file {:infer-schema false}))]
+      (g/dtypes read-df)) => {:Price "StringType" :Rooms "StringType"})
+  (fact "kebab-columns option works"
+    (let [dataframe (g/table->dataset
+                      [[1 2 3]]
+                      ["Brébeuf (données non disponibles)"
+                       "X Coordinate (State Plane)"
+                       "already-kebab-case"])
+          temp-file (.toString (create-temp-file! ""))]
+      (g/write-csv! dataframe temp-file {:mode "overwrite"})
+      (g/column-names (g/read-csv! temp-file {:kebab-columns true})))
+    => ["brebeuf-donnees-non-disponibles"
+        "x-coordinate-state-plane"
+        "already-kebab-case"]
+    (-> "test/resources/melbourne_housing_snapshot.parquet"
+        (g/read-parquet! {:kebab-columns true})
+        g/columns) => [:suburb
+                       :address
+                       :rooms
+                       :type
+                       :price
+                       :method
+                       :seller-g
+                       :date
+                       :distance
+                       :postcode
+                       :bedroom-2
+                       :bathroom
+                       :car
+                       :landsize
+                       :building-area
+                       :year-built
+                       :council-area
+                       :lattitude
+                       :longtitude
+                       :regionname
+                       :propertycount]))
 
 (fact "Writer defaults to error" :slow
   (doall
