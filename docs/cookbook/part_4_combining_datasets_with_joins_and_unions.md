@@ -262,8 +262,8 @@ To verify that the vertical stacking (or union) operation is successful, we chec
 => 1488
 
 (-> weather-unioned
-    (g/group-by :year :month)
-    g/count
+    (g/select :year :month)
+    g/value-counts
     g/show)
 ; +----+-----+-----+
 ; |year|month|count|

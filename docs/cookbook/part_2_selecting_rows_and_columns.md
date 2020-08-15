@@ -399,6 +399,30 @@ This works, but we are probably interested only in the top 10 complaint types so
 ; +----------------------+-----+
 ```
 
+This operation is so common that we have a shortcut function, namely `g/value-counts`:
+
+```clojure
+(-> complaints
+    (g/select :complaint-type)
+    g/value-counts
+    (g/limit 10)
+    g/show)
+; +----------------------+-----+
+; |complaint-type        |count|
+; +----------------------+-----+
+; |HEATING               |14200|
+; |GENERAL CONSTRUCTION  |7471 |
+; |Street Light Condition|7117 |
+; |DOF Literature Request|5797 |
+; |PLUMBING              |5373 |
+; |PAINT - PLASTER       |5149 |
+; |Blocked Driveway      |4590 |
+; |NONCONST              |3998 |
+; |Street Condition      |3473 |
+; |Illegal Parking       |3343 |
+; +----------------------+-----+
+```
+
 ## 2.5 Selecting Only Noise Complaints
 
 To select for certain rows with a specific column value, we can use `g/filter` and a boolean expression. For instance, the following filters for rows that indicate street-noise complaints:
@@ -446,9 +470,8 @@ To answer this question, we can simply compose the functions from the last two s
 ```clojure
 (-> complaints
     (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
-    (g/group-by :borough)
-    g/count
-    (g/order-by (g/desc :count))
+    (g/select :borough)
+    g/value-counts
     g/show)
 ; +-------------+-----+
 ; |borough      |count|
