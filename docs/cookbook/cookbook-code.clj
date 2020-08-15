@@ -575,4 +575,57 @@ columns-to-select
                 :url     "jdbc:sqlite:data/chinook-tracks.sqlite"
                 :dbtable "tracks"})
 
-;; Part 10: Avoiding Repeated Computations with Caching)
+;; Part 10: Avoiding Repeated Computations with Caching
+
+(def dummy-data-path "/data/performance-benchmark-data")
+
+(def transactions (g/read-parquet! dummy-data-path))
+
+(g/count transactions)
+
+(g/print-schema transactions)
+
+;; 10.1 Putting Together A Member Profile
+
+(def member-spending
+  (-> transactions
+      (g/with-column :sales (g/* :price :quantity))
+      (g/group-by :member-id)
+      (g/agg {:total-spend     (g/sum :sales)
+              :avg-basket-size (g/mean :sales)
+              :avg-price       (g/mean :price)})))
+
+(def member-frequency
+  (-> transactions
+      (g/group-by :member-id)
+      (g/agg {:n-transactions (g/count "*")
+              :n-visits       (g/count-distinct :date)})))
+
+(def member-profile
+  (g/join member-spending member-frequency :member-id))
+
+(g/print-schema member-profile)
+
+;; 10.2 Caching Intermediate Results
+
+(defn some-other-computations [member-profile]
+  (g/write-parquet! member-profile "data/temp.parquet" {:mode "overwrite"}))
+
+(doall (for [_ (range 5)]
+         (time (some-other-computations member-profile))))
+; "Elapsed time: 10083.047244 msecs"
+; "Elapsed time: 8231.45662 msecs"
+; "Elapsed time: 8525.947692 msecs"
+; "Elapsed time: 8155.982435 msecs"
+; "Elapsed time: 7638.144858 msecs"
+
+(def cached-member-profile
+  (g/cache member-profile))
+
+(doall (for [_ (range 5)]
+         (time (some-other-computations cached-member-profile))))
+; "Elapsed time: 11996.307581 msecs"
+; "Elapsed time: 988.958567 msecs"
+; "Elapsed time: 1017.365143 msecs"
+; "Elapsed time: 1032.578846 msecs"
+; "Elapsed time: 1087.077004 msecs"
