@@ -4,8 +4,9 @@ In this section, we reuse the Montréal cyclists data from part 1 of this cookbo
 
 ```clojure
 (def bikes
-  (normalise-column-names
-    (g/read-csv! bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"})))
+  (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                      :encoding "ISO-8859-1"
+                                      :kebab-columns true}))
 ```
 
 ## 3.1 Adding a Weekday Column
@@ -14,15 +15,15 @@ Firstly, we note that the `:date` column is parsed as string:
 
 ```clojure
 (g/dtypes bikes)
-=> {:brébeuf "StringType",
-    :date "StringType",
+=> {:date "StringType",
+    :st-urbain-donnees-non-disponibles "StringType",
     :du-parc "IntegerType",
-    :côte-sainte-catherine "IntegerType",
     :maisonneuve-1 "IntegerType",
-    :st-urbain "StringType",
     :rachel-1 "IntegerType",
     :pierre-dupuy "IntegerType",
     :berri-1 "IntegerType",
+    :cote-sainte-catherine "IntegerType",
+    :brebeuf-donnees-non-disponibles "StringType",
     :maisonneuve-2 "IntegerType"}
 ```
 

@@ -92,18 +92,8 @@
 
 (g/print-schema raw-complaints)
 
-(require '[camel-snake-kebab.core])
-(require '[clojure.string])
-
-(defn normalise-column-names [dataset]
-  (let [new-columns (->> dataset
-                         g/column-names
-                         (map #(clojure.string/replace % #"\((.*?)\)" ""))
-                         (map #(clojure.string/replace % #"/" ""))
-                         (map camel-snake-kebab.core/->kebab-case))]
-    (g/to-df dataset new-columns)))
-
-(def complaints (normalise-column-names raw-complaints))
+(def complaints
+  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 
@@ -179,9 +169,9 @@
 
 ;; Part 3: Grouping and Aggregating
 (def bikes
-  (normalise-column-names
-    (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                        :encoding "ISO-8859-1"})))
+  (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                      :encoding "ISO-8859-1"
+                                      :kebab-columns true}))
 
 ;; 3.1 Adding a Weekday Column
 (g/dtypes bikes)
@@ -220,8 +210,7 @@
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
-  (normalise-column-names
-    (g/read-csv! spark (weather-data-path year month))))
+  (g/read-csv! spark (weather-data-path year month) {:kebab-columns true}))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 (g/print-schema raw-weather-mar-2012)
@@ -264,7 +253,7 @@ columns-to-select
 (-> weather-mar-2012
     (g/with-column :hour (g/hour (g/to-timestamp :date-time "yyyy-M-d HH:mm")))
     (g/group-by :hour)
-    (g/agg {:mean-temp (g/mean :temp)})
+    (g/agg {:mean-temp (g/mean :temp-c)})
     (g/order-by :hour)
     (g/show {:num-rows 25}))
 
@@ -287,7 +276,7 @@ columns-to-select
 (defn average-by-day-of-month [dataset new-col-name]
   (-> dataset
       (g/group-by :day)
-      (g/agg {new-col-name (g/mean :temp)})))
+      (g/agg {new-col-name (g/mean :temp-c)})))
 
 (def joined
   (g/join
@@ -303,8 +292,7 @@ columns-to-select
 (mapv (partial weather-data 2012) (range 1 13))
 
 (def unioned
-  (-> (g/read-csv! spark "data/cookbook/weather")
-      normalise-column-names
+  (-> (g/read-csv! spark "data/cookbook/weather" {:kebab-columns true})
       (g/select (g/columns weather-mar-2012))))
 
 (-> unioned
@@ -361,10 +349,8 @@ columns-to-select
     (g/show {:num-rows 25}))
 
 ;; Part 6: Cleaning Up Messy Data
-
 ;(def complaints
-  ;(normalise-column-names
-    ;(g/read-csv! spark "data/cookbook/complaints.csv")))
+  ;(g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 ;; 6.1 Messy Zip Codes
 (-> complaints g/dtypes :incident-zip)
@@ -557,10 +543,10 @@ columns-to-select
 
 ;; 9.1 Reading From SQLite
 (def chinook-tracks
-  (normalise-column-names
-    (g/read-jdbc! spark {:driver  "org.sqlite.JDBC"
-                         :url     "jdbc:sqlite:data/chinook.db"
-                         :dbtable "tracks"})))
+  (g/read-jdbc! spark {:driver        "org.sqlite.JDBC"
+                       :url           "jdbc:sqlite:data/chinook.db"
+                       :dbtable       "tracks"
+                       :kebab-columns true}))
 
 (g/count chinook-tracks)
 

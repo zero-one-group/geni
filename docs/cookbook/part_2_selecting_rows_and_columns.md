@@ -120,25 +120,15 @@ As before, we can check out the schema:
 
 The fact that the column names are not in kebab case is typical.
 
-Most datasets we see will not have kebab-case columns. We can deal with it programmatically by i) converting to kebab case and ii) deleting everything inside parantheses. For the former, we can use the awesome [camel-snake-kebab](https://github.com/clj-commons/camel-snake-kebab) library, and for the latter, we do a simple regex replace. We define a new utility function `normalise-column-names`:
+Most datasets we see will not have kebab-case columns. Geni has a shortcut to do the conversion automatically, namely the `:kebab-columns` option:
 
 ```clojure
-(require '[camel-snake-kebab.core])
-(require '[clojure.string])
-
-(defn normalise-column-names [dataset]
-  (let [new-columns (->> dataset
-                         g/column-names
-                         (map #(clojure.string/replace % #"\((.*?)\)" ""))
-                         (map #(clojure.string/replace % #"/" ""))
-                         (map camel-snake-kebab.core/->kebab-case))]
-    (g/to-df dataset new-columns)))
-
-(def complaints (normalise-column-names raw-complaints))
+(def complaints
+  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 ; root
-;  |-- unique-key: string (nullable = true)
+;  |-- unique-key: integer (nullable = true)
 ;  |-- created-date: string (nullable = true)
 ;  |-- closed-date: string (nullable = true)
 ;  |-- agency: string (nullable = true)
@@ -162,8 +152,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- resolution-action-updated-date: string (nullable = true)
 ;  |-- community-board: string (nullable = true)
 ;  |-- borough: string (nullable = true)
-;  |-- x-coordinate: string (nullable = true)
-;  |-- y-coordinate: string (nullable = true)
+;  |-- x-coordinate-state-plane: integer (nullable = true)
+;  |-- y-coordinate-state-plane: integer (nullable = true)
 ;  |-- park-facility-name: string (nullable = true)
 ;  |-- park-borough: string (nullable = true)
 ;  |-- school-name: string (nullable = true)
@@ -187,8 +177,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- garage-lot-name: string (nullable = true)
 ;  |-- ferry-direction: string (nullable = true)
 ;  |-- ferry-terminal-name: string (nullable = true)
-;  |-- latitude: string (nullable = true)
-;  |-- longitude: string (nullable = true)
+;  |-- latitude: double (nullable = true)
+;  |-- longitude: double (nullable = true)
 ;  |-- location: string (nullable = true)
 ```
 
