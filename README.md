@@ -44,7 +44,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
         </ul>
       </td>
       <td>
-        <ol>
+        <ol start="0">
             <li><a href="docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md">
                 Getting Started with Clojure, Geni and Spark
             </a></li>
@@ -78,11 +78,9 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
             <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
                 Avoiding Repeated Computations with Caching
             </a></li>
-            <li>[TBD] Transforming ML Features with Pipelines</li>
-            <li>[TBD] Regression, Classification and Clustering</li>
-            <li>[TBD] A Basic Recommender System with ALS</li>
-            <li>[TBD] Working with Scala Interop</li>
-            <li>[TBD] Basic RDD Operations</li>
+            <li><a href="docs/cookbook/part_11_ml_features_with_pipelines.md">
+                ML Features with Pipelines
+            </a></li>
         </ol>
       </td>
     </tr>
