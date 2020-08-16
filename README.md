@@ -109,15 +109,15 @@ Spark SQL API for data wrangling:
 
 (g/print-schema dataframe)
 ; root
-;  |-- longitude: string (nullable = true)
-;  |-- latitude: string (nullable = true)
-;  |-- housing_median_age: string (nullable = true)
-;  |-- total_rooms: string (nullable = true)
-;  |-- total_bedrooms: string (nullable = true)
-;  |-- population: string (nullable = true)
-;  |-- households: string (nullable = true)
-;  |-- median_income: string (nullable = true)
-;  |-- median_house_value: string (nullable = true)
+;  |-- longitude: double (nullable = true)
+;  |-- latitude: double (nullable = true)
+;  |-- housing_median_age: double (nullable = true)
+;  |-- total_rooms: double (nullable = true)
+;  |-- total_bedrooms: double (nullable = true)
+;  |-- population: double (nullable = true)
+;  |-- households: double (nullable = true)
+;  |-- median_income: double (nullable = true)
+;  |-- median_house_value: double (nullable = true)
 ;  |-- ocean_proximity: string (nullable = true)
 
 (-> dataframe (g/limit 5) g/show)
@@ -163,20 +163,20 @@ Spark SQL API for data wrangling:
                :house (g/struct {:rooms (g/struct :total_rooms :total_bedrooms)
                                  :age   :housing_median_age})
                :coord (g/struct {:lat :latitude :long :longitude})})
-    (g/limit 2)
+    (g/limit 3)
     g/collect)
 => ({:ocean "NEAR BAY",
-     :house {:rooms {:total_rooms "880.0", 
-                     :total_bedrooms "129.0"},
-             :age "41.0"},
-     :coord {:lat "37.88", 
-             :long "-122.23"}}
+     :house {:rooms {:total_rooms 880.0, :total_bedrooms 129.0}, 
+             :age 41.0},
+     :coord {:lat 37.88, :long -122.23}}
     {:ocean "NEAR BAY",
-     :house {:rooms {:total_rooms "7099.0", 
-                     :total_bedrooms "1106.0"},
-             :age "21.0"},
-     :coord {:lat "37.86", 
-             :long "-122.22"}})
+     :house {:rooms {:total_rooms 7099.0, :total_bedrooms 1106.0}, 
+             :age 21.0},
+     :coord {:lat 37.86, :long -122.22}}
+    {:ocean "NEAR BAY",
+     :house {:rooms {:total_rooms 1467.0, :total_bedrooms 190.0}, 
+             :age 52.0},
+     :coord {:lat 37.85, :long -122.24}})
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
