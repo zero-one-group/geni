@@ -1,4 +1,4 @@
-# CB4: Combining Datasets with Joins and Unions
+# CB-04: Combining Datasets with Joins and Unions
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%205%20-%20Combining%20dataframes%20and%20scraping%20Canadian%20weather%20data.ipynb), we are going to use the Canadian historical weather data, which is freely available [here](https://climate.weather.gc.ca/). 
 
@@ -17,8 +17,7 @@ We can download the data by hitting the right URL query. We can programmatically
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
-  (normalise-column-names
-    (g/read-csv! (weather-data-path year month) {:inferSchema "true"})))
+  (g/read-csv! (weather-data-path year month))))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 
@@ -27,8 +26,8 @@ We can download the data by hitting the right URL query. We can programmatically
 
 (g/print-schema raw-weather-mar-2012)
 ; root
-;  |-- longitude: double (nullable = true)
-;  |-- latitude: double (nullable = true)
+;  |-- longitude-x: double (nullable = true)
+;  |-- latitude-y: double (nullable = true)
 ;  |-- station-name: string (nullable = true)
 ;  |-- climate-id: integer (nullable = true)
 ;  |-- date-time: string (nullable = true)
@@ -36,19 +35,19 @@ We can download the data by hitting the right URL query. We can programmatically
 ;  |-- month: integer (nullable = true)
 ;  |-- day: integer (nullable = true)
 ;  |-- time: string (nullable = true)
-;  |-- temp: double (nullable = true)
+;  |-- temp-c: double (nullable = true)
 ;  |-- temp-flag: string (nullable = true)
-;  |-- dew-point-temp: double (nullable = true)
+;  |-- dew-point-temp-c: double (nullable = true)
 ;  |-- dew-point-temp-flag: string (nullable = true)
 ;  |-- rel-hum: integer (nullable = true)
 ;  |-- rel-hum-flag: string (nullable = true)
-;  |-- wind-dir: integer (nullable = true)
+;  |-- wind-dir-10s-deg: integer (nullable = true)
 ;  |-- wind-dir-flag: string (nullable = true)
-;  |-- wind-spd: integer (nullable = true)
+;  |-- wind-spd-kmh: integer (nullable = true)
 ;  |-- wind-spd-flag: string (nullable = true)
-;  |-- visibility: double (nullable = true)
+;  |-- visibility-km: double (nullable = true)
 ;  |-- visibility-flag: string (nullable = true)
-;  |-- stn-press: double (nullable = true)
+;  |-- stn-press-k-pa: double (nullable = true)
 ;  |-- stn-press-flag: string (nullable = true)
 ;  |-- hmdx: integer (nullable = true)
 ;  |-- hmdx-flag: string (nullable = true)
@@ -208,7 +207,7 @@ To extract the hour of day, we must first create a timestamp column using `g/to-
 (-> weather-mar-2012
     (g/with-column :hour (g/hour (g/to-timestamp :date-time "yyyy-M-d HH:mm")))
     (g/group-by :hour)
-    (g/agg {:mean-temp (g/mean :temp)})
+    (g/agg {:mean-temp (g/mean :temp-c)})
     (g/order-by :hour)
     (g/show {:num-rows 25}))
 ; +----+-------------------+
@@ -262,8 +261,8 @@ To verify that the vertical stacking (or union) operation is successful, we chec
 => 1488
 
 (-> weather-unioned
-    (g/group-by :year :month)
-    g/count
+    (g/select :year :month)
+    g/value-counts
     g/show)
 ; +----+-----+-----+
 ; |year|month|count|
@@ -285,8 +284,7 @@ and we can simply set the CSV path to the directory path:
 
 ```clojure
 (def weather-2012
-  (-> (g/read-csv! "data/cookbook/weather" {:inferSchema "true"})
-      normalise-column-names
+  (-> (g/read-csv! "data/cookbook/weather" {:kebab-columns true})
       (g/select (g/columns weather-mar-2012))))
 
 (-> weather-2012

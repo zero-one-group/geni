@@ -1,4 +1,4 @@
-# CB1: Reading and Writing Datasets
+# CB-01: Reading and Writing Datasets
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). To download the dataset, we use the following setup:
 
@@ -48,9 +48,7 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
 
 ```clojure
 (def fixed-df
-  (g/read-csv! bikes-data-path {:delimiter ";"
-                                :encoding "ISO-8859-1"
-                                :inferSchema "true"}))
+  (g/read-csv! bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
 
 (-> fixed-df (g/limit 3) g/show)
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
@@ -62,7 +60,7 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
 ```
 
-Note that we also added the option `:inferSchema` to turn on automatic schema inference. It appears that we have fixed the issues! But it is still quite difficult to read a wide table. We can view the data vertically using `g/show-vertical`:
+It appears that we have fixed the issues! But it is still quite difficult to read a wide table. We can view the data vertically using `g/show-vertical`:
 
 ```clojure
 (-> fixed-df (g/limit 3) g/show-vertical)

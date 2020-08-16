@@ -28,9 +28,8 @@
     g/show)
 
 (def fixed-df
-  (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                      :encoding "ISO-8859-1"
-                                      :inferSchema "true"}))
+  (g/read-csv! spark bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
+
 (-> fixed-df
     (g/limit 3)
     g/show)
@@ -93,18 +92,8 @@
 
 (g/print-schema raw-complaints)
 
-(require '[camel-snake-kebab.core])
-(require '[clojure.string])
-
-(defn normalise-column-names [dataset]
-  (let [new-columns (->> dataset
-                         g/column-names
-                         (map #(clojure.string/replace % #"\((.*?)\)" ""))
-                         (map #(clojure.string/replace % #"/" ""))
-                         (map camel-snake-kebab.core/->kebab-case))]
-    (g/to-df dataset new-columns)))
-
-(def complaints (normalise-column-names raw-complaints))
+(def complaints
+  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 
@@ -150,6 +139,12 @@
     (g/limit 10)
     g/show)
 
+(-> complaints
+    (g/select :complaint-type)
+    g/value-counts
+    (g/limit 10)
+    g/show)
+
 ;; 2.5 Selecting Only Noise Complaints
 (-> complaints
     (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
@@ -168,17 +163,15 @@
 ;; 2.6 Which Borough Has The Most Noise Complaints?
 (-> complaints
     (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
-    (g/group-by :borough)
-    g/count
-    (g/order-by (g/desc :count))
+    (g/select :borough)
+    g/value-counts
     g/show)
 
 ;; Part 3: Grouping and Aggregating
 (def bikes
-  (normalise-column-names
-    (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                        :encoding "ISO-8859-1"
-                                        :inferSchema "true"})))
+  (g/read-csv! spark bikes-data-path {:delimiter ";"
+                                      :encoding "ISO-8859-1"
+                                      :kebab-columns true}))
 
 ;; 3.1 Adding a Weekday Column
 (g/dtypes bikes)
@@ -217,8 +210,7 @@
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
-  (normalise-column-names
-    (g/read-csv! spark (weather-data-path year month) {:inferSchema "true"})))
+  (g/read-csv! spark (weather-data-path year month) {:kebab-columns true}))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 (g/print-schema raw-weather-mar-2012)
@@ -261,11 +253,11 @@ columns-to-select
 (-> weather-mar-2012
     (g/with-column :hour (g/hour (g/to-timestamp :date-time "yyyy-M-d HH:mm")))
     (g/group-by :hour)
-    (g/agg {:mean-temp (g/mean :temp)})
+    (g/agg {:mean-temp (g/mean :temp-c)})
     (g/order-by :hour)
     (g/show {:num-rows 25}))
 
-;; 4.3 Combining Monthly Data
+;; 4.4 Combining Monthly Data
 (def weather-oct-2012
   (-> (weather-data 2012 10)
       (g/select (g/columns weather-mar-2012))))
@@ -276,15 +268,15 @@ columns-to-select
 (g/count weather-unioned)
 
 (-> weather-unioned
-    (g/group-by :year :month)
-    g/count
+    (g/select :year :month)
+    g/value-counts
     g/show)
 
-;; 4.4 Joining by Day of Month
+;; 4.5 Joining by Day of Month
 (defn average-by-day-of-month [dataset new-col-name]
   (-> dataset
       (g/group-by :day)
-      (g/agg {new-col-name (g/mean :temp)})))
+      (g/agg {new-col-name (g/mean :temp-c)})))
 
 (def joined
   (g/join
@@ -296,12 +288,11 @@ columns-to-select
     (g/order-by :day)
     (g/show {:num-rows 25}))
 
-;; 4.5 Reading Multiple Files at Once
+;; 4.6 Reading Multiple Files at Once
 (mapv (partial weather-data 2012) (range 1 13))
 
 (def unioned
-  (-> (g/read-csv! spark "data/cookbook/weather" {:inferSchema "true"})
-      normalise-column-names
+  (-> (g/read-csv! spark "data/cookbook/weather" {:kebab-columns true})
       (g/select (g/columns weather-mar-2012))))
 
 (-> unioned
@@ -314,7 +305,7 @@ columns-to-select
 
 ;; Part 5: String Operations
 (def weather-2012
-  (g/read-csv! spark "data/cookbook/weather-2012.csv" {:inferSchema "true"}))
+  (g/read-csv! spark "data/cookbook/weather-2012.csv"))
 
 ;; 5.1 Finding The Snowiest Months
 (-> weather-2012
@@ -358,10 +349,8 @@ columns-to-select
     (g/show {:num-rows 25}))
 
 ;; Part 6: Cleaning Up Messy Data
-
 ;(def complaints
-  ;(normalise-column-names
-    ;(g/read-csv! spark "data/cookbook/complaints.csv" {:inferSchema "true"})))
+  ;(g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 ;; 6.1 Messy Zip Codes
 (-> complaints g/dtypes :incident-zip)
@@ -554,10 +543,10 @@ columns-to-select
 
 ;; 9.1 Reading From SQLite
 (def chinook-tracks
-  (normalise-column-names
-    (g/read-jdbc! spark {:driver  "org.sqlite.JDBC"
-                         :url     "jdbc:sqlite:data/chinook.db"
-                         :dbtable "tracks"})))
+  (g/read-jdbc! spark {:driver        "org.sqlite.JDBC"
+                       :url           "jdbc:sqlite:data/chinook.db"
+                       :dbtable       "tracks"
+                       :kebab-columns true}))
 
 (g/count chinook-tracks)
 
@@ -570,3 +559,58 @@ columns-to-select
                {:driver  "org.sqlite.JDBC"
                 :url     "jdbc:sqlite:data/chinook-tracks.sqlite"
                 :dbtable "tracks"})
+
+;; Part 10: Avoiding Repeated Computations with Caching
+
+(def dummy-data-path "/data/performance-benchmark-data")
+
+(def transactions (g/read-parquet! dummy-data-path))
+
+(g/count transactions)
+
+(g/print-schema transactions)
+
+;; 10.1 Putting Together A Member Profile
+
+(def member-spending
+  (-> transactions
+      (g/with-column :sales (g/* :price :quantity))
+      (g/group-by :member-id)
+      (g/agg {:total-spend     (g/sum :sales)
+              :avg-basket-size (g/mean :sales)
+              :avg-price       (g/mean :price)})))
+
+(def member-frequency
+  (-> transactions
+      (g/group-by :member-id)
+      (g/agg {:n-transactions (g/count "*")
+              :n-visits       (g/count-distinct :date)})))
+
+(def member-profile
+  (g/join member-spending member-frequency :member-id))
+
+(g/print-schema member-profile)
+
+;; 10.2 Caching Intermediate Results
+
+(defn some-other-computations [member-profile]
+  (g/write-parquet! member-profile "data/temp.parquet" {:mode "overwrite"}))
+
+(doall (for [_ (range 5)]
+         (time (some-other-computations member-profile))))
+; "Elapsed time: 10083.047244 msecs"
+; "Elapsed time: 8231.45662 msecs"
+; "Elapsed time: 8525.947692 msecs"
+; "Elapsed time: 8155.982435 msecs"
+; "Elapsed time: 7638.144858 msecs"
+
+(def cached-member-profile
+  (g/cache member-profile))
+
+(doall (for [_ (range 5)]
+         (time (some-other-computations cached-member-profile))))
+; "Elapsed time: 11996.307581 msecs"
+; "Elapsed time: 988.958567 msecs"
+; "Elapsed time: 1017.365143 msecs"
+; "Elapsed time: 1032.578846 msecs"
+; "Elapsed time: 1087.077004 msecs"

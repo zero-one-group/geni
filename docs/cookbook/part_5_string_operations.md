@@ -1,10 +1,10 @@
-# CB5: String Operations
+# CB-05: String Operations
 
 In this part of the cookbook, we are going to use the cleaned dataset from the previous part:
 
 ```clojure
 (def weather-2012
-  (g/read-csv! "data/cookbook/weather-2012.csv" {:inferSchema "true"}))
+  (g/read-csv! "data/cookbook/weather-2012.csv"))
 ```
 
 ## 5.1 Finding The Snowiest Months

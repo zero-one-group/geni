@@ -1,11 +1,10 @@
-# CB6: Cleaning Up Messy Data
+# CB-06: Cleaning Up Messy Data
 
 As in [part 2 of the cookbook](part_2_selecting_rows_and_columns.md), we are going to use the 311 service requests data from [NYC Open Data](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9). The data should already be downloaded and ready to load:
 
 ```clojure
 (def complaints
-  (normalise-column-names
-    (g/read-csv! "data/cookbook/complaints.csv" {:inferSchema "true"})))
+  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
 ```
 
 ## 6.1 Messy Zip Codes

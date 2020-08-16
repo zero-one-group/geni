@@ -43,6 +43,12 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
 8. [Window Functions](docs/cookbook/part_8_window_functions.md)
 9. [Reading From and Writing To SQL Databases](docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md)
+10. [Avoiding Repeated Computations with Caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)
+11. [TBD] Transforming ML Features with Pipelines
+12. [TBD] Regression, Classification and Clustering
+13. [TBD] A Basic Recommender System with ALS
+14. [TBD] Working with Scala Interop
+15. [TBD] Basic RDD Operations
 
 [![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
