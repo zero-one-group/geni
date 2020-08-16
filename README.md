@@ -26,22 +26,54 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
     <tr>
       <td>
         <ul>
-            <a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a>
+            <li><a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a></li>
+            <li><a href="CONTRIBUTING.md">Contributing Guide</a></li>
+            <li><a href="docs/examples.md">Examples</a></li>
+            <li><a href="docs/semantics.md">Geni Semantics</a></li>
+            <li><a href="docs/manual_dataset_creation.md">Manual Dataset Creation</a></li>
+            <li><a href="docs/xgboost.md">Optional XGBoost Support</a></li>
+            <li><a href="docs/pandas_numpy_and_other_idioms.md">Pandas, NumPy and Other Idioms</a></li>
+            <li><a href="docs/dataproc.md">Using Dataproc</a></li>
+            <li><a href="docs/spark_session.md">Where's The Spark Session</a></li>
+            <li><a href="docs/why.md">Why?</a></li>
+            <li><a href="docs/sql_maps.md">Working with SQL Maps</a></li>
         </ul>
       </td>
       <td>
         <ol>
-            <li>[Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)</li>
-            <li>[Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)</li>
-            <li>[Selecting Rows and Columns](docs/cookbook/part_2_selecting_rows_and_columns.md)</li>
-            <li>[Grouping and Aggregating](docs/cookbook/part_3_grouping_and_aggregating.md)</li>
-            <li>[Combining Datasets with Joins and Unions](docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md)</li>
-            <li>[String Operations](docs/cookbook/part_5_string_operations.md)</li>
-            <li>[Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)</li>
-            <li>[Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)</li>
-            <li>[Window Functions](docs/cookbook/part_8_window_functions.md)</li>
-            <li>[Reading From and Writing To SQL Databases](docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md)</li>
-            <li>[Avoiding Repeated Computations with Caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)</li>
+            <li><a href="docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md">
+                Getting Started with Clojure, Geni and Spark
+            </a></li>
+            <li><a href="docs/cookbook/part_1_reading_and_writing_datasets.md">
+                Reading and Writing Datasets
+            </a></li>
+            <li><a href="docs/cookbook/part_2_selecting_rows_and_columns.md">
+                Selecting Rows and Columns
+            </a></li>
+            <li><a href="docs/cookbook/part_3_grouping_and_aggregating.md">
+                Grouping and Aggregating
+            </a></li>
+            <li><a href="docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md">
+                Combining Datasets with Joins and Unions
+            </a></li>
+            <li><a href="docs/cookbook/part_5_string_operations.md">
+                String Operations
+            </a></li>
+            <li><a href="docs/cookbook/part_6_cleaning_up_messy_data.md">
+                Cleaning up Messy Data
+            </a></li>
+            <li><a href="docs/cookbook/part_7_timestamps_and_dates.md">
+                Timestamps and Dates
+            </a></li>
+            <li><a href="docs/cookbook/part_8_window_functions.md">
+                Window Functions
+            </a></li>
+            <li><a href="docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md">
+                Reading from and Writing to SQL Databases
+            </a></li>
+            <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
+                Avoiding Repeated Computations with Caching
+            </a></li>
             <li>[TBD] Transforming ML Features with Pipelines</li>
             <li>[TBD] Regression, Classification and Clustering</li>
             <li>[TBD] A Basic Recommender System with ALS</li>
