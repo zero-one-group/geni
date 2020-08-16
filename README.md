@@ -102,95 +102,79 @@ Spark SQL API for data wrangling:
 ```clojure
 (require '[zero-one.geni.core :as g])
 
+(def dataframe (g/read-parquet! "test/resources/housing.parquet"))
+
 (g/count dataframe)
-=> 13580
+=> 5000
 
 (g/print-schema dataframe)
 ; root
-;  |-- Suburb: string (nullable = true)
-;  |-- Address: string (nullable = true)
-;  |-- Rooms: long (nullable = true)
-;  |-- Type: string (nullable = true)
-;  |-- Price: double (nullable = true)
-;  |-- Method: string (nullable = true)
-;  |-- SellerG: string (nullable = true)
-;  |-- Date: string (nullable = true)
-;  |-- Distance: double (nullable = true)
-;  |-- Postcode: double (nullable = true)
-;  |-- Bedroom2: double (nullable = true)
-;  |-- Bathroom: double (nullable = true)
-;  |-- Car: double (nullable = true)
-;  |-- Landsize: double (nullable = true)
-;  |-- BuildingArea: double (nullable = true)
-;  |-- YearBuilt: double (nullable = true)
-;  |-- CouncilArea: string (nullable = true)
-;  |-- Lattitude: double (nullable = true)
-;  |-- Longtitude: double (nullable = true)
-;  |-- Regionname: string (nullable = true)
-;  |-- Propertycount: double (nullable = true)
+;  |-- longitude: string (nullable = true)
+;  |-- latitude: string (nullable = true)
+;  |-- housing_median_age: string (nullable = true)
+;  |-- total_rooms: string (nullable = true)
+;  |-- total_bedrooms: string (nullable = true)
+;  |-- population: string (nullable = true)
+;  |-- households: string (nullable = true)
+;  |-- median_income: string (nullable = true)
+;  |-- median_house_value: string (nullable = true)
+;  |-- ocean_proximity: string (nullable = true)
 
 (-> dataframe (g/limit 5) g/show)
-; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
-; |Suburb    |Address         |Rooms|Type|Price    |Method|SellerG|Date     |Distance|Postcode|Bedroom2|Bathroom|Car|Landsize|BuildingArea|YearBuilt|CouncilArea|Lattitude|Longtitude|Regionname           |Propertycount|
-; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
-; |Abbotsford|85 Turner St    |2    |h   |1480000.0|S     |Biggin |3/12/2016|2.5     |3067.0  |2.0     |1.0     |1.0|202.0   |null        |null     |Yarra      |-37.7996 |144.9984  |Northern Metropolitan|4019.0       |
-; |Abbotsford|25 Bloomburg St |2    |h   |1035000.0|S     |Biggin |4/02/2016|2.5     |3067.0  |2.0     |1.0     |0.0|156.0   |79.0        |1900.0   |Yarra      |-37.8079 |144.9934  |Northern Metropolitan|4019.0       |
-; |Abbotsford|5 Charles St    |3    |h   |1465000.0|SP    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |0.0|134.0   |150.0       |1900.0   |Yarra      |-37.8093 |144.9944  |Northern Metropolitan|4019.0       |
-; |Abbotsford|40 Federation La|3    |h   |850000.0 |PI    |Biggin |4/03/2017|2.5     |3067.0  |3.0     |2.0     |1.0|94.0    |null        |null     |Yarra      |-37.7969 |144.9969  |Northern Metropolitan|4019.0       |
-; |Abbotsford|55a Park St     |4    |h   |1600000.0|VB    |Nelson |4/06/2016|2.5     |3067.0  |3.0     |1.0     |2.0|120.0   |142.0       |2014.0   |Yarra      |-37.8072 |144.9941  |Northern Metropolitan|4019.0       |
-; +----------+----------------+-----+----+---------+------+-------+---------+--------+--------+--------+--------+---+--------+------------+---------+-----------+---------+----------+---------------------+-------------+
+; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
+; |longitude|latitude|housing_median_age|total_rooms|total_bedrooms|population|households|median_income|median_house_value|ocean_proximity|
+; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
+; |-122.23  |37.88   |41.0              |880.0      |129.0         |322.0     |126.0     |8.3252       |452600.0          |NEAR BAY       |
+; |-122.22  |37.86   |21.0              |7099.0     |1106.0        |2401.0    |1138.0    |8.3014       |358500.0          |NEAR BAY       |
+; |-122.24  |37.85   |52.0              |1467.0     |190.0         |496.0     |177.0     |7.2574       |352100.0          |NEAR BAY       |
+; |-122.25  |37.85   |52.0              |1274.0     |235.0         |558.0     |219.0     |5.6431       |341300.0          |NEAR BAY       |
+; |-122.25  |37.85   |52.0              |1627.0     |280.0         |565.0     |259.0     |3.8462       |342200.0          |NEAR BAY       |
+; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
 
-(-> dataframe (g/describe :Landsize :Rooms :Price) g/show)
-; +-------+-----------------+------------------+-----------------+
-; |summary|Landsize         |Rooms             |Price            |
-; +-------+-----------------+------------------+-----------------+
-; |count  |13580            |13580             |13580            |
-; |mean   |558.4161266568483|2.9379970544919   |1075684.079455081|
-; |stddev |3990.669241109034|0.9557479384215565|639310.7242960163|
-; |min    |0.0              |1                 |85000.0          |
-; |max    |433014.0         |10                |9000000.0        |
-; +-------+-----------------+------------------+-----------------+
+(-> dataframe (g/describe :housing_median_age :total_rooms :population) g/show)
+; +-------+------------------+------------------+-----------------+
+; |summary|housing_median_age|total_rooms       |population       |
+; +-------+------------------+------------------+-----------------+
+; |count  |5000              |5000              |5000             |
+; |mean   |30.9842           |2393.2132         |1334.9684        |
+; |stddev |12.969656616832669|1812.4457510408017|954.0206427949117|
+; |min    |1.0               |1000.0            |100.0            |
+; |max    |9.0               |999.0             |999.0            |
+; +-------+------------------+------------------+-----------------+
 
 (-> dataframe
-    (g/group-by :Suburb)
-    (g/agg {:count     (g/count "*")
-            :n-sellers (g/count-distinct :SellerG)
-            :avg-price (g/int (g/mean :Price))})
+    (g/group-by :ocean_proximity)
+    (g/agg {:count        (g/count "*")
+            :mean-rooms   (g/mean :total_rooms)
+            :distinct-lat (g/count-distinct (g/int :latitude))})
     (g/order-by (g/desc :count))
-    (g/limit 5)
     g/show)
-; +--------------+-----+---------+---------+
-; |Suburb        |count|n-sellers|avg-price|
-; +--------------+-----+---------+---------+
-; |Reservoir     |359  |18       |690008   |
-; |Richmond      |260  |22       |1083564  |
-; |Bentleigh East|249  |21       |1085591  |
-; |Preston       |239  |20       |902800   |
-; |Brunswick     |222  |21       |1013171  |
-; +--------------+-----+---------+---------+
+; +---------------+-----+------------------+------------+
+; |ocean_proximity|count|mean-rooms        |distinct-lat|
+; +---------------+-----+------------------+------------+
+; |INLAND         |1823 |2358.181020296215 |10          |
+; |<1H OCEAN      |1783 |2467.5361749859785|7           |
+; |NEAR BAY       |1287 |2368.72027972028  |2           |
+; |NEAR OCEAN     |107  |2046.1869158878505|2           |
+; +---------------+-----+------------------+------------+
 
 (-> dataframe
-    (g/select {:address :Address
-               :date    (g/to-date :Date "d/MM/yyyy")
-               :coord   (g/struct {:lat :Lattitude :long :Longtitude})})
-    g/shuffle
-    (g/limit 5)
+    (g/select {:ocean :ocean_proximity
+               :house (g/struct {:rooms (g/struct :total_rooms :total_bedrooms)
+                                 :age   :housing_median_age})
+               :coord (g/struct {:lat :latitude :long :longitude})})
+    (g/limit 2)
     g/collect)
-=> ({:address "114 Shields St",
-     :date #inst "2016-05-21T17:00:00.000-00:00",
-     :coord {:lat -37.7847, :long 144.9341}}
-    {:address "129 Glenlyon Rd",
-     :date #inst "2017-05-05T17:00:00.000-00:00",
-     :coord {:lat -37.7723, :long 144.9694}}
-    {:address "48 Lyons St",
-     :date #inst "2016-04-15T17:00:00.000-00:00",
-     :coord {:lat -37.8955, :long 145.0515}}
-    {:address "3/31 Clapham St",
-     :date #inst "2017-05-19T17:00:00.000-00:00",
-     :coord {:lat -37.7549, :long 144.9979}}
-    {:address "327 Hull Rd",
-     :date #inst "2017-09-08T17:00:00.000-00:00",
-     :coord {:lat -37.78329, :long 145.32271}})
+=> ({:ocean "NEAR BAY",
+     :house
+     {:rooms {:total_rooms "880.0", :total_bedrooms "129.0"},
+      :age "41.0"},
+     :coord {:lat "37.88", :long "-122.23"}}
+    {:ocean "NEAR BAY",
+     :house
+     {:rooms {:total_rooms "7099.0", :total_bedrooms "1106.0"},
+      :age "21.0"},
+     :coord {:lat "37.86", :long "-122.22"}})
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
