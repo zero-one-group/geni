@@ -17,8 +17,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 ## Resources
 
-<style> table { width:100%; } </style>
-<table>
+<table width="100%">
   <tbody>
     <tr>
       <th align="center">Docs</th>
