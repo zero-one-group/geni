@@ -4,7 +4,7 @@
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) library that wraps [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
-WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
+WARNING! This library is still alpha. See [Flambo](https://github.com/sorenmacbeth/flambo), [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for other Spark alternatives.
 
 [![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
@@ -298,3 +298,4 @@ Some code was taken from:
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
 * [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for serialisable functions for the RDD API.
+* [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping to optimise the tech.ml.dataset and tablecloth codes for the performance benchmark respectively, as well as recommending other libraries to test out.

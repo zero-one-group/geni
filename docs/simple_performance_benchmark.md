@@ -1,10 +1,10 @@
 # A Simple Performance Benchmark
 
-The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' poor single-threaded performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure our data jobs.
+The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' poor single-threaded performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure for our data jobs.
 
 The following piece does not attempt to present a fair, rigorous performance benchmark results. Instead, we would like to illustrate the kinds of speedups that were up for grasp for our team and for our specific use case. Therefore, the results should absolutely be taken with a grain of salt.
 
-For completeness, we also include the popular R library [dplyr](https://dplyr.tidyverse.org/).
+For the sake of completeness, we also include the popular Clojure library [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) (or TMD) and the popular R library [dplyr](https://dplyr.tidyverse.org/).
 
 ## Dummy Retail Data
 
@@ -98,18 +98,70 @@ dataframe %>%
     write_parquet("final.parquet")
 ```
 
-The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/dplyr/script.r).
+The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/r/dplyr.r).
+
+### data.table
+
+```r
+dataframe[, sales := quantity * price]
+result = dataframe[,
+                   .(total_spend = sum(sales),
+                     avg_basket_size = mean(sales),
+                     avg_price = mean(price),
+                     n_transactions = .N,
+                     n_visits = uniqueN(date),
+                     n_brands = uniqueN(`brand-id`),
+                     n_styles = uniqueN(`style-id`)),
+                   by = `member-id`]
+write_parquet(result, "datatable.parquet")
+```
+
+The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/r/datatable.r).
+
+### tech.ml.dataset
+
+We have three TMD variants, and each one is run using the same JVM options as Geni. The first variant uses Scicloj's [tablecloth](https://github.com/scicloj/tablecloth). We found tablecloth's [dplyr](https://dplyr.tidyverse.org/)-like API to be the most straightforward and looks most like the original Geni:
+
+```clojure
+(-> dataframe
+    (api/add-or-replace-column "sales" #(dfn/* (% "price") (% "quantity")))
+    (api/group-by "member-id")
+    (api/aggregate {:total-spend     #(dfn/sum (% "sales"))
+                    :avg-basket-size #(dfn/mean (% "sales"))
+                    :avg-price       #(dfn/mean (% "price"))
+                    :n-transactions  api/row-count
+                    :n-visits        #(count (distinct (% "date")))
+                    :n-brands        #(count (distinct (% "brand-id")))
+                    :n-styles        #(count (distinct (% "style-id")))}
+                   {:parallel? true})
+    (api/write-nippy! "target/dataset-matrix.nippy.gz"))
+```
+
+The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/tablecloth/src/tablecloth/core.clj). Shout out to [Tomasz Sulej](https://github.com/tsulej) for [the performance patch](https://github.com/scicloj/tablecloth/commit/53c25e55b94e3873d51b71276a1c31ac5473ee52) and for helping us optimise the code!
+
+After speaking to TMD's main author, [Chris Nuernberger](https://github.com/cnuernber), we found out that the tablecloth code can be further optimised. Potential bottlenecks include:
+
+1. TMD has concatenation overheads, so that reading from a single file is faster than concatenating 12 partitions; and
+2. TMD's support for Apache Parquet is poor; instead Apache Arrow should be used.
+
+With some help from Chris, we managed to get [the second TMD variant](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/dataset/src/dataset/optimised.clj), which solves problem 1. Chris wrote [the third TMD variant](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/dataset/src/dataset/optimised_by_chris.clj) himself! He added support for Arrow and some custom code for further optimisation. Of course, it is the most performant variant of TMD!
+
+Note that, at this point, the TMD comparisons are not 100% apples-to-apples, as the TMD variants have different data formats and partitions. However, it still solves the original problem, so we still include the benchmark results below!
 
 ## Results
 
 The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981.
 
-| Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
-| ---                                  | ---         | ---   | ---          | ---   |
-| Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
-| dplyr                                | 441         | x55.1 | 952          | x24.4 |
-| Geni                                 | 8           | x1.0  | 39           | x1.0  |
+| Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
+| --       | ---                                  | ---         | ---   | ---          | ---   |
+| Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
+| R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
+| Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
+| R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
+| Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
+| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
+| Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
 
-When run on only one month of data, Geni is 73x faster than Pandas. When run on the full dataset, Geni is 29x faster than Pandas. Much of the gap is due to Pandas not using all of the available cores on the machine, which should account for, at most, 12x in performance gains.
+When run on only one month of data, Geni is 73x faster than Pandas. When run on the full dataset, Geni is 29x faster than Pandas. Much of the gap is due to Pandas not using all of the available cores on the machine, which should account for, at most, 12x in performance gains. When optimised heavily, TMD's performance is roughly the same as Geni's.
 
 These speedup factors are typical whenever we compare Pandas and Geni. To reiterate, this is not meant to be a serious benchmark exercise, rather an illustration of what we typically see on our particular setup.
