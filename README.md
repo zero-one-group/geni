@@ -164,8 +164,7 @@ Spark SQL API for data wrangling:
                                  :age   :housing_median_age})
                :coord (g/struct {:lat :latitude :long :longitude})})
     (g/limit 3)
-    g/collect
-    clojure.pprint/pprint)
+    g/collect)
 => ({:ocean "NEAR BAY",
      :house {:rooms {:total_rooms 880.0, :total_bedrooms 129.0}, 
              :age 41.0},
