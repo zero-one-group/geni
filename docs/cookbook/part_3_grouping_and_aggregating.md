@@ -4,9 +4,9 @@ In this section, we reuse the Montréal cyclists data from part 1 of this cookbo
 
 ```clojure
 (def bikes
-  (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                      :encoding "ISO-8859-1"
-                                      :kebab-columns true}))
+  (g/read-csv! bikes-data-path {:delimiter ";"
+                                :encoding "ISO-8859-1"
+                                :kebab-columns true}))
 ```
 
 ## 3.1 Adding a Weekday Column

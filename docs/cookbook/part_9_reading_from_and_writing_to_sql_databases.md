@@ -22,10 +22,10 @@ Reading from databases through JDBC is slightly different to reading from a file
 
 ```clojure
 (def chinook-tracks
-  (g/read-jdbc! spark {:driver        "org.sqlite.JDBC"
-                       :url           "jdbc:sqlite:data/chinook.db"
-                       :dbtable       "tracks"
-                       :kebab-columns true}))
+  (g/read-jdbc! {:driver        "org.sqlite.JDBC"
+                 :url           "jdbc:sqlite:data/chinook.db"
+                 :dbtable       "tracks"
+                 :kebab-columns true}))
 
 (g/count chinook-tracks)
 => 3503

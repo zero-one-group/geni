@@ -17,18 +17,14 @@
 (def bikes-data-path "data/cookbook/bikes.csv")
 (download-data! bikes-data-url bikes-data-path)
 
-;; 1.1 Creating a Spark Session
-(defonce spark (g/create-spark-session {}))
-(g/spark-conf spark)
-
-;; 1.2 Reading Data from a CSV File
-(def broken-df (g/read-csv! spark bikes-data-path))
+;; 1.1 Reading Data from a CSV File
+(def broken-df (g/read-csv! bikes-data-path))
 (-> broken-df
     (g/limit 3)
     g/show)
 
 (def fixed-df
-  (g/read-csv! spark bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
+  (g/read-csv! bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
 
 (-> fixed-df
     (g/limit 3)
@@ -81,7 +77,7 @@
 (download-data! complaints-data-url complaints-data-path)
 
 (def raw-complaints
-  (g/read-csv! spark complaints-data-path))
+  (g/read-csv! complaints-data-path))
 
 ;; 2.1 What's Even In It?
 (g/show raw-complaints)
@@ -93,7 +89,7 @@
 (g/print-schema raw-complaints)
 
 (def complaints
-  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
+  (g/read-csv! complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 
@@ -169,9 +165,9 @@
 
 ;; Part 3: Grouping and Aggregating
 (def bikes
-  (g/read-csv! spark bikes-data-path {:delimiter ";"
-                                      :encoding "ISO-8859-1"
-                                      :kebab-columns true}))
+  (g/read-csv! bikes-data-path {:delimiter ";"
+                                :encoding "ISO-8859-1"
+                                :kebab-columns true}))
 
 ;; 3.1 Adding a Weekday Column
 (g/dtypes bikes)
@@ -210,7 +206,7 @@
 
 (defn weather-data [year month]
   (download-data! (weather-data-url year month) (weather-data-path year month))
-  (g/read-csv! spark (weather-data-path year month) {:kebab-columns true}))
+  (g/read-csv! (weather-data-path year month) {:kebab-columns true}))
 
 (def raw-weather-mar-2012 (weather-data 2012 3))
 (g/print-schema raw-weather-mar-2012)
@@ -292,7 +288,7 @@ columns-to-select
 (mapv (partial weather-data 2012) (range 1 13))
 
 (def unioned
-  (-> (g/read-csv! spark "data/cookbook/weather" {:kebab-columns true})
+  (-> (g/read-csv! "data/cookbook/weather" {:kebab-columns true})
       (g/select (g/columns weather-mar-2012))))
 
 (-> unioned
@@ -305,7 +301,7 @@ columns-to-select
 
 ;; Part 5: String Operations
 (def weather-2012
-  (g/read-csv! spark "data/cookbook/weather-2012.csv"))
+  (g/read-csv! "data/cookbook/weather-2012.csv"))
 
 ;; 5.1 Finding The Snowiest Months
 (-> weather-2012
@@ -350,7 +346,7 @@ columns-to-select
 
 ;; Part 6: Cleaning Up Messy Data
 ;(def complaints
-  ;(g/read-csv! spark complaints-data-path {:kebab-columns true}))
+  ;(g/read-csv! complaints-data-path {:kebab-columns true}))
 
 ;; 6.1 Messy Zip Codes
 (-> complaints g/dtypes :incident-zip)
@@ -433,7 +429,7 @@ columns-to-select
 (download-data! popularity-contest-data-url popularity-contest-data-path)
 
 (def popularity-contest
-  (-> (g/read-csv! spark popularity-contest-data-path {:delimiter " "})
+  (-> (g/read-csv! popularity-contest-data-path {:delimiter " "})
       (g/to-df :access-time :creation-time :package-name :mru-program :tag)
       (g/remove (g/= :access-time (g/lit "END-POPULARITY-CONTEST-0")))))
 
@@ -467,7 +463,6 @@ columns-to-select
 ;; Part 8: Window Functions
 (def product-revenue
   (g/table->dataset
-    spark
     [["Thin"       "Cell phone" 6000]
      ["Normal"     "Tablet"     1500]
      ["Mini"       "Tablet"     5500]
@@ -543,10 +538,10 @@ columns-to-select
 
 ;; 9.1 Reading From SQLite
 (def chinook-tracks
-  (g/read-jdbc! spark {:driver        "org.sqlite.JDBC"
-                       :url           "jdbc:sqlite:data/chinook.db"
-                       :dbtable       "tracks"
-                       :kebab-columns true}))
+  (g/read-jdbc! {:driver        "org.sqlite.JDBC"
+                 :url           "jdbc:sqlite:data/chinook.db"
+                 :dbtable       "tracks"
+                 :kebab-columns true}))
 
 (g/count chinook-tracks)
 
