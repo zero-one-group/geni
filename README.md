@@ -166,15 +166,17 @@ Spark SQL API for data wrangling:
     (g/limit 2)
     g/collect)
 => ({:ocean "NEAR BAY",
-     :house
-     {:rooms {:total_rooms "880.0", :total_bedrooms "129.0"},
-      :age "41.0"},
-     :coord {:lat "37.88", :long "-122.23"}}
+     :house {:rooms {:total_rooms "880.0", 
+                     :total_bedrooms "129.0"},
+             :age "41.0"},
+     :coord {:lat "37.88", 
+             :long "-122.23"}}
     {:ocean "NEAR BAY",
-     :house
-     {:rooms {:total_rooms "7099.0", :total_bedrooms "1106.0"},
-      :age "21.0"},
-     :coord {:lat "37.86", :long "-122.22"}})
+     :house {:rooms {:total_rooms "7099.0", 
+                     :total_bedrooms "1106.0"},
+             :age "21.0"},
+     :coord {:lat "37.86", 
+             :long "-122.22"}})
 ```
 
 Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
