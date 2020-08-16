@@ -17,38 +17,52 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 ## Resources
 
-**Docs:**
+<table>
+  <tbody>
+    <tr>
+      <th align="center">Docs</th>
+      <th align="center">Cookbook</th>
+    </tr>
+    <tr>
+      <td>
+        <ul>
+            <li>[A Simple Performance Benchmark](docs/simple_performance_benchmark.md)</li>
+            <li>[Contributing Guide](CONTRIBUTING.md)</li>
+            <li>[Examples](docs/examples.md)</li>
+            <li>[Geni Semantics](docs/semantics.md)</li>
+            <li>[Manual Dataset Creation](docs/manual_dataset_creation.md)</li>
+            <li>[Optional XGBoost Support](docs/xgboost.md)</li>
+            <li>[Pandas, NumPy and Other Idioms](docs/pandas_numpy_and_other_idioms.md)</li>
+            <li>[Using Dataproc](docs/dataproc.md)</li>
+            <li>[Where's The Spark Session?](docs/spark_session.md)</li>
+            <li>[Why?](docs/why.md)</li>
+            <li>[Working with SQL Maps](docs/sql_maps.md)</li>
+        </ul>
+      </td>
+      <td>
+        <ol>
+            <li>[Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)</li>
+            <li>[Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)</li>
+            <li>[Selecting Rows and Columns](docs/cookbook/part_2_selecting_rows_and_columns.md)</li>
+            <li>[Grouping and Aggregating](docs/cookbook/part_3_grouping_and_aggregating.md)</li>
+            <li>[Combining Datasets with Joins and Unions](docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md)</li>
+            <li>[String Operations](docs/cookbook/part_5_string_operations.md)</li>
+            <li>[Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)</li>
+            <li>[Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)</li>
+            <li>[Window Functions](docs/cookbook/part_8_window_functions.md)</li>
+            <li>[Reading From and Writing To SQL Databases](docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md)</li>
+            <li>[Avoiding Repeated Computations with Caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)</li>
+            <li>[TBD] Transforming ML Features with Pipelines</li>
+            <li>[TBD] Regression, Classification and Clustering</li>
+            <li>[TBD] A Basic Recommender System with ALS</li>
+            <li>[TBD] Working with Scala Interop</li>
+            <li>[TBD] Basic RDD Operations</li>
+        </ol>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-* [A Simple Performance Benchmark](docs/simple_performance_benchmark.md)
-* [Contributing Guide](CONTRIBUTING.md)
-* [Examples](docs/examples.md)
-* [Geni Semantics](docs/semantics.md)
-* [Manual Dataset Creation](docs/manual_dataset_creation.md)
-* [Optional XGBoost Support](docs/xgboost.md)
-* [Pandas, NumPy and Other Idioms](docs/pandas_numpy_and_other_idioms.md)
-* [Using Dataproc](docs/dataproc.md)
-* [Where's The Spark Session?](docs/spark_session.md)
-* [Why?](docs/why.md)
-* [Working with SQL Maps](docs/sql_maps.md)
-
-**Geni Cookbook:**
-
-0. [Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)
-1. [Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)
-2. [Selecting Rows and Columns](docs/cookbook/part_2_selecting_rows_and_columns.md)
-3. [Grouping and Aggregating](docs/cookbook/part_3_grouping_and_aggregating.md)
-4. [Combining Datasets with Joins and Unions](docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md)
-5. [String Operations](docs/cookbook/part_5_string_operations.md)
-6. [Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)
-7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
-8. [Window Functions](docs/cookbook/part_8_window_functions.md)
-9. [Reading From and Writing To SQL Databases](docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md)
-10. [Avoiding Repeated Computations with Caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)
-11. [TBD] Transforming ML Features with Pipelines
-12. [TBD] Regression, Classification and Clustering
-13. [TBD] A Basic Recommender System with ALS
-14. [TBD] Working with Scala Interop
-15. [TBD] Basic RDD Operations
 
 [![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
