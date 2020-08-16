@@ -2,7 +2,7 @@
 
 The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' poor single-threaded performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure for our data jobs.
 
-The following piece does not attempt to present a fair, rigorous performance benchmark results. Instead, we would like to illustrate the kinds of speedups that were up for grasp for our team and for our specific use case. Therefore, the results should absolutely be taken with a grain of salt.
+The following piece does not attempt to present a fair, rigorous performance benchmark results. Instead, it is to illustrate typical speedups that were up for grasp for our team and for our specific use cases. Therefore, the results presented here should be taken with a grain of salt.
 
 For the sake of completeness, we also include the popular Clojure library [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) (or TMD) and the popular R library [dplyr](https://dplyr.tidyverse.org/).
 
