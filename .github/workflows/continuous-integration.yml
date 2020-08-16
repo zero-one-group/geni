@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: install-geni-test
+      - name: test-geni-cli
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/test-geni-cli
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: template-unit-test
+      - name: test-lein-template
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/test-lein-template
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: install-geni-test
+      - name: test-install-geni-cli
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/test-install-geni-cli
