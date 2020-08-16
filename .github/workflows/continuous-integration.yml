@@ -7,17 +7,10 @@ on:
   pull_request:
     branches:
       - develop
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: unit-tests
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: lein
-          args: midje
   coverage:
     runs-on: ubuntu-latest
     steps:
@@ -25,8 +18,7 @@ jobs:
       - name: coverage
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: lein
-          args: coverage
+          entrypoint: scripts/coverage
       - uses: codecov/codecov-action@v1
         env:
             CODECOV_TOKEN: bb12d419-f860-48ff-a3bf-8fca4114cc3d
@@ -40,29 +32,28 @@ jobs:
       - name: lint
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: clj-kondo
-          args: --lint src/clojure/zero_one test/zero_one --cache false
-  lein-template:
+          entrypoint: scripts/lint
+  test-geni-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install-geni-test
+        uses: docker://zeroonetechnology/geni:latest
+        with:
+          entrypoint: scripts/test-geni-cli
+  test-lein-template:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: template-unit-test
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: scripts/test-template
-  install-geni:
+          entrypoint: scripts/test-lein-template
+  test-install-geni-cli:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: install-geni-test
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: scripts/test-install-geni
-  geni-cli:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: install-geni-test
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: scripts/test-geni
+          entrypoint: scripts/test-install-geni-cli

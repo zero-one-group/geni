@@ -7,6 +7,9 @@ build:
 docker-pull:
 	docker pull $(DOCKERNAME)
 
+docker-push: build
+	docker push $(DOCKERNAME)
+
 dock: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		/bin/bash
@@ -19,27 +22,25 @@ autotest: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		lein midje :autotest
 
-docker-push: build
-	docker push $(DOCKERNAME)
-
 coverage: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		lein coverage
+		scripts/coverage
 
 lint: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		clj-kondo --lint src/clojure/zero_one test/zero_one --cache false
+		scripts/lint
 
-template-test: build
+test-geni-cli: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		scripts/test-template
+		scripts/test-geni-cli
 
-install-geni-test: build
+test-lein-template: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		scripts/test-install-geni
+		scripts/test-lein-template
 
-geni-cli-test: build
+test-install-geni-cli: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		scripts/test-geni
+		scripts/test-install-geni-cli
 
-pre-release-test: coverage lint geni-cli-test template-test install-geni-test
+ci: coverage lint test-geni-cli test-lein-template test-install-geni-cli
+	rm -rf target/classes
