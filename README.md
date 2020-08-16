@@ -26,17 +26,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
     <tr>
       <td>
         <ul>
-            <li>[A Simple Performance Benchmark](docs/simple_performance_benchmark.md)</li>
-            <li>[Contributing Guide](CONTRIBUTING.md)</li>
-            <li>[Examples](docs/examples.md)</li>
-            <li>[Geni Semantics](docs/semantics.md)</li>
-            <li>[Manual Dataset Creation](docs/manual_dataset_creation.md)</li>
-            <li>[Optional XGBoost Support](docs/xgboost.md)</li>
-            <li>[Pandas, NumPy and Other Idioms](docs/pandas_numpy_and_other_idioms.md)</li>
-            <li>[Using Dataproc](docs/dataproc.md)</li>
-            <li>[Where's The Spark Session?](docs/spark_session.md)</li>
-            <li>[Why?](docs/why.md)</li>
-            <li>[Working with SQL Maps](docs/sql_maps.md)</li>
+            <a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a>
         </ul>
       </td>
       <td>
