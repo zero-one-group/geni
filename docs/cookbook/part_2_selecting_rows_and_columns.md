@@ -124,7 +124,7 @@ Most datasets we see will not have kebab-case columns. Geni has a shortcut to do
 
 ```clojure
 (def complaints
-  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
+  (g/read-csv! complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 ; root
