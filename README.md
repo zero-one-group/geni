@@ -17,11 +17,11 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 ## Resources
 
-<table width="100%">
+<table>
   <tbody>
     <tr>
-      <th align="center">Docs</th>
-      <th align="center">Cookbook</th>
+      <th align="center"><img width="441" height="1">Docs</th>
+      <th align="center"><img width="441" height="1">Cookbook</th>
     </tr>
     <tr>
       <td>
