@@ -20,8 +20,16 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 <table>
   <tbody>
     <tr>
-      <th align="center"><img width="441" height="1">Docs</th>
-      <th align="center"><img width="441" height="1">Cookbook</th>
+      <th align="center">
+        <img width="441" height="1">
+        Docs
+        <img width="441" height="1">
+      </th>
+      <th align="center">
+        <img width="441" height="1">
+        Cookbook
+        <img width="441" height="1">
+      </th>
     </tr>
     <tr>
       <td>
