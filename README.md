@@ -4,7 +4,7 @@
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) library that wraps [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
-WARNING! This library is still unstable. Some information here may be outdated. Do not use it in production just yet! See [Flambo](https://github.com/sorenmacbeth/flambo) and [Sparkling](https://github.com/gorillalabs/sparkling) for more mature alternatives.
+WARNING! This library is still alpha. See [Flambo](https://github.com/sorenmacbeth/flambo), [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for other Spark alternatives.
 
 [![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
@@ -17,38 +17,78 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
 
 ## Resources
 
-**Docs:**
+<table>
+  <tbody>
+    <tr>
+      <th align="center" width="441">
+        Docs
+      </th>
+      <th align="center" width="441">
+        Cookbook
+      </th>
+    </tr>
+    <tr>
+      <td>
+        <ul>
+            <li><a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a></li>
+            <li><a href="CONTRIBUTING.md">Contributing Guide</a></li>
+            <li><a href="docs/examples.md">Examples</a></li>
+            <li><a href="docs/semantics.md">Geni Semantics</a></li>
+            <li><a href="docs/manual_dataset_creation.md">Manual Dataset Creation</a></li>
+            <li><a href="docs/xgboost.md">Optional XGBoost Support</a></li>
+            <li><a href="docs/pandas_numpy_and_other_idioms.md">Pandas, NumPy and Other Idioms</a></li>
+            <li><a href="docs/dataproc.md">Using Dataproc</a></li>
+            <li><a href="docs/spark_session.md">Where's The Spark Session</a></li>
+            <li><a href="docs/why.md">Why?</a></li>
+            <li><a href="docs/sql_maps.md">Working with SQL Maps</a></li>
+        </ul>
+      </td>
+      <td>
+        <ol>
+            <li><a href="docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md">
+                Getting Started with Clojure, Geni and Spark
+            </a></li>
+            <li><a href="docs/cookbook/part_1_reading_and_writing_datasets.md">
+                Reading and Writing Datasets
+            </a></li>
+            <li><a href="docs/cookbook/part_2_selecting_rows_and_columns.md">
+                Selecting Rows and Columns
+            </a></li>
+            <li><a href="docs/cookbook/part_3_grouping_and_aggregating.md">
+                Grouping and Aggregating
+            </a></li>
+            <li><a href="docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md">
+                Combining Datasets with Joins and Unions
+            </a></li>
+            <li><a href="docs/cookbook/part_5_string_operations.md">
+                String Operations
+            </a></li>
+            <li><a href="docs/cookbook/part_6_cleaning_up_messy_data.md">
+                Cleaning up Messy Data
+            </a></li>
+            <li><a href="docs/cookbook/part_7_timestamps_and_dates.md">
+                Timestamps and Dates
+            </a></li>
+            <li><a href="docs/cookbook/part_8_window_functions.md">
+                Window Functions
+            </a></li>
+            <li><a href="docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md">
+                Reading from and Writing to SQL Databases
+            </a></li>
+            <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
+                Avoiding Repeated Computations with Caching
+            </a></li>
+            <li>[TBD] Transforming ML Features with Pipelines</li>
+            <li>[TBD] Regression, Classification and Clustering</li>
+            <li>[TBD] A Basic Recommender System with ALS</li>
+            <li>[TBD] Working with Scala Interop</li>
+            <li>[TBD] Basic RDD Operations</li>
+        </ol>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-* [A Simple Performance Benchmark](docs/simple_performance_benchmark.md)
-* [Contributing Guide](CONTRIBUTING.md)
-* [Examples](docs/examples.md)
-* [Geni Semantics](docs/semantics.md)
-* [Manual Dataset Creation](docs/manual_dataset_creation.md)
-* [Optional XGBoost Support](docs/xgboost.md)
-* [Pandas, NumPy and Other Idioms](docs/pandas_numpy_and_other_idioms.md)
-* [Using Dataproc](docs/dataproc.md)
-* [Where's The Spark Session?](docs/spark_session.md)
-* [Why?](docs/why.md)
-* [Working with SQL Maps](docs/sql_maps.md)
-
-**Geni Cookbook:**
-
-0. [Getting Started with Clojure, Geni and Spark](docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md)
-1. [Reading and Creating Datasets](docs/cookbook/part_1_reading_and_writing_datasets.md)
-2. [Selecting Rows and Columns](docs/cookbook/part_2_selecting_rows_and_columns.md)
-3. [Grouping and Aggregating](docs/cookbook/part_3_grouping_and_aggregating.md)
-4. [Combining Datasets with Joins and Unions](docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md)
-5. [String Operations](docs/cookbook/part_5_string_operations.md)
-6. [Cleaning up Messy Data](docs/cookbook/part_6_cleaning_up_messy_data.md)
-7. [Timestamps and Dates](docs/cookbook/part_7_timestamps_and_dates.md)
-8. [Window Functions](docs/cookbook/part_8_window_functions.md)
-9. [Reading From and Writing To SQL Databases](docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md)
-10. [Avoiding Repeated Computations with Caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)
-11. [TBD] Transforming ML Features with Pipelines
-12. [TBD] Regression, Classification and Clustering
-13. [TBD] A Basic Recommender System with ALS
-14. [TBD] Working with Scala Interop
-15. [TBD] Basic RDD Operations
 
 [![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
@@ -298,3 +338,4 @@ Some code was taken from:
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
 * [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for serialisable functions for the RDD API.
+* [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping to optimise the tech.ml.dataset and tablecloth codes for the performance benchmark respectively, as well as recommending other libraries to test out.
