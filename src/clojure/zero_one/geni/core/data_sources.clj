@@ -29,7 +29,7 @@
     (string/replace normalized #"\p{InCombiningDiacriticalMarks}+" "")))
 
 (defn remove-punctuations [string]
-  (string/replace string #"[.,\/#!$%\^&\*;:{}=\_`~()]" ""))
+  (string/replace string #"[.,\/#!$%\^&\*;:{}=\_`~()°]" ""))
 
 (defn normalise-column-names [dataset]
   (let [new-columns (->> dataset

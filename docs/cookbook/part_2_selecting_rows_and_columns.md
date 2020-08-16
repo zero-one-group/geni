@@ -1,4 +1,4 @@
-# CB2: Selecting Rows and Columns
+# CB-02: Selecting Rows and Columns
 
 As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%202%20-%20Selecting%20data%20&%20finding%20the%20most%20common%20complaint%20type.ipynb), we are going to use the 311 service requests data from [NYC Open Data](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9). We download the dataset using the `download-data!` utility function defined in Part 1:
 
@@ -120,25 +120,15 @@ As before, we can check out the schema:
 
 The fact that the column names are not in kebab case is typical.
 
-Most datasets we see will not have kebab-case columns. We can deal with it programmatically by i) converting to kebab case and ii) deleting everything inside parantheses. For the former, we can use the awesome [camel-snake-kebab](https://github.com/clj-commons/camel-snake-kebab) library, and for the latter, we do a simple regex replace. We define a new utility function `normalise-column-names`:
+Most datasets we see will not have kebab-case columns. Geni has a shortcut to do the conversion automatically, namely the `:kebab-columns` option:
 
 ```clojure
-(require '[camel-snake-kebab.core])
-(require '[clojure.string])
-
-(defn normalise-column-names [dataset]
-  (let [new-columns (->> dataset
-                         g/column-names
-                         (map #(clojure.string/replace % #"\((.*?)\)" ""))
-                         (map #(clojure.string/replace % #"/" ""))
-                         (map camel-snake-kebab.core/->kebab-case))]
-    (g/to-df dataset new-columns)))
-
-(def complaints (normalise-column-names raw-complaints))
+(def complaints
+  (g/read-csv! spark complaints-data-path {:kebab-columns true}))
 
 (g/print-schema complaints)
 ; root
-;  |-- unique-key: string (nullable = true)
+;  |-- unique-key: integer (nullable = true)
 ;  |-- created-date: string (nullable = true)
 ;  |-- closed-date: string (nullable = true)
 ;  |-- agency: string (nullable = true)
@@ -162,8 +152,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- resolution-action-updated-date: string (nullable = true)
 ;  |-- community-board: string (nullable = true)
 ;  |-- borough: string (nullable = true)
-;  |-- x-coordinate: string (nullable = true)
-;  |-- y-coordinate: string (nullable = true)
+;  |-- x-coordinate-state-plane: integer (nullable = true)
+;  |-- y-coordinate-state-plane: integer (nullable = true)
 ;  |-- park-facility-name: string (nullable = true)
 ;  |-- park-borough: string (nullable = true)
 ;  |-- school-name: string (nullable = true)
@@ -187,8 +177,8 @@ Most datasets we see will not have kebab-case columns. We can deal with it progr
 ;  |-- garage-lot-name: string (nullable = true)
 ;  |-- ferry-direction: string (nullable = true)
 ;  |-- ferry-terminal-name: string (nullable = true)
-;  |-- latitude: string (nullable = true)
-;  |-- longitude: string (nullable = true)
+;  |-- latitude: double (nullable = true)
+;  |-- longitude: double (nullable = true)
 ;  |-- location: string (nullable = true)
 ```
 
@@ -399,6 +389,30 @@ This works, but we are probably interested only in the top 10 complaint types so
 ; +----------------------+-----+
 ```
 
+This operation is so common that we have a shortcut function, namely `g/value-counts`:
+
+```clojure
+(-> complaints
+    (g/select :complaint-type)
+    g/value-counts
+    (g/limit 10)
+    g/show)
+; +----------------------+-----+
+; |complaint-type        |count|
+; +----------------------+-----+
+; |HEATING               |14200|
+; |GENERAL CONSTRUCTION  |7471 |
+; |Street Light Condition|7117 |
+; |DOF Literature Request|5797 |
+; |PLUMBING              |5373 |
+; |PAINT - PLASTER       |5149 |
+; |Blocked Driveway      |4590 |
+; |NONCONST              |3998 |
+; |Street Condition      |3473 |
+; |Illegal Parking       |3343 |
+; +----------------------+-----+
+```
+
 ## 2.5 Selecting Only Noise Complaints
 
 To select for certain rows with a specific column value, we can use `g/filter` and a boolean expression. For instance, the following filters for rows that indicate street-noise complaints:
@@ -446,9 +460,8 @@ To answer this question, we can simply compose the functions from the last two s
 ```clojure
 (-> complaints
     (g/filter (g/= :complaint-type (g/lit "Noise - Street/Sidewalk")))
-    (g/group-by :borough)
-    g/count
-    (g/order-by (g/desc :count))
+    (g/select :borough)
+    g/value-counts
     g/show)
 ; +-------------+-----+
 ; |borough      |count|

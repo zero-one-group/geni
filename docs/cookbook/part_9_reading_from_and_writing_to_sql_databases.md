@@ -1,4 +1,4 @@
-# CB9: Reading From and Writing To SQL Databases
+# CB-09: Reading From and Writing To SQL Databases
 
 In this part of the cookbook, we use the well-known [Chinook sample SQLite database](https://www.sqlitetutorial.net/sqlite-sample-database/). We must first download the zipped database file and unzip it:
 
@@ -22,10 +22,10 @@ Reading from databases through JDBC is slightly different to reading from a file
 
 ```clojure
 (def chinook-tracks
-  (normalise-column-names
-    (g/read-jdbc! {:driver  "org.sqlite.JDBC"
-                   :url     "jdbc:sqlite:data/chinook.db"
-                   :dbtable "tracks"})))
+  (g/read-jdbc! spark {:driver        "org.sqlite.JDBC"
+                       :url           "jdbc:sqlite:data/chinook.db"
+                       :dbtable       "tracks"
+                       :kebab-columns true}))
 
 (g/count chinook-tracks)
 => 3503
