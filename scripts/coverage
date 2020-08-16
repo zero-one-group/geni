@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+lein cloverage \
+    --fail-threshold 99 \
+    --codecov \
+    --html \
+    --runner :midje \
+    --ns-exclude-regex zero-one.geni.main 
