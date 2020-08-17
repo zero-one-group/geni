@@ -20,15 +20,17 @@
       (g/dtypes read-df)) => {:Price "StringType" :Rooms "StringType"})
   (fact "kebab-columns option works"
     (let [dataframe (g/table->dataset
-                      [[1 2 3]]
+                      [[1 2 3 4]]
                       ["Brébeuf (données non disponibles)"
                        "X Coordinate (State Plane)"
+                       "col_with_underscore"
                        "already-kebab-case"])
           temp-file (.toString (create-temp-file! ""))]
       (g/write-csv! dataframe temp-file {:mode "overwrite"})
       (g/column-names (g/read-csv! temp-file {:kebab-columns true})))
     => ["brebeuf-donnees-non-disponibles"
         "x-coordinate-state-plane"
+        "col-with-underscore"
         "already-kebab-case"]
     (-> "test/resources/melbourne_housing_snapshot.parquet"
         (g/read-parquet! {:kebab-columns true})
