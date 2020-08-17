@@ -25,14 +25,14 @@ jobs:
         with:
          file: target/coverage/codecov.json
          fail_ci_if_error: true
-  lint:
+  lint+ancient:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: lint
+      - name: lint+ancient
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: scripts/lint
+          entrypoint: scripts/lint+ancient
   test-geni-cli:
     runs-on: ubuntu-latest
     steps:
