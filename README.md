@@ -78,8 +78,8 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
             <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
                 Avoiding Repeated Computations with Caching
             </a></li>
-            <li><a href="docs/cookbook/part_11_ml_features_with_pipelines.md">
-                ML Features with Pipelines
+            <li><a href="docs/cookbook/part_11_basic_ml_pipelines.md">
+                Basic ML Pipelines
             </a></li>
         </ol>
       </td>
@@ -225,7 +225,7 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
 ;; +---+------------------+----------------------------------------+----------+
 ```
 
-More detailed examples can be found [here](examples/README.md).There is also a one-to-one walkthrough of Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/), which can be found [here](examples/nvidia_pipeline.clj).
+More detailed examples can be found [here](examples/README.md).
 
 ## Quick Start
 
