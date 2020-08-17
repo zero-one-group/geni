@@ -1,6 +1,8 @@
 # CB-11: Basic ML Pipelines
 
-This part of the pipeline is largely taken from Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/). As usual, we download the dataset and carry out simple processing steps:
+This part of the cookbook is largely taken from Chapter 5 of NVIDIA's [Accelerating Apache Spark 3.x](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/apache-spark-3/ebook-sign-up/).
+
+As usual, we download the dataset and carry out simple processing steps:
 
 ```clojure
 (download-data!
@@ -48,7 +50,7 @@ Typically, we would like to train on one part of the data, and evaluate the pred
 
 ## 11.2 Building a Model Pipeline
 
-When training a machine learning model, we typically have to do a number of processing steps to come up with features and labels. These steps form parts of the model, as they would have to be carried out on unseen data. Geni has a nice way of arbitrarily composing these steps using `g/pipeline`. For instance, the following defines a random-forest regressor, which includes a step to assemble individual feature columns into one vector column and a normalisation step:
+When training a machine learning model, we typically have to do a number of processing steps to come up with the features and labels. These steps can be seen as parts of the model, as they would have to be carried out on unseen data. Geni has a nice way of arbitrarily composing these steps using `g/pipeline`. For instance, the following code defines a random-forest regressor, which includes a step to assemble individual feature columns into one vector column and a normalisation step:
 
 ```clojure
 (def assembler
@@ -115,14 +117,11 @@ Finally, to evaluate the predictions, we can use a regression evaluator:
 Different models have different attributes. In our case, the random forest model has feature importances. We may obtain it as such:
 
 ```clojure
-(def feature-importances
-  (->> pipeline-model
-       ml/stages
-       last
-       ml/feature-importances
-       (zipmap (ml/input-cols assembler))))
-
-feature-importances
+(->> pipeline-model
+     ml/stages
+     last
+     ml/feature-importances
+     (zipmap (ml/input-cols assembler))))
 ; {"housing-median-age" 0.060262475752573055,
 ;  "median-income" 0.7847621702619059,
 ;  "bedrooms-per-house" 0.010547166447551434,
