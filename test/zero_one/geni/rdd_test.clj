@@ -4,7 +4,20 @@
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.aot-functions :as aot]))
 
-(facts "On basic RDD transformations + actions"
+(facts "On basic RDD operations" :rdd
+  (-> (rdd/text-file "test/resources/rdd.txt")
+      (rdd/map-to-pair aot/to-pair)
+      rdd/group-by-key
+      rdd/num-partitions) => #(< 1 %)
+  (-> (rdd/text-file "test/resources/rdd.txt")
+      (rdd/map-to-pair aot/to-pair)
+      (rdd/group-by-key 7)
+      rdd/num-partitions) => 7)
+
+(facts "On basic RDD transformations + actions" :rdd
+  (fact "foreach works"
+    (-> (rdd/parallelise ["a" "b" "c"])
+        (rdd/foreach identity)) => nil?)
   (fact "flat-map + filter works"
     (-> (rdd/text-file "test/resources/rdd.txt")
         (rdd/flat-map aot/split-spaces)
@@ -38,7 +51,7 @@
                               (every? (comp string? first) %)
                               (every? (comp (partial = 1) second) %))))
 
-(facts "On basic RDD methods"
+(facts "On basic RDD methods" :rdd
   (fact "distinct works"
     (-> (rdd/text-file "test/resources/rdd.txt")
         rdd/distinct

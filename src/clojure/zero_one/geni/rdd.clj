@@ -27,6 +27,9 @@
   ([spark path] (-> spark java-spark-context (.textFile path)))
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
+;; Getters
+(defn num-partitions [rdd] (.getNumPartitions rdd))
+
 ;; Transformations
 (defn distinct [rdd]
   (.distinct rdd))
@@ -36,6 +39,10 @@
 
 (defn flat-map [rdd f]
   (.flatMap rdd (function/flat-map-function f)))
+
+(defn group-by-key
+  ([rdd] (.groupByKey rdd))
+  ([rdd num-partitions] (.groupByKey rdd num-partitions)))
 
 (defn intersection [left right]
   (.intersection left right))
@@ -55,21 +62,27 @@
 (defn union [left right]
   (.union left right))
 
-;; TODO: map-partitions, map-partitions-with-index
-;; TODO: intersection, distinct, group-by-key, sort-by-key, join, coalesce
+;; TODO: map-partitions, map-partitions-with-index, sample, aggregate-by-key
+;; TODO: sort-by-key, join, coalesce, cogroup, cartesian, pipe, repartition
+;; TODO: repartition-and-sort-within-partitions
 
 ;; Actions
 (defn collect [rdd] (-> rdd .collect seq interop/->clojure))
+
+(defn foreach [rdd f] (.foreach rdd (function/void-function f)))
+
+;; TODO: count, first, take, take-sample, take-ordered, save-as-text-file
+;; TODO: save-as-object-file, count-by-key
 
 (comment
 
   (ns zero-one.geni.rdd)
   (require '[zero-one.geni.aot-functions :as aot])
-  (def lines (text-file "test/resources/rdd.txt"))
-  (-> (parallelise  [["Four score and seven years ago our fathers"]
-                     ["brought forth on this continent a new nation"]])
-      (flat-map function/split-spaces)
-      collect)
+
+  (-> (text-file "test/resources/rdd.txt")
+      (map-to-pair aot/to-pair)
+      (.groupByKey 10)
+      .getNumPartitions)
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
