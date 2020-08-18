@@ -26,9 +26,9 @@ coverage: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
 		scripts/coverage
 
-lint+ancient: build
+lint-ancient: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
-		scripts/lint+ancient
+		scripts/lint-ancient
 
 test-geni-cli: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
