@@ -4,7 +4,13 @@
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.aot-functions :as aot]))
 
-(facts "On basic RDD operations"
+(facts "On basic RDD transformations + actions"
+  (fact "flat-map + filter works"
+    (-> (rdd/text-file "test/resources/rdd.txt")
+        (rdd/flat-map aot/split-spaces)
+        (rdd/filter aot/equals-lewis)
+        rdd/collect
+        count) => 18)
   (fact "map works"
     (-> (rdd/text-file "test/resources/rdd.txt")
         (rdd/map count)
@@ -31,3 +37,18 @@
                               (every? (comp (partial = 2) count) %)
                               (every? (comp string? first) %)
                               (every? (comp (partial = 1) second) %))))
+
+(facts "On basic RDD methods"
+  (fact "distinct works"
+    (-> (rdd/text-file "test/resources/rdd.txt")
+        rdd/distinct
+        rdd/collect
+        count) => 6)
+  (fact "union works"
+    (let [rdd (rdd/parallelise ["abc" "def"])]
+      (rdd/collect (rdd/union rdd rdd)) => ["abc" "def" "abc" "def"]))
+  (fact "intersection works"
+    (let [left (rdd/parallelise ["abc" "def"])
+          right (rdd/parallelise ["def" "ghi"])]
+      (rdd/collect (rdd/intersection left right)) => ["def"])))
+
