@@ -34,7 +34,8 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[expound "0.8.5"]
                         [midje "1.9.9"]]
-         :plugins [[lein-cloverage "1.1.2"]
+         :plugins [[lein-ancient "0.6.15"]
+                   [lein-cloverage "1.1.2"]
                    [lein-midje "3.2.1"]]
          :aot [zero-one.geni.rdd.function
                zero-one.geni.aot-functions]}}
