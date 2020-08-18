@@ -40,6 +40,9 @@
 (defn flat-map [rdd f]
   (.flatMap rdd (function/flat-map-function f)))
 
+(defn flat-map-to-pair [rdd f]
+  (.flatMapToPair rdd (function/pair-flat-map-function f)))
+
 (defn group-by-key
   ([rdd] (.groupByKey rdd))
   ([rdd num-partitions] (.groupByKey rdd num-partitions)))

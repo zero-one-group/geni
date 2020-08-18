@@ -49,7 +49,16 @@
         rdd/collect) => #(and (every? vector? %)
                               (every? (comp (partial = 2) count) %)
                               (every? (comp string? first) %)
-                              (every? (comp (partial = 1) second) %))))
+                              (every? (comp (partial = 1) second) %)))
+  (fact "flat-map-to-pair works"
+    (-> (rdd/parallelise ["hello world!"
+                          "hello spark and geni!"
+                          "the spark world is awesome!"])
+        (rdd/flat-map-to-pair aot/split-spaces-and-pair)
+        (rdd/reduce-by-key +)
+        rdd/collect
+        set)=> #{["spark" 2] ["world" 1] ["and" 1] ["geni!" 1] ["the" 1]
+                 ["awesome!" 1] ["is" 1] ["hello" 2] ["world!" 1]}))
 
 (facts "On basic RDD methods" :rdd
   (fact "distinct works"

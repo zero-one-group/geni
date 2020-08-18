@@ -6,4 +6,7 @@
 
 (defn split-spaces [x] (clojure.string/split x #" "))
 
+(defn split-spaces-and-pair [x]
+  (map #(vector % 1) (split-spaces x)))
+
 (defn equals-lewis [x] (= x "Lewis"))
