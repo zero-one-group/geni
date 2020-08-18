@@ -65,6 +65,9 @@
 (defn union [left right]
   (.union left right))
 
+(defn zip-partitions [left right f]
+  (.zipPartitions left right (function/flat-map-function2 f)))
+
 ;; TODO: map-partitions, map-partitions-with-index, sample, aggregate-by-key
 ;; TODO: sort-by-key, join, coalesce, cogroup, cartesian, pipe, repartition
 ;; TODO: repartition-and-sort-within-partitions

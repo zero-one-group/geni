@@ -58,7 +58,12 @@
         (rdd/reduce-by-key +)
         rdd/collect
         set)=> #{["spark" 2] ["world" 1] ["and" 1] ["geni!" 1] ["the" 1]
-                 ["awesome!" 1] ["is" 1] ["hello" 2] ["world!" 1]}))
+                 ["awesome!" 1] ["is" 1] ["hello" 2] ["world!" 1]})
+  (fact "zip-partitions works"
+    (let [left (rdd/parallelise ["a b c" "d e f g h i"])
+          right (rdd/parallelise ["j k l m n o" "pqr stu"])]
+      (-> (rdd/zip-partitions left right aot/zip-split-spaces)
+          rdd/collect)) => ["aj" "bk" "cl" "dpqr" "estu"]))
 
 (facts "On basic RDD methods" :rdd
   (fact "distinct works"
