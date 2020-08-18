@@ -34,20 +34,12 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[expound "0.8.5"]
                         [midje "1.9.9"]]
-         :plugins [[lein-cloverage "1.1.2"]
+         :plugins [[lein-ancient "0.6.15"]
+                   [lein-cloverage "1.1.2"]
                    [lein-midje "3.2.1"]]
          :aot [zero-one.geni.rdd.function
                zero-one.geni.aot-functions]}}
   :repl-options {:init-ns zero-one.geni.main}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
-  :main ^:skip-aot zero-one.geni.main
-  :aliases {"coverage" ["cloverage"
-                        "--fail-threshold"
-                        "99"
-                        "--codecov"
-                        "--html"
-                        "--runner"
-                        ":midje"
-                        "--ns-exclude-regex"
-                        "zero-one.geni.main"]})
+  :main ^:skip-aot zero-one.geni.main)
