@@ -1,8 +1,8 @@
-# CB-12: Collaborative Filtering
+# CB-12: Customer Segmentation with NMF
 
-In this part, we look into the use of [non-negative matrix factorisation](https://www.nature.com/articles/44565) for customer segmentation.
+In this part, we look into the use of [non-negative matrix factorisation](https://www.nature.com/articles/44565) for customer segmentation. See [this blog post](https://medium.com/@zeroonegroup/customer-segmentation-taking-a-page-out-of-the-computer-vision-book-af02155ccf53) for context.
 
-We will be using the Online Retail II dataset, which is [available for free on Kaggle](https://www.kaggle.com/hikne707/online-retail?select=online_retail_II.xlsx). Since the dataset is behind a sign-up wall, we assume that the two CSV files are place in the `data/online_retail_ii` directory. We load the dataset as follows:
+We will be using the Online Retail II dataset, which is [available for free on Kaggle](https://www.kaggle.com/hikne707/online-retail?select=online_retail_II.xlsx). Since the dataset is behind a sign-up wall, we assume that the two CSV files are already downloaded and placed in the `data/online_retail_ii` directory. We load the dataset as follows:
 
 ```clojure
 (def invoices
@@ -43,14 +43,14 @@ We will be using the Online Retail II dataset, which is [available for free on K
 ;  country      | United Kingdom
 ```
 
-Every row of the dataset is a transaction with the product and customer details. In collaborative-filtering settings, we typically have many users that consume many items, and each item is typically consumed by many users. Recommendations are done based on the common items that specific users consumed and liked. The natural extension of that in this case would be to recommend stock codes to each customer ID based on their spending.
+Every row of the dataset is a transaction with the product and customer details. In collaborative-filtering settings, we typically have many users that consume many items, and each item is typically consumed by multiple users. Recommendations are done based on the common items that specific users selected and liked. The natural extension of that, in this case, would be to recommend stock codes to each customer ID based on their spending.
 
-However, we are going to do something different this time. We are going to represent each product by the words in its description, and call each word a 'descriptor'. By doing this, a “15cm christmas glass ball 20 lights” share a commonality with “pink cherry lights”, because both share the word “lights”, instead of having them represented by two completely different stock codes. Next, we will train a non-negative matrix factorisation (NMF) model on each customer ID’s spending and their spending on each descriptor. In essence, we we are decomposing a matrix of #-of-customers by #-of-descriptors into an individual shopping map distinct to each customer ID and a set of canonical shopping patterns shared by every customer ID
+However, we are going to do something different this time. We represent each product by the words in its description, and call each word a 'descriptor'. By doing this, a “15cm christmas glass ball 20 lights” share a commonality with “pink cherry lights”, because both share the word “lights”, instead of having them represented by two completely different stock codes. Next, we train a non-negative matrix factorisation (NMF) model on each customer ID’s spending and their spending on each descriptor. In essence, we decompose a matrix of #-of-customers by #-of-descriptors into an individual shopping map distinct to each customer ID and a set of canonical shopping patterns shared by every customer ID.
 
 
 ## 12.1 Exploding Sentences into Words
 
-To extract the descriptors of each product, we will make use of [Spark’s Tokenizer](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/Tokenizer.html) to convert a description phrase into an array of words. However, the resulting words are relatively dirty with punctuations and irrelevant words such as “of” and “the”. Therefore, we are going to use [Spark’s StopWordsRemover](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/StopWordsRemover.html), remove all punctuations and remove all resulting descriptors with less than three characters:
+To extract the descriptors of each product, we make use of [Spark’s Tokenizer](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/Tokenizer.html) to convert a description phrase into an array of words. However, the resulting words are filled with punctuations and irrelevant words such as “of” and “the”. Therefore, we use [Spark’s StopWordsRemover](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/StopWordsRemover.html), remove all punctuations and remove all resulting descriptors with less than three characters:
 
 ```clojure
 (def descriptors
@@ -89,11 +89,16 @@ To extract the descriptors of each product, we will make use of [Spark’s Token
 ; |jumbo     |984806     |
 ; |design    |917394     |
 ; +----------+-----------+
+
+(-> descriptors (g/select :descriptor) g/distinct g/count)
+=> 2605
 ```
+
+Notice that we cached the `descriptor` dataset as it will be used as an intermediate result, and we would not want to carry out the expensive explode operation multiple times. We end up with 2605 unique descriptors with 'set', 'bag' and 'red' being the descriptors with the highest sales.
 
 ## 12.2 Non-Negative Matrix Factorisation
 
-Next, to measure the association of the descriptors and the customers, we will be using the spending. However, since money variables are typically heavily skewed on the right tail, we will be using log-plus-one of spending instead. Together with some cleaning measures to remove the odd transactions with negative values:
+Next, to measure the association of the descriptors and the customers, we use spending. However, since money variables are typically heavily skewed on the right tail, we use log-plus-one of spending instead. Together with some cleaning measures to remove the odd transactions with negative values:
 
 ```clojure
 (def log-spending
@@ -118,7 +123,7 @@ Next, to measure the association of the descriptors and the customers, we will b
 ; +-------+--------------------+
 ```
 
-Log-spending is still heavily skewed to the right tail, but it will do for the purposes of this example.
+Notice that log-spending is still heavily skewed to the right tail, but it will do for the purposes of this example.
 
 Spark ML makes it very easy for us to train NMF models using the [ALS model](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/recommendation/ALS.html). Since ALS expects the “item-id” to be integers, we need to convert the descriptors into descriptor IDs. This is also straightforward to do in Spark by using the [StringIndexer](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/StringIndexer.html) and putting them together in a [Pipeline](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/Pipeline.html):
 
@@ -141,7 +146,7 @@ Spark ML makes it very easy for us to train NMF models using the [ALS model](htt
 
 ## 12.3 Linking Segments with Members and Descriptors
 
-To extract the shared patterns and individual maps, we will need to reverse the string indexer using [IndexToString](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/IndexToString.html) and access the user factors and item factors field in [ALSModel](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/recommendation/ALSModel.html).
+To extract the shared patterns and individual maps, we need to reverse the string indexer using [IndexToString](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/feature/IndexToString.html) and access the user factors and item factors field in [ALSModel](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/ml/recommendation/ALSModel.html):
 
 ```clojure
 (def id->descriptor

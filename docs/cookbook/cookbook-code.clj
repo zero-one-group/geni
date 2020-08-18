@@ -787,6 +787,9 @@ feature-importances
 ; |design    |917394     |
 ; +----------+-----------+
 
+(-> descriptors (g/select :descriptor) g/distinct g/count)
+; => 2605
+
 ;; 12.2 Non-Negative Matrix Factorisation
 (def log-spending
   (-> descriptors
