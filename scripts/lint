@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-clj-kondo \
-    --lint src/clojure/zero_one test/zero_one \
-    --cache false
