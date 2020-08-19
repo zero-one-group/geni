@@ -76,12 +76,12 @@
     [zero-one.geni.core.dataset-creation]
     [zero-one.geni.core.dataset]
     [zero-one.geni.core.foreign-idioms]
-    [zero-one.geni.core.polymorphic]
     [zero-one.geni.core.functions]
-    [zero-one.geni.core.storage]
+    [zero-one.geni.core.polymorphic]
     [zero-one.geni.core.window]
     [zero-one.geni.interop]
-    [zero-one.geni.spark]))
+    [zero-one.geni.spark]
+    [zero-one.geni.storage]))
 
 (import-vars
   [zero-one.geni.interop
@@ -510,7 +510,7 @@
    where])
 
 (import-vars
-  [zero-one.geni.core.storage
+  [zero-one.geni.storage
    disk-only
    disk-only-2
    memory-and-disk

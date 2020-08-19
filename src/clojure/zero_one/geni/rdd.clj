@@ -3,11 +3,15 @@
                             distinct
                             filter
                             map
+                            max
+                            min
                             reduce])
   (:require
+    [potemkin :refer [import-vars]]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
-    [zero-one.geni.rdd.function :as function])
+    [zero-one.geni.rdd.function :as function]
+    [zero-one.geni.storage])
   (:import
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
@@ -30,6 +34,8 @@
 
 ;; Getters
 (defn num-partitions [rdd] (.getNumPartitions rdd))
+
+(defn storage-level [rdd] (.getStorageLevel rdd))
 
 ;; Transformations
 (defn cache [rdd]
@@ -62,6 +68,9 @@
 (defn intersection [left right]
   (.intersection left right))
 
+(defn key-by [rdd f]
+  (.keyBy rdd (function/function f)))
+
 (defn map [rdd f]
   (.map rdd (function/function f)))
 
@@ -78,6 +87,19 @@
 (defn map-to-pair [rdd f]
   (.mapToPair rdd (function/pair-function f)))
 
+(defn max [rdd cmp]
+  (.max rdd cmp))
+
+(defn min [rdd cmp]
+  (.min rdd cmp))
+
+(defn persist [rdd storage]
+  (.persist rdd storage))
+
+(defn random-split
+  ([rdd weights] (seq (.randomSplit rdd (double-array weights))))
+  ([rdd weights seed] (seq (.randomSplit rdd (double-array weights) seed))))
+
 (defn reduce [rdd f]
   (.reduce rdd (function/function2 f)))
 
@@ -91,6 +113,10 @@
   ([rdd with-replacement fraction] (.sample rdd with-replacement fraction))
   ([rdd with-replacement fraction seed] (.sample rdd with-replacement fraction seed)))
 
+(defn subtract
+  ([left right] (.subtract left right))
+  ([left right num-partitions] (.subtract left right num-partitions)))
+
 (defn sort-by-key
   ([rdd] (.sortByKey rdd))
   ([rdd asc] (.sortByKey rdd asc)))
@@ -98,11 +124,21 @@
 (defn union [left right]
   (.union left right))
 
+(defn unpersist
+  ([rdd] (.unpersist rdd))
+  ([rdd blocking] (.unpersist rdd blocking)))
+
+(defn zip [left right]
+  (.zip left right))
+
 (defn zip-partitions [left right f]
   (.zipPartitions left right (function/flat-map-function2 f)))
 
-;; TODO: key-by, max, min, persist, random-split, substract, unpersist
-;; TODO: zip, zip-with-index
+(defn zip-with-index [rdd]
+  (.zipWithIndex rdd))
+
+(defn zip-with-unique-id [rdd]
+  (.zipWithUniqueId rdd))
 
 ;; PairRDD Transformations
 ;; TODO: aggregate-by-key
@@ -123,7 +159,21 @@
 ;; TODO: save-as-object-file, count-by-key
 
 ;; Static
-;; TODO: storage-level, id, checkpointed?, empty?, name, partitioner, partitions
+;; TODO: id, checkpointed?, empty?, name, partitioner, partitions
+(import-vars
+  [zero-one.geni.storage
+   disk-only
+   disk-only-2
+   memory-and-disk
+   memory-and-disk-2
+   memory-and-disk-ser
+   memory-and-disk-ser-2
+   memory-only
+   memory-only-2
+   memory-only-ser
+   memory-only-ser-2
+   none
+   off-heap])
 
 (comment
 
