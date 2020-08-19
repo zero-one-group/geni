@@ -43,15 +43,14 @@ or spin up a REPL by running `lein repl` and run:
 (autotest :filter (complement :slow))
 ```
 
-## Deployment Checklist
+## Release Checklist
 
 - Bump the versions in:
     - `project.clj`.
     - `lein-template`'s `project.clj`;
     - `lein-template`'s `resources/.../project.clj`; and
     - `resources/GENI_REPL_RELEASED_VERSION`.
-- Ensure that the pre-release CI steps pass with `make pre-release-test`.
-- Create the uberjar `lein uberjar` and manually verify that the REPL works, the `SparkSession` is instantiated and that data can be loaded.
+- Ensure that the CI steps pass with `make ci`.
 - Deploy the main library with `lein deploy clojars`.
 - Push the newly built container to DockerHub with `make docker-push`.
 - Merge the library version-bump branch.
