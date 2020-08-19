@@ -81,6 +81,9 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
             <li><a href="docs/cookbook/part_11_basic_ml_pipelines.md">
                 Basic ML Pipelines
             </a></li>
+            <li><a href="docs/cookbook/part_12_customer_segmentation_with_nmf.md">
+                Customer Segmentation with NMF
+            </a></li>
         </ol>
       </td>
     </tr>
