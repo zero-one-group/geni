@@ -4,6 +4,7 @@ clj-kondo \
     --lint src/clojure/zero_one test/zero_one \
     --cache false
 
+mkdir -p target
 lein ancient > target/geni-stdout
 if ! grep -q "all artifacts are up-to-date." target/geni-stdout ; then
     cat target/geni-stdout
