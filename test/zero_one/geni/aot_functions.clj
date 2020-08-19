@@ -6,6 +6,11 @@
 
 (defn split-spaces [x] (clojure.string/split x #" "))
 
+(defn map-split-spaces [xs] (mapcat split-spaces (iterator-seq xs)))
+
+(defn map-split-spaces-with-index [idx xs]
+  (->> xs map-split-spaces (map #(vector idx %)) .iterator))
+
 (defn zip-split-spaces [xs ys]
   (map str
        (mapcat split-spaces (iterator-seq xs))
