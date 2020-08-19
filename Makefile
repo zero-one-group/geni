@@ -44,3 +44,4 @@ test-install-geni-cli: build
 		scripts/test-install-geni-cli
 
 ci: coverage lint-ancient test-geni-cli test-lein-template test-install-geni-cli
+	lein clean

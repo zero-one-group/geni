@@ -15,6 +15,16 @@ public class PairFlatMapFunction extends zero_one.geni.rdd.serialization.Abstrac
 
   @SuppressWarnings("unchecked")
   public Iterator<Tuple2<Object, Object>> call(Object v1) throws Exception {
-      return (Iterator<Tuple2<Object, Object>>) ((Collection) f.invoke(v1)).iterator();
+        Collection<Object> result = (Collection<Object>)f.invoke(v1);
+        Iterator<Object> results = result.iterator();
+        return new Iterator<Tuple2<Object, Object>>() {
+            public boolean hasNext() {
+                return results.hasNext();
+            }
+
+            public Tuple2<Object, Object> next() {
+                return PairFunction.coercePair(f, results.next());
+            }
+        };
   }
 }
