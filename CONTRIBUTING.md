@@ -45,7 +45,6 @@ or spin up a REPL by running `lein repl` and run:
 
 ## Deployment Checklist
 
-- [Optional] Check if any libraries are outdated with `lein ancient`.
 - Bump the versions in:
     - `project.clj`.
     - `lein-template`'s `project.clj`;
