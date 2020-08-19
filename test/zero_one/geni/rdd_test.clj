@@ -22,7 +22,7 @@
   (fact "subtract works"
     (let [left (rdd/parallelise [1 2 3 4 5])
           right (rdd/parallelise [9 8 7 6 5])]
-      (rdd/collect (rdd/subtract left right)) => [1 2 3 4]
+      (-> (rdd/subtract left right) rdd/collect set) => #{1 2 3 4}
       (rdd/num-partitions (rdd/subtract left right 3)) => 3))
   (fact "random-split works"
     (->> (rdd/random-split dummy-rdd [0.9 0.1])
@@ -138,14 +138,17 @@
     (let [left (rdd/parallelise ["abc" "def"])
           right (rdd/parallelise ["def" "ghi"])]
       (rdd/collect (rdd/cartesian left right))
-      => [["abc" "def"] ["abc" "ghi"] ["def" "def"] ["def" "ghi"]])))
-
-(facts "On basic RDD methods" :rdd
+      => [["abc" "def"] ["abc" "ghi"] ["def" "def"] ["def" "ghi"]]))
   (fact "cache works"
     (-> dummy-rdd rdd/cache rdd/count) => 126)
   (fact "distinct works"
     (-> dummy-rdd rdd/distinct rdd/collect count) => 6
     (-> dummy-rdd (rdd/distinct 2) rdd/num-partitions) => 2)
+  (fact "zip-partitions works"
+    (let [left (rdd/parallelise ["a b c" "d e f g h i"])
+          right (rdd/parallelise ["j k l m n o" "pqr stu"])]
+      (-> (rdd/zip-partitions left right aot/zip-split-spaces)
+          rdd/collect)) => ["aj" "bk" "cl" "dpqr" "estu"])
   (fact "union works"
     (let [rdd (rdd/parallelise ["abc" "def"])]
       (rdd/collect (rdd/union rdd rdd)) => ["abc" "def" "abc" "def"]))
