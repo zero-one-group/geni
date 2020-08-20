@@ -20,11 +20,11 @@ Any help on **documentation and tutorials** would also be great! Linking the Clo
 
 To contribute to Geni, please fork the [main repository](https://github.com/zero-one-group/geni) and submit a pull request. A maintainer should pick up the pull request and review the changes, which hopefully gets approved and merged to the develop branch!
 
-To make sure that the project builds correctly, clone your forked repository and run `make ci`. This should build a docker container, run all the unit tests, report the test coverage using [cloverage](https://github.com/cloverage/cloverage) and check for linting errors using [clj-kondo](https://github.com/borkdude/clj-kondo). 
+To make sure that the project builds correctly, clone your forked repository and run `make ci` (or `make ci --jobs 3` on a bigger machine). This should build a docker container, report the test coverage using [cloverage](https://github.com/cloverage/cloverage), check for linting errors using [clj-kondo](https://github.com/borkdude/clj-kondo), check that no artifacts are out of date using [lein-ancient](https://github.com/xsc/lein-ancient), run the unit tests on the lein template, test the installation of the Geni CLI and test the Geni REPL uberjar.
 
 As much as possible, we would like to keep the test coverage close to (and ideally at) 100%. Much of the actual data work is done by Spark, so it should be sufficient to check that we are calling the right Spark functions and methods. There should also be zero lint errors and warnings.
 
-Once you are happy with the changes, run `make ci` once again to check that all unit tests pass, the test coverage does not drop and that there are no lint errors and warnings. Every pull request will additionally trigger [actions](https://github.com/zero-one-group/geni/blob/develop/.github/workflows/continuous-integration.yml) to check these conditions.
+Once you are happy with the changes, run `make ci` once again to check that all the CI steps pass. Every pull request will additionally trigger [actions](https://github.com/zero-one-group/geni/blob/develop/.github/workflows/continuous-integration.yml) to check these conditions.
 
 ## Development Tools
 
