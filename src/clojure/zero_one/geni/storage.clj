@@ -1,4 +1,4 @@
-(ns zero-one.geni.core.storage
+(ns zero-one.geni.storage
   (:import
     (org.apache.spark.storage StorageLevel)))
 
