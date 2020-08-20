@@ -4,6 +4,7 @@
                             filter
                             first
                             map
+                            mapcat
                             max
                             min
                             reduce
@@ -61,9 +62,11 @@
 
 (defn flat-map [rdd f]
   (.flatMap rdd (function/flat-map-function f)))
+(def mapcat flat-map)
 
 (defn flat-map-to-pair [rdd f]
   (.flatMapToPair rdd (function/pair-flat-map-function f)))
+(def mapcat-to-pair flat-map-to-pair)
 
 (defn glom [rdd]
   (.glom rdd))
@@ -148,9 +151,14 @@
   (.zipWithUniqueId rdd))
 
 ;; PairRDD Transformations
-;; TODO: aggregate-by-key, count-by-key
-;; TODO: join, cogroup, pipe
+;; TODO: aggregate-by-key, count-by-key, subtract-by-key
+;; TODO: join, left-outer-join, right-outer-join, full-outer-join
+;; TODO: cogroup, cogroup-partitioned
+;; TODO: pipe, map-values, flat-mapvalues
 ;; TODO: repartition-and-sort-within-partitions
+;; TODO: keys, values,
+;; TODO: group-by, combine-by-key
+;; TODO: lookup
 
 ;; Actions
 (defn count [rdd]
@@ -215,6 +223,10 @@
 
 ;; TODO: aggregate, count-approx, fold
 
+;; Others:
+;; TODO: broadcast
+;; TODO: name unmangling / setting callsite name?
+
 ;; Static
 ;; TODO: id, checkpointed?, empty?, name, partitioner, partitions
 (import-vars
@@ -249,4 +261,3 @@
       clojure.pprint/pprint)
 
   true)
-
