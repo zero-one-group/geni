@@ -2,10 +2,12 @@
   (:refer-clojure :exclude [count
                             distinct
                             filter
+                            first
                             map
                             max
                             min
-                            reduce])
+                            reduce
+                            take])
   (:require
     [potemkin :refer [import-vars]]
     [zero-one.geni.defaults]
@@ -33,6 +35,8 @@
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
 
 ;; Getters
+(defn context [rdd] (JavaSparkContext/fromSparkContext (.context rdd)))
+
 (defn num-partitions [rdd] (.getNumPartitions rdd))
 
 (defn storage-level [rdd] (.getStorageLevel rdd))
@@ -60,6 +64,9 @@
 
 (defn flat-map-to-pair [rdd f]
   (.flatMapToPair rdd (function/pair-flat-map-function f)))
+
+(defn glom [rdd]
+  (.glom rdd))
 
 (defn group-by-key
   ([rdd] (.groupByKey rdd))
@@ -141,22 +148,72 @@
   (.zipWithUniqueId rdd))
 
 ;; PairRDD Transformations
-;; TODO: aggregate-by-key
+;; TODO: aggregate-by-key, count-by-key
 ;; TODO: join, cogroup, pipe
 ;; TODO: repartition-and-sort-within-partitions
 
 ;; Actions
-(defn count [rdd] (.count rdd))
+(defn count [rdd]
+  (.count rdd))
 
-(defn collect [rdd] (-> rdd .collect seq interop/->clojure))
+; (defn count-approx
+;   ([rdd timeout] (.countapprox rdd timeout))
+;   ([rdd timeout confidence] (.countapprox rdd timeout confidence)))
 
-(defn foreach [rdd f] (.foreach rdd (function/void-function f)))
+(defn count-approx-distinct [rdd relative-sd]
+  (.countApproxDistinct rdd relative-sd))
 
-;; TODO: aggregate, collect-async, collect-partitions, context, count-approx
-;; TODO: count-approx-distinct, count-async, count-by-value, fold, fereach-async
-;; TODO: foreach-partition, foreach-partition-async, glom
-;; TODO: first, take, take-sample, take-ordered, save-as-text-file
-;; TODO: save-as-object-file, count-by-key
+(defn count-async [rdd]
+  (.countAsync rdd))
+
+(defn count-by-value [rdd]
+  (into {} (.countByValue rdd)))
+
+(defn collect [rdd]
+  (-> rdd .collect seq interop/->clojure))
+
+(defn collect-async [rdd]
+  (future (-> rdd .collectAsync deref seq interop/->clojure)))
+
+(defn collect-partitions [rdd partition-ids]
+  (->> (.collectPartitions rdd (int-array partition-ids))
+       (clojure.core/map (comp interop/->clojure seq))))
+
+(defn first [rdd]
+  (.first rdd))
+
+(defn foreach [rdd f]
+  (.foreach rdd (function/void-function f)))
+
+(defn foreach-async [rdd f]
+  (.foreachAsync rdd (function/void-function f)))
+
+(defn foreach-partition [rdd f]
+  (.foreachPartition rdd (function/void-function f)))
+
+(defn foreach-partition-async [rdd f]
+  (.foreachPartitionAsync rdd (function/void-function f)))
+
+(defn take [rdd n]
+  (-> rdd (.take n) seq interop/->clojure))
+
+(defn take-async [rdd n]
+  (.takeAsync rdd n))
+
+(defn take-ordered
+  ([rdd n] (-> rdd (.takeOrdered n) seq interop/->clojure))
+  ([rdd n cmp] (-> rdd (.takeOrdered n cmp) seq interop/->clojure)))
+
+(defn take-sample
+  ([rdd with-replacement n]
+   (-> rdd (.takeSample with-replacement n) seq interop/->clojure))
+  ([rdd with-replacement n seed] (.takeSample rdd with-replacement n seed)
+   (-> rdd (.takeSample with-replacement n) seq interop/->clojure)))
+
+(defn save-as-text-file [rdd path]
+  (.saveAsTextFile rdd path))
+
+;; TODO: aggregate, count-approx, fold
 
 ;; Static
 ;; TODO: id, checkpointed?, empty?, name, partitioner, partitions

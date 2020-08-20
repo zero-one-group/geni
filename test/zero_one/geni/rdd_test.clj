@@ -1,14 +1,78 @@
 (ns zero-one.geni.rdd-test
   (:require
+    [clojure.java.io :as io]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults]
-    [zero-one.geni.rdd :as rdd]))
+    [zero-one.geni.rdd :as rdd]
+    [zero-one.geni.test-resources :refer [create-temp-file!]])
+  (:import
+    (org.apache.spark.api.java JavaSparkContext)))
 
 (def dummy-rdd
   (rdd/text-file "test/resources/rdd.txt"))
 
-(facts "On basic RDD operations" :rdd
+(facts "On basic RDD saving and loading" :rdd
+  (fact "save-as-text-file works"
+    (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
+          temp-file (.toString (create-temp-file! ".rdd"))
+          read-rdd (do
+                     (io/delete-file temp-file true)
+                     (rdd/save-as-text-file write-rdd temp-file)
+                     (rdd/text-file temp-file))]
+      (rdd/count read-rdd) => (rdd/count write-rdd))))
+
+(facts "On basic RDD fields" :rdd
+  (fact "context returns JavaSparkContext"
+    (rdd/context (rdd/parallelise [1])) => (partial instance? JavaSparkContext)))
+
+(facts "On basic RDD actions" :rdd
+  (fact "collect-async works"
+    @(rdd/collect-async (rdd/parallelise [1])) => [1])
+  (fact "collect-partitions works"
+    (let [rdd (rdd/parallelise (into [] (range 100)))]
+      (rdd/collect-partitions rdd (range 10)))
+    => #(and (every? seq? %)
+             (every? (set (range 100)) (flatten %))))
+  (fact "count-approx-distinct works"
+    (rdd/count-approx-distinct dummy-rdd 0.01) => #(< 3 % 7))
+  (fact "count-async works"
+    @(rdd/count-async dummy-rdd) => 126)
+  (fact "count-by-value works"
+    (rdd/count-by-value dummy-rdd) => {"Alice’s Adventures in Wonderland" 18
+                                       "Project Gutenberg’s" 9
+                                       "This eBook is for the use" 27
+                                       "at no cost and with" 27
+                                       "by Lewis Carroll" 18
+                                       "of anyone anywhere" 27})
+  (fact "first works"
+    (rdd/first dummy-rdd) => "Project Gutenberg’s")
+  (fact "foreach works"
+    (rdd/foreach dummy-rdd identity) => nil?)
+  (fact "foreach-async works"
+    @(rdd/foreach-async dummy-rdd identity) => nil?)
+  (fact "foreach-partition works"
+    (rdd/foreach-partition dummy-rdd identity) => nil?)
+  (fact "foreach-partition-async works"
+    @(rdd/foreach-partition-async dummy-rdd identity) => nil?)
+  (fact "take works"
+    (rdd/take dummy-rdd 3) => ["Project Gutenberg’s"
+                               "Alice’s Adventures in Wonderland"
+                               "by Lewis Carroll"])
+  (fact "take-async works"
+    @(rdd/take-async dummy-rdd 2) => ["Project Gutenberg’s"
+                                      "Alice’s Adventures in Wonderland"])
+  (fact "take-ordered works"
+    (rdd/take-ordered dummy-rdd 20) => #(= (sort %) %)
+    (let [rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))]
+      (rdd/take-ordered rdd 20 >) => #(= (sort %) (reverse %))))
+  (fact "take-sample works"
+    (let [rdd (rdd/parallelise (into [] (range 100)))]
+      (rdd/take-sample rdd false 10) => #(= (-> % distinct count) 10))
+    (let [rdd (rdd/parallelise (into [] (range 100)))]
+      (rdd/take-sample rdd true 100 1) => #(< (-> % distinct count) 100))))
+
+(facts "On basic RDD transformations + actions" :rdd
   (-> (rdd/text-file "test/resources/rdd.txt" 2)
       (rdd/map-to-pair aot/to-pair)
       rdd/group-by-key
@@ -16,9 +80,7 @@
   (-> dummy-rdd
       (rdd/map-to-pair aot/to-pair)
       (rdd/group-by-key 7)
-      rdd/num-partitions) => 7)
-
-(facts "On basic RDD transformations + actions" :rdd
+      rdd/num-partitions) => 7
   (fact "subtract works"
     (let [left (rdd/parallelise [1 2 3 4 5])
           right (rdd/parallelise [9 8 7 6 5])]
@@ -48,9 +110,6 @@
     (-> (rdd/parallelise ["a" "b" "c"])
         (rdd/key-by identity)
         rdd/collect) => [["a" "a"] ["b" "b"] ["c" "c"]])
-  (fact "foreach works"
-    (-> (rdd/parallelise ["a" "b" "c"])
-        (rdd/foreach identity)) => nil?)
   (fact "flat-map + filter works"
     (-> dummy-rdd
         (rdd/flat-map aot/split-spaces)
@@ -126,8 +185,8 @@
       (->> zipped-values (map second) set count) => (rdd/count dummy-rdd)))
   (fact "sample works"
     (let [rdd dummy-rdd]
-      (rdd/count (rdd/sample rdd true 0.1)) => #(< 5 % 20)
-      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 5 % 20)))
+      (rdd/count (rdd/sample rdd true 0.1)) => #(< 4 % 21)
+      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 4 % 21)))
   (fact "coalesce works"
     (let [rdd (rdd/parallelise ["abc" "def"])]
       (-> rdd (rdd/coalesce 1) rdd/collect) => ["abc" "def"]
@@ -155,5 +214,6 @@
   (fact "intersection works"
     (let [left (rdd/parallelise ["abc" "def"])
           right (rdd/parallelise ["def" "ghi"])]
-      (rdd/collect (rdd/intersection left right)) => ["def"])))
-
+      (rdd/collect (rdd/intersection left right)) => ["def"]))
+  (fact "glom works"
+    (-> dummy-rdd rdd/glom rdd/count) => #(< % 126)))
