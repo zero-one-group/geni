@@ -13,6 +13,7 @@ docker-pull:
 
 docker-push: build
 	docker push $(DOCKERNAME):$(VERSION)
+	docker push $(DOCKERNAME):latest
 
 dock: build
 	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
