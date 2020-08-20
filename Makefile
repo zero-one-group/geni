@@ -3,7 +3,10 @@ VERSION=`cat resources/GENI_REPL_RELEASED_VERSION`
 
 build:
 	cp project.clj docker/project.clj
-	docker build -f docker/Dockerfile -t $(DOCKERNAME):$(VERSION) docker
+	docker build -f docker/Dockerfile \
+		-t $(DOCKERNAME):$(VERSION) \
+		-t $(DOCKERNAME):latest \
+		docker
 
 docker-pull:
 	docker pull $(DOCKERNAME):$(VERSION)
