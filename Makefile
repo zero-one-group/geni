@@ -20,28 +20,38 @@ repl: build
 		lein repl
 
 autotest: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		lein midje :autotest
 
 coverage: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	$(eval TMP := $(shell mktemp -d))
+	cp -r . $(TMP)
+	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/coverage
 
 lint-ancient: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	$(eval TMP := $(shell mktemp -d))
+	cp -r . $(TMP)
+	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/lint-ancient
 
 test-geni-cli: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	$(eval TMP := $(shell mktemp -d))
+	cp -r . $(TMP)
+	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-geni-cli
 
 test-lein-template: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	$(eval TMP := $(shell mktemp -d))
+	cp -r . $(TMP)
+	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-lein-template
 
 test-install-geni-cli: build
-	docker run --rm -v $(PWD):/root/geni -w /root/geni -it $(DOCKERNAME) \
+	$(eval TMP := $(shell mktemp -d))
+	cp -r . $(TMP)
+	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-install-geni-cli
 
-ci: coverage lint-ancient test-geni-cli test-lein-template test-install-geni-cli
-	lein clean
+ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient 
+	echo "CI steps passed!"
