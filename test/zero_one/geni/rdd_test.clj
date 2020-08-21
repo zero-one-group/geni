@@ -37,7 +37,10 @@
   (let [result (rdd/count-approx dummy-rdd 1000)]
     (rdd/initial-value result) => #(every? % [:mean :low :high :confidence])
     (rdd/final-value result) => #(every? % [:mean :low :high :confidence])
-    (rdd/final? result) => boolean?))
+    (rdd/final? result) => boolean?)
+  (-> (rdd/count-approx dummy-rdd 1000 0.9)
+      rdd/initial-value
+      :low) => #(< 100 %))
 
 (facts "On basic RDD actions" :rdd
   (fact "collect-async works"
