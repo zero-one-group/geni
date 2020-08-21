@@ -30,8 +30,9 @@
   (fact "collect-async works"
     @(rdd/collect-async (rdd/parallelise [1])) => [1])
   (fact "collect-partitions works"
-    (let [rdd (rdd/parallelise (into [] (range 100)))]
-      (rdd/collect-partitions rdd (range 10)))
+    (let [rdd     (rdd/parallelise (into [] (range 100)))
+          part-id (->> rdd .partitions (map #(.index %)) first)]
+      (rdd/collect-partitions rdd [part-id]))
     => #(and (every? seq? %)
              (every? (set (range 100)) (flatten %))))
   (fact "count-approx-distinct works"
