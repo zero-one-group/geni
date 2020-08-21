@@ -23,15 +23,28 @@
       (rdd/count read-rdd) => (rdd/count write-rdd))))
 
 (facts "On basic RDD fields" :rdd
-  (fact "context returns JavaSparkContext"
-    (rdd/context (rdd/parallelise [1])) => (partial instance? JavaSparkContext)))
+  (let [rdd (rdd/parallelise [1])]
+    (rdd/context rdd) => (partial instance? JavaSparkContext)
+    (rdd/id rdd) => integer?
+    (rdd/name rdd) => nil?
+    (rdd/checkpointed? rdd) => false
+    (rdd/empty? (rdd/parallelise [])) => true
+    (rdd/empty? rdd) => false
+    (rdd/empty? rdd) => false))
+    ; (rdd/partitioner rdd) => nil?))
+
+(facts "On basic PartialResult" :rdd
+  (let [result (rdd/count-approx dummy-rdd 1000)]
+    (rdd/initial-value result) => #(every? % [:mean :low :high :confidence])
+    (rdd/final-value result) => #(every? % [:mean :low :high :confidence])
+    (rdd/final? result) => boolean?))
 
 (facts "On basic RDD actions" :rdd
   (fact "collect-async works"
     @(rdd/collect-async (rdd/parallelise [1])) => [1])
   (fact "collect-partitions works"
     (let [rdd     (rdd/parallelise (into [] (range 100)))
-          part-id (->> rdd .partitions (map #(.index %)) first)]
+          part-id (->> rdd rdd/partitions (map #(.index %)) first)]
       (rdd/collect-partitions rdd [part-id]))
     => #(and (every? seq? %)
              (every? (set (range 100)) (flatten %))))
@@ -186,8 +199,8 @@
       (->> zipped-values (map second) set count) => (rdd/count dummy-rdd)))
   (fact "sample works"
     (let [rdd dummy-rdd]
-      (rdd/count (rdd/sample rdd true 0.1)) => #(< 4 % 21)
-      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 4 % 21)))
+      (rdd/count (rdd/sample rdd true 0.1)) => #(< 2 % 25)
+      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 2 % 25)))
   (fact "coalesce works"
     (let [rdd (rdd/parallelise ["abc" "def"])]
       (-> rdd (rdd/coalesce 1) rdd/collect) => ["abc" "def"]
