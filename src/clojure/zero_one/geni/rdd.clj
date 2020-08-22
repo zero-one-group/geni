@@ -22,7 +22,7 @@
     [zero-one.geni.storage])
   (:import
     (org.apache.spark.partial PartialResult)
-    (org.apache.spark.api.java JavaSparkContext)
+    (org.apache.spark.api.java JavaSparkContext JavaPairRDD)
     (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context [spark]
@@ -76,6 +76,11 @@
 (defn coalesce
   ([rdd num-partitions] (.coalesce rdd num-partitions))
   ([rdd num-partitions shuffle] (.coalesce rdd num-partitions shuffle)))
+
+(defn cogroup
+  ([this other1] (.cogroup this other1))
+  ([this other1 other2] (.cogroup this other1 other2))
+  ([this other1 other2 other3] (.cogroup this other1 other2 other3)))
 
 (defn distinct
   ([rdd] (.distinct rdd))
@@ -150,6 +155,10 @@
 (defn subtract
   ([left right] (.subtract left right))
   ([left right num-partitions] (.subtract left right num-partitions)))
+
+(defn top
+  ([rdd n] (-> rdd (.top n) seq interop/->clojure))
+  ([rdd n cmp] (-> rdd (.top n cmp) seq interop/->clojure)))
 
 (defn union [left right]
   (.union left right))
@@ -238,11 +247,57 @@
   (.saveAsTextFile rdd path))
 
 ;; PairRDD Transformations
+(defn aggregate-by-key
+  ([rdd zero seq-fn comb-fn]
+   (.aggregateByKey rdd
+                    zero
+                    (function/function2 seq-fn)
+                    (function/function2 comb-fn)))
+  ([rdd zero num-partitions seq-fn comb-fn]
+   (.aggregateByKey rdd
+                    num-partitions
+                    zero
+                    (function/function2 seq-fn)
+                    (function/function2 comb-fn))))
+
+(defn combine-by-key
+  ([rdd create-fn merge-value-fn merge-combiner-fn]
+   (.combineByKey rdd
+                  (function/function create-fn)
+                  (function/function2 merge-value-fn)
+                  (function/function2 merge-combiner-fn)))
+  ([rdd create-fn merge-value-fn merge-combiner-fn num-partitions]
+   (.combineByKey rdd
+                  (function/function create-fn)
+                  (function/function2 merge-value-fn)
+                  (function/function2 merge-combiner-fn)
+                  num-partitions)))
+
 (defn count-by-key [rdd]
   (into {} (.countByKey rdd)))
 
+(defn bounded-double-map->nested-map [m]
+  (into {} (for [[k v] m] [k (bounded-double->map v)])))
+
+(defn count-by-key-approx
+  ([rdd timeout] (count-by-key-approx rdd timeout 0.95))
+  ([rdd timeout confidence]
+   (-> rdd
+       (.countByKeyApprox timeout confidence)
+       (map bounded-double-map->nested-map))))
+
+(defn count-approx-distinct-by-key
+  ([rdd relative-sd] (.countApproxDistinctByKey rdd relative-sd))
+  ([rdd relative-sd num-partitions]
+   (.countApproxDistinctByKey rdd relative-sd num-partitions)))
+
 (defn flat-map-values [rdd f]
   (.flatMapValues rdd (function/flat-map-function f)))
+
+(defn fold-by-key
+  ([rdd zero f] (.foldByKey rdd zero (function/function2 f)))
+  ([rdd zero num-partitions f]
+   (.foldByKey rdd zero num-partitions (function/function2 f))))
 
 (defn full-outer-join
   ([left right] (.fullOuterJoin left right))
@@ -266,12 +321,28 @@
 (defn map-values [rdd f]
   (.mapValues rdd (function/function f)))
 
-(defn reduce-by-key [rdd f]
-  (.reduceByKey rdd (function/function2 f)))
+(defn reduce-by-key
+  ([rdd f] (.reduceByKey rdd (function/function2 f)))
+  ([rdd f num-partitions] (.reduceByKey rdd (function/function2 f) num-partitions)))
+
+(defn reduce-by-key-locally [rdd f]
+  (into {} (.reduceByKeyLocally rdd (function/function2 f))))
 
 (defn right-outer-join
   ([left right] (.rightOuterJoin left right))
   ([left right num-partitions] (.rightOuterJoin left right num-partitions)))
+
+(defn sample-by-key
+  ([rdd with-replacement fractions]
+   (.sampleByKey rdd with-replacement fractions))
+  ([rdd with-replacement fractions seed]
+   (.sampleByKey rdd with-replacement fractions seed)))
+
+(defn sample-by-key-exact
+  ([rdd with-replacement fractions]
+   (.sampleByKeyExact rdd with-replacement fractions))
+  ([rdd with-replacement fractions seed]
+   (.sampleByKeyExact rdd with-replacement fractions seed)))
 
 (defn sort-by-key
   ([rdd] (.sortByKey rdd))
@@ -314,11 +385,9 @@
    none
    off-heap])
 
-;; RDD Transformations
-;; TODO: aggregate, fold
 ;; Others:
-;; TODO: broadcast
-;; TODO: name unmangling / setting callsite name?
+;; TODO: broadcast, partitioner
+;; TODO: name unmangling / setting callsite name
 ;; PairRDD
-;; TODO: aggregate-by-key, cogroup, cogroup-partitioned, combine-by-key
-;; TODO: pipe, repartition-and-sort-within-partitions
+;; TODO: cogroup-partitioned
+;; TODO: repartition-and-sort-within-partitions

@@ -16,8 +16,10 @@
            Function1
            Function2
            Function3
-           Tuple2)
-    (scala.collection JavaConversions Map Seq)))
+           Tuple2
+           Tuple3)
+    (scala.collection JavaConversions Map Seq)
+    (scala.collection.convert Wrappers$IterableWrapper)))
 
 (declare ->clojure)
 
@@ -27,11 +29,17 @@
 (defn scala-seq? [value]
   (instance? Seq value))
 
+(defn iterable? [value]
+  (instance? Wrappers$IterableWrapper value))
+
 (defn scala-map? [value]
   (instance? Map value))
 
 (defn scala-tuple2? [value]
   (instance? Tuple2 value))
+
+(defn scala-tuple3? [value]
+  (instance? Tuple3 value))
 
 (defn scala-seq->vec [scala-seq]
   (vec (JavaConversions/seqAsJavaList scala-seq)))
@@ -110,12 +118,16 @@
     (coll? value)           (map ->clojure value)
     (array? value)          (map ->clojure (seq value))
     (scala-seq? value)      (map ->clojure (scala-seq->vec value))
+    (iterable? value)       (map ->clojure (seq value))
     (scala-map? value)      (scala-map->map value)
     (spark-row? value)      (spark-row->map value)
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)
     (scala-tuple2? value)   [(->clojure (._1 value)) (->clojure (._2 value))]
+    (scala-tuple3? value)   [(->clojure (._1 value))
+                             (->clojure (._2 value))
+                             (->clojure (._3 value))]
     :else                   value))
 
 (defn setter? [^java.lang.reflect.Method method]

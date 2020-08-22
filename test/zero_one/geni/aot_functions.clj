@@ -22,3 +22,7 @@
 (defn equals-lewis [x] (= x "Lewis"))
 
 (defn first-equals-lewis [pair] (= (._1 pair) "Lewis"))
+
+(defn first-equals-lewis-or-carroll [pair]
+  (or (= (._1 pair) "Lewis")
+      (= (._1 pair) "Carroll")))
