@@ -1,12 +1,14 @@
 (ns zero-one.geni.rdd
   (:refer-clojure :exclude [count
                             distinct
+                            empty?
                             filter
                             first
                             map
                             mapcat
                             max
                             min
+                            name
                             reduce
                             take])
   (:require
@@ -16,6 +18,7 @@
     [zero-one.geni.rdd.function :as function]
     [zero-one.geni.storage])
   (:import
+    (org.apache.spark.partial PartialResult)
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
@@ -38,7 +41,25 @@
 ;; Getters
 (defn context [rdd] (JavaSparkContext/fromSparkContext (.context rdd)))
 
+(defn id [rdd] (.id rdd))
+
+(defn is-checkpointed [rdd] (.isCheckpointed rdd))
+(def checkpointed? is-checkpointed)
+
+(defn is-empty [rdd] (.isEmpty rdd))
+(def empty? is-empty)
+
+(defn name [rdd] (.name rdd))
+
 (defn num-partitions [rdd] (.getNumPartitions rdd))
+
+; TODO: must be able to test the use of partitioner
+;(defn partitioner [rdd]
+;  (let [maybe-partitioner (.partitioner rdd)]
+;    (when (.isPresent maybe-partitioner)
+;      (.get maybe-partitioner))))
+
+(defn partitions [rdd] (.partitions rdd))
 
 (defn storage-level [rdd] (.getStorageLevel rdd))
 
@@ -81,8 +102,11 @@
 (defn key-by [rdd f]
   (.keyBy rdd (function/function f)))
 
-(defn map [rdd f]
+(defmulti map (fn [head & _] (class head)))
+(defmethod map :default [rdd f]
   (.map rdd (function/function f)))
+(defmethod map PartialResult [result f]
+  (.map result (interop/->scala-function1 f)))
 
 (defn map-partitions
   ([rdd f] (map-partitions rdd f false))
@@ -164,9 +188,15 @@
 (defn count [rdd]
   (.count rdd))
 
-; (defn count-approx
-;   ([rdd timeout] (.countapprox rdd timeout))
-;   ([rdd timeout confidence] (.countapprox rdd timeout confidence)))
+(defn- bounded-double->map [bounded-double]
+  {:mean (.mean bounded-double)
+   :confidence (.confidence bounded-double)
+   :low (.low bounded-double)
+   :high (.high bounded-double)})
+
+(defn count-approx
+  ([rdd timeout] (-> rdd (.countApprox timeout) (map bounded-double->map)))
+  ([rdd timeout confidence] (-> rdd (.countApprox timeout confidence) (map bounded-double->map))))
 
 (defn count-approx-distinct [rdd relative-sd]
   (.countApproxDistinct rdd relative-sd))
@@ -221,14 +251,20 @@
 (defn save-as-text-file [rdd path]
   (.saveAsTextFile rdd path))
 
-;; TODO: aggregate, count-approx, fold
+;; TODO: aggregate, fold
 
 ;; Others:
 ;; TODO: broadcast
 ;; TODO: name unmangling / setting callsite name?
 
-;; Static
-;; TODO: id, checkpointed?, empty?, name, partitioner, partitions
+;; Partial Result
+(defn final-value [result] (.getFinalValue result))
+
+(defn initial-value [result] (.initialValue result))
+
+(defn is-initial-value-final [result] (.isInitialValueFinal result))
+(def final? is-initial-value-final)
+
 (import-vars
   [zero-one.geni.storage
    disk-only
