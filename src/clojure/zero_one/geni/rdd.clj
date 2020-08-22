@@ -245,12 +245,12 @@
   (.flatMapValues rdd (function/flat-map-function f)))
 
 (defn full-outer-join
-  [left right] (.fullOuterJoin left right)
-  [left right num-partitions] (.fullOuterJoin left right num-partitions))
+  ([left right] (.fullOuterJoin left right))
+  ([left right num-partitions] (.fullOuterJoin left right num-partitions)))
 
 (defn group-by
-  ([rdd f] (.groupBy rdd (function/function2 f)))
-  ([rdd f num-partitions] (.groupBy rdd (function/function2 f) num-partitions)))
+  ([rdd f] (.groupBy rdd (function/function f)))
+  ([rdd f num-partitions] (.groupBy rdd (function/function f) num-partitions)))
 
 (defn join
   ([left right] (.join left right))
@@ -287,7 +287,7 @@
 
 ;; PairRDD Actions
 (defn lookup [rdd k]
-  (.lookup rdd k))
+  (seq (.lookup rdd k)))
 
 ;; Partial Result
 (defn final-value [result] (.getFinalValue result))

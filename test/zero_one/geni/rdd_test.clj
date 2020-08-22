@@ -16,6 +16,18 @@
   (rdd/map-to-pair dummy-rdd aot/to-pair))
 
 (facts "On basic PairRDD transformations" :rdd
+  (fact "group-by works"
+    (-> dummy-pair-rdd
+        (rdd/group-by str)
+        rdd/keys
+        rdd/distinct
+        rdd/collect) => ["(Alice’s Adventures in Wonderland,1)"
+                         "(of anyone anywhere,1)"
+                         "(Project Gutenberg’s,1)"
+                         "(by Lewis Carroll,1)"
+                         "(at no cost and with,1)"
+                         "(This eBook is for the use,1)"]
+    (-> dummy-pair-rdd (rdd/group-by str 7) rdd/num-partitions) => 7)
   (fact "count-by-key works"
     (rdd/count-by-key dummy-pair-rdd) => {"Alice’s Adventures in Wonderland" 18
                                           "Project Gutenberg’s" 9
@@ -23,6 +35,16 @@
                                           "at no cost and with" 27
                                           "by Lewis Carroll" 18
                                           "of anyone anywhere" 27})
+  (fact "lookup works"
+    (-> dummy-pair-rdd
+        (rdd/lookup "at no cost and with")
+        distinct) => [1])
+  (fact "map-values works"
+    (-> dummy-pair-rdd
+        (rdd/map-values inc)
+        rdd/values
+        rdd/distinct
+        rdd/collect) => [2])
   (fact "flat-map-values works"
     (-> dummy-pair-rdd
         (rdd/flat-map-values aot/to-pair)
@@ -33,11 +55,23 @@
                          ["of anyone anywhere" 1]
                          ["This eBook is for the use" 1]
                          ["Project Gutenberg’s" 1]])
-  (fact "filter + join works"
+  (fact "keys + values work"
+    (-> dummy-pair-rdd rdd/keys rdd/distinct rdd/count) => 6
+    (-> dummy-pair-rdd rdd/values rdd/distinct rdd/collect) => [1])
+  (fact "filter + join + subtract-by-key work"
     (let [left  (rdd/flat-map-to-pair dummy-rdd aot/split-spaces-and-pair)
           right (rdd/filter left aot/first-equals-lewis)]
       (-> right rdd/distinct rdd/collect) => [["Lewis" 1]]
-      (-> left (rdd/join right) rdd/distinct rdd/collect) => [["Lewis" [1 1]]])))
+      (-> left (rdd/join right) rdd/distinct rdd/collect) => [["Lewis" [1 1]]]
+      (-> left (rdd/right-outer-join right) rdd/count) => 324
+      (-> left (rdd/left-outer-join right) rdd/count) => 828
+      (-> left (rdd/full-outer-join right) rdd/count) => 828
+      (-> left (rdd/join right 11) rdd/num-partitions) => 11
+      (-> left (rdd/right-outer-join right 2) rdd/num-partitions) => 2
+      (-> left (rdd/left-outer-join right 3) rdd/num-partitions) => 3
+      (-> left (rdd/full-outer-join right 4) rdd/num-partitions) => 4
+      (-> left (rdd/subtract-by-key right) rdd/distinct rdd/count) => 22
+      (-> left (rdd/subtract-by-key right 4) rdd/num-partitions) => 4)))
 
 (facts "On basic RDD saving and loading" :rdd
   (fact "save-as-text-file works"
