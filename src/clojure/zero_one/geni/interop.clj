@@ -115,7 +115,7 @@
     (dense-vector? value)   (vector->seq value)
     (sparse-vector? value)  (vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)
-    (scala-tuple2? value)   [(._1 value) (._2 value)]
+    (scala-tuple2? value)   [(->clojure (._1 value)) (->clojure (._2 value))]
     :else                   value))
 
 (defn setter? [^java.lang.reflect.Method method]

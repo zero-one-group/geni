@@ -12,6 +12,33 @@
 (def dummy-rdd
   (rdd/text-file "test/resources/rdd.txt"))
 
+(def dummy-pair-rdd
+  (rdd/map-to-pair dummy-rdd aot/to-pair))
+
+(facts "On basic PairRDD transformations" :rdd
+  (fact "count-by-key works"
+    (rdd/count-by-key dummy-pair-rdd) => {"Alice’s Adventures in Wonderland" 18
+                                          "Project Gutenberg’s" 9
+                                          "This eBook is for the use" 27
+                                          "at no cost and with" 27
+                                          "by Lewis Carroll" 18
+                                          "of anyone anywhere" 27})
+  (fact "flat-map-values works"
+    (-> dummy-pair-rdd
+        (rdd/flat-map-values aot/to-pair)
+        rdd/distinct
+        rdd/collect) => [["at no cost and with" 1]
+                         ["by Lewis Carroll" 1]
+                         ["Alice’s Adventures in Wonderland" 1]
+                         ["of anyone anywhere" 1]
+                         ["This eBook is for the use" 1]
+                         ["Project Gutenberg’s" 1]])
+  (fact "filter + join works"
+    (let [left  (rdd/flat-map-to-pair dummy-rdd aot/split-spaces-and-pair)
+          right (rdd/filter left aot/first-equals-lewis)]
+      (-> right rdd/distinct rdd/collect) => [["Lewis" 1]]
+      (-> left (rdd/join right) rdd/distinct rdd/collect) => [["Lewis" [1 1]]])))
+
 (facts "On basic RDD saving and loading" :rdd
   (fact "save-as-text-file works"
     (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
@@ -92,8 +119,7 @@
       (rdd/map-to-pair aot/to-pair)
       rdd/group-by-key
       rdd/num-partitions) => #(< 1 %)
-  (-> dummy-rdd
-      (rdd/map-to-pair aot/to-pair)
+  (-> dummy-pair-rdd
       (rdd/group-by-key 7)
       rdd/num-partitions) => 7
   (fact "subtract works"
@@ -142,8 +168,7 @@
     (-> (rdd/parallelise [1 2 3 4 5])
         (rdd/reduce *)) => 120)
   (fact "map-to-pair + reduce-by-key + collect work"
-    (-> dummy-rdd
-        (rdd/map-to-pair aot/to-pair)
+    (-> dummy-pair-rdd
         (rdd/reduce-by-key +)
         rdd/collect) => [["Alice’s Adventures in Wonderland" 18]
                          ["at no cost and with" 27]
@@ -151,20 +176,17 @@
                          ["by Lewis Carroll" 18]
                          ["Project Gutenberg’s" 9]
                          ["This eBook is for the use" 27]]
-    (-> dummy-rdd
-        (rdd/map-to-pair aot/to-pair)
+    (-> dummy-pair-rdd
         rdd/collect) => #(and (every? vector? %)
                               (every? (comp (partial = 2) count) %)
                               (every? (comp string? first) %)
                               (every? (comp (partial = 1) second) %)))
   (fact "sort-by-key works"
-    (-> dummy-rdd
-        (rdd/map-to-pair aot/to-pair)
+    (-> dummy-pair-rdd
         (rdd/reduce-by-key +)
         rdd/sort-by-key
         rdd/collect) => #(= (sort %) %)
-    (-> dummy-rdd
-        (rdd/map-to-pair aot/to-pair)
+    (-> dummy-pair-rdd
         (rdd/reduce-by-key +)
         (rdd/sort-by-key false)
         rdd/collect) => #(= (sort %) (reverse %)))

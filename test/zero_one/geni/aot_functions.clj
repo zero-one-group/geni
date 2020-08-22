@@ -20,3 +20,5 @@
   (map #(vector % 1) (split-spaces x)))
 
 (defn equals-lewis [x] (= x "Lewis"))
+
+(defn first-equals-lewis [pair] (= (._1 pair) "Lewis"))

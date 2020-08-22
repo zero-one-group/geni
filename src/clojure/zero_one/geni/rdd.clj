@@ -237,10 +237,9 @@
 (defn save-as-text-file [rdd path]
   (.saveAsTextFile rdd path))
 
-
 ;; PairRDD Transformations
 (defn count-by-key [rdd]
-  (.countByKey rdd))
+  (into {} (.countByKey rdd)))
 
 (defn flat-map-values [rdd f]
   (.flatMapValues rdd (function/flat-map-function f)))
@@ -254,15 +253,15 @@
   ([rdd f num-partitions] (.groupBy rdd (function/function2 f) num-partitions)))
 
 (defn join
-  [left right] (.join left right)
-  [left right num-partitions] (.join left right num-partitions))
+  ([left right] (.join left right))
+  ([left right num-partitions] (.join left right num-partitions)))
 
 (defn keys [rdd]
   (.keys rdd))
 
 (defn left-outer-join
-  [left right] (.leftOuterJoin left right)
-  [left right num-partitions] (.leftOuterJoin left right num-partitions))
+  ([left right] (.leftOuterJoin left right))
+  ([left right num-partitions] (.leftOuterJoin left right num-partitions)))
 
 (defn map-values [rdd f]
   (.mapValues rdd (function/function f)))
@@ -271,8 +270,8 @@
   (.reduceByKey rdd (function/function2 f)))
 
 (defn right-outer-join
-  [left right] (.rightOuterJoin left right)
-  [left right num-partitions] (.rightOuterJoin left right num-partitions))
+  ([left right] (.rightOuterJoin left right))
+  ([left right num-partitions] (.rightOuterJoin left right num-partitions)))
 
 (defn sort-by-key
   ([rdd] (.sortByKey rdd))
@@ -297,6 +296,8 @@
 
 (defn is-initial-value-final [result] (.isInitialValueFinal result))
 (def final? is-initial-value-final)
+
+;; Polymorphic
 
 (import-vars
   [zero-one.geni.storage
