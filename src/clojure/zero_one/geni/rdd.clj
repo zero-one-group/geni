@@ -4,13 +4,16 @@
                             empty?
                             filter
                             first
+                            group-by
+                            keys
                             map
                             mapcat
                             max
                             min
                             name
                             reduce
-                            take])
+                            take
+                            vals])
   (:require
     [potemkin :refer [import-vars]]
     [zero-one.geni.defaults]
@@ -137,9 +140,6 @@
 (defn reduce [rdd f]
   (.reduce rdd (function/function2 f)))
 
-(defn reduce-by-key [rdd f]
-  (.reduceByKey rdd (function/function2 f)))
-
 (defn repartition [rdd num-partitions]
   (.repartition rdd num-partitions))
 
@@ -150,10 +150,6 @@
 (defn subtract
   ([left right] (.subtract left right))
   ([left right num-partitions] (.subtract left right num-partitions)))
-
-(defn sort-by-key
-  ([rdd] (.sortByKey rdd))
-  ([rdd asc] (.sortByKey rdd asc)))
 
 (defn union [left right]
   (.union left right))
@@ -173,16 +169,6 @@
 
 (defn zip-with-unique-id [rdd]
   (.zipWithUniqueId rdd))
-
-;; PairRDD Transformations
-;; TODO: aggregate-by-key, count-by-key, subtract-by-key
-;; TODO: join, left-outer-join, right-outer-join, full-outer-join
-;; TODO: cogroup, cogroup-partitioned
-;; TODO: pipe, map-values, flat-mapvalues
-;; TODO: repartition-and-sort-within-partitions
-;; TODO: keys, values,
-;; TODO: group-by, combine-by-key
-;; TODO: lookup
 
 ;; Actions
 (defn count [rdd]
@@ -251,11 +237,57 @@
 (defn save-as-text-file [rdd path]
   (.saveAsTextFile rdd path))
 
-;; TODO: aggregate, fold
+;; PairRDD Transformations
+(defn count-by-key [rdd]
+  (into {} (.countByKey rdd)))
 
-;; Others:
-;; TODO: broadcast
-;; TODO: name unmangling / setting callsite name?
+(defn flat-map-values [rdd f]
+  (.flatMapValues rdd (function/flat-map-function f)))
+
+(defn full-outer-join
+  ([left right] (.fullOuterJoin left right))
+  ([left right num-partitions] (.fullOuterJoin left right num-partitions)))
+
+(defn group-by
+  ([rdd f] (.groupBy rdd (function/function f)))
+  ([rdd f num-partitions] (.groupBy rdd (function/function f) num-partitions)))
+
+(defn join
+  ([left right] (.join left right))
+  ([left right num-partitions] (.join left right num-partitions)))
+
+(defn keys [rdd]
+  (.keys rdd))
+
+(defn left-outer-join
+  ([left right] (.leftOuterJoin left right))
+  ([left right num-partitions] (.leftOuterJoin left right num-partitions)))
+
+(defn map-values [rdd f]
+  (.mapValues rdd (function/function f)))
+
+(defn reduce-by-key [rdd f]
+  (.reduceByKey rdd (function/function2 f)))
+
+(defn right-outer-join
+  ([left right] (.rightOuterJoin left right))
+  ([left right num-partitions] (.rightOuterJoin left right num-partitions)))
+
+(defn sort-by-key
+  ([rdd] (.sortByKey rdd))
+  ([rdd asc] (.sortByKey rdd asc)))
+
+(defn subtract-by-key
+  ([left right] (.subtractByKey left right))
+  ([left right num-partitions] (.subtractByKey left right num-partitions)))
+
+(defn values [rdd]
+  (.values rdd))
+(def vals values)
+
+;; PairRDD Actions
+(defn lookup [rdd k]
+  (seq (.lookup rdd k)))
 
 ;; Partial Result
 (defn final-value [result] (.getFinalValue result))
@@ -264,6 +296,8 @@
 
 (defn is-initial-value-final [result] (.isInitialValueFinal result))
 (def final? is-initial-value-final)
+
+;; Polymorphic
 
 (import-vars
   [zero-one.geni.storage
@@ -280,20 +314,11 @@
    none
    off-heap])
 
-(comment
-
-  (ns zero-one.geni.rdd)
-  (require '[zero-one.geni.aot-functions :as aot])
-
-  (-> (text-file "test/resources/rdd.txt")
-      (map-to-pair aot/to-pair)
-      (.groupByKey 10)
-      .getNumPartitions)
-
-  (require '[clojure.pprint])
-  (require '[clojure.reflect :as r])
-  (->> (r/reflect lines)
-      :members
-      clojure.pprint/pprint)
-
-  true)
+;; RDD Transformations
+;; TODO: aggregate, fold
+;; Others:
+;; TODO: broadcast
+;; TODO: name unmangling / setting callsite name?
+;; PairRDD
+;; TODO: aggregate-by-key, cogroup, cogroup-partitioned, combine-by-key
+;; TODO: pipe, repartition-and-sort-within-partitions
