@@ -6,18 +6,16 @@ Geni is designed primarily to be a good data-analysis tool that is optimised for
 
 This is important when an idea randomly pops up, and we would like to know the answer here and now. The key is to have a dataframe library accessible through a fast-starting REPL from anywhere.
 
-With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped. On my machine, Geni's current startup times are as follows:
+With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped. On my machine, the startup times are as follows:
 
 | Command | Runtime (s) |
-| :---: | :---: |
+| ---: | :---: |
 | `time bash -c "exit \| R --no-save"` | 0.2 |
 | `time bash -c "exit \| ipython"` | 0.3 |
 | `time bash -c "exit \| geni"` | 7.3 |
 | `time bash -c "echo sys.exit \| spark-shell"` | 8.4 |
 
-It is clearly not as good as R and Python, but it is still bearable for sub-one-minute tasks.
-
-Suppose that we are working with the Melbourne housing dataset stored in `data/melbourne.parquet`, and we would like to know which region has the highest mean house price. In Python we would do:
+It is clearly not as good as R and Python, but it is still bearable for sub-one-minute tasks. As an illustration, suppose that we are working with the Melbourne housing dataset stored in `data/melbourne.parquet`, and we would like to know which region has the highest mean house price. In Python we would do:
 
 ```
 $ ipython
@@ -45,7 +43,7 @@ In [4]:
 Do you really want to exit ([y]/n)? y
 ```
 
-After timing myself, going in and out of the IPython REPL took 24 seconds. The following sequence took 34 seconds, which is quite competitive to the Python version.
+After timing myself, going in and out of the IPython REPL took 24 seconds. The following Geni version took 34 seconds, which is quite competitive to the Python version.
 
 ```
 $ time geni
