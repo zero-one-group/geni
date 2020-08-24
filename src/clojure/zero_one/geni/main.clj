@@ -53,13 +53,11 @@
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
-  (import '(org.apache.spark.sql Dataset))
-  (->> (r/reflect (.write dataframe))
+  (import '(org.apache.spark.api.java JavaPairRDD))
+  (->> (r/reflect JavaPairRDD)
        :members
-       (clojure.core/filter #(= (:name %) 'partitionBy))
-       ;(mapv :parameter-types)
-       ;(clojure.core/filter #(= (:name %) 'toDF))
-       ;clojure.core/sort
+       (mapv :name)
+       sort
        clojure.pprint/pprint)
 
   0)

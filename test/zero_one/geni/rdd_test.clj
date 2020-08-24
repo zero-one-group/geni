@@ -16,6 +16,102 @@
   (rdd/map-to-pair dummy-rdd aot/to-pair))
 
 (facts "On basic PairRDD transformations" :rdd
+  (fact "cogroup work"
+    (let [left  (rdd/flat-map-to-pair dummy-rdd aot/split-spaces-and-pair)
+          mid   (rdd/filter left aot/first-equals-lewis-or-carroll)
+          right (rdd/filter left aot/first-equals-lewis)]
+      (-> (rdd/cogroup left mid right)
+          rdd/collect
+          flatten
+          set) => #(every? % [1 "eBook" "Wonderland"])
+      (-> (rdd/cogroup left mid right 4)
+          rdd/num-partitions) => 4
+      (-> (rdd/cogroup mid right)
+          rdd/collect
+          rdd/count) => 2))
+  (fact "sample-by-key + sample-by-key-exact works"
+    (let [fractions {"Alice’s Adventures in Wonderland" 0.1
+                     "Project Gutenberg’s" 0.1
+                     "This eBook is for the use" 0.1
+                     "at no cost and with" 0.1
+                     "by Lewis Carroll" 0.1
+                     "of anyone anywhere" 0.1}]
+      (-> dummy-pair-rdd
+          (rdd/sample-by-key true fractions)
+          rdd/count) => #(< 2 % 27)
+      (-> dummy-pair-rdd
+          (rdd/sample-by-key true fractions 123)
+          rdd/count) => #(< 2 % 27)
+      (-> dummy-pair-rdd
+          (rdd/sample-by-key-exact true fractions)
+          rdd/count) => 14
+      (-> dummy-pair-rdd
+          (rdd/sample-by-key-exact true fractions 123)
+          rdd/count) => 14))
+  (fact "reduce-by-key-locally works"
+    (-> dummy-pair-rdd
+        (rdd/reduce-by-key-locally +)) => {"Alice’s Adventures in Wonderland" 18
+                                           "Project Gutenberg’s" 9
+                                           "This eBook is for the use" 27
+                                           "at no cost and with" 27
+                                           "by Lewis Carroll" 18
+                                           "of anyone anywhere" 27})
+  (fact "reduce-by-key works"
+    (-> dummy-pair-rdd (rdd/reduce-by-key + 2) rdd/num-partitions) => 2)
+  (fact "count-by-key-approx works"
+    (let [result (-> dummy-pair-rdd
+                     (rdd/count-by-key-approx 100)
+                     rdd/final-value)]
+      (map (comp keys second) result))
+    => (fn [ks] (every? #(= [:mean :confidence :low :high] %) ks)))
+  (fact "count-approx-distinct-by-key works"
+    (-> dummy-pair-rdd
+        (rdd/count-approx-distinct-by-key 0.01)
+        rdd/collect) => [["Alice’s Adventures in Wonderland" 1]
+                         ["at no cost and with" 1]
+                         ["of anyone anywhere" 1]
+                         ["by Lewis Carroll" 1]
+                         ["Project Gutenberg’s" 1]
+                         ["This eBook is for the use" 1]]
+    (-> dummy-pair-rdd
+        (rdd/count-approx-distinct-by-key 0.01 3)
+        rdd/num-partitions) => 3)
+  (fact "combine-by-key works"
+    (-> dummy-pair-rdd
+        (rdd/combine-by-key str str str)
+        rdd/collect) => [["Alice’s Adventures in Wonderland" "111111111111111111"]
+                         ["at no cost and with" "111111111111111111111111111"]
+                         ["of anyone anywhere" "111111111111111111111111111"]
+                         ["by Lewis Carroll" "111111111111111111"]
+                         ["Project Gutenberg’s" "111111111"]
+                         ["This eBook is for the use" "111111111111111111111111111"]]
+    (-> dummy-pair-rdd
+        (rdd/combine-by-key str str str 2)
+        rdd/num-partitions) => 2)
+  (fact "fold-by-key works"
+    (-> dummy-pair-rdd
+        (rdd/fold-by-key 100 -)
+        rdd/collect) => [["Alice’s Adventures in Wonderland" -2]
+                         ["at no cost and with" 1]
+                         ["of anyone anywhere" 1]
+                         ["by Lewis Carroll" 0]
+                         ["Project Gutenberg’s" -1]
+                         ["This eBook is for the use" 1]]
+    (-> dummy-pair-rdd
+        (rdd/fold-by-key 0 2 -)
+        rdd/num-partitions) => 2)
+  (fact "aggregate-by-key works"
+    (-> dummy-pair-rdd
+        (rdd/aggregate-by-key 0 + +)
+        rdd/collect) => [["Alice’s Adventures in Wonderland" 18]
+                         ["at no cost and with" 27]
+                         ["of anyone anywhere" 27]
+                         ["by Lewis Carroll" 18]
+                         ["Project Gutenberg’s" 9]
+                         ["This eBook is for the use" 27]]
+    (-> dummy-pair-rdd
+        (rdd/aggregate-by-key 3 0 + +)
+        rdd/num-partitions) => 3)
   (fact "group-by works"
     (-> dummy-pair-rdd
         (rdd/group-by str)
@@ -149,6 +245,9 @@
       (rdd/take-sample rdd true 100 1) => #(< (-> % distinct count) 100))))
 
 (facts "On basic RDD transformations + actions" :rdd
+  (-> dummy-rdd (rdd/top 2)) => ["of anyone anywhere" "of anyone anywhere"]
+  (-> (rdd/parallelise [1 2 3])
+      (rdd/top 2 <)) => [3 2]
   (-> (rdd/text-file "test/resources/rdd.txt" 2)
       (rdd/map-to-pair aot/to-pair)
       rdd/group-by-key
@@ -256,8 +355,8 @@
       (->> zipped-values (map second) set count) => (rdd/count dummy-rdd)))
   (fact "sample works"
     (let [rdd dummy-rdd]
-      (rdd/count (rdd/sample rdd true 0.1)) => #(< 2 % 25)
-      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 2 % 25)))
+      (rdd/count (rdd/sample rdd true 0.1)) => #(< 2 % 27)
+      (rdd/count (rdd/sample rdd false 0.1 123)) => #(< 2 % 27)))
   (fact "coalesce works"
     (let [rdd (rdd/parallelise ["abc" "def"])]
       (-> rdd (rdd/coalesce 1) rdd/collect) => ["abc" "def"]
