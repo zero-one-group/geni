@@ -9,7 +9,7 @@ This is important when an idea randomly pops up, and we would like to know the a
 With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped. On my machine, Geni's current startup times are as follows:
 
 | Command | Runtime (s) |
-| --- | --- |
+| :---: | :---: |
 | `time bash -c "exit \| R --no-save"` | 0.2 |
 | `time bash -c "exit \| ipython"` | 0.3 |
 | `time bash -c "exit \| geni"` | 7.3 |
