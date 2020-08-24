@@ -22,7 +22,7 @@
     [zero-one.geni.storage])
   (:import
     (org.apache.spark.partial PartialResult)
-    (org.apache.spark.api.java JavaSparkContext JavaPairRDD)
+    (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context [spark]
@@ -369,7 +369,6 @@
 (def final? is-initial-value-final)
 
 ;; Polymorphic
-
 (import-vars
   [zero-one.geni.storage
    disk-only
