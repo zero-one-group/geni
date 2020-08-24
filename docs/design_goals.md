@@ -19,10 +19,7 @@ It is clearly not as good as R and Python, but it is still bearable for sub-one-
 
 ```
 $ ipython
-Python 3.7.8 | packaged by conda-forge | (default, Jul 31 2020, 02:25:08)
-Type 'copyright', 'credits' or 'license' for more information
-IPython 7.8.0 -- An enhanced Interactive Python. Type '?' for help.
-
+...
 In [1]: import pandas as pd
 
 In [2]: df = pd.read_parquet('data/melbourne.parquet')
@@ -38,37 +35,14 @@ Northern Metropolitan         8.981711e+05
 South-Eastern Metropolitan    9.229438e+05
 Eastern Metropolitan          1.104080e+06
 Southern Metropolitan         1.372963e+06
-
-In [4]:
-Do you really want to exit ([y]/n)? y
+...
 ```
 
 After timing myself, going in and out of the IPython REPL took 24 seconds. The following Geni version took 34 seconds, which is quite competitive to the Python version.
 
 ```
-$ time geni
+$ geni
 ...
-Spark session available as a future object - deref with `@spark`.
-Welcome to
-      ____              __
-     / __/__  ___ _____/ /__
-    _\ \/ _ \/ _ `/ __/  '_/
-   /___/ .__/\_,_/_/ /_/\_\   version 3.0.0
-      /_/
-nREPL server started on port 65186
-REPL-y 0.4.4, nREPL 0.8.0
-Clojure 1.10.1
-OpenJDK 64-Bit Server VM 11.0.7+10-post-Ubuntu-2ubuntu219.10
-        Exit: Control+D or (exit) or (quit)
-    Commands: (user/help)
-        Docs: (doc function-name-here)
-              (find-doc "part-of-name-here")
-Find by Name: (find-name "part-of-name-here")
-      Source: (source function-name-here)
-     Javadoc: (javadoc java-object-or-class-here)
-    Examples from clojuredocs.org: [clojuredocs or cdoc]
-              (user/clojuredocs name-here)
-              (user/clojuredocs "ns-here" "name-here")
 geni-repl (user)
 λ (def df (g/read-parquet! "data/melbourne.parquet"))
 #'user/df
@@ -86,10 +60,7 @@ geni-repl (user)
 |Eastern Metropolitan      |1104079.6342624065|
 |Southern Metropolitan     |1372963.3693290735|
 +--------------------------+------------------+
-
-nil
-geni-repl (user)
-λ Bye for now!
+...
 ```
 
 ## Data Wrangling Performance
