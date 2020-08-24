@@ -10,10 +10,10 @@ With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped. O
 
 | Command | Runtime (s) |
 | --- | --- |
-| `time bash -c "exit | R --no-save"` | 0.2 |
-| `time bash -c "exit | ipython"` | 0.3 |
-| `time bash -c "exit | geni"` | 7.3 |
-| `time bash -c "echo sys.exit | spark-shell"` | 8.4 |
+| `time bash -c "exit \| R --no-save"` | 0.2 |
+| `time bash -c "exit \| ipython"` | 0.3 |
+| `time bash -c "exit \| geni"` | 7.3 |
+| `time bash -c "echo sys.exit \| spark-shell"` | 8.4 |
 
 It is clearly not as good as R and Python, but it is still bearable for sub-one-minute tasks.
 
