@@ -1,21 +1,21 @@
 # Design Goals
 
-Geni is designed primarily to be a good data-analysis tool that is optimised for frequent and rapid feedback from the data. The core design of Geni is informed by my personal experience working as a data scientist that requires asking many questions about the data and writing countless queries for it.
+Geni is designed primarily to be a good data-analysis tool that is optimised for frequent and rapid feedback from the data. The core design of Geni is informed by our personal experience working as a data scientist that requires asking many questions about the data and writing countless queries for it.
 
-## Fast REPL
+## Fast, Accessible REPL
 
-This is important when an idea randomly pops up, and we would like to know the answer here and now. The key is to have a dataframe library accessible through a fast-starting REPL from anywhere.
+This is important when an idea randomly pops up, and we would like to know the answer **here and now**. The key here is to have a dataframe library that is accessible through a fast-starting REPL from any directory on the terminal. Geni's answer to this is the Geni CLI, which is essentially an executable script that starts a Clojure REPL (as well as an nREPL server), requires Geni namespaces and instantiates a `SparkSession` in parallel.
 
-With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped. On my machine, the startup times are as follows:
+With Clojure and Spark sub-optimal startup times, Geni is clearly handicapped compared to R and Python. On our machine, the startup times are as follows:
 
-| Command | Runtime (s) |
-| ---: | :---: |
-| `time bash -c "exit \| R --no-save"` | 0.2 |
-| `time bash -c "exit \| ipython"` | 0.3 |
-| `time bash -c "exit \| geni"` | 7.3 |
-| `time bash -c "echo sys.exit \| spark-shell"` | 8.4 |
+| Library/Language | Startup Time (s) | Command                                       |
+| :---:            | :---:            | :---                                          |
+| R                | 0.2              | `time bash -c "exit \| R --no-save"`          |
+| Python           | 0.3              | `time bash -c "exit \| ipython"`              |
+| Geni             | 7.3              | `time bash -c "exit \| geni"`                 |
+| Spark Shell      | 8.4              | `time bash -c "echo sys.exit \| spark-shell"` |
 
-It is clearly not as good as R and Python, but it is still bearable for sub-one-minute tasks. As an illustration, suppose that we are working with the Melbourne housing dataset stored in `data/melbourne.parquet`, and we would like to know which region has the highest mean house price. In Python we would do:
+It is clearly not as fast-starting as R and Python, but it is still good to use for sub-one-minute tasks. To illustrate this, suppose that we are working with the Melbourne housing dataset stored in `data/melbourne.parquet`, and we would like to know which region has the highest mean house price. In Python we would do:
 
 ```
 $ ipython
@@ -38,7 +38,7 @@ Southern Metropolitan         1.372963e+06
 ...
 ```
 
-After timing myself, going in and out of the IPython REPL took 24 seconds. The following Geni version took 34 seconds, which is quite competitive to the Python version.
+With the Geni CLI, we could do:
 
 ```
 $ geni
@@ -62,6 +62,8 @@ geni-repl (user)
 +--------------------------+------------------+
 ...
 ```
+
+After timing a personal run, the Python-Pandas version took 24 seconds, whereas the Clojure-Geni version took 34 seconds. Although, the Python-Pandas combination has a small edge for sub-one-minute tasks, the Clojure-Geni combination has all the Clojure REPL facilities including tight text-editor integrations, which makes for a better REPL for bigger tasks.
 
 ## Data Wrangling Performance
 
