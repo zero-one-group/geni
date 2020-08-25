@@ -86,9 +86,7 @@ After timing a personal run, the Python-Pandas version took 24 seconds, whereas 
 
 ## Data Wrangling Performance
 
-One downside to the Python-Pandas combination is that the latter is single-threaded. This means that Pandas performance is very slow compared to other libraries for easily parallelisable tasks.
-
-To illustrate this point, consider [the dummy retail data](../examples/performance_benchmark_data.clj) with 24 million transactions and over one million customers. Suppose that we would like to know the empirical distribution of the number of transactions of each customer in a year:
+One downside to the Python-Pandas combination is that the latter is single-threaded. This means that Pandas performance is very slow compared to other libraries for easily parallelisable tasks. To illustrate this point, consider [the dummy retail data](../examples/performance_benchmark_data.clj) with 24 million transactions and over one million customers. Suppose that we would like to know how many transactions do the top brands have:
 
 <table>
     <tr>
@@ -133,7 +131,7 @@ $ geni
 ...
 λ (time (-> (g/read-parquet! "data/dummy_retail")
             (g/select "brand-id")
-            g/value-count s
+            g/value-counts
             g/show))
 +--------+------+
 |brand-id|count |
@@ -156,17 +154,7 @@ $ geni
     </tr>
 </table>
 
-In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater; see [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment. The benchmark results are replicated here:
-
-| Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
-| --       | ---                                  | ---         | ---   | ---          | ---   |
-| Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
-| R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
-| Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
-| R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
-| Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
-| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
-| Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
+In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater - even up to 73x. See [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment.
 
 ## Seamless Parasitism
 
