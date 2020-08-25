@@ -107,8 +107,8 @@ $ ipython
 In [1]: import pandas as pd
 
 In [2]: %time (pd.read_parquet('data/dummy_retail')
-                 ['brand-id']
-                 .value_counts())
+                    ['brand-id']
+                    .value_counts())
 CPU times: user 11 s, sys: 5.11 s, total: 16.1 s
 Wall time: 12.9 s
 Out[2]:
@@ -156,7 +156,17 @@ $ geni
     </tr>
 </table>
 
-In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater; see [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment.
+In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater; see [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment. The benchmark results are replicated here:
+
+| Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
+| --       | ---                                  | ---         | ---   | ---          | ---   |
+| Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
+| R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
+| Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
+| R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
+| Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
+| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
+| Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
 
 ## Seamless Parasitism
 
