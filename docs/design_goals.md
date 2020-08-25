@@ -105,8 +105,7 @@ $ ipython
 In [1]: import pandas as pd
 
 In [2]: %time (pd.read_parquet('data/dummy_retail')
-                    ['brand-id']
-                    .value_counts())
+                    ['brand-id'].value_counts())
 CPU times: user 11 s, sys: 5.11 s, total: 16.1 s
 Wall time: 12.9 s
 Out[2]:
