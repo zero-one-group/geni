@@ -35,7 +35,9 @@ In [1]: import pandas as pd
 
 In [2]: df = pd.read_parquet('data/melbourne.parquet')
 
-In [3]: df.groupby('Regionname').mean()['Price'].sort_values()
+In [3]: (df.groupby('Regionname')
+   ...:    .mean()['Price']
+   ...:    .sort_values())
 Out[3]:
 Regionname
 Western Victoria              3.975234e+05
@@ -57,7 +59,11 @@ geni-repl (user)
 λ (def df (g/read-parquet! "data/melbourne.parquet"))
 #'user/df
 geni-repl (user)
-λ (-> df (g/group-by :Regionname) (g/agg {:price (g/mean :Price)}) (g/sort :price) g/show)
+λ (-> df 
+      (g/group-by :Regionname) 
+      (g/agg {:price (g/mean :Price)}) 
+      (g/sort :price) 
+      g/show)
 +--------------------------+------------------+
 |Regionname                |price             |
 +--------------------------+------------------+
