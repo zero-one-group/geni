@@ -19,10 +19,10 @@ It is clearly not as fast-starting as R and Python, but it is still good to use 
 
 <table>
     <tr>
-        <th>
+        <th align="center" width="441">
             Python-Pandas
         </th>
-        <th>
+        <th align="center" width="441">
             Clojure-Geni
         </th>
     </tr>
