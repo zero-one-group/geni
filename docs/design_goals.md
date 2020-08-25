@@ -59,10 +59,10 @@ geni-repl (user)
 λ (def df (g/read-parquet! "data/melbourne.parquet"))
 #'user/df
 geni-repl (user)
-λ (-> df 
-      (g/group-by :Regionname) 
-      (g/agg {:price (g/mean :Price)}) 
-      (g/sort :price) 
+λ (-> df
+      (g/group-by :Regionname)
+      (g/agg {:price (g/mean :Price)})
+      (g/sort :price)
       g/show)
 +--------------------------+------------------+
 |Regionname                |price             |
@@ -86,6 +86,80 @@ After timing a personal run, the Python-Pandas version took 24 seconds, whereas 
 
 ## Data Wrangling Performance
 
-## First Class Clojure, First Class Spark
+One downside to the Python-Pandas combination is that the latter is single-threaded. This means that Pandas performance is very slow compared to other libraries for easily parallelisable tasks.
+
+To illustrate this point, consider [the dummy retail data](../examples/performance_benchmark_data.clj) with 24 million transactions and over one million customers. Suppose that we would like to know the empirical distribution of the number of transactions of each customer in a year:
+
+<table>
+    <tr>
+        <th align="center" width="441">
+            Python-Pandas
+        </th>
+        <th align="center" width="441">
+            Clojure-Geni
+        </th>
+    </tr>
+    <tr>
+<td>
+<pre>
+$ ipython
+...
+In [1]: import pandas as pd
+
+In [2]: %time (pd.read_parquet('data/dummy_retail')
+                 ['brand-id']
+                 .value_counts())
+CPU times: user 11 s, sys: 5.11 s, total: 16.1 s
+Wall time: 12.9 s
+Out[2]:
+0       238757
+1       236314
+2       233277
+3       231845
+4       229180
+         ...
+1224         1
+1222         1
+1218         1
+1213         1
+1826         1
+Name: brand-id, Length: 1310, dtype: int64
+...
+</pre>
+</td>
+<td>
+<pre>
+$ geni
+...
+λ (time (-> (g/read-parquet! "data/dummy_retail")
+            (g/select "brand-id")
+            g/value-count s
+            g/show))
++--------+------+
+|brand-id|count |
++--------+------+
+|0       |238757|
+|1       |236314|
+|2       |233277|
+|3       |231845|
+|4       |229180|
+|5       |226255|
+|6       |225069|
+|7       |222698|
+|8       |220850|
+|9       |217840|
++--------+------+
+"Elapsed time: 3447.6941 msecs"
+...
+</pre>
+</td>
+    </tr>
+</table>
+
+In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater; see [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment.
+
+## Seamless Parasitism
+
+First Class Clojure, First Class Spark
 
 ## Easy Getting-Started Story
