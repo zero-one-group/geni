@@ -163,21 +163,11 @@ In this case, we see around 3.7x performance for a very simple query. However, f
     </p>
     &mdash;
     <a href="https://download.clojure.org/papers/clojure-hopl-iv-final.pdf">
-        Rich Hickey in A History of Clojure.
+        Rich Hickey, A History of Clojure.
     </a>
 </blockquote>
 
 Similar to Clojure's JVM parasitism, Geni aims to leverage the mature runtime and rich features of [Apache Spark](https://spark.apache.org/). This means that all of the hardwork in perfomance optimisation and computational heavy lifting are being taken care of by the Spark team, and Geni's job is to simply provide an ergonomic Clojure interface for the underlying Spark machinery. Just like how Clojure goes the extra mile with special host interop syntax, Geni tries to provide both a first-class Clojure experience **and** a first-class Spark experience.
-
-<blockquote>
-    <p> 
-        React Native isn't our problem. That's somebody else's problem. We're just the little spider in the colony taking advantage of everything else that everybody else is doing.
-    </p>
-    &mdash;
-    <a href="https://youtu.be/tX4wg4wOFuU?t=1661">
-        David Nolen in Parasitic Programming Languages
-    </a>
-</blockquote>
 
 Typically, this means translating Scala and Spark concepts into idiomatic Clojure whilst still leaving the door open for direct Scala interop. For instance, the `.groupBy` method on a Spark `Dataset` takes in an array of `Column`s to type check. The following snippet is valid Spark in Clojure:
 
@@ -241,5 +231,15 @@ This also works the other way. For example, the RDD `.mapToPair` method requires
 (import '(scala Tuple2))
 (.mapToPair rdd (fn [x] (Tuple2. x 1))
 ```
+
+<blockquote>
+    <p> 
+        React Native isn't our problem. That's somebody else's problem. We're just the little spider in the colony taking advantage of everything else that everybody else is doing.
+    </p>
+    &mdash;
+    <a href="https://youtu.be/tX4wg4wOFuU?t=1661">
+        David Nolen, Parasitic Programming Languages
+    </a>
+</blockquote>
 
 ## Easy Getting-Started Story
