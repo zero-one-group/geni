@@ -57,5 +57,9 @@ test-install-geni-cli: build
 	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-install-geni-cli
 
-ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient 
+ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient
 	echo "CI steps passed!"
+
+pre-release: coverage test-install-geni-cli test-geni-cli lint-ancient
+
+post-release: test-lein-template
