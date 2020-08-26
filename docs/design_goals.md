@@ -157,9 +157,15 @@ In this case, we see around 3.7x performance for a very simple query. However, f
 
 ## Seamless Parasitism
 
-> Clojure is intentionally hosted, in that it compiles to and runs on the runtime of another language, such as the JVM. This is more than an implementation strategy; numerous features ensure that programs written in Clojure can leverage and interoperate with the libraries of the host language directly and efficiently.
-
-> &mdash Rich Hickey in [A History of Clojure](https://download.clojure.org/papers/clojure-hopl-iv-final.pdf).
+<blockquote>
+    <p> 
+        Clojure is intentionally hosted, in that it compiles to and runs on the runtime of another language, such as the JVM. This is more than an implementation strategy; numerous features ensure that programs written in Clojure can leverage and interoperate with the libraries of the host language directly and efficiently.
+    </p>
+    &mdash 
+    <a href="https://download.clojure.org/papers/clojure-hopl-iv-final.pdf">
+        Rich Hickey in A History of Clojure.
+    </a>
+</blockquote>
 
 Similar to Clojure's JVM paratism, Geni aims to leverage the mature runtime and rich features of [Apache Spark](https://spark.apache.org/). This means that all of the hardwork in perfomance optimisation and computational heavy lifting are being taken care of by the Spark team, and Geni's job is to simply provide an ergonomic Clojure interface for the underlying Spark machinery. Just like how Clojure goes the extra mile with special host interop syntax, Geni tries to provide both a first-class Clojure experience **and** a first-class Spark experience.
 
