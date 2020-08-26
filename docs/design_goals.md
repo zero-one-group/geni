@@ -167,7 +167,7 @@ In this case, we see around 3.7x performance for a very simple query. However, f
     </a>
 </blockquote>
 
-Similar to Clojure's JVM paratism, Geni aims to leverage the mature runtime and rich features of [Apache Spark](https://spark.apache.org/). This means that all of the hardwork in perfomance optimisation and computational heavy lifting are being taken care of by the Spark team, and Geni's job is to simply provide an ergonomic Clojure interface for the underlying Spark machinery. Just like how Clojure goes the extra mile with special host interop syntax, Geni tries to provide both a first-class Clojure experience **and** a first-class Spark experience.
+Similar to Clojure's JVM parasitism, Geni aims to leverage the mature runtime and rich features of [Apache Spark](https://spark.apache.org/). This means that all of the hardwork in perfomance optimisation and computational heavy lifting are being taken care of by the Spark team, and Geni's job is to simply provide an ergonomic Clojure interface for the underlying Spark machinery. Just like how Clojure goes the extra mile with special host interop syntax, Geni tries to provide both a first-class Clojure experience **and** a first-class Spark experience.
 
 Typically, this means translating Scala and Spark concepts into idiomatic Clojure whilst still leaving the door open for direct Scala interop. For instance, the `.groupBy` method on a Spark `Dataset` takes in an array of `Column`s to type check. The following snippet is valid Spark in Clojure:
 
@@ -198,9 +198,9 @@ However, it is problematic in (at least) two ways. Firstly, it is quite awkward 
     g/show)
 ```
 
-which is brief, and clean enough to write spontaneously on the REPL. Notice that we can mix `Column` and keywords on a single `g/group-by` call, as Geni converts everything to an array of Columns in the background.
+which is brief and clean enough to write spontaneously on the REPL. Notice that we can mix `Column`s and keywords on a single `g/group-by` call, as Geni converts everything to an array of Columns in the background. Since Geni does not wrap Spark data structures in other data structures, the direct-interop forms can be arbitrarily combined with the Geni forms within the same threading macro invocation.
 
-Furthermore, to make it easier to compose with other Clojure libraries, functions such as `g/collect` returns Clojure-friendly data structures. What this means is that Scala maps are converted to Clojure maps, Scala tuples into Clojure vectors, Spark Rows to Clojure maps, Spark vectors to Clojure vectors, etc. Arbitrarily nested data structures are converted in the same way.
+Furthermore, to make it easier to compose with other Clojure libraries, functions such as `g/collect` returns Clojure-friendly data structures. What this means is that Scala maps are converted to Clojure maps, Scala tuples into Clojure vectors, Spark Rows to Clojure maps, Spark vectors to Clojure vectors, etc. Nested data structures are converted in the same way:
 
 ```clojure
 (-> dataframe
@@ -221,7 +221,7 @@ Furthermore, to make it easier to compose with other Clojure libraries, function
        :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
 ```
 
-This also works the other way. The RDD `.mapToPair` method requires a function that spits out a `scala.Tuple2` to type check. Geni's `rdd/map-to-pair` expects a function that returns a vector of length two instead, does the coercion to `scala.Tuple2` in the background, and throws an error should the coercion fail.
+This also works the other way. For example, the RDD `.mapToPair` method requires a function that spits out a `scala.Tuple2` to type check. Geni's `rdd/map-to-pair` expects a function that returns a vector of length two instead, does the coercion to `scala.Tuple2` in the background, and throws an error should the coercion fail.
 
 ```clojure
 ;; We can write the following:
