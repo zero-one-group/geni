@@ -161,7 +161,7 @@ In this case, we see around 3.7x performance for a very simple query. However, f
     <p> 
         Clojure is intentionally hosted, in that it compiles to and runs on the runtime of another language, such as the JVM. This is more than an implementation strategy; numerous features ensure that programs written in Clojure can leverage and interoperate with the libraries of the host language directly and efficiently.
     </p>
-    &mdash 
+    &mdash;
     <a href="https://download.clojure.org/papers/clojure-hopl-iv-final.pdf">
         Rich Hickey in A History of Clojure.
     </a>
