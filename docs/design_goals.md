@@ -244,20 +244,20 @@ This also works the other way. For example, the RDD `.mapToPair` method requires
 
 ## Easy Getting-Started Experience
 
-Getting started with Geni should be easy not only for seasoned Clojure developers, but also for someone new to the language - perhaps just trying out the library. Speaking from personal experience, as a beginner to Clojure, having to install [Leiningen](https://leiningen.org/) or [Clojure CLI](https://clojure.org/guides/deps_and_cli) can be a turn off and an unnecessary barrier to entry. This is not to mention the [Emacs + Cider](https://www.braveclojure.com/basic-emacs/) combination that appears in many Clojure tutorials.
+Getting started with Geni should be easy not only for seasoned Clojure developers, but also for someone new to the language, who is perhaps just trying out the library. Speaking from personal experience, as a beginner to Clojure, having to install [Leiningen](https://leiningen.org/) or [Clojure CLI](https://clojure.org/guides/deps_and_cli) can be a turn off and an unnecessary barrier to entry - not to mention the [Emacs-Cider](https://www.braveclojure.com/basic-emacs/) combo that appears in many Clojure tutorials.
 
-Geni's getting-started journey draws a lot from [borkdude](https://github.com/borkdude)'s work. In particular, [clj-kondo](https://github.com/borkdude/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux) can be installed as a standalone application with three lines of Bash or a simple `brew install`. We can install and run a [babashka](https://github.com/borkdude/babashka#quickstart) script in three lines of Bash. For that reason, Geni is not only released as a Clojure library, but also as a CLI that auto-downloads the latest Geni uberjar and defaults to a REPL (with an nREPL server) with all of the Geni namespaces required. After running the [three-liner](https://github.com/zero-one-group/geni#install-geni) to instnall the Geni CLI, we can run a minimal application that prints the Spark session as follows:
+Geni's getting-started journey draws a lot from [borkdude](https://github.com/borkdude)'s work. In particular, [clj-kondo](https://github.com/borkdude/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux) can be installed as a standalone application with three lines of Bash or a simple `brew install`. We can also install and run a [babashka](https://github.com/borkdude/babashka#quickstart) script in three lines of Bash. To achieve a similar effect, Geni is released not only as a Clojure library, but also as a command-line app that auto-downloads the latest Geni uberjar and defaults to a REPL (with an nREPL server) with all of the Geni namespaces required. However, instead of a standalone executable, it still requires `java`. Concretely, after running the [three-liner](https://github.com/zero-one-group/geni#install-geni) to install the Geni CLI, we can run a minimal application that prints the Spark session as follows:
 
 ```bash
 $ echo "(clojure.pprint/pprint (g/spark-conf @spark))\n exit" | geni
 ```
 
-For Leiningen users, there is also a lein template that creates a Geni application that runs a Spark ML example. For instance, we could run:
+For Leiningen users, there is also a lein template that creates a Geni application that runs a Spark ML example. For example:
 
 ```bash
 $ lein new geni geni-app && cd geni-app && lein run
 ```
 
-The template comes with a `core.clj` file that contains an example of a very simple application that uses the library as well as `core_test.clj` that unit-tests the Spark machinery running underneath.
+The template comes with `core.clj` that contains an example of a very simple application that uses the library and `core_test.clj` that unit-tests the Spark machinery running underneath.
 
 ## Other Nice-To-Haves
