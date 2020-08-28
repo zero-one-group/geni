@@ -252,7 +252,7 @@ Geni's getting-started journey draws a lot from [borkdude](https://github.com/bo
 $ echo "(clojure.pprint/pprint (g/spark-conf @spark))\n exit" | geni
 ```
 
-![](https://giphy.com/gifs/lTAufFljfjXQgctqzI/html5)
+![](https://media.giphy.com/media/lTAufFljfjXQgctqzI/giphy.gif)
 
 For Leiningen users, there is also a lein template that creates a Geni application that runs a Spark ML example. For example:
 
