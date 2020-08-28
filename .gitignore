@@ -1,5 +1,6 @@
 .geni-stdout
 .nrepl-history
+*.cast
 
 *.DS_Store*
 .clj-kondo/.cache
