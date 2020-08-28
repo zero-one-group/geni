@@ -253,7 +253,7 @@ $ echo "(clojure.pprint/pprint (g/spark-conf @spark))\n exit" | geni
 ```
 
 <p align="center">
-    <img src="https://media.giphy.com/media/lTAufFljfjXQgctqzI/giphy.gif" width="225">
+    <img src="https://media.giphy.com/media/lTAufFljfjXQgctqzI/giphy.gif" width="450">
 </p>
 
 For Leiningen users, there is also a lein template that creates a Geni application that runs a Spark ML example. For example:
