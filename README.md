@@ -31,6 +31,7 @@ Geni is designed to provide an idiomatic Spark interface for Clojure without the
       <td>
         <ul>
             <li><a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a></li>
+            <li><a href="CODE_OF_CONDUCT.md">Code of Conduct</a></li>
             <li><a href="CONTRIBUTING.md">Contributing Guide</a></li>
             <li><a href="docs/examples.md">Examples</a></li>
             <li><a href="docs/design_goals.md">Design Goals</a></li>
