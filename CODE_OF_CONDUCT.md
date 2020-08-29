@@ -1,6 +1,6 @@
 # Code of Conduct
 
-Much of the content here is taken from the codes of conduct from various projects, namely [Ubuntu](https://ubuntu.com/community/code-of-conduct), [Django](https://www.djangoproject.com/conduct/) and [Conjure](https://github.com/Olical/conjure/blob/master/.github/CODE_OF_CONDUCT.md).
+Much of the content here is taken from the codes of conduct of various projects, namely [Ubuntu](https://ubuntu.com/community/code-of-conduct), [Django](https://www.djangoproject.com/conduct/) and [Conjure](https://github.com/Olical/conjure/blob/master/.github/CODE_OF_CONDUCT.md).
 
 ## Our Pledge
 
@@ -11,13 +11,13 @@ We as members, contributors, and leaders pledge to make participation in our com
 ### Be kind to others
 
 Do not insult or put down other participants. Harassment and other exclusionary behavior aren't acceptable. This includes, but is not limited to:
-* violent threats or language directed against another person.
-* discriminatory jokes and language.
-* posting sexually explicit or violent material.
-* posting (or threatening to post) other people's personally identifying information ("doxing").
-* personal insults, especially those using racist or sexist terms.
-* unwelcome sexual attention.
-* advocating for, or encouraging, any of the above behavior.
+* violent threats or language directed against another person;
+* discriminatory jokes and language;
+* posting sexually explicit or violent material;
+* posting (or threatening to post) other people's personally identifying information ("doxing");
+* personal insults, especially those using racist or sexist terms;
+* unwelcome sexual attention;
+* advocating for, or encouraging, any of the above behavior; and
 * repeated harassment of others. In general, if someone asks you to stop, then stop.
 
 ### Be considerate
@@ -48,7 +48,7 @@ We invite anybody, from any company, to participate in any aspect of the project
 
 ### Acknowledge and celebrate achievements
 
-We celebrate team members for the work they do. We highlight the great work of others.
+We celebrate team members for the work they do, and highlight the great work of others.
 
 ## Questions?
 
