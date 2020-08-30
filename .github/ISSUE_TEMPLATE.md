@@ -17,6 +17,6 @@
 
 <!-- Please explain your problem and ideally a minimal setup to reproduce -->
 
-<!--If your problem is OS-agnostic, please consider replicating the issue inside a Docker container.-->
+<!-- If possible, please consider replicating the issue inside a Docker container. -->
 
-<!--For instance, use `docker run --rm -it clojure:openjdk-11 /bin/bash`-->
+<!-- For instance, use `docker run --rm -it clojure:openjdk-11-lein-2.9.1 /bin/bash` + a list of bash commands -->
