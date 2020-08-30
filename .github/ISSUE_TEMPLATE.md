@@ -1,3 +1,5 @@
+<!-- Credit to https://github.com/junegunn/fzf for the base template! -->
+
 <!-- Check with [x] -->
 
 - [ ] I have read through the quick start and installation sections of the [README](../README.md).
