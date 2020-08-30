@@ -318,7 +318,7 @@ Geni is licensed under Apache License v2.0, see [LICENSE](LICENSE).
 
 ## Mentions
 
-Some code was taken from:
+Some parts of the project have been taken from or inspired by:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
