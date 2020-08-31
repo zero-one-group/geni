@@ -318,7 +318,7 @@ Geni is licensed under Apache License v2.0, see [LICENSE](LICENSE).
 
 ## Mentions
 
-Some code was taken from:
+Some parts of the project have been taken from or inspired by:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
@@ -327,4 +327,6 @@ Some code was taken from:
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
 * [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for serialisable functions for the RDD API.
-* [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping to optimise the tech.ml.dataset and tablecloth codes for the performance benchmark respectively, as well as recommending other libraries to test out.
+* [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping with [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [tablecloth](https://github.com/scicloj/tablecloth).
+* [Ubuntu](https://ubuntu.com/community/code-of-conduct), [Django](https://www.djangoproject.com/conduct/) and [Conjure](https://github.com/Olical/conjure/blob/master/.github/CODE_OF_CONDUCT.md) for their codes of conduct.
+* [FZF](https://github.com/junegunn/fzf) for their issue template.
