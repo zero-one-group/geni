@@ -4,6 +4,7 @@
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults]
+    [zero-one.geni.partitioner :as partitioner]
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.test-resources :refer [create-temp-file!]])
   (:import
@@ -14,6 +15,24 @@
 
 (def dummy-pair-rdd
   (rdd/map-to-pair dummy-rdd aot/to-pair))
+
+(facts "On repartitioning" :rdd
+  (fact "partition-by works"
+    (-> dummy-rdd
+        (rdd/map-to-pair aot/to-pair)
+        (rdd/partition-by (partitioner/hash-partitioner 11))
+        rdd/num-partitions) => 11)
+  (fact "repartition-and-sort-within-partitions works"
+    (-> dummy-rdd
+        (rdd/map-to-pair aot/to-pair)
+        (rdd/repartition-and-sort-within-partitions (partitioner/hash-partitioner 1))
+        rdd/collect
+        distinct) => #(= % (sort %))
+    (-> (rdd/parallelise [1 2 3 4 5 4 3 2 1])
+        (rdd/map-to-pair aot/to-pair)
+        (rdd/repartition-and-sort-within-partitions (partitioner/hash-partitioner 1) >)
+        rdd/collect
+        distinct) => #(= % (reverse (sort %)))))
 
 (facts "On basic PairRDD transformations" :rdd
   (fact "cogroup work"
@@ -187,8 +206,12 @@
     (rdd/checkpointed? rdd) => false
     (rdd/empty? (rdd/parallelise [])) => true
     (rdd/empty? rdd) => false
-    (rdd/empty? rdd) => false))
-    ; (rdd/partitioner rdd) => nil?))
+    (rdd/empty? rdd) => false
+    (rdd/partitioner rdd) => nil?
+    (-> dummy-rdd
+        (rdd/map-to-pair aot/to-pair)
+        (rdd/group-by-key (partitioner/hash-partitioner 123))
+        rdd/partitioner) => (complement nil?)))
 
 (facts "On basic PartialResult" :rdd
   (let [result (rdd/count-approx dummy-rdd 1000)]
