@@ -53,6 +53,9 @@
 (defn ->scala-seq [coll]
   (JavaConversions/asScalaBuffer (seq coll)))
 
+(defn ->scala-tuple2 [coll]
+  (Tuple2. (first coll) (second coll)))
+
 (defn scala-tuple->vec [p]
   (->> (.productArity p)
        (range)

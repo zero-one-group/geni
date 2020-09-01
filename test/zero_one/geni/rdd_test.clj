@@ -6,8 +6,9 @@
     [zero-one.geni.defaults]
     [zero-one.geni.partitioner :as partitioner]
     [zero-one.geni.rdd :as rdd]
-    [zero-one.geni.test-resources :refer [spark create-temp-file!]])
+    [zero-one.geni.test-resources :refer [create-temp-file!]])
   (:import
+    (org.apache.spark SparkContext)
     (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
 (def dummy-rdd
@@ -18,13 +19,22 @@
 
 (facts "On JavaSparkContext methods" :rdd
   (fact "expected static fields"
-    (rdd/app-name spark) => "Geni App"
-    (rdd/value (rdd/broadcast spark [1 2 3])) => [1 2 3]
-    (rdd/checkpoint-dir spark) => string?
-    (rdd/conf spark) => map?
-    (rdd/default-min-partitions spark) => integer?
-    (rdd/default-parallelism spark) => integer?
-    (rdd/empty-rdd spark) => (partial instance? JavaRDD)))
+    (rdd/app-name) => "Geni App"
+    (rdd/value (rdd/broadcast [1 2 3])) => [1 2 3]
+    (rdd/checkpoint-dir) => string?
+    (rdd/conf) => map?
+    (rdd/default-min-partitions) => integer?
+    (rdd/default-parallelism) => integer?
+    (rdd/empty-rdd) => (partial instance? JavaRDD)
+    (rdd/jars) => vector?
+    (rdd/local?) => true
+    (rdd/local-property "abc") => nil?
+    (rdd/master) => "local[*]"
+    (rdd/persistent-rdds) => map?
+    (rdd/resources) => {}
+    (rdd/spark-home) => nil?
+    (rdd/sc) => (partial instance? SparkContext)
+    (rdd/version) => "3.0.0"))
 
 (facts "On repartitioning" :rdd
   (fact "partition-by works"
@@ -209,7 +219,7 @@
       (rdd/count read-rdd) => (rdd/count write-rdd))))
 
 (facts "On basic RDD fields" :rdd
-  (let [rdd (rdd/parallelise [1])]
+  (let [rdd (rdd/parallelise-doubles [1])]
     (rdd/context rdd) => (partial instance? JavaSparkContext)
     (rdd/id rdd) => integer?
     (rdd/name rdd) => nil?
@@ -285,6 +295,8 @@
       (rdd/map-to-pair aot/to-pair)
       rdd/group-by-key
       rdd/num-partitions) => #(< 1 %)
+  (-> (rdd/parallelise-pairs [[1 2] [3 4]])
+      rdd/collect) => [[1 2] [3 4]]
   (-> dummy-pair-rdd
       (rdd/group-by-key 7)
       rdd/num-partitions) => 7
