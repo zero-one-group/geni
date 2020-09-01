@@ -84,7 +84,7 @@
 (def parallelize parallelise)
 
 (defn parallelise-doubles
-  ([data] (parallelise @zero-one.geni.defaults/spark data))
+  ([data] (parallelise-doubles @zero-one.geni.defaults/spark data))
   ([spark data]
    (-> spark
        java-spark-context
@@ -92,7 +92,7 @@
 (def parallelize-doubles parallelise-doubles)
 
 (defn parallelise-pairs
-  ([data] (parallelise @zero-one.geni.defaults/spark data))
+  ([data] (parallelise-pairs @zero-one.geni.defaults/spark data))
   ([spark data]
    (-> spark
        java-spark-context
