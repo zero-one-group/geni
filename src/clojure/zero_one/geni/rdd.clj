@@ -26,13 +26,95 @@
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
+(def value (memfn value))
+
+;; Java Spark Context
 (defn java-spark-context [spark]
   (JavaSparkContext/fromSparkContext (.sparkContext spark)))
+
+(defn app-name
+  ([] (app-name @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .appName)))
+
+(defn broadcast
+  ([value] (broadcast @zero-one.geni.defaults/spark value))
+  ([spark value] (-> spark java-spark-context (.broadcast value))))
+
+(defn checkpoint-dir
+  ([] (checkpoint-dir @zero-one.geni.defaults/spark))
+  ([spark]
+   (-> spark java-spark-context .getCheckpointDir interop/optional->nillable)))
+
+(defn conf
+  ([] (conf @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .getConf interop/spark-conf->map)))
+
+(defn default-min-partitions
+  ([] (default-min-partitions @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .defaultMinPartitions)))
+
+(defn default-parallelism
+  ([] (default-parallelism @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .defaultParallelism)))
+
+(defn empty-rdd
+  ([] (empty-rdd @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .emptyRDD)))
+
+(defn jars
+  ([] (jars @zero-one.geni.defaults/spark))
+  ([spark] (->> spark java-spark-context .jars (into []))))
+
+(defn local?
+  ([] (local? @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .isLocal)))
+(def is-local local?)
+
+(defn local-property
+  ([k] (local-property @zero-one.geni.defaults/spark k))
+  ([spark k] (-> spark java-spark-context (.getLocalProperty k))))
+
+(defn master
+  ([] (master @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .master)))
 
 (defn parallelise
   ([data] (parallelise @zero-one.geni.defaults/spark data))
   ([spark data] (-> spark java-spark-context (.parallelize data))))
 (def parallelize parallelise)
+
+(defn parallelise-doubles
+  ([data] (parallelise-doubles @zero-one.geni.defaults/spark data))
+  ([spark data]
+   (-> spark
+       java-spark-context
+       (.parallelizeDoubles (clojure.core/map double data)))))
+(def parallelize-doubles parallelise-doubles)
+
+(defn parallelise-pairs
+  ([data] (parallelise-pairs @zero-one.geni.defaults/spark data))
+  ([spark data]
+   (-> spark
+       java-spark-context
+       (.parallelizePairs (clojure.core/map interop/->scala-tuple2 data)))))
+(def parallelize-pairs parallelise-pairs)
+
+(defn persistent-rdds
+  ([] (persistent-rdds @zero-one.geni.defaults/spark))
+  ([spark] (->> spark java-spark-context .getPersistentRDDs (into {}))))
+
+(defn resources
+  ([] (resources @zero-one.geni.defaults/spark))
+  ([spark] (->> spark java-spark-context .resources (into {}))))
+
+(defn spark-context
+  ([] (spark-context @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .sc)))
+(def sc spark-context)
+
+(defn spark-home
+  ([] (spark-home @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .getSparkHome interop/optional->nillable)))
 
 (defmulti text-file (fn [head & _] (class head)))
 (defmethod text-file :default
@@ -41,6 +123,10 @@
 (defmethod text-file SparkSession
   ([spark path] (-> spark java-spark-context (.textFile path)))
   ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
+
+(defn version
+  ([] (version @zero-one.geni.defaults/spark))
+  ([spark] (-> spark java-spark-context .version)))
 
 ;; Getters
 (defn context [rdd] (JavaSparkContext/fromSparkContext (.context rdd)))
@@ -58,9 +144,7 @@
 (defn num-partitions [rdd] (.getNumPartitions rdd))
 
 (defn partitioner [rdd]
-  (let [maybe-partitioner (.partitioner rdd)]
-    (when (.isPresent maybe-partitioner)
-      (.get maybe-partitioner))))
+  (interop/optional->nillable (.partitioner rdd)))
 
 (defn partitions [rdd] (.partitions rdd))
 
@@ -395,12 +479,6 @@
    memory-only-ser-2
    none
    off-heap])
-
-;; JavaSparkContext:
-;; TODO: broadcast, default-min-partitions, default-parallelism, empty-rdd
-;; TODO: checkpoint-dir, spark-conf, local-property, persistent-rdds, spark-home
-;; TODO: local?, jars, master, parallelise-doubles, parallelise-pairs, resources,
-;; TODO: spark-context/sc, union, version
 
 ;; Others:
 ;; TODO: name unmangling / setting callsite name
