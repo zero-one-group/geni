@@ -38,7 +38,4 @@
   (->> spark-session
        .sparkContext
        .getConf
-       .getAll
-       (map interop/scala-tuple->vec)
-       (into {})
-       clojure.walk/keywordize-keys))
+       interop/spark-conf->map))

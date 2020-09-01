@@ -26,8 +26,32 @@
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
 
+(def value (memfn value))
+
+;; Java Spark Context
 (defn java-spark-context [spark]
   (JavaSparkContext/fromSparkContext (.sparkContext spark)))
+
+(defn app-name [spark]
+  (-> spark java-spark-context .appName))
+
+(defn broadcast [spark value]
+  (-> spark java-spark-context (.broadcast value)))
+
+(defn checkpoint-dir [spark]
+  (interop/optional->nillable (-> spark java-spark-context .getCheckpointDir)))
+
+(defn conf [spark]
+  (-> spark java-spark-context .getConf interop/spark-conf->map))
+
+(defn default-min-partitions [spark]
+  (-> spark java-spark-context .defaultMinPartitions))
+
+(defn default-parallelism [spark]
+  (-> spark java-spark-context .defaultParallelism))
+
+(defn empty-rdd [spark]
+  (-> spark java-spark-context .emptyRDD))
 
 (defn parallelise
   ([data] (parallelise @zero-one.geni.defaults/spark data))
@@ -58,9 +82,7 @@
 (defn num-partitions [rdd] (.getNumPartitions rdd))
 
 (defn partitioner [rdd]
-  (let [maybe-partitioner (.partitioner rdd)]
-    (when (.isPresent maybe-partitioner)
-      (.get maybe-partitioner))))
+  (interop/optional->nillable (.partitioner rdd)))
 
 (defn partitions [rdd] (.partitions rdd))
 
@@ -397,7 +419,6 @@
    off-heap])
 
 ;; JavaSparkContext:
-;; TODO: broadcast, default-min-partitions, default-parallelism, empty-rdd
 ;; TODO: checkpoint-dir, spark-conf, local-property, persistent-rdds, spark-home
 ;; TODO: local?, jars, master, parallelise-doubles, parallelise-pairs, resources,
 ;; TODO: spark-context/sc, union, version

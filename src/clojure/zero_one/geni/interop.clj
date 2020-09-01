@@ -3,6 +3,7 @@
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.java.data :as j]
     [clojure.string :refer [replace-first]]
+    [clojure.walk :as walk]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.io ByteArrayOutputStream)
@@ -70,12 +71,23 @@
 (defn ->scala-function3 [f]
   (reify Function3 (apply [_ x y z] (f x y z))))
 
+(defn optional->nillable [value]
+  (when (.isPresent value)
+    (.get value)))
+
 (defmacro with-scala-out-str [& body]
   `(let [out-buffer# (ByteArrayOutputStream.)]
       (Console/withOut
         out-buffer#
         (->scala-function0 (fn [] ~@body)))
       (.toString out-buffer# "UTF-8")))
+
+(defn spark-conf->map [conf]
+  (->> conf
+       .getAll
+       (map scala-tuple->vec)
+       (into {})
+       walk/keywordize-keys))
 
 (defn ->dense-vector [values]
   (let [[x & xs] values]

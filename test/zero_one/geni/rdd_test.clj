@@ -6,15 +6,25 @@
     [zero-one.geni.defaults]
     [zero-one.geni.partitioner :as partitioner]
     [zero-one.geni.rdd :as rdd]
-    [zero-one.geni.test-resources :refer [create-temp-file!]])
+    [zero-one.geni.test-resources :refer [spark create-temp-file!]])
   (:import
-    (org.apache.spark.api.java JavaSparkContext)))
+    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
 (def dummy-rdd
   (rdd/text-file "test/resources/rdd.txt"))
 
 (def dummy-pair-rdd
   (rdd/map-to-pair dummy-rdd aot/to-pair))
+
+(facts "On JavaSparkContext methods" :rdd
+  (fact "expected static fields"
+    (rdd/app-name spark) => "Geni App"
+    (rdd/value (rdd/broadcast spark [1 2 3])) => [1 2 3]
+    (rdd/checkpoint-dir spark) => string?
+    (rdd/conf spark) => map?
+    (rdd/default-min-partitions spark) => integer?
+    (rdd/default-parallelism spark) => integer?
+    (rdd/empty-rdd spark) => (partial instance? JavaRDD)))
 
 (facts "On repartitioning" :rdd
   (fact "partition-by works"
