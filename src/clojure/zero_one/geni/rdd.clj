@@ -29,6 +29,7 @@
 
 ;; Others:
 ;; TODO: name unmangling / setting callsite name
+;; TODO: aggregate, fold, map-partitions-to-double, map-partitions-to-pair
 
 (import-vars
   [zero-one.geni.spark-context
