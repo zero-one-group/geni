@@ -51,7 +51,7 @@ or spin up a REPL by running `lein repl` and run:
     - `lein-template`'s `resources/.../project.clj`; and
     - `resources/GENI_REPL_RELEASED_VERSION`.
 - Ensure that the pre-release CI steps pass with `make pre-release`.
-- Deploy the main library with `lein deploy clojars`.
+- Deploy the main library and lein template with `lein deploy clojars`.
 - Ensure that the post-release CI steps pass with `make post-release`.
 - Push the newly built container to DockerHub with `make docker-push`.
 - Merge the library version-bump branch.
