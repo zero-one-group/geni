@@ -1,3 +1,4 @@
+;; Taken from https://github.com/amperity/sparkplug
 (ns zero-one.geni.rdd.function
   (:require
     [clojure.string :as str])
