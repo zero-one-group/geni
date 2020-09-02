@@ -1,5 +1,5 @@
 // Taken from https://github.com/amperity/sparkplug
-package zero_one.geni.rdd.function;package zero_one.geni.rdd.function;
+package zero_one.geni.rdd.function;
 
 
 import clojure.lang.IFn;
