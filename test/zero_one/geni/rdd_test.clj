@@ -209,6 +209,10 @@
       (-> left (rdd/subtract-by-key right 4) rdd/num-partitions) => 4)))
 
 (facts "On basic RDD saving and loading" :rdd
+  (fact "binary-files works"
+    (rdd/count (rdd/binary-files "test/resources/housing.parquet/*.parquet")) => 1
+    (rdd/count
+      (rdd/binary-files "test/resources/housing.parquet/*.parquet" 2)) => 1)
   (fact "save-as-text-file works"
     (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
           temp-file (.toString (create-temp-file! ".rdd"))
@@ -300,6 +304,11 @@
   (-> dummy-pair-rdd
       (rdd/group-by-key 7)
       rdd/num-partitions) => 7
+  (fact "aggregate and fold work"
+    (-> (rdd/parallelise (range 10))
+        (rdd/aggregate 0 + +)) => 45
+    (-> (rdd/parallelise (range 10))
+        (rdd/fold 0 +)) => 45)
   (fact "subtract works"
     (let [left (rdd/parallelise [1 2 3 4 5])
           right (rdd/parallelise [9 8 7 6 5])]
@@ -381,6 +390,10 @@
     (-> (rdd/parallelise ["abc def" "ghi jkl" "mno pqr"])
         (rdd/map-partitions aot/map-split-spaces)
         rdd/collect) => ["abc" "def" "ghi" "jkl" "mno" "pqr"])
+  (fact "map-partitions-to-pair works"
+    (-> (rdd/parallelise ["abc def"])
+        (rdd/map-partitions-to-pair aot/mapcat-split-spaces)
+        rdd/collect) => [["abc" 1] ["def" 1]])
   (fact "map-partitions-with-index works"
     (-> (rdd/parallelise ["abc def" "ghi jkl" "mno pqr"])
         (rdd/map-partitions-with-index aot/map-split-spaces-with-index)

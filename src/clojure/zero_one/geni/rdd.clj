@@ -29,12 +29,12 @@
 
 ;; Others:
 ;; TODO: name unmangling / setting callsite name
-;; TODO: aggregate, fold, map-partitions-to-double, map-partitions-to-pair
-;; TODO: binary-files, whole-text-files, save-as-text-file
+;; TODO: whole-text-files, save-as-text-file
 
 (import-vars
   [zero-one.geni.spark-context
    app-name
+   binary-files
    broadcast
    checkpoint-dir
    conf
@@ -107,6 +107,9 @@
 (defn storage-level [rdd] (.getStorageLevel rdd))
 
 ;; Transformations
+(defn aggregate [rdd zero seq-op comb-op]
+  (.aggregate rdd zero (function/function2 seq-op) (function/function2 comb-op)))
+
 (defn cache [rdd]
   (.cache rdd))
 
@@ -137,6 +140,9 @@
   (.flatMapToPair rdd (function/pair-flat-map-function f)))
 (def mapcat-to-pair flat-map-to-pair)
 
+(defn fold [rdd zero f]
+  (.fold rdd zero (function/function2 f)))
+
 (defn glom [rdd]
   (.glom rdd))
 
@@ -160,6 +166,11 @@
   ([rdd f] (map-partitions rdd f false))
   ([rdd f preserves-partitioning]
    (.mapPartitions rdd (function/flat-map-function f) preserves-partitioning)))
+
+(defn map-partitions-to-pair
+  ([rdd f] (map-partitions rdd f false))
+  ([rdd f preserves-partitioning]
+   (.mapPartitionsToPair rdd (function/pair-flat-map-function f) preserves-partitioning)))
 
 (defn map-partitions-with-index
   ([rdd f] (map-partitions-with-index rdd f false))
