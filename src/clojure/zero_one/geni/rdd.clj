@@ -30,6 +30,7 @@
 ;; Others:
 ;; TODO: name unmangling / setting callsite name
 ;; TODO: aggregate, fold, map-partitions-to-double, map-partitions-to-pair
+;; TODO: binary-files, whole-text-files, save-as-text-file
 
 (import-vars
   [zero-one.geni.spark-context
