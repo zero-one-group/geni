@@ -27,10 +27,6 @@
     (org.apache.spark.partial PartialResult)
     (org.apache.spark.api.java JavaSparkContext)))
 
-;; Others:
-;; TODO: name unmangling / setting callsite name
-;; TODO: whole-text-files, save-as-text-file
-
 (import-vars
   [zero-one.geni.spark-context
    app-name
