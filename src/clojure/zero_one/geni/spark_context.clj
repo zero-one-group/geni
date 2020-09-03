@@ -114,5 +114,15 @@
   ([] (version @defaults/spark))
   ([spark] (-> spark java-spark-context .version)))
 
+(defmulti whole-text-files (fn [head & _] (class head)))
+(defmethod whole-text-files :default
+  ([path] (whole-text-files @defaults/spark path))
+  ([path min-partitions] (whole-text-files @defaults/spark path min-partitions)))
+(defmethod whole-text-files SparkSession
+  ([spark filename]
+   (.wholeTextFiles (java-spark-context spark) filename))
+  ([spark filename min-partitions]
+   (.wholeTextFiles (java-spark-context spark) filename min-partitions)))
+
 ;; Broadcast
 (def value (memfn value))

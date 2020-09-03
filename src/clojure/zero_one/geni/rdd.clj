@@ -56,7 +56,8 @@
    spark-home
    text-file
    value
-   version])
+   version
+   whole-text-files])
 
 (import-vars
   [zero-one.geni.storage
