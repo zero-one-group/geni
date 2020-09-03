@@ -19,114 +19,70 @@
     [potemkin :refer [import-vars]]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
+    [zero-one.geni.partial-result]
     [zero-one.geni.rdd.function :as function]
+    [zero-one.geni.spark-context]
     [zero-one.geni.storage])
   (:import
     (org.apache.spark.partial PartialResult)
-    (org.apache.spark.api.java JavaSparkContext)
-    (org.apache.spark.sql SparkSession)))
+    (org.apache.spark.api.java JavaSparkContext)))
 
-(def value (memfn value))
+;; Others:
+;; TODO: name unmangling / setting callsite name
+;; TODO: aggregate, fold, map-partitions-to-double, map-partitions-to-pair
+;; TODO: binary-files, whole-text-files, save-as-text-file
 
-;; Java Spark Context
-(defn java-spark-context [spark]
-  (JavaSparkContext/fromSparkContext (.sparkContext spark)))
+(import-vars
+  [zero-one.geni.spark-context
+   app-name
+   broadcast
+   checkpoint-dir
+   conf
+   default-min-partitions
+   default-parallelism
+   empty-rdd
+   is-local
+   jars
+   java-spark-context
+   local-property
+   local?
+   master
+   parallelise
+   parallelise-doubles
+   parallelise-pairs
+   parallelize
+   parallelize-doubles
+   parallelize-pairs
+   persistent-rdds
+   resources
+   sc
+   spark-context
+   spark-home
+   text-file
+   value
+   version])
 
-(defn app-name
-  ([] (app-name @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .appName)))
+(import-vars
+  [zero-one.geni.storage
+   disk-only
+   disk-only-2
+   memory-and-disk
+   memory-and-disk-2
+   memory-and-disk-ser
+   memory-and-disk-ser-2
+   memory-only
+   memory-only-2
+   memory-only-ser
+   memory-only-ser-2
+   none
+   off-heap])
 
-(defn broadcast
-  ([value] (broadcast @zero-one.geni.defaults/spark value))
-  ([spark value] (-> spark java-spark-context (.broadcast value))))
-
-(defn checkpoint-dir
-  ([] (checkpoint-dir @zero-one.geni.defaults/spark))
-  ([spark]
-   (-> spark java-spark-context .getCheckpointDir interop/optional->nillable)))
-
-(defn conf
-  ([] (conf @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .getConf interop/spark-conf->map)))
-
-(defn default-min-partitions
-  ([] (default-min-partitions @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .defaultMinPartitions)))
-
-(defn default-parallelism
-  ([] (default-parallelism @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .defaultParallelism)))
-
-(defn empty-rdd
-  ([] (empty-rdd @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .emptyRDD)))
-
-(defn jars
-  ([] (jars @zero-one.geni.defaults/spark))
-  ([spark] (->> spark java-spark-context .jars (into []))))
-
-(defn local?
-  ([] (local? @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .isLocal)))
-(def is-local local?)
-
-(defn local-property
-  ([k] (local-property @zero-one.geni.defaults/spark k))
-  ([spark k] (-> spark java-spark-context (.getLocalProperty k))))
-
-(defn master
-  ([] (master @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .master)))
-
-(defn parallelise
-  ([data] (parallelise @zero-one.geni.defaults/spark data))
-  ([spark data] (-> spark java-spark-context (.parallelize data))))
-(def parallelize parallelise)
-
-(defn parallelise-doubles
-  ([data] (parallelise-doubles @zero-one.geni.defaults/spark data))
-  ([spark data]
-   (-> spark
-       java-spark-context
-       (.parallelizeDoubles (clojure.core/map double data)))))
-(def parallelize-doubles parallelise-doubles)
-
-(defn parallelise-pairs
-  ([data] (parallelise-pairs @zero-one.geni.defaults/spark data))
-  ([spark data]
-   (-> spark
-       java-spark-context
-       (.parallelizePairs (clojure.core/map interop/->scala-tuple2 data)))))
-(def parallelize-pairs parallelise-pairs)
-
-(defn persistent-rdds
-  ([] (persistent-rdds @zero-one.geni.defaults/spark))
-  ([spark] (->> spark java-spark-context .getPersistentRDDs (into {}))))
-
-(defn resources
-  ([] (resources @zero-one.geni.defaults/spark))
-  ([spark] (->> spark java-spark-context .resources (into {}))))
-
-(defn spark-context
-  ([] (spark-context @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .sc)))
-(def sc spark-context)
-
-(defn spark-home
-  ([] (spark-home @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .getSparkHome interop/optional->nillable)))
-
-(defmulti text-file (fn [head & _] (class head)))
-(defmethod text-file :default
-  ([path] (text-file @zero-one.geni.defaults/spark path))
-  ([path min-partitions] (text-file @zero-one.geni.defaults/spark path min-partitions)))
-(defmethod text-file SparkSession
-  ([spark path] (-> spark java-spark-context (.textFile path)))
-  ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
-
-(defn version
-  ([] (version @zero-one.geni.defaults/spark))
-  ([spark] (-> spark java-spark-context .version)))
+(import-vars
+  [zero-one.geni.partial-result
+   final-value
+   final?
+   initial-value
+   is-initial-value-final])
 
 ;; Getters
 (defn context [rdd] (JavaSparkContext/fromSparkContext (.context rdd)))
@@ -336,7 +292,6 @@
   (.saveAsTextFile rdd path))
 
 ;; PairRDD Transformations
-
 (defn aggregate-by-key
   ([rdd zero seq-fn comb-fn]
    (.aggregateByKey rdd
@@ -457,28 +412,3 @@
 (defn lookup [rdd k]
   (seq (.lookup rdd k)))
 
-;; Partial Result
-(defn final-value [result] (.getFinalValue result))
-
-(defn initial-value [result] (.initialValue result))
-
-(defn is-initial-value-final [result] (.isInitialValueFinal result))
-(def final? is-initial-value-final)
-
-(import-vars
-  [zero-one.geni.storage
-   disk-only
-   disk-only-2
-   memory-and-disk
-   memory-and-disk-2
-   memory-and-disk-ser
-   memory-and-disk-ser-2
-   memory-only
-   memory-only-2
-   memory-only-ser
-   memory-only-ser-2
-   none
-   off-heap])
-
-;; Others:
-;; TODO: name unmangling / setting callsite name
