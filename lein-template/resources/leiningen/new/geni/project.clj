@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [zero.one/geni "0.0.25"]
                  ;; REPL
-                 [nrepl "0.8.0"]
+                 [nrepl "0.8.1"]
                  [reply "0.4.4"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.0.0"]

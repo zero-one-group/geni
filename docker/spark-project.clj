@@ -1,7 +1,7 @@
 (defproject spark-dummy "spark-dummy"
   :dependencies [;; Core
                  [camel-snake-kebab "0.4.1"]
-                 [nrepl "0.8.0"]
+                 [nrepl "0.8.1"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
