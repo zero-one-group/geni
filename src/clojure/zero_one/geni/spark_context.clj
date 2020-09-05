@@ -13,6 +13,15 @@
   ([] (app-name @defaults/spark))
   ([spark] (-> spark java-spark-context .appName)))
 
+(defmulti binary-files (fn [head & _] (class head)))
+(defmethod binary-files :default
+  ([path] (binary-files @defaults/spark path))
+  ([path num-partitions] (binary-files @defaults/spark path num-partitions)))
+(defmethod binary-files SparkSession
+  ([spark path] (.binaryFiles (java-spark-context spark) path))
+  ([spark path num-partitions]
+   (.binaryFiles (java-spark-context spark) path num-partitions)))
+
 (defn broadcast
   ([value] (broadcast @defaults/spark value))
   ([spark value] (-> spark java-spark-context (.broadcast value))))
@@ -104,6 +113,16 @@
 (defn version
   ([] (version @defaults/spark))
   ([spark] (-> spark java-spark-context .version)))
+
+(defmulti whole-text-files (fn [head & _] (class head)))
+(defmethod whole-text-files :default
+  ([path] (whole-text-files @defaults/spark path))
+  ([path min-partitions] (whole-text-files @defaults/spark path min-partitions)))
+(defmethod whole-text-files SparkSession
+  ([spark filename]
+   (.wholeTextFiles (java-spark-context spark) filename))
+  ([spark filename min-partitions]
+   (.wholeTextFiles (java-spark-context spark) filename min-partitions)))
 
 ;; Broadcast
 (def value (memfn value))

@@ -1,6 +1,7 @@
 (ns zero-one.geni.rdd-test
   (:require
     [clojure.java.io :as io]
+    [clojure.string :as string]
     [midje.sweet :refer [facts fact =>]]
     [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults]
@@ -209,14 +210,23 @@
       (-> left (rdd/subtract-by-key right 4) rdd/num-partitions) => 4)))
 
 (facts "On basic RDD saving and loading" :rdd
+  (fact "binary-files works"
+    (rdd/count (rdd/binary-files "test/resources/housing.parquet/*.parquet")) => 1
+    (rdd/count
+      (rdd/binary-files "test/resources/housing.parquet/*.parquet" 2)) => 1)
   (fact "save-as-text-file works"
     (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
           temp-file (.toString (create-temp-file! ".rdd"))
-          read-rdd (do
-                     (io/delete-file temp-file true)
-                     (rdd/save-as-text-file write-rdd temp-file)
-                     (rdd/text-file temp-file))]
-      (rdd/count read-rdd) => (rdd/count write-rdd))))
+          read-rdd  (do
+                      (io/delete-file temp-file true)
+                      (rdd/save-as-text-file write-rdd temp-file)
+                      (rdd/text-file temp-file))
+          temp-dir  (->> (string/split temp-file #"/")
+                         drop-last
+                         (string/join "/"))]
+      (rdd/count read-rdd) => (rdd/count write-rdd)
+      (rdd/count (rdd/whole-text-files temp-dir))  => pos?
+      (rdd/count (rdd/whole-text-files temp-dir 2))  => #(< 1 %))))
 
 (facts "On basic RDD fields" :rdd
   (let [rdd (rdd/parallelise-doubles [1])]
@@ -300,6 +310,11 @@
   (-> dummy-pair-rdd
       (rdd/group-by-key 7)
       rdd/num-partitions) => 7
+  (fact "aggregate and fold work"
+    (-> (rdd/parallelise (range 10))
+        (rdd/aggregate 0 + +)) => 45
+    (-> (rdd/parallelise (range 10))
+        (rdd/fold 0 +)) => 45)
   (fact "subtract works"
     (let [left (rdd/parallelise [1 2 3 4 5])
           right (rdd/parallelise [9 8 7 6 5])]
@@ -381,6 +396,13 @@
     (-> (rdd/parallelise ["abc def" "ghi jkl" "mno pqr"])
         (rdd/map-partitions aot/map-split-spaces)
         rdd/collect) => ["abc" "def" "ghi" "jkl" "mno" "pqr"])
+  (fact "map-partitions-to-pair works"
+    (-> (rdd/parallelise ["abc def"])
+        (rdd/map-partitions-to-pair aot/mapcat-split-spaces)
+        rdd/collect) => [["abc" 1] ["def" 1]]
+    (-> (rdd/parallelise ["abc def"])
+        (rdd/map-partitions-to-pair aot/mapcat-split-spaces true)
+        rdd/num-partitions) => (rdd/default-parallelism))
   (fact "map-partitions-with-index works"
     (-> (rdd/parallelise ["abc def" "ghi jkl" "mno pqr"])
         (rdd/map-partitions-with-index aot/map-split-spaces-with-index)

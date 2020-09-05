@@ -326,7 +326,7 @@ Some parts of the project have been taken from or inspired by:
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
-* [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for serialisable functions for the RDD API.
+* [Sparkling](https://github.com/gorillalabs/sparkling), [sparkplug](https://github.com/amperity/sparkplug) and [Gabriel Borges](https://github.com/borgesgabriel) for helping with the RDD function serialisation.
 * [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping with [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [tablecloth](https://github.com/scicloj/tablecloth).
 * [Ubuntu](https://ubuntu.com/community/code-of-conduct), [Django](https://www.djangoproject.com/conduct/) and [Conjure](https://github.com/Olical/conjure/blob/master/.github/CODE_OF_CONDUCT.md) for their codes of conduct.
 * [FZF](https://github.com/junegunn/fzf) for their issue template.
