@@ -1,7 +1,8 @@
 (ns zero-one.geni.spark-context
   (:require
     [zero-one.geni.defaults :as defaults]
-    [zero-one.geni.interop :as interop])
+    [zero-one.geni.interop :as interop]
+    [zero-one.geni.rdd.unmangle :as unmangle])
   (:import
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.sql SparkSession)))
@@ -64,9 +65,13 @@
   ([] (master @defaults/spark))
   ([spark] (-> spark java-spark-context .master)))
 
+;; TODO: support min-partitions arg
 (defn parallelise
   ([data] (parallelise @defaults/spark data))
-  ([spark data] (-> spark java-spark-context (.parallelize data))))
+  ([spark data] (-> spark
+                    java-spark-context
+                    (.parallelize data)
+                    unmangle/unmangle-name)))
 (def parallelize parallelise)
 
 (defn parallelise-doubles
@@ -74,7 +79,8 @@
   ([spark data]
    (-> spark
        java-spark-context
-       (.parallelizeDoubles (clojure.core/map double data)))))
+       (.parallelizeDoubles (clojure.core/map double data))
+       unmangle/unmangle-name)))
 (def parallelize-doubles parallelise-doubles)
 
 (defn parallelise-pairs
@@ -82,7 +88,8 @@
   ([spark data]
    (-> spark
        java-spark-context
-       (.parallelizePairs (clojure.core/map interop/->scala-tuple2 data)))))
+       (.parallelizePairs (clojure.core/map interop/->scala-tuple2 data))
+       unmangle/unmangle-name)))
 (def parallelize-pairs parallelise-pairs)
 
 (defn persistent-rdds

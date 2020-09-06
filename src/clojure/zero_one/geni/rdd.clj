@@ -21,11 +21,14 @@
     [zero-one.geni.interop :as interop]
     [zero-one.geni.partial-result]
     [zero-one.geni.rdd.function :as function]
+    [zero-one.geni.rdd.unmangle :as unmangle]
     [zero-one.geni.spark-context]
     [zero-one.geni.storage])
   (:import
     (org.apache.spark.partial PartialResult)
     (org.apache.spark.api.java JavaSparkContext)))
+
+;; TODO: make variadic: cartesian, union, intersection, subtract
 
 (import-vars
   [zero-one.geni.spark-context
@@ -104,135 +107,155 @@
 (defn storage-level [rdd] (.getStorageLevel rdd))
 
 ;; Transformations
-(defn aggregate [rdd zero seq-op comb-op]
-  (.aggregate rdd zero (function/function2 seq-op) (function/function2 comb-op)))
-
 (defn cache [rdd]
   (.cache rdd))
 
 (defn cartesian [left right]
-  (.cartesian left right))
+  (unmangle/unmangle-name (.cartesian left right)))
 
 (defn coalesce
-  ([rdd num-partitions] (.coalesce rdd num-partitions))
-  ([rdd num-partitions shuffle] (.coalesce rdd num-partitions shuffle)))
+  ([rdd num-partitions]
+   (-> (.coalesce rdd num-partitions)
+       (unmangle/unmangle-name num-partitions)))
+  ([rdd num-partitions shuffle]
+   (-> (.coalesce rdd num-partitions shuffle)
+       (unmangle/unmangle-name num-partitions shuffle))))
 
 (defn cogroup
-  ([this other1] (.cogroup this other1))
-  ([this other1 other2] (.cogroup this other1 other2))
-  ([this other1 other2 other3] (.cogroup this other1 other2 other3)))
+  ([this other1]
+   (unmangle/unmangle-name (.cogroup this other1)))
+  ([this other1 other2]
+   (unmangle/unmangle-name (.cogroup this other1 other2)))
+  ([this other1 other2 other3]
+   (unmangle/unmangle-name (.cogroup this other1 other2 other3))))
 
 (defn distinct
-  ([rdd] (.distinct rdd))
-  ([rdd num-partitions] (.distinct rdd num-partitions)))
+  ([rdd] (unmangle/unmangle-name (.distinct rdd)))
+  ([rdd num-partitions]
+   (-> (.distinct rdd num-partitions)
+       (unmangle/unmangle-name num-partitions))))
 
 (defn filter [rdd f]
-  (.filter rdd (function/function f)))
+  (-> (.filter rdd (function/function f))
+      (unmangle/unmangle-name f)))
 
 (defn flat-map [rdd f]
-  (.flatMap rdd (function/flat-map-function f)))
+  (-> (.flatMap rdd (function/flat-map-function f))
+      (unmangle/unmangle-name f)))
 (def mapcat flat-map)
 
 (defn flat-map-to-pair [rdd f]
-  (.flatMapToPair rdd (function/pair-flat-map-function f)))
+  (-> (.flatMapToPair rdd (function/pair-flat-map-function f))
+      (unmangle/unmangle-name f)))
 (def mapcat-to-pair flat-map-to-pair)
 
-(defn fold [rdd zero f]
-  (.fold rdd zero (function/function2 f)))
-
 (defn glom [rdd]
-  (.glom rdd))
+  (unmangle/unmangle-name (.glom rdd)))
 
 (defn group-by-key
-  ([rdd] (.groupByKey rdd))
-  ([rdd num-partitions] (.groupByKey rdd num-partitions)))
+  ([rdd] (unmangle/unmangle-name (.groupByKey rdd)))
+  ([rdd num-partitions]
+   (-> (.groupByKey rdd num-partitions)
+       (unmangle/unmangle-name num-partitions))))
 
 (defn intersection [left right]
-  (.intersection left right))
+  (unmangle/unmangle-name (.intersection left right)))
 
 (defn key-by [rdd f]
-  (.keyBy rdd (function/function f)))
+  (-> (.keyBy rdd (function/function f))
+      (unmangle/unmangle-name f)))
 
 (defmulti map (fn [head & _] (class head)))
 (defmethod map :default [rdd f]
-  (.map rdd (function/function f)))
+  (-> (.map rdd (function/function f))
+      (unmangle/unmangle-name f)))
 (defmethod map PartialResult [result f]
   (.map result (interop/->scala-function1 f)))
 
 (defn map-partitions
   ([rdd f] (map-partitions rdd f false))
   ([rdd f preserves-partitioning]
-   (.mapPartitions rdd (function/flat-map-function f) preserves-partitioning)))
+   (-> (.mapPartitions rdd
+                       (function/flat-map-function f)
+                       preserves-partitioning)
+       (unmangle/unmangle-name f))))
 
 (defn map-partitions-to-pair
   ([rdd f] (map-partitions rdd f false))
   ([rdd f preserves-partitioning]
-   (.mapPartitionsToPair rdd (function/pair-flat-map-function f) preserves-partitioning)))
+   (-> (.mapPartitionsToPair rdd
+                            (function/pair-flat-map-function f)
+                            preserves-partitioning)
+       (unmangle/unmangle-name f))))
 
 (defn map-partitions-with-index
   ([rdd f] (map-partitions-with-index rdd f false))
   ([rdd f preserves-partitioning]
-   (.mapPartitionsWithIndex rdd (function/function2 f) preserves-partitioning)))
+   (-> (.mapPartitionsWithIndex rdd
+                                (function/function2 f)
+                                preserves-partitioning)
+       (unmangle/unmangle-name f))))
 
 (defn map-to-pair [rdd f]
-  (.mapToPair rdd (function/pair-function f)))
-
-(defn max [rdd cmp]
-  (.max rdd cmp))
-
-(defn min [rdd cmp]
-  (.min rdd cmp))
+  (-> (.mapToPair rdd (function/pair-function f))
+      (unmangle/unmangle-name f)))
 
 (defn persist [rdd storage]
   (.persist rdd storage))
 
+;; TODO: unmangle name
 (defn random-split
   ([rdd weights] (seq (.randomSplit rdd (double-array weights))))
   ([rdd weights seed] (seq (.randomSplit rdd (double-array weights) seed))))
 
-(defn reduce [rdd f]
-  (.reduce rdd (function/function2 f)))
-
 (defn repartition [rdd num-partitions]
-  (.repartition rdd num-partitions))
+  (-> (.repartition rdd num-partitions)
+      (unmangle/unmangle-name num-partitions)))
 
 (defn repartition-and-sort-within-partitions
-  ([rdd partitioner] (.repartitionAndSortWithinPartitions rdd partitioner))
-  ([rdd partitioner cmp] (.repartitionAndSortWithinPartitions rdd partitioner cmp)))
+  ([rdd partitioner]
+   (unmangle/unmangle-name (.repartitionAndSortWithinPartitions rdd partitioner)))
+  ([rdd partitioner cmp]
+   (-> (.repartitionAndSortWithinPartitions rdd partitioner cmp)
+       (unmangle/unmangle-name cmp))))
 
 (defn sample
-  ([rdd with-replacement fraction] (.sample rdd with-replacement fraction))
-  ([rdd with-replacement fraction seed] (.sample rdd with-replacement fraction seed)))
+  ([rdd with-replacement fraction]
+   (-> (.sample rdd with-replacement fraction)
+       (unmangle/unmangle-name fraction)))
+  ([rdd with-replacement fraction seed]
+   (-> (.sample rdd with-replacement fraction seed)
+       (unmangle/unmangle-name fraction))))
 
 (defn subtract
-  ([left right] (.subtract left right))
+  ([left right] (unmangle/unmangle-name (.subtract left right)))
   ([left right partitions-or-partitioner]
-   (.subtract left right partitions-or-partitioner)))
-
-(defn top
-  ([rdd n] (-> rdd (.top n) seq interop/->clojure))
-  ([rdd n cmp] (-> rdd (.top n cmp) seq interop/->clojure)))
+   (unmangle/unmangle-name (.subtract left right partitions-or-partitioner))))
 
 (defn union [left right]
-  (.union left right))
+  (unmangle/unmangle-name (.union left right)))
 
 (defn unpersist
   ([rdd] (.unpersist rdd))
   ([rdd blocking] (.unpersist rdd blocking)))
 
 (defn zip [left right]
-  (.zip left right))
+  (unmangle/unmangle-name (.zip left right)))
 
 (defn zip-partitions [left right f]
-  (.zipPartitions left right (function/flat-map-function2 f)))
+  (-> (.zipPartitions left right (function/flat-map-function2 f))
+      (unmangle/unmangle-name f)))
 
 (defn zip-with-index [rdd]
-  (.zipWithIndex rdd))
+  (unmangle/unmangle-name (.zipWithIndex rdd)))
 
 (defn zip-with-unique-id [rdd]
-  (.zipWithUniqueId rdd))
+  (unmangle/unmangle-name (.zipWithUniqueId rdd)))
 
 ;; Actions
+(defn aggregate [rdd zero seq-op comb-op]
+  (.aggregate rdd zero (function/function2 seq-op) (function/function2 comb-op)))
+
 (defn count [rdd]
   (.count rdd))
 
@@ -243,8 +266,10 @@
    :high (.high bounded-double)})
 
 (defn count-approx
-  ([rdd timeout] (-> rdd (.countApprox timeout) (map bounded-double->map)))
-  ([rdd timeout confidence] (-> rdd (.countApprox timeout confidence) (map bounded-double->map))))
+  ([rdd timeout]
+   (-> rdd (.countApprox timeout) (map bounded-double->map)))
+  ([rdd timeout confidence]
+   (-> rdd (.countApprox timeout confidence) (map bounded-double->map))))
 
 (defn count-approx-distinct [rdd relative-sd]
   (.countApproxDistinct rdd relative-sd))
@@ -268,6 +293,9 @@
 (defn first [rdd]
   (.first rdd))
 
+(defn fold [rdd zero f]
+  (.fold rdd zero (function/function2 f)))
+
 (defn foreach [rdd f]
   (.foreach rdd (function/void-function f)))
 
@@ -279,6 +307,15 @@
 
 (defn foreach-partition-async [rdd f]
   (.foreachPartitionAsync rdd (function/void-function f)))
+
+(defn max [rdd cmp]
+  (.max rdd cmp))
+
+(defn min [rdd cmp]
+  (.min rdd cmp))
+
+(defn reduce [rdd f]
+  (.reduce rdd (function/function2 f)))
 
 (defn take [rdd n]
   (-> rdd (.take n) seq interop/->clojure))
@@ -296,36 +333,143 @@
   ([rdd with-replacement n seed] (.takeSample rdd with-replacement n seed)
    (-> rdd (.takeSample with-replacement n) seq interop/->clojure)))
 
+(defn top
+  ([rdd n] (-> rdd (.top n) seq interop/->clojure))
+  ([rdd n cmp] (-> rdd (.top n cmp) seq interop/->clojure)))
+
 (defn save-as-text-file [rdd path]
   (.saveAsTextFile rdd path))
 
 ;; PairRDD Transformations
 (defn aggregate-by-key
   ([rdd zero seq-fn comb-fn]
-   (.aggregateByKey rdd
-                    zero
-                    (function/function2 seq-fn)
-                    (function/function2 comb-fn)))
+   (-> (.aggregateByKey rdd
+                        zero
+                        (function/function2 seq-fn)
+                        (function/function2 comb-fn))
+       (unmangle/unmangle-name zero seq-fn comb-fn)))
   ([rdd zero num-partitions seq-fn comb-fn]
-   (.aggregateByKey rdd
-                    num-partitions
-                    zero
-                    (function/function2 seq-fn)
-                    (function/function2 comb-fn))))
+   (-> (.aggregateByKey rdd
+                        num-partitions
+                        zero
+                        (function/function2 seq-fn)
+                        (function/function2 comb-fn))
+       (unmangle/unmangle-name num-partitions zero seq-fn comb-fn))))
 
 (defn combine-by-key
   ([rdd create-fn merge-value-fn merge-combiner-fn]
-   (.combineByKey rdd
-                  (function/function create-fn)
-                  (function/function2 merge-value-fn)
-                  (function/function2 merge-combiner-fn)))
+   (-> (.combineByKey rdd
+                      (function/function create-fn)
+                      (function/function2 merge-value-fn)
+                      (function/function2 merge-combiner-fn))
+       (unmangle/unmangle-name create-fn
+                               merge-value-fn
+                               merge-combiner-fn)))
   ([rdd create-fn merge-value-fn merge-combiner-fn partitions-or-partitioner]
-   (.combineByKey rdd
-                  (function/function create-fn)
-                  (function/function2 merge-value-fn)
-                  (function/function2 merge-combiner-fn)
-                  partitions-or-partitioner)))
+   (-> (.combineByKey rdd
+                     (function/function create-fn)
+                     (function/function2 merge-value-fn)
+                     (function/function2 merge-combiner-fn)
+                     partitions-or-partitioner)
+       (unmangle/unmangle-name create-fn
+                               merge-value-fn
+                               merge-combiner-fn
+                               partitions-or-partitioner))))
 
+(defn flat-map-values [rdd f]
+  (-> (.flatMapValues rdd (function/flat-map-function f))
+      (unmangle/unmangle-name f)))
+
+(defn fold-by-key
+  ([rdd zero f]
+   (unmangle/unmangle-name (.foldByKey rdd zero (function/function2 f))))
+  ([rdd zero partitions-or-partitioner f]
+   (-> (.foldByKey rdd zero partitions-or-partitioner (function/function2 f))
+       (unmangle/unmangle-name zero f))))
+
+(defn full-outer-join
+  ([left right]
+   (unmangle/unmangle-name (.fullOuterJoin left right)))
+  ([left right partitions-or-partitioner]
+   (-> (.fullOuterJoin left right partitions-or-partitioner)
+       (unmangle/unmangle-name partitions-or-partitioner))))
+
+(defn group-by
+  ([rdd f]
+   (-> (.groupBy rdd (function/function f))
+       (unmangle/unmangle-name f)))
+  ([rdd f num-partitions]
+   (-> (.groupBy rdd (function/function f) num-partitions)
+       (unmangle/unmangle-name f num-partitions))))
+
+(defn join
+  ([left right] (unmangle/unmangle-name (.join left right)))
+  ([left right partitions-or-partitioner]
+   (-> (.join left right partitions-or-partitioner)
+       (unmangle/unmangle-name partitions-or-partitioner))))
+
+(defn keys [rdd]
+  (unmangle/unmangle-name (.keys rdd)))
+
+(defn left-outer-join
+  ([left right] (unmangle/unmangle-name (.leftOuterJoin left right)))
+  ([left right partitions-or-partitioner]
+   (-> (.leftOuterJoin left right partitions-or-partitioner)
+       (unmangle/unmangle-name partitions-or-partitioner))))
+
+(defn map-values [rdd f]
+  (-> (.mapValues rdd (function/function f))
+      (unmangle/unmangle-name f)))
+
+(defn partition-by [rdd partitioner]
+  (unmangle/unmangle-name (.partitionBy rdd partitioner)
+                          (.getName (class partitioner))))
+
+(defn reduce-by-key
+  ([rdd f]
+   (-> (.reduceByKey rdd (function/function2 f))
+       (unmangle/unmangle-name f)))
+  ([rdd f partitions-or-partitioner]
+   (-> (.reduceByKey rdd (function/function2 f) partitions-or-partitioner)
+       (unmangle/unmangle-name f partitions-or-partitioner))))
+
+(defn right-outer-join
+  ([left right] (unmangle/unmangle-name (.rightOuterJoin left right)))
+  ([left right partitions-or-partitioner]
+   (-> (.rightOuterJoin left right partitions-or-partitioner)
+       (unmangle/unmangle-name partitions-or-partitioner))))
+
+(defn sample-by-key
+  ([rdd with-replacement fractions]
+   (-> (.sampleByKey rdd with-replacement fractions)
+       (unmangle/unmangle-name with-replacement fractions)))
+  ([rdd with-replacement fractions seed]
+   (-> (.sampleByKey rdd with-replacement fractions seed)
+       (unmangle/unmangle-name with-replacement fractions seed))))
+
+(defn sample-by-key-exact
+  ([rdd with-replacement fractions]
+   (-> (.sampleByKeyExact rdd with-replacement fractions)
+       (unmangle/unmangle-name with-replacement fractions)))
+  ([rdd with-replacement fractions seed]
+   (-> (.sampleByKeyExact rdd with-replacement fractions seed)
+       (unmangle/unmangle-name with-replacement fractions seed))))
+
+(defn sort-by-key
+  ([rdd] (unmangle/unmangle-name (.sortByKey rdd)))
+  ([rdd asc] (-> (.sortByKey rdd asc) (unmangle/unmangle-name asc))))
+
+(defn subtract-by-key
+  ([left right] (unmangle/unmangle-name (.subtractByKey left right)))
+  ([left right partitions-or-partitioner]
+   (-> (.subtractByKey left right partitions-or-partitioner)
+       (unmangle/unmangle-name partitions-or-partitioner))))
+
+(defn values [rdd]
+  (unmangle/unmangle-name (.values rdd)))
+(def vals values)
+
+;; PairRDD Actions
 (defn count-by-key [rdd]
   (into {} (.countByKey rdd)))
 
@@ -344,79 +488,9 @@
   ([rdd relative-sd partitions-or-partitioner]
    (.countApproxDistinctByKey rdd relative-sd partitions-or-partitioner)))
 
-(defn flat-map-values [rdd f]
-  (.flatMapValues rdd (function/flat-map-function f)))
-
-(defn fold-by-key
-  ([rdd zero f] (.foldByKey rdd zero (function/function2 f)))
-  ([rdd zero partitions-or-partitioner f]
-   (.foldByKey rdd zero partitions-or-partitioner (function/function2 f))))
-
-(defn full-outer-join
-  ([left right] (.fullOuterJoin left right))
-  ([left right partitions-or-partitioner] (.fullOuterJoin left right partitions-or-partitioner)))
-
-(defn group-by
-  ([rdd f] (.groupBy rdd (function/function f)))
-  ([rdd f num-partitions] (.groupBy rdd (function/function f) num-partitions)))
-
-(defn join
-  ([left right] (.join left right))
-  ([left right partitions-or-partitioner] (.join left right partitions-or-partitioner)))
-
-(defn keys [rdd]
-  (.keys rdd))
-
-(defn left-outer-join
-  ([left right] (.leftOuterJoin left right))
-  ([left right partitions-or-partitioner]
-   (.leftOuterJoin left right partitions-or-partitioner)))
-
-(defn map-values [rdd f]
-  (.mapValues rdd (function/function f)))
-
-(defn partition-by [rdd partitioner]
-  (.partitionBy rdd partitioner))
-
-(defn reduce-by-key
-  ([rdd f] (.reduceByKey rdd (function/function2 f)))
-  ([rdd f partitions-or-partitioner]
-   (.reduceByKey rdd (function/function2 f) partitions-or-partitioner)))
+(defn lookup [rdd k]
+  (seq (.lookup rdd k)))
 
 (defn reduce-by-key-locally [rdd f]
   (into {} (.reduceByKeyLocally rdd (function/function2 f))))
-
-(defn right-outer-join
-  ([left right] (.rightOuterJoin left right))
-  ([left right partitions-or-partitioner]
-   (.rightOuterJoin left right partitions-or-partitioner)))
-
-(defn sample-by-key
-  ([rdd with-replacement fractions]
-   (.sampleByKey rdd with-replacement fractions))
-  ([rdd with-replacement fractions seed]
-   (.sampleByKey rdd with-replacement fractions seed)))
-
-(defn sample-by-key-exact
-  ([rdd with-replacement fractions]
-   (.sampleByKeyExact rdd with-replacement fractions))
-  ([rdd with-replacement fractions seed]
-   (.sampleByKeyExact rdd with-replacement fractions seed)))
-
-(defn sort-by-key
-  ([rdd] (.sortByKey rdd))
-  ([rdd asc] (.sortByKey rdd asc)))
-
-(defn subtract-by-key
-  ([left right] (.subtractByKey left right))
-  ([left right partitions-or-partitioner]
-   (.subtractByKey left right partitions-or-partitioner)))
-
-(defn values [rdd]
-  (.values rdd))
-(def vals values)
-
-;; PairRDD Actions
-(defn lookup [rdd k]
-  (seq (.lookup rdd k)))
 

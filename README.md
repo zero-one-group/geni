@@ -2,9 +2,7 @@
     <img src="logo/geni.png" width="375px">
 </p>
 
-Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) library that wraps [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
-
-WARNING! This library is still alpha. See [Flambo](https://github.com/sorenmacbeth/flambo), [Sparkling](https://github.com/gorillalabs/sparkling) and [sparkplug](https://github.com/amperity/sparkplug) for other Spark alternatives.
+Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) dataframe library that runs on [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
 [![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
@@ -13,7 +11,7 @@ WARNING! This library is still alpha. See [Flambo](https://github.com/sorenmacbe
 
 ## Overview
 
-Geni is designed to provide an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni uses Clojure's `->` threading macro as the main way to compose Spark's Dataset and Column operations in place of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the docs section on [Geni semantics](docs/semantics.md) for more details.
+Geni provides an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni uses Clojure's `->` threading macro as the main way to compose Spark's `Dataset` and `Column` operations in place of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the docs section on [Geni semantics](docs/semantics.md) for more details.
 
 ## Resources
 

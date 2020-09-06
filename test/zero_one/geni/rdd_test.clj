@@ -163,7 +163,9 @@
                          "(by Lewis Carroll,1)"
                          "(at no cost and with,1)"
                          "(This eBook is for the use,1)"]
-    (-> dummy-pair-rdd (rdd/group-by str 7) rdd/num-partitions) => 7)
+    (-> dummy-pair-rdd (rdd/group-by str 7) rdd/num-partitions) => 7
+    (-> dummy-pair-rdd (rdd/group-by str 11) rdd/name)
+    => #(string/includes? % "[clojure.core/str, 11]"))
   (fact "count-by-key works"
     (rdd/count-by-key dummy-pair-rdd) => {"Alice’s Adventures in Wonderland" 18
                                           "Project Gutenberg’s" 9
@@ -345,11 +347,11 @@
         (rdd/key-by identity)
         rdd/collect) => [["a" "a"] ["b" "b"] ["c" "c"]])
   (fact "flat-map + filter works"
-    (-> dummy-rdd
-        (rdd/flat-map aot/split-spaces)
-        (rdd/filter aot/equals-lewis)
-        rdd/collect
-        count) => 18)
+    (let [result-rdd (-> dummy-rdd
+                         (rdd/flat-map aot/split-spaces)
+                         (rdd/filter aot/equals-lewis))]
+      (-> result-rdd rdd/collect count) => 18
+      (-> result-rdd rdd/name) => (complement nil?)))
   (fact "map works"
     (-> dummy-rdd
         (rdd/map count)
@@ -439,7 +441,8 @@
     (-> dummy-rdd rdd/cache rdd/count) => 126)
   (fact "distinct works"
     (-> dummy-rdd rdd/distinct rdd/collect count) => 6
-    (-> dummy-rdd (rdd/distinct 2) rdd/num-partitions) => 2)
+    (-> dummy-rdd (rdd/distinct 2) rdd/num-partitions) => 2
+    (-> dummy-rdd (rdd/distinct 3) rdd/name) => #(string/includes? % "[3]"))
   (fact "zip-partitions works"
     (let [left (rdd/parallelise ["a b c" "d e f g h i"])
           right (rdd/parallelise ["j k l m n o" "pqr stu"])]
