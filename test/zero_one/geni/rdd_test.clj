@@ -7,6 +7,7 @@
     [zero-one.geni.defaults]
     [zero-one.geni.partitioner :as partitioner]
     [zero-one.geni.rdd :as rdd]
+    [zero-one.geni.rdd.unmangle :as unmangle]
     [zero-one.geni.test-resources :refer [create-temp-file!]])
   (:import
     (org.apache.spark SparkContext)

@@ -7,7 +7,7 @@
 
 (defn- internal-call?  [^StackTraceElement element]
   (let [class-name (.getClassName element)]
-    (or (string/starts-with? class-name "sparkplug.")
+    (or (string/starts-with? class-name "zero_one.geni")
         (string/starts-with? class-name "clojure.lang."))))
 
 (defn- stack-callsite []
@@ -21,15 +21,13 @@
     (format "%s %s:%d" (Compiler/demunge classname) filename line-number)))
 
 (defn set-callsite-name [rdd & args]
-  (try
-    (let [rdd-name (format "#<%s: %s %s>"
-                           (.getSimpleName (class rdd))
-                           (callsite-name)
-                           (if (seq args)
-                             (str " [" (string/join ", " args) "]")
-                             ""))]
-      (.setName rdd rdd-name))
-    (catch Exception _ rdd)))
+  (let [rdd-name (format "#<%s: %s %s>"
+                         (.getSimpleName (class rdd))
+                         (callsite-name)
+                         (if (seq args)
+                           (str " [" (string/join ", " args) "]")
+                           ""))]
+    (.setName rdd rdd-name)))
 
 (defn ->fn-name [maybe-f]
   (if (fn? maybe-f)

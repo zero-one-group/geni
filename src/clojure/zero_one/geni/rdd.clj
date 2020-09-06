@@ -181,7 +181,7 @@
        (unmangle/unmangle-name f))))
 
 (defn map-partitions-to-pair
-  ([rdd f] (map-partitions rdd f false))
+  ([rdd f] (map-partitions-to-pair rdd f false))
   ([rdd f preserves-partitioning]
    (-> (.mapPartitionsToPair rdd
                             (function/pair-flat-map-function f)
