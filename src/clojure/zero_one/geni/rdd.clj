@@ -26,9 +26,9 @@
     [zero-one.geni.storage])
   (:import
     (org.apache.spark.partial PartialResult)
-    (org.apache.spark.api.java JavaSparkContext)))
+    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
-;; TODO: make variadic: cartesian, union, intersection, subtract
+(def rdd? (partial instance? JavaRDD))
 
 (import-vars
   [zero-one.geni.spark-context
@@ -110,8 +110,11 @@
 (defn cache [rdd]
   (.cache rdd))
 
-(defn cartesian [left right]
-  (unmangle/unmangle-name (.cartesian left right)))
+(defn cartesian
+  ([] (empty-rdd))
+  ([rdd] rdd)
+  ([left right] (unmangle/unmangle-name (.cartesian left right)))
+  ([left right & rdds] (clojure.core/reduce cartesian (cartesian left right) rdds)))
 
 (defn coalesce
   ([rdd num-partitions]
@@ -158,8 +161,13 @@
    (-> (.groupByKey rdd num-partitions)
        (unmangle/unmangle-name num-partitions))))
 
-(defn intersection [left right]
-  (unmangle/unmangle-name (.intersection left right)))
+(defn intersection
+  ([] (empty-rdd))
+  ([rdd] rdd)
+  ([left right] (unmangle/unmangle-name (.intersection left right)))
+  ([left right & rdds] (clojure.core/reduce intersection
+                                            (intersection left right)
+                                            rdds)))
 
 (defn key-by [rdd f]
   (-> (.keyBy rdd (function/function f))
@@ -228,12 +236,22 @@
        (unmangle/unmangle-name fraction))))
 
 (defn subtract
+  ([] (empty-rdd))
+  ([rdd] rdd)
   ([left right] (unmangle/unmangle-name (.subtract left right)))
-  ([left right partitions-or-partitioner]
-   (unmangle/unmangle-name (.subtract left right partitions-or-partitioner))))
+  ([left right arg]
+   (if (rdd? arg)
+     (clojure.core/reduce subtract [left right arg])
+     (let [partitions-or-partitioner arg]
+       (unmangle/unmangle-name (.subtract left right partitions-or-partitioner)))))
+  ([left right arg & rdds]
+   (clojure.core/reduce subtract (subtract left right arg) rdds)))
 
-(defn union [left right]
-  (unmangle/unmangle-name (.union left right)))
+(defn union
+  ([] (empty-rdd))
+  ([rdd] rdd)
+  ([left right] (unmangle/unmangle-name (.union left right)))
+  ([left right & rdds] (clojure.core/reduce union (union left right) rdds)))
 
 (defn unpersist
   ([rdd] (.unpersist rdd))

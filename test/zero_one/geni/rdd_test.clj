@@ -18,6 +18,26 @@
 (def dummy-pair-rdd
   (rdd/map-to-pair dummy-rdd aot/to-pair))
 
+(facts "On variadic functions" :rdd
+  (fact "expected 0-adic and 1-adic returns"
+    (doall
+      (for [variadic-fn [rdd/cartesian rdd/union rdd/intersection rdd/subtract]]
+        (do
+          (variadic-fn) => rdd/empty?
+          (let [rand-num (rand-int 100)]
+            (-> (rdd/parallelise [rand-num])
+                variadic-fn
+                rdd/collect) => [rand-num])))))
+  (fact "expected 3-adic returns"
+    (let [left  (rdd/parallelise [1 2 3])
+          mid   (rdd/parallelise [3 4 5])
+          right (rdd/parallelise [1 4 3])]
+      (rdd/collect (rdd/union left mid right)) => [1 2 3 3 4 5 1 4 3]
+      (rdd/collect (rdd/intersection left mid right)) => [3]
+      (rdd/count (rdd/cartesian left mid right)) => 27
+      (rdd/collect (rdd/subtract left mid right)) => [2]
+      (rdd/collect (rdd/subtract left mid right (rdd/parallelise [2]))) => empty?)))
+
 (facts "On JavaSparkContext methods" :rdd
   (fact "expected static fields"
     (rdd/app-name) => "Geni App"
