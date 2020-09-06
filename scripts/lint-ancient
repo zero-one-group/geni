@@ -3,6 +3,10 @@
 clj-kondo \
     --lint src/clojure/zero_one test/zero_one \
     --cache false
+if [ $? -ne 0 ]; then
+    echo "clj-kondo failed!"
+    exit 1
+fi
 
 mkdir -p target
 lein ancient > target/geni-stdout
