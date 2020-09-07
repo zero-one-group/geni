@@ -24,6 +24,8 @@
                  [mysql/mysql-connector-java "8.0.21"]
                  [org.postgresql/postgresql "42.2.14"]
                  [org.xerial/sqlite-jdbc "3.32.3.1"]
+                 ; EDN
+                 [metosin/jsonista "0.2.7"]
                  ;; Optional: Dataproc
                  [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost

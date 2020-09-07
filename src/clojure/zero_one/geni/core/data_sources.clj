@@ -2,15 +2,18 @@
   (:refer-clojure :exclude [partition-by sort-by])
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]
+    [clojure.edn :as edn]
     [clojure.string :as string]
+    [clojure.walk :as walk]
+    [clojure.java.io :as io]
+    [jsonista.core :as jsonista]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
+    [zero-one.geni.core.dataset-creation :as dataset-creation]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.text Normalizer Normalizer$Form)
     (org.apache.spark.sql SparkSession)))
-
-;; TODO: read-edn!, write-edn!
 
 (def default-spark zero-one.geni.defaults/spark)
 
@@ -158,3 +161,36 @@
                               unconfigured-writer
                               (dissoc options :mode))]
     (.save configured-writer)))
+
+;; EDN
+(defn file-exists? [path]
+  (.exists (io/file path)))
+
+(defn read-as-keywords [json-str]
+  (jsonista/read-value json-str jsonista/keyword-keys-object-mapper))
+
+(defn write-edn!
+  ([dataframe path] (write-edn! dataframe path {}))
+  ([dataframe path options]
+   (let [records   (->> dataframe
+                        .toJSON
+                        .collect
+                        (mapv read-as-keywords))
+         overwrite (if (= (:mode options) "overwrite") true false)]
+     (if (and overwrite (file-exists? path))
+       (spit path records)
+       (throw (Exception. (format "path file:%s already exists!" path)))))))
+
+(defmulti read-edn! (fn [head & _] (class head)))
+(defmethod read-edn! :default
+  ([path] (read-edn! @default-spark path))
+  ([path options] (read-edn! @default-spark path options)))
+(defmethod read-edn! SparkSession
+  ([spark path] (read-edn! spark path {}))
+  ([spark path options]
+   (let [dataset (->> path
+                    slurp
+                    edn/read-string
+                    (dataset-creation/records->dataset spark))]
+     (-> dataset
+         (cond-> (:kebab-columns options) normalise-column-names)))))

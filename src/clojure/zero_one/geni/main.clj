@@ -48,7 +48,7 @@
   (-> dataframe g/print-schema)
 
   (require '[midje.repl :refer [autotest]])
-  (autotest :filter :rdd)
+  (autotest :filter :edn)
   ;(autotest :filter (every-pred (complement :slow) (complement :repl)))
 
   (require '[clojure.pprint])

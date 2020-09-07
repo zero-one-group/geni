@@ -1,5 +1,6 @@
 (ns zero-one.geni.data-sources-test
   (:require
+    [clojure.edn :as edn]
     [midje.sweet :refer [facts fact => throws]]
     [zero-one.geni.core :as g]
     [zero-one.geni.test-resources :refer [create-temp-file!
@@ -10,6 +11,22 @@
 
 (def write-df
   (-> melbourne-df (g/select :Method :Type) (g/limit 5)))
+
+(facts "On edn" :edn
+  (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
+        temp-file (.toString (create-temp-file! ".edn"))]
+    (fact "write-edn! works as expected"
+      (g/write-edn! write-df temp-file {:mode "overwrite"})
+      (edn/read-string (slurp temp-file)) => [{:Price 1480000.0 :Rooms 2}
+                                              {:Price 1035000.0 :Rooms 2}
+                                              {:Price 1465000.0 :Rooms 3}]
+      (g/write-edn! write-df temp-file) => (throws Exception))
+    (fact "read-edn! works as expected"
+      (g/collect (g/read-edn! temp-file)) => [{:Price 1480000.0 :Rooms 2}
+                                              {:Price 1035000.0 :Rooms 2}
+                                              {:Price 1465000.0 :Rooms 3}]
+      (g/column-names (g/read-edn! temp-file {:kebab-columns true}))
+      => ["price" "rooms"])))
 
 (facts "On options" :slow
   (fact "infer-schema can be turned off"
