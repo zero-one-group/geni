@@ -469,6 +469,7 @@
   [zero-one.geni.core.data-sources
    read-avro!
    read-csv!
+   read-edn!
    read-jdbc!
    read-json!
    read-libsvm!
@@ -476,11 +477,12 @@
    read-text!
    write-avro!
    write-csv!
+   write-edn!
+   write-jdbc!
    write-json!
    write-libsvm!
    write-parquet!
-   write-text!
-   write-jdbc!])
+   write-text!])
 
 (import-vars
   [zero-one.geni.core.polymorphic
