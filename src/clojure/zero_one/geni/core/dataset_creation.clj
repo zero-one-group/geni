@@ -34,6 +34,16 @@
 (defn struct-type [& fields]
   (DataTypes/createStructType fields))
 
+(defn array-type [val-type nullable]
+  (DataTypes/createArrayType
+    (data-type->spark-type val-type)
+    nullable))
+
+(defn map-type [key-type val-type]
+  (DataTypes/createMapType
+    (data-type->spark-type key-type)
+    (data-type->spark-type val-type)))
+
 (defn ->schema [value]
   (cond
     (map? value) (->> value
