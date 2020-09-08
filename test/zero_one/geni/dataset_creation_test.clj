@@ -11,6 +11,21 @@
     (org.apache.spark.ml.linalg DenseVector
                                 SparseVector)))
 
+(fact "can instantiate dataframe with data-oriented schema" :schema
+  (g/dtypes
+    (g/create-dataframe
+      [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
+       (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
+      {:number :int
+       :word :string
+       :dense :vector
+       :sparse :vector}))
+  => #(and (= (:number %) "IntegerType")
+           (= (:word %) "StringType")
+           (includes? (:dense %) "VectorUDT")
+           (includes? (:sparse %) "VectorUDT")
+           (= (set (keys %)) #{:dense :number :sparse :word})))
+
 (facts "On building blocks"
   (fact "can instantiate vectors"
     (g/dense 0.0 1.0) => #(instance? DenseVector %)

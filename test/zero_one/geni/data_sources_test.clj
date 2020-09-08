@@ -12,6 +12,26 @@
 (def write-df
   (-> melbourne-df (g/select :Method :Type) (g/limit 5)))
 
+(facts "On schema option" :schema
+  (let [csv-path "test/resources/sample_csv_data.csv"
+        selected [:invoice-date :price]]
+    (fact "correct schemaless baseline"
+      (-> (g/read-csv! csv-path {:kebab-columns true})
+        (g/select selected)
+        g/dtypes) => {:invoice-date "StringType" :price "DoubleType"})
+    (fact "correct direct schema option"
+      (-> (g/read-csv! csv-path {:kebab-columns true
+                                 :schema (g/struct-type
+                                           (g/struct-field :InvoiceDate :date true)
+                                           (g/struct-field :Price :int true))})
+          (g/select selected)
+          g/dtypes) => {:invoice-date "DateType" :price "IntegerType"})
+    (fact "correct data-oriented schema option"
+      (-> (g/read-csv! csv-path {:kebab-columns true
+                                 :schema {:InvoiceDate :date :Price :long}})
+          (g/select selected)
+          g/dtypes) => {:invoice-date "DateType" :price "LongType"})))
+
 (facts "On edn" :edn
   (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
         temp-file (.toString (create-temp-file! ".edn"))]
