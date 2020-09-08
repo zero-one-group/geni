@@ -4,7 +4,6 @@
     [camel-snake-kebab.core :refer [->camelCase]]
     [clojure.edn :as edn]
     [clojure.string :as string]
-    [clojure.walk :as walk]
     [clojure.java.io :as io]
     [jsonista.core :as jsonista]
     [zero-one.geni.defaults]
