@@ -354,8 +354,10 @@
 
 (import-vars
   [zero-one.geni.core.dataset-creation
+   array-type
    create-dataframe
    map->dataset
+   map-type
    records->dataset
    struct-field
    struct-type
@@ -467,6 +469,7 @@
 
 (import-vars
   [zero-one.geni.core.data-sources
+   ->kebab-columns
    read-avro!
    read-csv!
    read-edn!

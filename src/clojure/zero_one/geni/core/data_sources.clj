@@ -33,7 +33,7 @@
 (defn remove-punctuations [string]
   (string/replace string #"[.,\/#!$%\^&\*;:{}=\`~()°]" ""))
 
-(defn normalise-column-names [dataset]
+(defn ->kebab-columns [dataset]
   (let [new-columns (->> dataset
                          .columns
                          (map remove-punctuations)
@@ -50,7 +50,7 @@
                         (cond-> (not (nil? schema))
                           (.schema (dataset-creation/->schema schema))))]
     (-> (.load reader path)
-        (cond-> (:kebab-columns options) normalise-column-names))))
+        (cond-> (:kebab-columns options) ->kebab-columns))))
 
 (defmulti read-avro! (fn [head & _] (class head)))
 (defmethod read-avro! :default
@@ -190,4 +190,4 @@
                     edn/read-string
                     (dataset-creation/records->dataset spark))]
      (-> dataset
-         (cond-> (:kebab-columns options) normalise-column-names)))))
+         (cond-> (:kebab-columns options) ->kebab-columns)))))
