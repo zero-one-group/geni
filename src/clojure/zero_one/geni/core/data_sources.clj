@@ -190,4 +190,4 @@
                     edn/read-string
                     (dataset-creation/records->dataset spark))]
      (-> dataset
-         (cond-> (:kebab-columns options) normalise-column-names)))))
+         (cond-> (:kebab-columns options) ->kebab-columns)))))

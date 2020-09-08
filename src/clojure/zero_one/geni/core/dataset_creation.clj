@@ -3,7 +3,7 @@
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql.types ArrayType DataTypes)
+    (org.apache.spark.sql.types ArrayType DataType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT
                                 DenseVector
                                 SparseVector)))
@@ -28,7 +28,9 @@
    nil        DataTypes/NullType})
 
 (defn struct-field [col-name data-type nullable]
-  (let [spark-type (data-type->spark-type data-type)]
+  (let [spark-type (if (instance? DataType data-type)
+                     data-type
+                     (data-type->spark-type data-type))]
     (DataTypes/createStructField (name col-name) spark-type nullable)))
 
 (defn struct-type [& fields]
@@ -46,10 +48,19 @@
 
 (defn ->schema [value]
   (cond
-    (map? value) (->> value
-                      (map (fn [[k v]] (struct-field k v true)))
-                      (apply struct-type))
-    :else        value))
+    (and (vector? value) (= 1 (count value)))
+    (array-type (->schema (first value)) true)
+
+    (and (vector? value) (= 2 (count value)))
+    (map-type (->schema (first value)) (->schema (second value)))
+
+    (map? value)
+    (->> value
+         (map (fn [[k v]] (struct-field k (->schema v) true)))
+         (apply struct-type))
+
+    :else
+    value))
 
 (defn create-dataframe
   ([rows schema] (create-dataframe @default-spark rows (->schema schema)))

@@ -24,19 +24,37 @@
     (g/write-parquet! dummy-df temp-file {:mode "overwrite"})
     (fact "correct dataframe baseline"
       (g/dtypes dummy-df) => {:coord "ArrayType(DoubleType,true)"
-                              :prop "MapType(StringType,StringType,true)"
+                              :prop  "MapType(StringType,StringType,true)"
                               :rooms (str "StructType("
                                           "StructField(rooms,LongType,true), "
                                           "StructField(bathroom,DoubleType,true))")})
     (fact "correct direct schema option"
       (-> (g/read-parquet!
             temp-file
-            {:schema (g/struct-type ;; TODO: struct-type should support .add method
-                       (g/map-type :string :string))})
-                       ;(g/struct-type
-                         ;(g/struct-field :rooms :int true)
-                         ;(g/struct-field :bathroom :float true)))})
-          g/dtypes) => true)))
+            {:schema (g/struct-type
+                       (g/struct-field :rooms
+                                       (g/struct-type
+                                         (g/struct-field :rooms :int true)
+                                         (g/struct-field :bathroom :float true))
+                         true)
+                       (g/struct-field :coord (g/array-type :long true) true)
+                       (g/struct-field :prop (g/map-type :string :string) true))})
+          g/dtypes) => {:coord "ArrayType(LongType,true)"
+                        :prop  "MapType(StringType,StringType,true)"
+                        :rooms (str "StructType("
+                                    "StructField(rooms,IntegerType,true), "
+                                    "StructField(bathroom,FloatType,true))")})
+    (fact "correct data-oriented schema option"
+      (-> (g/read-parquet!
+            temp-file
+            {:schema {:coord [:short]
+                      :prop  [:string :string]
+                      :rooms {:rooms :float :bathroom :long}}})
+          g/dtypes) => {:coord "ArrayType(ShortType,true)"
+                        :prop  "MapType(StringType,StringType,true)"
+                        :rooms (str "StructType("
+                                    "StructField(rooms,FloatType,true), "
+                                    "StructField(bathroom,LongType,true))")})))
 
 (facts "On schema option" :schema
   (let [csv-path "test/resources/sample_csv_data.csv"
