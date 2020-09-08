@@ -6,7 +6,6 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [zero.one/geni "0.0.25"]
                  ;; REPL
-                 [metosin/jsonista "0.2.7"]
                  [nrepl "0.8.1"]
                  [reply "0.4.4"]
                  ;; Spark
@@ -20,7 +19,9 @@
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.21"]
                  [org.postgresql/postgresql "42.2.14"]
-                 [org.xerial/sqlite-jdbc "3.32.3.1"]{{#dataproc?}}
+                 [org.xerial/sqlite-jdbc "3.32.3.1"]
+                 ; EDN
+                 [metosin/jsonista "0.2.7"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
