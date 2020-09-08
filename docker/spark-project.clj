@@ -1,6 +1,7 @@
 (defproject spark-dummy "spark-dummy"
   :dependencies [;; Core
                  [camel-snake-kebab "0.4.1"]
+                 [metosin/jsonista "0.2.7"]
                  [nrepl "0.8.1"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]
@@ -24,8 +25,6 @@
                  [mysql/mysql-connector-java "8.0.21"]
                  [org.postgresql/postgresql "42.2.14"]
                  [org.xerial/sqlite-jdbc "3.32.3.1"]
-                 ; EDN
-                 [metosin/jsonista "0.2.7"]
                  ;; Optional: Dataproc
                  [org.apache.spark/spark-yarn_2.12 "3.0.0"]
                  ;; Optional: Spark XGBoost
