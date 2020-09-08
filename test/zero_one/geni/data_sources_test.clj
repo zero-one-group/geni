@@ -14,23 +14,21 @@
 
 (facts "On schema option" :schema
   (let [csv-path "test/resources/sample_csv_data.csv"
-        selected [:invoice-date :price]]
+        selected [:InvoiceDate :Price]]
     (fact "correct schemaless baseline"
-      (-> (g/read-csv! csv-path {:kebab-columns true})
+      (-> (g/read-csv! csv-path)
         (g/select selected)
-        g/dtypes) => {:invoice-date "StringType" :price "DoubleType"})
+        g/dtypes) => {:InvoiceDate "StringType" :Price "DoubleType"})
     (fact "correct direct schema option"
-      (-> (g/read-csv! csv-path {:kebab-columns true
-                                 :schema (g/struct-type
+      (-> (g/read-csv! csv-path {:schema (g/struct-type
                                            (g/struct-field :InvoiceDate :date true)
                                            (g/struct-field :Price :int true))})
           (g/select selected)
-          g/dtypes) => {:invoice-date "DateType" :price "IntegerType"})
+          g/dtypes) => {:InvoiceDate "DateType" :Price "IntegerType"})
     (fact "correct data-oriented schema option"
-      (-> (g/read-csv! csv-path {:kebab-columns true
-                                 :schema {:InvoiceDate :date :Price :long}})
+      (-> (g/read-csv! csv-path {:schema {:InvoiceDate :date :Price :long}})
           (g/select selected)
-          g/dtypes) => {:invoice-date "DateType" :price "LongType"})))
+          g/dtypes) => {:InvoiceDate "DateType" :Price "LongType"})))
 
 (facts "On edn" :edn
   (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
