@@ -17,8 +17,8 @@
         selected [:InvoiceDate :Price]]
     (fact "correct schemaless baseline"
       (-> (g/read-csv! csv-path)
-        (g/select selected)
-        g/dtypes) => {:InvoiceDate "StringType" :Price "DoubleType"})
+          (g/select selected)
+          g/dtypes) => {:InvoiceDate "StringType" :Price "DoubleType"})
     (fact "correct direct schema option"
       (-> (g/read-csv! csv-path {:schema (g/struct-type
                                            (g/struct-field :InvoiceDate :date true)
