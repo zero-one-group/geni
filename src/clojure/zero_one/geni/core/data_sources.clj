@@ -42,17 +42,15 @@
     (.toDF dataset (interop/->scala-seq new-columns))))
 
 (defn read-data! [format-name spark path options]
-  (let [config-options      (dissoc options :kebab-columns)
-        defaults            (default-options format-name)
-        unconfigured-reader (.. spark read (format format-name))
-        configured-reader   (configure-reader-or-writer
-                              unconfigured-reader
-                              (merge defaults config-options))
-        finalise-fn         (comp
-                              (if (:kebab-columns options)
-                                normalise-column-names
-                                identity))]
-    (finalise-fn (.load configured-reader path))))
+  (let [reader-opts (dissoc options :kebab-columns :schema)
+        defaults    (default-options format-name)
+        schema      (:schema options)
+        reader      (-> (.. spark read (format format-name))
+                        (configure-reader-or-writer (merge defaults reader-opts))
+                        (cond-> (not (nil? schema))
+                          (.schema (dataset-creation/->schema schema))))]
+    (-> (.load reader path)
+        (cond-> (:kebab-columns options) normalise-column-names))))
 
 (defmulti read-avro! (fn [head & _] (class head)))
 (defmethod read-avro! :default

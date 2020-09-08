@@ -34,9 +34,16 @@
 (defn struct-type [& fields]
   (DataTypes/createStructType fields))
 
+(defn ->schema [value]
+  (cond
+    (map? value) (->> value
+                      (map (fn [[k v]] (struct-field k v true)))
+                      (apply struct-type))
+    :else        value))
+
 (defn create-dataframe
-  ([rows schema] (create-dataframe @default-spark rows schema))
-  ([spark rows schema] (.createDataFrame spark rows schema)))
+  ([rows schema] (create-dataframe @default-spark rows (->schema schema)))
+  ([spark rows schema] (.createDataFrame spark rows (->schema schema))))
 
 (def java-type->spark-type
   {java.lang.Boolean  DataTypes/BooleanType
