@@ -15,5 +15,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Run a one-line script 
-        run: echo Hello, world!
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11.0.7
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          lein: 2.9.1
+      - name: macos-coverage
+        run: scripts/coverage

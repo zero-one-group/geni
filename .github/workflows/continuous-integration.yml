@@ -11,20 +11,6 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: coverage
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: scripts/coverage
-      - uses: codecov/codecov-action@v1
-        env:
-            CODECOV_TOKEN: bb12d419-f860-48ff-a3bf-8fca4114cc3d
-        with:
-         file: target/coverage/codecov.json
-         fail_ci_if_error: true
   lint-ancient:
     runs-on: ubuntu-latest
     steps:
@@ -33,27 +19,3 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/lint-ancient
-  test-geni-cli:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test-geni-cli
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: scripts/test-geni-cli
-  test-lein-template:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test-lein-template
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: scripts/test-lein-template
-  test-install-geni-cli:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test-install-geni-cli
-        uses: docker://zeroonetechnology/geni:latest
-        with:
-          entrypoint: scripts/test-install-geni-cli
