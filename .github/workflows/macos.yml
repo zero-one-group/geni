@@ -1,0 +1,19 @@
+name: macOS
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  macos-coverage:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run a one-line script 
+        run: echo Hello, world!
