@@ -5,9 +5,6 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [zero.one/geni "0.0.26"]
-                 ;; REPL
-                 [nrepl "0.8.1"]
-                 [reply "0.4.4"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.0.0"]
                  [org.apache.spark/spark-hive_2.12 "3.0.0"]
@@ -19,9 +16,7 @@
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.21"]
                  [org.postgresql/postgresql "42.2.14"]
-                 [org.xerial/sqlite-jdbc "3.32.3.1"]
-                 ; EDN
-                 [metosin/jsonista "0.2.7"]{{#dataproc?}}
+                 [org.xerial/sqlite-jdbc "3.32.3.1"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
