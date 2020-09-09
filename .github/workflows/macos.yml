@@ -1,0 +1,43 @@
+name: macOS
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  macos-coverage:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install-java
+        uses: actions/setup-java@v1
+        with:
+            java-version: '11.0.7'
+      - name: install-clojure
+        uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: 1.10.1.469
+      - name: coverage
+        with:
+          entrypoint: scripts/coverage
+  macos-test-install-geni-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install-java
+        uses: actions/setup-java@v1
+        with:
+            java-version: '11.0.7'
+      - name: install-clojure
+        uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: 1.10.1.469
+      - name: test-install-geni-cli
+        with:
+          entrypoint: scripts/test-install-geni-cli
