@@ -67,8 +67,9 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@master
         with:
           lein: 2.9.1
-      - name: macos-install
-        run: scripts/test-install-geni-cli
+      - run: sudo chown -R $USER:$USER /usr/local/bin
+      - name: ubuntu-install
+        run: sudo scripts/test-install-geni-cli
   macos-install:
     runs-on: macos-latest
     steps:
