@@ -172,8 +172,8 @@ The following results are obtained from a machine with a 12-core Intel(R) Core(T
 | Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
 | --       | ---                                  | ---         | ---   | ---          | ---   |
 | Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
-| Julia    | DataFrames (with Parquet)            | 16          | x2.0  | 41           | x1.1  |
 | R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
+| Julia    | DataFrames (with Parquet)            | 87          | x10.9 | 868          | x22.3 |
 | Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
 | R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
 | Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
