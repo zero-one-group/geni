@@ -93,6 +93,7 @@ Geni provides an idiomatic Spark interface for Clojure without the hassle of Jav
 
 [![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
+[![zulip](https://img.shields.io/badge/zulip-clojurians%2Fgeni-brightgreen.svg)](https://clojurians.zulipchat.com/#narrow/stream/256615-geni)
 
 ## Basic Examples
 
