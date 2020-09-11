@@ -19,7 +19,7 @@
 
 (defproject zero.one/geni "0.0.26"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
-  :description "A Clojure library that wraps Apache Spark"
+  :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
