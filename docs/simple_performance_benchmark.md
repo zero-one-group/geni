@@ -39,7 +39,7 @@ The dummy data contains exactly 24 million transactions and approximately one mi
 - the number of different brands they purchased; and
 - the number of different styles they purchased.
 
-### Geni
+### Clojure: Geni
 
 We do the following aggregation:
 
@@ -63,7 +63,7 @@ Note that, we additionally increase the JVM maximum heap size to 16GB and enable
            :spark.sql.adaptive.coalescePartitions.enabled "true"}}
 ```
 
-### Pandas
+### Python: Pandas
 
 ```python
 (transactions
@@ -82,7 +82,7 @@ Note that, we additionally increase the JVM maximum heap size to 16GB and enable
 
 The full scripts can be found [here](https://github.com/zero-one-group/geni-performance-benchmark).
 
-### dplyr
+### R: dplyr
 
 ```r
 dataframe %>%
@@ -100,7 +100,7 @@ dataframe %>%
 
 The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/r/dplyr.r).
 
-### data.table
+### R: data.table
 
 ```r
 dataframe[, sales := quantity * price]
@@ -118,7 +118,24 @@ write_parquet(result, "datatable.parquet")
 
 The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/r/datatable.r).
 
-### tech.ml.dataset
+### Julia: DataFrames
+
+```julia
+df.sales = df.price .* df.quantity
+gdf = groupby(df, :member_id)
+summary = combine(gdf, :sales => sum => :total_spend,
+                       :sales => mean => :avg_basket_size,
+                       :price => mean => :avg_price,
+                       nrow => :n_transactions,
+                       :date => nunique => :n_visits,
+                       :brand_id => nunique => :n_brands,
+                       :style_id => nunique => :n_styles)
+summary |> save("julia.feather")
+```
+
+The full script can be found [here](https://github.com/zero-one-group/geni-performance-benchmark/blob/master/julia/main.jl).
+
+### Clojure: tech.ml.dataset
 
 We have three TMD variants, and each one is run using the same JVM options as Geni. The first variant uses Scicloj's [tablecloth](https://github.com/scicloj/tablecloth). We found tablecloth's [dplyr](https://dplyr.tidyverse.org/)-like API to be the most straightforward and looks most like the original Geni:
 
@@ -156,9 +173,11 @@ The following results are obtained from a machine with a 12-core Intel(R) Core(T
 | --       | ---                                  | ---         | ---   | ---          | ---   |
 | Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
 | R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
+| Julia    | DataFrames (with Parquet)            | 87          | x10.9 | 868          | x22.3 |
 | Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
 | R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
 | Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
+| Julia    | DataFrames (with Feather)            | 16          | x2.0  | 41           | x1.1  |
 | Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
 | Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
 
