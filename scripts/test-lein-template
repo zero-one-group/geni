@@ -9,3 +9,6 @@ cd "$template_dir"
 lein new geni "$app_name" --force
 cd "$app_name"
 lein test
+
+mkdir -p target
+lein ancient
