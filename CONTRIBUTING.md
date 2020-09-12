@@ -54,6 +54,6 @@ or spin up a REPL by running `lein repl` and run:
 - Deploy the main library with `lein deploy clojars`.
 - Ensure that the post-release CI steps pass with `make post-release`.
 - Deploy the lein template with `lein deploy clojars`.
-- Push the newly built container to DockerHub with `make docker-push`.
+- Push the newly built container to DockerHub with `make docker-release`.
 - Merge the library version-bump branch.
 - Create a new release on GitHub with a summary of all the changes and the new uberjar uploaded.
