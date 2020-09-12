@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 clj-kondo \
     --lint src/clojure/zero_one test/zero_one \
     --cache false
@@ -9,9 +11,7 @@ if [ $? -ne 0 ]; then
 fi
 
 mkdir -p target
-lein ancient > target/geni-stdout
-if ! grep -q "all artifacts are up-to-date." target/geni-stdout ; then
-    cat target/geni-stdout
-    echo "Not all artifacts are up-to-date!"
-    exit 1
-fi
+lein ancient
+
+mkdir -p target
+lein ancient :plugins

@@ -9,17 +9,17 @@
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  ;; Spark
-                 [org.apache.spark/spark-core_2.12 "3.0.0"]
-                 [org.apache.spark/spark-hive_2.12 "3.0.0"]
-                 [org.apache.spark/spark-mllib_2.12 "3.0.0"]
-                 [org.apache.spark/spark-sql_2.12 "3.0.0"]
-                 [org.apache.spark/spark-streaming_2.12 "3.0.0"]
-                 [org.apache.spark/spark-yarn_2.12 "3.0.0"]
+                 [org.apache.spark/spark-core_2.12 "3.0.1"]
+                 [org.apache.spark/spark-hive_2.12 "3.0.1"]
+                 [org.apache.spark/spark-mllib_2.12 "3.0.1"]
+                 [org.apache.spark/spark-sql_2.12 "3.0.1"]
+                 [org.apache.spark/spark-streaming_2.12 "3.0.1"]
+                 [org.apache.spark/spark-yarn_2.12 "3.0.1"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.21"]
-                 [org.postgresql/postgresql "42.2.14"]
-                 [org.xerial/sqlite-jdbc "3.32.3.1"]{{#dataproc?}}
+                 [org.postgresql/postgresql "42.2.16"]
+                 [org.xerial/sqlite-jdbc "3.32.3.2"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
@@ -35,6 +35,7 @@
                              "--class"
                              "{{namespace}}.core"
                              "target/uberjar/{{raw-name}}-standalone.jar"]]}{{/dataproc?}}
-  :profiles {:uberjar {:aot :all}}
+  :profiles {:uberjar {:aot :all}
+             :dev {:plugins [[lein-ancient "0.6.15"]]}}
   :main ^:skip-aot {{namespace}}.core
   :target-path "target/%s")

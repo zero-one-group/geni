@@ -55,7 +55,7 @@
     (rdd/resources) => {}
     (rdd/spark-home) => nil?
     (rdd/sc) => (partial instance? SparkContext)
-    (rdd/version) => "3.0.0"))
+    (rdd/version) => "3.0.1"))
 
 (facts "On repartitioning" :rdd
   (fact "partition-by works"
