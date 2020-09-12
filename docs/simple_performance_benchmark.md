@@ -65,6 +65,8 @@ Note that, we additionally increase the JVM maximum heap size to 16GB and enable
 
 ### Python: Pandas
 
+Our first attempt of Pandas uses a custom aggregate function:
+
 ```python
 (transactions
     .groupby('member-id')
@@ -77,6 +79,21 @@ Note that, we additionally increase the JVM maximum heap size to 16GB and enable
         'n-brands': len(grouped['brand-id'].unique()),
         'n-styles': len(grouped['style-id'].unique()),
     }))
+    .to_parquet('target/pandas-matrix.parquet'))
+```
+
+However, this is far from optimal. Pandas' builtin aggregate functions are much faster:
+
+```python
+(transactions
+    .groupby('member-id')
+    .agg({'sales': ['sum', 'mean'],
+          'price': ['mean'],
+          'trx-id': ['count'],
+          'date': ['nunique'],
+          'brand-id': ['nunique'],
+          'style-id': ['nunique']})
+    .reset_index()
     .to_parquet('target/pandas-matrix.parquet'))
 ```
 
@@ -171,7 +188,7 @@ The following results are obtained from a machine with a 12-core Intel(R) Core(T
 
 | Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
 | --       | ---                                  | ---         | ---   | ---          | ---   |
-| Python   | Pandas                               | 587         | x73.4 | 1,132        | x29.0 |
+| Python   | Pandas (with custom agg function)    | 587         | x73.4 | 1,132        | x29.0 |
 | R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
 | Julia    | DataFrames (with Parquet)            | 87          | x10.9 | 868          | x22.3 |
 | Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
@@ -180,7 +197,6 @@ The following results are obtained from a machine with a 12-core Intel(R) Core(T
 | Julia    | DataFrames (with Feather)            | 16          | x2.0  | 41           | x1.1  |
 | Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
 | Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
+| Python   | Pandas (with builtin agg functions)  | 3           | x0.4  | 42           | x1.1  |
 
-When run on only one month of data, Geni is 73x faster than Pandas. When run on the full dataset, Geni is 29x faster than Pandas. Much of the gap is due to Pandas not using all of the available cores on the machine, which should account for, at most, 12x in performance gains. When optimised heavily, TMD's performance is roughly the same as Geni's.
-
-These speedup factors are typical whenever we compare Pandas and Geni. To reiterate, this is not meant to be a serious benchmark exercise, rather an illustration of what we typically see on our particular setup.
+Thanks to Spark, Geni is fast out of the box with minimal tweaks!
