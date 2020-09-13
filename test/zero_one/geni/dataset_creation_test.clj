@@ -11,6 +11,12 @@
     (org.apache.spark.ml.linalg DenseVector
                                 SparseVector)))
 
+(facts "On creation of empty dataset" :empty-dataset
+  (g/create-dataframe [] {}) => g/empty?
+  (g/table->dataset [] []) => g/empty?
+  (g/map->dataset {}) => g/empty?
+  (g/records->dataset {}) => g/empty?)
+
 (fact "can instantiate dataframe with data-oriented schema" :schema
   (g/dtypes
     (g/create-dataframe
