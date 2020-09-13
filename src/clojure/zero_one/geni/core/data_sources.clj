@@ -195,7 +195,6 @@
          (cond-> (:kebab-columns options) ->kebab-columns)))))
 
 ;; Excel
-;; TODO: add option to specify sheet
 (defn write-xlsx!
   ([dataframe path] (write-xlsx! dataframe path {}))
   ([dataframe path options]
@@ -210,18 +209,6 @@
          path)
        (throw (Exception. (format "path file:%s already exists!" path)))))))
 
-(defn cells->table
-  ([cells] (cells->table cells (first (map :sheet cells))))
-  ([cells sheet]
-   (let [sheet   (or sheet "Sheet1")
-         cells   (->> cells
-                      (filter #(= (-> % :coord (:sheet "Sheet1")) sheet))
-                      (map #(update % :coord dissoc :sheet)))
-         indexed (group-by :coord cells)]
-     (vec (for [i (range (inc (fxl/max-row cells)))]
-            (vec (for [j (range (inc (fxl/max-col cells)))]
-                   (-> (indexed {:row i :col j}) first :value))))))))
-
 (defmulti read-xlsx! (fn [head & _] (class head)))
 (defmethod read-xlsx! :default
   ([path] (read-xlsx! @default-spark path))
@@ -229,8 +216,8 @@
 (defmethod read-xlsx! SparkSession
   ([spark path] (read-xlsx! spark path {:header true}))
   ([spark path options]
-   (let [cells (fxl/read-xlsx! path)
-         table (cells->table cells (:sheet options))
+   (let [cells     (fxl/read-xlsx! path)
+         table     (fxl/cells->table cells (:sheet options))
          col-names (if (:header options)
                      (first table)
                      (map #(str "_c" %) (-> table first count range)))

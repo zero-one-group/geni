@@ -75,16 +75,18 @@
           g/dtypes) => {:InvoiceDate "DateType" :Price "LongType"})))
 
 (facts "On Excel" :excel
-  (let [temp-file (.toString (create-temp-file! ".xlsx"))
-        read-df   (do
-                    (g/write-xlsx! write-df temp-file {:mode "overwrite"})
-                    (g/read-xlsx! temp-file))
-        read-df-2 (do
-                    (g/write-xlsx! write-df temp-file {:mode "overwrite"})
-                    (g/read-xlsx! temp-file {:sheet "Sheet2"}))]
+  (let [temp-file  (.toString (create-temp-file! ".xlsx"))
+        read-df    (do
+                     (g/write-xlsx! write-df temp-file {:mode "overwrite"})
+                     (g/read-xlsx! temp-file))
+        headerless (g/read-xlsx! temp-file {:header false :kebab-columns true})]
     (fact "read and write xlsx work"
       (g/collect read-df) => (g/collect write-df)
-      read-df-2 => g/empty?)))
+      (g/write-xlsx! write-df temp-file) => (throws Exception))
+    (fact "read edge cases"
+      (g/read-xlsx! temp-file {:sheet "Sheet2"}) => g/empty?
+      (g/count headerless) => 6
+      (g/first headerless) => {:c-0 "Method" :c-1 "Type"})))
 
 (facts "On edn" :edn
   (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
