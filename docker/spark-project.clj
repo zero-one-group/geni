@@ -6,6 +6,7 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4"]
+                 [zero.one/fxl "0.0.2"]
                  ;; Dev
                  [expound "0.8.5"]
                  [lein-ancient "0.6.15"]

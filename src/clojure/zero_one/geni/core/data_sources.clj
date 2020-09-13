@@ -6,9 +6,11 @@
     [clojure.string :as string]
     [clojure.java.io :as io]
     [jsonista.core :as jsonista]
+    [zero-one.fxl.core :as fxl]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.core.dataset-creation :as dataset-creation]
+    [zero-one.geni.core.dataset :as dataset]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.text Normalizer Normalizer$Form)
@@ -191,3 +193,32 @@
                     (dataset-creation/records->dataset spark))]
      (-> dataset
          (cond-> (:kebab-columns options) ->kebab-columns)))))
+
+;; Excel
+;; TODO: add option to specify sheet
+(defn write-xlsx!
+  ([dataframe path] (write-xlsx! dataframe path {}))
+  ([dataframe path options]
+   (let [records   (dataset/collect dataframe)
+         col-keys  (dataset/columns dataframe)
+         overwrite (if (= (:mode options) "overwrite") true false)]
+     (if (and overwrite (file-exists? path))
+       (fxl/write-xlsx!
+         (fxl/records->cells col-keys records)
+         path)
+       (throw (Exception. (format "path file:%s already exists!" path)))))))
+
+(defmulti read-xlsx! (fn [head & _] (class head)))
+(defmethod read-xlsx! :default
+  ([path] (read-xlsx! @default-spark path))
+  ([path options] (read-xlsx! @default-spark path options)))
+;; TODO: requires fxl/cells->records
+(defmethod read-xlsx! SparkSession
+  ([spark path] (read-xlsx! spark path {}))
+  ([spark path options]
+   (let [records (fxl/read-xlsx! path)]
+         ;dataset (dataset-creation/records->dataset spark records)]
+     ;; TODO: remove finalise duplication
+     (println records))))
+     ;(-> dataset
+         ;(cond-> (:kebab-columns options) ->kebab-columns)))))

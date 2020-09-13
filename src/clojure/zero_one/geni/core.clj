@@ -478,6 +478,7 @@
    read-libsvm!
    read-parquet!
    read-text!
+   read-xlsx!
    write-avro!
    write-csv!
    write-edn!
@@ -485,7 +486,8 @@
    write-json!
    write-libsvm!
    write-parquet!
-   write-text!])
+   write-text!
+   write-xlsx!])
 
 (import-vars
   [zero-one.geni.core.polymorphic

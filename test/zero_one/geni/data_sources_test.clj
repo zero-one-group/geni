@@ -74,6 +74,15 @@
           (g/select selected)
           g/dtypes) => {:InvoiceDate "DateType" :Price "LongType"})))
 
+(facts "On Excel" :excel
+  (let [temp-file (.toString (create-temp-file! ".xlsx"))
+        read-df   (do
+                    (g/write-xlsx! write-df temp-file {:mode "overwrite"})
+                    (g/read-xlsx! temp-file))]
+    (fact "read and write xlsx work"
+      (println read-df) => true)))
+      ;(g/collect read-df) => (g/collect write-df))))
+
 (facts "On edn" :edn
   (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
         temp-file (.toString (create-temp-file! ".edn"))]
