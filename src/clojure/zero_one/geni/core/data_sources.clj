@@ -1,5 +1,5 @@
 (ns zero-one.geni.core.data-sources
-  (:refer-clojure :exclude [partition-by sort-by])
+  (:refer-clojure :exclude [partition-by])
   (:require
     [camel-snake-kebab.core :refer [->camelCase]]
     [clojure.edn :as edn]
@@ -204,21 +204,38 @@
          overwrite (if (= (:mode options) "overwrite") true false)]
      (if (and overwrite (file-exists? path))
        (fxl/write-xlsx!
-         (fxl/records->cells col-keys records)
+         (fxl/concat-below
+           (fxl/row->cells (dataset/column-names dataframe))
+           (fxl/records->cells col-keys records))
          path)
        (throw (Exception. (format "path file:%s already exists!" path)))))))
+
+(defn cells->table
+  ([cells] (cells->table cells (first (map :sheet cells))))
+  ([cells sheet]
+   (let [sheet   (or sheet "Sheet1")
+         cells   (->> cells
+                      (filter #(= (-> % :coord (:sheet "Sheet1")) sheet))
+                      (map #(update % :coord dissoc :sheet)))
+         indexed (group-by :coord cells)]
+     (vec (for [i (range (inc (fxl/max-row cells)))]
+            (vec (for [j (range (inc (fxl/max-col cells)))]
+                   (-> (indexed {:row i :col j}) first :value))))))))
 
 (defmulti read-xlsx! (fn [head & _] (class head)))
 (defmethod read-xlsx! :default
   ([path] (read-xlsx! @default-spark path))
   ([path options] (read-xlsx! @default-spark path options)))
-;; TODO: requires fxl/cells->records
 (defmethod read-xlsx! SparkSession
-  ([spark path] (read-xlsx! spark path {}))
+  ([spark path] (read-xlsx! spark path {:header true}))
   ([spark path options]
-   (let [records (fxl/read-xlsx! path)]
-         ;dataset (dataset-creation/records->dataset spark records)]
-     ;; TODO: remove finalise duplication
-     (println records))))
-     ;(-> dataset
-         ;(cond-> (:kebab-columns options) ->kebab-columns)))))
+   (let [cells (fxl/read-xlsx! path)
+         table (cells->table cells (:sheet options))
+         col-names (if (:header options)
+                     (first table)
+                     (map #(str "_c" %) (-> table first count range)))
+         table     (if (:header options) (rest table) table)
+         dataset   (when (seq table)
+                     (dataset-creation/table->dataset spark table col-names))]
+     (-> dataset
+         (cond-> (:kebab-columns options) ->kebab-columns)))))

@@ -76,12 +76,15 @@
 
 (facts "On Excel" :excel
   (let [temp-file (.toString (create-temp-file! ".xlsx"))
-        read-df   (do
+        ;read-df   (do
+                    ;(g/write-xlsx! write-df temp-file {:mode "overwrite"})
+                    ;(g/read-xlsx! temp-file))
+        read-df-2 (do
                     (g/write-xlsx! write-df temp-file {:mode "overwrite"})
-                    (g/read-xlsx! temp-file))]
+                    (g/read-xlsx! temp-file {:sheet "Sheet2"}))]
     (fact "read and write xlsx work"
-      (println read-df) => true)))
-      ;(g/collect read-df) => (g/collect write-df))))
+      ;(g/collect read-df) => (g/collect write-df)
+      read-df-2 => empty?)))
 
 (facts "On edn" :edn
   (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
