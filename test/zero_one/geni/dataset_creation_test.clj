@@ -12,10 +12,16 @@
                                 SparseVector)))
 
 (facts "On creation of empty dataset" :empty-dataset
-  (g/create-dataframe [] {}) => g/empty?
-  (g/table->dataset [] []) => g/empty?
-  (g/map->dataset {}) => g/empty?
-  (g/records->dataset {}) => g/empty?)
+  (fact "correct creation"
+    (g/create-dataframe [] {}) => g/empty?
+    (g/table->dataset [] []) => g/empty?
+    (g/map->dataset {}) => g/empty?
+    (g/records->dataset {}) => g/empty?)
+  (fact "correct schema"
+    (g/dtypes (g/create-dataframe [] {:i :int})) => {:i "IntegerType"}
+    (g/dtypes
+      (g/create-dataframe [] (g/struct-type (g/struct-field :j :float true))))
+    => {:j "FloatType"}))
 
 (fact "can instantiate dataframe with data-oriented schema" :schema
   (g/dtypes

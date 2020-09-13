@@ -62,10 +62,15 @@
     :else
     value))
 
+(defn empty-schema? [schema]
+  (if (coll? schema)
+    (empty? schema)
+    false))
+
 (defn create-dataframe
   ([rows schema] (create-dataframe @default-spark rows schema))
   ([spark rows schema]
-   (if (empty? rows)
+   (if (and (empty? rows) (empty-schema? schema))
      (.emptyDataFrame spark)
      (.createDataFrame spark rows (->schema schema)))))
 
