@@ -235,7 +235,6 @@
                      (first table)
                      (map #(str "_c" %) (-> table first count range)))
          table     (if (:header options) (rest table) table)
-         dataset   (when (seq table) ;; TODO: must support empty DF
-                     (dataset-creation/table->dataset spark table col-names))]
+         dataset   (dataset-creation/table->dataset spark table col-names)]
      (-> dataset
          (cond-> (:kebab-columns options) ->kebab-columns)))))
