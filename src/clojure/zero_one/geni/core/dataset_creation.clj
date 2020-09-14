@@ -62,9 +62,17 @@
     :else
     value))
 
+(defn empty-schema? [schema]
+  (if (coll? schema)
+    (empty? schema)
+    false))
+
 (defn create-dataframe
-  ([rows schema] (create-dataframe @default-spark rows (->schema schema)))
-  ([spark rows schema] (.createDataFrame spark rows (->schema schema))))
+  ([rows schema] (create-dataframe @default-spark rows schema))
+  ([spark rows schema]
+   (if (and (empty? rows) (empty-schema? schema))
+     (.emptyDataFrame spark)
+     (.createDataFrame spark rows (->schema schema)))))
 
 (def java-type->spark-type
   {java.lang.Boolean  DataTypes/BooleanType
@@ -103,18 +111,22 @@
 (defn table->dataset
   ([table col-names] (table->dataset @default-spark table col-names))
   ([spark table col-names]
-   (let [col-names (map name col-names)
-         values    (map first-non-nil (transpose table))
-         rows      (interop/->java-list (map interop/->spark-row table))
-         schema    (infer-schema col-names values)]
-     (.createDataFrame spark rows schema))))
+   (if (empty? table)
+     (.emptyDataFrame spark)
+     (let [col-names (map name col-names)
+           values    (map first-non-nil (transpose table))
+           rows      (interop/->java-list (map interop/->spark-row table))
+           schema    (infer-schema col-names values)]
+       (.createDataFrame spark rows schema)))))
 
 (defn map->dataset
   ([map-of-values] (map->dataset @default-spark map-of-values))
   ([spark map-of-values]
-   (let [table     (transpose (vals map-of-values))
-         col-names (keys map-of-values)]
-     (table->dataset spark table col-names))))
+   (if (empty? map-of-values)
+     (.emptyDataFrame spark)
+     (let [table     (transpose (vals map-of-values))
+           col-names (keys map-of-values)]
+       (table->dataset spark table col-names)))))
 
 (defn conj-record [map-of-values record]
   (let [col-names (keys map-of-values)]
