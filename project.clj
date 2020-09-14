@@ -31,7 +31,7 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4"]
-                 [zero.one/fxl "0.0.3a"]]
+                 [zero.one/fxl "0.0.4"]]
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
