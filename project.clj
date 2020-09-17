@@ -17,13 +17,14 @@
     [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
     [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
 
-(defproject zero.one/geni "0.0.26"
+(defproject zero.one/geni "0.0.27"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.1"]
+                 [expound "0.8.5"]
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [nrepl "0.8.2"]
@@ -35,8 +36,7 @@
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
-   :dev {:dependencies [[expound "0.8.5"]
-                        [midje "1.9.9"]]
+   :dev {:dependencies [[midje "1.9.9"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.0"]
                    [lein-midje "3.2.2"]]
