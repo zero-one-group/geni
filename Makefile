@@ -67,7 +67,7 @@ ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient
 	echo "CI steps passed!"
 
 version-bumps: build
-	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/version-bumps.clj
 
 pre-release: coverage test-install-geni-cli test-geni-cli lint-ancient
