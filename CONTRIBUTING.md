@@ -45,7 +45,7 @@ or spin up a REPL by running `lein repl` and run:
 
 ## Release Checklist
 
-- Bump the versions in:
+- Run `make version-bumps` or manually Bump the versions in:
     - `project.clj`.
     - `lein-template`'s `project.clj`;
     - `lein-template`'s `resources/.../project.clj`; and
@@ -57,3 +57,4 @@ or spin up a REPL by running `lein repl` and run:
 - Push the newly built container to DockerHub with `make docker-release`.
 - Merge the library version-bump branch.
 - Create a new release on GitHub with a summary of all the changes and the new uberjar uploaded.
+- Re-run failed CI pipeline due to the missing released uberjar.
