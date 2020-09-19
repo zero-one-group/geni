@@ -15,8 +15,9 @@ docker-push: build
 
 docker-release: build
 	cp project.clj docker/project.clj
-	docker build -f docker/Dockerfile \
+	docker build -f docker/Dockerfile --no-cache
 		-t $(DOCKERNAME):$(VERSION) \
+		-t $(DOCKERNAME):latest \
 		docker
 	docker push $(DOCKERNAME):$(VERSION)
 
@@ -64,6 +65,10 @@ test-install-geni-cli: build
 
 ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient
 	echo "CI steps passed!"
+
+version-bumps: build
+	docker run --rm -v $(PWD):/root/geni -w /root/geni -t $(DOCKERNAME) \
+		scripts/version-bumps.clj
 
 pre-release: coverage test-install-geni-cli test-geni-cli lint-ancient
 	echo "Pre-release steps passed!"
