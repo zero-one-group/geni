@@ -52,9 +52,11 @@
     (.socketTextStream streaming-context "localhost" 9999 g/memory-only))
 
   (.print lines)
-  (.start streaming-context)
-  (.awaitTermination streaming-context)
-  (.stop streaming-context)
+  (future
+    (.start streaming-context))
+  (future
+    (.awaitTermination streaming-context))
+  (.stop streaming-context true true)
 
 
   (require '[zero-one.geni.test-resources :refer [melbourne-df]])
