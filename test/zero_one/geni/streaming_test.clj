@@ -1,5 +1,6 @@
 (ns zero-one.geni.streaming-test
   (:require
+    [clojure.edn :as edn]
     [clojure.string :as string]
     [clojure.java.io :as io]
     [midje.sweet :refer [facts fact =>]]
@@ -9,8 +10,11 @@
   (:import
     (org.apache.spark.streaming Duration StreamingContext)))
 
-(defn create-random-file! [file-name]
-  (let [file (io/file (str "target/" (java.util.UUID/randomUUID) "/" file-name))]
+(defn create-random-temp-file! [file-name]
+  (let [temp-dir (System/getProperty "java.io.tmpdir")
+        file     (->> [temp-dir (java.util.UUID/randomUUID) file-name]
+                      (string/join "/")
+                      io/file)]
     (io/make-parents file)
     file))
 
@@ -26,23 +30,26 @@
 (defn stream-results [opts]
   (let [context         (streaming/streaming-context
                           (spark/create-spark-session {})
-                          (:duration opts (streaming/milliseconds 100)))
-        read-file      (create-random-file! "read.txt")
-        write-file     (create-random-file! "write")
+                          (streaming/milliseconds (:duration-ms opts 100)))
+        read-file      (create-random-temp-file! "read.txt")
+        write-file     (create-random-temp-file! "write")
         input-stream   (streaming/text-file-stream
                          context
                          (-> read-file .getParent .toString))
-        d-stream        ((:d-stream-fn opts identity) input-stream)]
+        d-stream        ((:fn opts identity) input-stream)]
     (spit read-file "")
     (streaming/save-as-text-files! d-stream (.toString write-file))
     @(streaming/start! context)
+    (Thread/sleep (:duration-ms opts 100))
     (spit read-file (str (:content opts "Hello World!")))
     (streaming/await-termination! context)
     @(streaming/stop! context)
     (written-content write-file)))
 
 (facts "On DStream testing" :streaming
-  (stream-results {:content (range 10)}) => (str (range 10) "\n"))
+  (stream-results {:content (range 10)}) => (str (range 10) "\n")
+  (stream-results {:content "abc\ndef" :fn #(.count %)})
+  => #(->> (string/split % #"\n") (map edn/read-string) (every? int?)))
 
 (facts "On durations" :streaming
   (fact "durations instantiatable"
