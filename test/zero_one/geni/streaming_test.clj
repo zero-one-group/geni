@@ -4,7 +4,6 @@
     [clojure.string :as string]
     [clojure.java.io :as io]
     [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.spark :as spark]
     [zero-one.geni.defaults :as defaults]
     [zero-one.geni.streaming :as streaming])
   (:import
@@ -29,7 +28,7 @@
 
 (defn stream-results [opts]
   (let [context         (streaming/streaming-context
-                          (spark/create-spark-session {})
+                          @defaults/spark
                           (streaming/milliseconds (:duration-ms opts 100)))
         read-file      (create-random-temp-file! "read.txt")
         write-file     (create-random-temp-file! "write")

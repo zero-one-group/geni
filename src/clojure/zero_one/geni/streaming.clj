@@ -29,4 +29,4 @@
   (future (.awaitTermination context)))
 
 (defn stop! [context]
-  (future (.stop context true true)))
+  (future (.stop context false true)))
