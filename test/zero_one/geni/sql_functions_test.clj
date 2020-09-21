@@ -7,7 +7,9 @@
   (:import
     (java.sql Timestamp)
     (org.apache.spark.sql Dataset)
-    (org.apache.spark.sql.expressions WindowSpec)))
+    (org.apache.spark.sql.expressions WindowSpec)
+    (java.time Instant ZoneId)
+    (java.time.format DateTimeFormatter)))
 
 (facts "On JSON functions"
   (-> df-1
@@ -616,14 +618,17 @@
         g/collect-vals
         ffirst
         .getTime) => #(= (mod % 10000) 0)
-    (-> df-1
-        (g/select (g/from-unixtime 1))
-        g/collect-vals
-        ffirst) => #(.contains % "1970-01-01 ")
-    (-> df-1
-        (g/select (g/from-unixtime 1 "yyyy/MM/d HH:mm"))
-        g/collect-vals
-        ffirst) => #(.contains % "1970/01/1 ")
+    (let [ts 1
+          dt (-> (Instant/ofEpochMilli 1)
+                 (.atZone (ZoneId/systemDefault)))]
+      (-> df-1
+          (g/select (g/from-unixtime ts))
+          g/collect-vals
+          ffirst) => #(.contains % (.format dt (DateTimeFormatter/ofPattern "yyyy-MM-dd ")))
+      (-> df-1
+          (g/select (g/from-unixtime ts "yyyy/MM/d HH:mm"))
+          g/collect-vals
+          ffirst) => (.format dt (DateTimeFormatter/ofPattern "yyyy/MM/d HH:mm")))
     (-> df-1
         (g/select (g/quarter (g/lit "2020-05-12")))
         g/collect-vals
