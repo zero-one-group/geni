@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.string :as string]
     [clojure.java.io :as io]
-    [midje.sweet :refer [facts fact =>]]
+    [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.defaults :as defaults]
     [zero-one.geni.streaming :as streaming])
   (:import
@@ -39,16 +39,37 @@
     (spit read-file "")
     (streaming/save-as-text-files! d-stream (.toString write-file))
     @(streaming/start! context)
-    (Thread/sleep (:duration-ms opts 100))
+    (Thread/sleep (* 2 (:duration-ms opts 100)))
     (spit read-file (str (:content opts "Hello World!")))
     (streaming/await-termination! context)
     @(streaming/stop! context)
     (written-content write-file)))
 
 (facts "On DStream testing" :streaming
-  (stream-results {:content (range 10)}) => (str (range 10) "\n")
-  (stream-results {:content "abc\ndef" :fn #(.count %)})
-  => #(->> (string/split % #"\n") (map edn/read-string) (every? int?)))
+  (stream-results {:content (range 10) :fn streaming/cache})
+  => (str (range 10) "\n")
+  (stream-results {:content (range 10)
+                   :fn #(streaming/checkpoint % (streaming/milliseconds 200))})
+  => (str (range 10) "\n")
+  (stream-results {:content "abc\ndef" :fn streaming/count})
+  => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))
+  (stream-results {:content "abc\ndef" :fn streaming/glom})
+  ;; TODO: chain with other methods
+  => #(string/includes? % "Ljava.lang.String")
+  (stream-results {:content "abc\ndef" :fn streaming/persist})
+  => "abc\ndef\n"
+  (stream-results {:content "abc\ndef"
+                   :fn #(streaming/persist % streaming/memory-only)})
+  => "abc\ndef\n"
+  (stream-results {:content (range 10) :fn streaming/print})
+  => (throws java.lang.NullPointerException)
+  (stream-results {:content (range 10) :fn #(streaming/print % 2)})
+  => (throws java.lang.NullPointerException)
+  (stream-results {:content (range 10) :fn #(streaming/union % %)})
+  => "(0 1 2 3 4 5 6 7 8 9)\n(0 1 2 3 4 5 6 7 8 9)\n"
+  (stream-results {:content (range 10) :fn streaming/slide-duration})
+  ;;; TODO: chain with other method
+  => (throws java.lang.IllegalArgumentException))
 
 (facts "On durations" :streaming
   (fact "durations instantiatable"
