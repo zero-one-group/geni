@@ -15,3 +15,18 @@
 (defmulti streaming-context (fn [head & _] (class head)))
 (defmethod streaming-context SparkSession [spark duration]
   (StreamingContext. (.sparkContext spark) duration))
+
+(defn text-file-stream [context path]
+  (.textFileStream context path))
+
+(defn save-as-text-files! [d-stream path]
+  (.saveAsTextFiles d-stream path ""))
+
+(defn start! [context]
+  (future (.start context)))
+
+(defn await-termination! [context]
+  (future (.awaitTermination context)))
+
+(defn stop! [context]
+  (future (.stop context false true)))
