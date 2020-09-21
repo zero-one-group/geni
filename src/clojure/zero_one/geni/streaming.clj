@@ -21,6 +21,9 @@
 (defmethod streaming-context SparkSession [spark duration]
   (StreamingContext. (.sparkContext spark) duration))
 
+(defn socket-text-stream [context hostname port storage]
+  (.socketTextStream context hostname port storage))
+
 (defn text-file-stream [context path]
   (.textFileStream context path))
 

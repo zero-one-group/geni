@@ -78,6 +78,12 @@
       [streaming/milliseconds streaming/seconds streaming/minutes])))
 
 (facts "On StreamingContext" :streaming
-  (fact "streaming context instantiatable"
-    (streaming/streaming-context @defaults/spark (streaming/seconds 1))
-    => (partial instance? StreamingContext)))
+  (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
+    (fact "streaming context instantiatable"
+      context => (partial instance? StreamingContext))
+    (fact "retrieving context from a d-stream"
+      (let [d-stream (streaming/socket-text-stream context
+                                                   "localhost"
+                                                   9999
+                                                   streaming/memory-only)]
+        (streaming/context d-stream) => (partial instance? StreamingContext)))))
