@@ -15,7 +15,7 @@ docker-push: build
 
 docker-release: build
 	cp project.clj docker/project.clj
-	docker build -f docker/Dockerfile --no-cache
+	docker build -f docker/Dockerfile --no-cache \
 		-t $(DOCKERNAME):$(VERSION) \
 		-t $(DOCKERNAME):latest \
 		docker
