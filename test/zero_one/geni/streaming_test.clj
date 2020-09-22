@@ -39,7 +39,7 @@
     (spit read-file "")
     (streaming/save-as-text-files! d-stream (.toString write-file))
     @(streaming/start! context)
-    (Thread/sleep (:duration-ms opts 100))
+    (Thread/sleep (:duration-ms opts 150))
     (spit read-file (str (:content opts "Hello World!")))
     (streaming/await-termination! context)
     @(streaming/stop! context)
