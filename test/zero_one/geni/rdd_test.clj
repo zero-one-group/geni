@@ -10,8 +10,7 @@
     [zero-one.geni.test-resources :refer [create-temp-file!]])
   (:import
     (org.apache.spark SparkContext)
-    (org.apache.spark.api.java JavaRDD JavaSparkContext)
-    (java.io File)))
+    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
 (def dummy-rdd
   (rdd/text-file "test/resources/rdd.txt"))
@@ -54,7 +53,7 @@
     (rdd/master) => "local[*]"
     (rdd/persistent-rdds) => map?
     (rdd/resources) => {}
-    (rdd/spark-home) => nil?
+    (rdd/spark-home) => (System/getenv "SPARK_HOME")
     (rdd/sc) => (partial instance? SparkContext)
     (rdd/version) => "3.0.1"))
 
