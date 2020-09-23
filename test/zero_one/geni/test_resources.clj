@@ -1,11 +1,12 @@
 (ns zero-one.geni.test-resources
   (:require
-    [clojure.java.io :as io]
     [clojure.string :refer [split-lines split]]
     [zero-one.geni.core :as g]
     [zero-one.geni.defaults])
   (:import
-    (java.io File)))
+    (java.io File)
+    (java.nio.file.attribute FileAttribute)
+    (java.nio.file Files)))
 
 (def spark @zero-one.geni.defaults/spark)
 
@@ -35,6 +36,9 @@
                :timestamp (long (Integer/parseInt (nth row 3)))}))
        (g/records->dataset spark)))
 
+(def -tmp-dir-attr
+  (into-array FileAttribute '()))
+
 (defn create-temp-file! [extension]
-  (let [temp-dir  (io/file (System/getProperty "java.io.tmpdir"))]
+  (let [temp-dir (.toFile (Files/createTempDirectory "tmp-dir" -tmp-dir-attr))]
     (File/createTempFile "temporary" extension temp-dir)))

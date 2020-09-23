@@ -53,7 +53,7 @@
     (rdd/master) => "local[*]"
     (rdd/persistent-rdds) => map?
     (rdd/resources) => {}
-    (rdd/spark-home) => nil?
+    (rdd/spark-home) => (System/getenv "SPARK_HOME")
     (rdd/sc) => (partial instance? SparkContext)
     (rdd/version) => "3.0.1"))
 
@@ -238,17 +238,14 @@
       (rdd/binary-files "test/resources/housing.parquet/*.parquet" 2)) => 1)
   (fact "save-as-text-file works"
     (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
-          temp-file (.toString (create-temp-file! ".rdd"))
+          temp-file (create-temp-file! ".rdd")
           read-rdd  (do
                       (io/delete-file temp-file true)
-                      (rdd/save-as-text-file write-rdd temp-file)
-                      (rdd/text-file temp-file))
-          temp-dir  (->> (string/split temp-file #"/")
-                         drop-last
-                         (string/join "/"))]
+                      (rdd/save-as-text-file write-rdd (str temp-file))
+                      (rdd/text-file (str temp-file)))]
       (rdd/count read-rdd) => (rdd/count write-rdd)
-      (rdd/count (rdd/whole-text-files temp-dir))  => pos?
-      (rdd/count (rdd/whole-text-files temp-dir 2))  => #(< 1 %))))
+      (rdd/count (rdd/whole-text-files (str temp-file)))  => pos?
+      (rdd/count (rdd/whole-text-files (str temp-file) 2))  => #(< 1 %))))
 
 (facts "On basic RDD fields" :rdd
   (let [rdd (rdd/parallelise-doubles [1])]
