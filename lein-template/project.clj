@@ -1,4 +1,4 @@
-(defproject zero.one/geni "0.0.28a"
+(defproject geni/lein-template "0.0.29"
   :description "Leiningen template for a Geni application."
   :url "https://github.com/zero-one-group/geni/tree/develop/lein-template"
   :license {:name "Apache License"

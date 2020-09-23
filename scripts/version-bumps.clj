@@ -45,7 +45,7 @@
 (def bumped-template-project-clj
   (string/replace current-template-project-clj
                   (re-pattern (dep-str template-name current-released-version))
-                  (dep-str project-name bumped-released-version)))
+                  (dep-str template-name bumped-released-version)))
 
 ;; Bump lein-template's generated project.clj
 (def current-generated-project-clj
