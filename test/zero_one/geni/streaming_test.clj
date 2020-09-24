@@ -54,12 +54,9 @@
         result))))
 
 (facts "On DStream testing" :streaming
-  (doall
-    (for [_ (range 1000)]
-      (do
-        (stream-results {:content (range 10)}) => (str (range 10) "\n")
-        (stream-results {:content "abc\ndef" :fn #(.count %)})
-        => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))))))
+  (stream-results {:content (range 10)}) => (str (range 10) "\n")
+  (stream-results {:content "abc\ndef" :fn #(.count %)})
+  => #(->> (string/split % #"\n") (map edn/read-string) (every? int?)))
 
 (facts "On durations" :streaming
   (fact "durations instantiatable"
