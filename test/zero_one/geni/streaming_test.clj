@@ -55,7 +55,7 @@
 
 (facts "On DStream testing" :streaming
   (doall
-    (for [_ (range 100)]
+    (for [_ (range 1000)]
       (do
         (stream-results {:content (range 10)}) => (str (range 10) "\n")
         (stream-results {:content "abc\ndef" :fn #(.count %)})
