@@ -39,17 +39,27 @@
     (spit read-file "")
     (streaming/save-as-text-files! d-stream (.toString write-file))
     @(streaming/start! context)
-    (Thread/sleep (:duration-ms opts 200))
+    (Thread/sleep (:sleep-ms opts 100))
     (spit read-file (str (:content opts "Hello World!")))
-    (Thread/sleep (:duration-ms opts 50))
     (streaming/await-termination! context)
     @(streaming/stop! context)
-    (written-content write-file)))
+    (let [result      (written-content write-file)
+          n-retries   (:n-retries opts 0)
+          max-retries (:max-tries opts 5)]
+      (if (and (= result "")
+               (< n-retries max-retries))
+        (do
+          (println "Retrying stream-results ...")
+          (stream-results (assoc opts :n-retries (inc n-retries))))
+        result))))
 
 (facts "On DStream testing" :streaming
-  (stream-results {:content (range 10)}) => (str (range 10) "\n")
-  (stream-results {:content "abc\ndef" :fn #(.count %)})
-  => #(->> (string/split % #"\n") (map edn/read-string) (every? int?)))
+  (doall
+    (for [_ (range 100)]
+      (do
+        (stream-results {:content (range 10)}) => (str (range 10) "\n")
+        (stream-results {:content "abc\ndef" :fn #(.count %)})
+        => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))))))
 
 (facts "On durations" :streaming
   (fact "durations instantiatable"
