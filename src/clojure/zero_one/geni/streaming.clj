@@ -10,8 +10,14 @@
     (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
     (org.apache.spark.streaming Milliseconds
                                 Minutes
-                                Seconds)
+                                Seconds
+                                Time)
     (org.apache.spark.sql SparkSession)))
+
+;; TODO: count-by-value-and-window, dstream, filter, flat-map-to-pair, flat-map-values
+;; TODO: foreachRDD, map, map-partitions-to-pair, map-to-pair, reduce, reduce-by-window
+;; TODO: repartition, slice, transform, transform-to-pair, transform-with,
+;; TODO: transform-with-to-pair, window, wrap-rdd
 
 (defn milliseconds [t] (Milliseconds/apply t))
 
@@ -53,8 +59,18 @@
 (defn context [d-stream]
   (.context d-stream))
 
+(defn ->time [value]
+  (if (instance? Time value) value (Time. value)))
+
+(defn compute [d-stream t]
+  (.compute d-stream (->time t)))
+
 (defn count [d-stream]
   (.count d-stream))
+
+(defn count-by-value
+  ([d-stream] (.countByValue d-stream))
+  ([d-stream num-partitions] (.countByValue d-stream num-partitions)))
 
 (defn flat-map [d-stream f]
   (.flatMap d-stream (function/flat-map-function f)))

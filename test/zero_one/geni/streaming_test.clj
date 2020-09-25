@@ -43,6 +43,7 @@
     @(streaming/start! context)
     (Thread/sleep (:sleep-ms opts 50))
     (spit read-file (str (:content opts "Hello World!")))
+    ((:action-fn opts identity) d-stream)
     (Thread/sleep (:sleep-ms opts 50))
     (streaming/await-termination! context)
     @(streaming/stop! context)
@@ -60,8 +61,19 @@
   (slurp "test/resources/rdd.txt"))
 
 (facts "On DStream methods" :streaming
-  (-> (stream-results {:content dummy-text
-                       :fn #(streaming/flat-map % aot/split-spaces)})
+  (stream-results {:content dummy-text
+                   :fn (comp streaming/count streaming/count-by-value)})
+  => #(string/includes? % "0\n")
+  (stream-results {:content dummy-text
+                   :fn (comp streaming/count #(streaming/count-by-value % 1))})
+  => #(string/includes? % "0\n")
+  (stream-results
+    {:content dummy-text
+     :action-fn #(assert (nil? (streaming/compute % (+ 100 (System/currentTimeMillis)))))})
+  => string?
+  (-> (stream-results
+        {:content dummy-text
+         :fn #(streaming/flat-map % aot/split-spaces)})
       (string/split #"\n")
       count)
   => pos?)
