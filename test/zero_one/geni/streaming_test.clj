@@ -4,9 +4,11 @@
     [clojure.string :as string]
     [clojure.java.io :as io]
     [midje.sweet :refer [facts fact throws =>]]
+    [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults :as defaults]
     [zero-one.geni.streaming :as streaming])
   (:import
+    (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
     (org.apache.spark.streaming Duration StreamingContext)))
 
 (defn create-random-temp-file! [file-name]
@@ -53,6 +55,16 @@
           (stream-results (assoc opts :n-retries (inc n-retries))))
         result))))
 
+(def dummy-text
+  (slurp "test/resources/rdd.txt"))
+
+(facts "On DStream methods" :streaming
+  (-> (stream-results {:content dummy-text
+                       :fn #(streaming/flat-map % aot/split-spaces)})
+      (string/split #"\n")
+      count)
+  => 522)
+
 (facts "On DStream testing" :streaming
   (stream-results {:content (range 10) :fn streaming/cache})
   => (str (range 10) "\n")
@@ -62,8 +74,7 @@
   (stream-results {:content "abc\ndef" :fn streaming/count})
   => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))
   (stream-results {:content "abc\ndef" :fn streaming/glom})
-  ;; TODO: chain with other methods
-  => #(string/includes? % "Ljava.lang.String")
+  => #(string/includes? % "[abc")
   (stream-results {:content "abc\ndef" :fn streaming/persist})
   => "abc\ndef\n"
   (stream-results {:content "abc\ndef"
@@ -88,10 +99,11 @@
 (facts "On StreamingContext" :streaming
   (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
     (fact "streaming context instantiatable"
-      context => (partial instance? StreamingContext))
+      context => (partial instance? JavaStreamingContext))
     (fact "retrieving context from a d-stream"
       (let [d-stream (streaming/socket-text-stream context
                                                    "localhost"
                                                    9999
                                                    streaming/memory-only)]
+        d-stream => (partial instance? JavaDStream)
         (streaming/context d-stream) => (partial instance? StreamingContext)))))
