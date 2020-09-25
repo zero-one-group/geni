@@ -17,7 +17,7 @@
     [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
     [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
 
-(defproject zero.one/geni "0.0.27"
+(defproject zero.one/geni "0.0.29"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
@@ -38,7 +38,7 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[midje "1.9.9"]]
          :plugins [[lein-ancient "0.6.15"]
-                   [lein-cloverage "1.2.0"]
+                   [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]]
          :aot [zero-one.geni.rdd.function
                zero-one.geni.aot-functions]}}

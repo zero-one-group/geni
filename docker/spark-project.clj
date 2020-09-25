@@ -10,7 +10,7 @@
                  ;; Dev
                  [expound "0.8.5"]
                  [lein-ancient "0.6.15"]
-                 [lein-cloverage "1.1.2"]
+                 [lein-cloverage "1.2.1"]
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
                  ;; Spark

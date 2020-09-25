@@ -39,11 +39,19 @@
     (spit read-file "")
     (streaming/save-as-text-files! d-stream (.toString write-file))
     @(streaming/start! context)
-    (Thread/sleep (* 2 (:duration-ms opts 100)))
+    (Thread/sleep (:sleep-ms opts 100))
     (spit read-file (str (:content opts "Hello World!")))
     (streaming/await-termination! context)
     @(streaming/stop! context)
-    (written-content write-file)))
+    (let [result      (written-content write-file)
+          n-retries   (:n-retries opts 0)
+          max-retries (:max-tries opts 5)]
+      (if (and (= result "")
+               (< n-retries max-retries))
+        (do
+          (println "Retrying stream-results ...")
+          (stream-results (assoc opts :n-retries (inc n-retries))))
+        result))))
 
 (facts "On DStream testing" :streaming
   (stream-results {:content (range 10) :fn streaming/cache})
