@@ -3,13 +3,21 @@
                             print])
   (:require
     [potemkin :refer [import-vars]]
-    [zero-one.geni.storage])
+    [zero-one.geni.rdd.function :as function]
+    [zero-one.geni.storage]
+    [zero-one.geni.spark-context :as spark-context])
   (:import
+    (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
     (org.apache.spark.streaming Milliseconds
                                 Minutes
                                 Seconds
-                                StreamingContext)
+                                Time)
     (org.apache.spark.sql SparkSession)))
+
+;; TODO: count-by-value-and-window, dstream, filter, flat-map-to-pair, flat-map-values
+;; TODO: foreachRDD, map, map-partitions-to-pair, map-to-pair, reduce, reduce-by-window
+;; TODO: repartition, slice, transform, transform-to-pair, transform-with,
+;; TODO: transform-with-to-pair, window, wrap-rdd
 
 (defn milliseconds [t] (Milliseconds/apply t))
 
@@ -19,7 +27,7 @@
 
 (defmulti streaming-context (fn [head & _] (class head)))
 (defmethod streaming-context SparkSession [spark duration]
-  (StreamingContext. (.sparkContext spark) duration))
+  (JavaStreamingContext. (spark-context/java-spark-context spark) duration))
 
 (defn socket-text-stream [context hostname port storage]
   (.socketTextStream context hostname port storage))
@@ -27,7 +35,10 @@
 (defn text-file-stream [context path]
   (.textFileStream context path))
 
-(defn save-as-text-files! [d-stream path]
+(defmulti save-as-text-files! (fn [head & _] (class head)))
+(defmethod save-as-text-files! JavaDStream [d-stream path]
+  (save-as-text-files! (.dstream d-stream) path))
+(defmethod save-as-text-files! :default [d-stream path]
   (.saveAsTextFiles d-stream path ""))
 
 (defn start! [context]
@@ -48,8 +59,21 @@
 (defn context [d-stream]
   (.context d-stream))
 
+(defn ->time [value]
+  (if (instance? Time value) value (Time. value)))
+
+(defn compute [d-stream t]
+  (.compute d-stream (->time t)))
+
 (defn count [d-stream]
   (.count d-stream))
+
+(defn count-by-value
+  ([d-stream] (.countByValue d-stream))
+  ([d-stream num-partitions] (.countByValue d-stream num-partitions)))
+
+(defn flat-map [d-stream f]
+  (.flatMap d-stream (function/flat-map-function f)))
 
 (defn glom [d-stream]
   (.glom d-stream))
