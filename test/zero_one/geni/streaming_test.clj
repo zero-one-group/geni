@@ -49,8 +49,10 @@
     @(streaming/stop! context)
     (let [result      (written-content write-file)
           n-retries   (:n-retries opts 0)
-          max-retries (:max-tries opts 5)]
-      (if (and (= result "")
+          max-retries (:max-tries opts 5)
+          expected    (:expected opts result)]
+      (if (and (or (= result "")
+                   (not= result expected))
                (< n-retries max-retries))
         (do
           (println "Retrying stream-results ...")
@@ -61,15 +63,18 @@
   (slurp "test/resources/rdd.txt"))
 
 (facts "On DStream methods" :streaming
-  (stream-results {:content dummy-text
-                   :fn (comp streaming/count streaming/count-by-value)})
-  => #(string/includes? % "0\n")
-  (stream-results {:content dummy-text
-                   :fn (comp streaming/count #(streaming/count-by-value % 1))})
+  (stream-results
+    {:content dummy-text
+     :fn (comp streaming/count streaming/count-by-value)})
   => #(string/includes? % "0\n")
   (stream-results
     {:content dummy-text
-     :action-fn #(assert (nil? (streaming/compute % (+ 100 (System/currentTimeMillis)))))})
+     :fn (comp streaming/count #(streaming/count-by-value % 1))})
+  => #(string/includes? % "0\n")
+  (stream-results
+    {:content dummy-text
+     :action-fn #(let [now (System/currentTimeMillis)]
+                   (assert (nil? (streaming/compute % (+ 100 now)))))})
   => string?
   (-> (stream-results
         {:content dummy-text
@@ -79,27 +84,46 @@
   => pos?)
 
 (facts "On DStream testing" :streaming
-  (stream-results {:content (range 10) :fn streaming/cache})
+  (stream-results
+    {:content (range 10)
+     :fn streaming/cache})
   => (str (range 10) "\n")
-  (stream-results {:content (range 10)
-                   :fn #(streaming/checkpoint % (streaming/milliseconds 200))})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/checkpoint % (streaming/milliseconds 200))})
   => (str (range 10) "\n")
-  (stream-results {:content "abc\ndef" :fn streaming/count})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/count})
   => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))
-  (stream-results {:content "abc\ndef" :fn streaming/glom})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/glom})
   => #(string/includes? % "[abc")
-  (stream-results {:content "abc\ndef" :fn streaming/persist})
-  => #(string/includes? % "abc\n")
-  (stream-results {:content "abc\ndef"
-                   :fn #(streaming/persist % streaming/memory-only)})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/persist
+     :expected "abc\ndef\n"})
   => "abc\ndef\n"
-  (stream-results {:content (range 10) :fn streaming/print})
+  (stream-results
+    {:content "abc\ndef"
+     :fn #(streaming/persist % streaming/memory-only)})
+  => "abc\ndef\n"
+  (stream-results
+    {:content (range 10)
+     :fn streaming/print})
   => (throws java.lang.NullPointerException)
-  (stream-results {:content (range 10) :fn #(streaming/print % 2)})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/print % 2)})
   => (throws java.lang.NullPointerException)
-  (stream-results {:content (range 10) :fn #(streaming/union % %)})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/union % %)})
   => "(0 1 2 3 4 5 6 7 8 9)\n(0 1 2 3 4 5 6 7 8 9)\n"
-  (stream-results {:content (range 10) :fn streaming/slide-duration})
+  (stream-results
+    {:content (range 10)
+     :fn streaming/slide-duration})
   ;;; TODO: chain with other method
   => (throws java.lang.IllegalArgumentException))
 
