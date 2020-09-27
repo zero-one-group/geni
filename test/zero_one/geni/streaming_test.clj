@@ -6,6 +6,7 @@
     [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults :as defaults]
+    [zero-one.geni.rdd :as rdd]
     [zero-one.geni.streaming :as streaming])
   (:import
     (org.apache.spark.streaming Duration StreamingContext)
@@ -65,6 +66,39 @@
   (slurp "test/resources/rdd.txt"))
 
 (facts "On DStream methods" :streaming
+  (stream-results
+    {:content dummy-text
+     :fn #(-> %
+              (streaming/repartition 2)
+              (streaming/map count)
+              (streaming/reduce +))
+     :expected "2709\n"})
+  => "2709\n"
+  (stream-results
+    {:content dummy-text
+     :fn #(-> %
+              (streaming/map-partitions-to-pair aot/mapcat-split-spaces)
+              (streaming/reduce-by-key +)
+              streaming/->java-dstream)
+     :finish-fn #(count (string/split % #"\n"))
+     :expected 23})
+  => 23
+  (stream-results
+    {:content dummy-text
+     :fn #(streaming/map-partitions % aot/map-split-spaces)
+     :finish-fn #(->> (string/split % #"\n")
+                      (map count)
+                      (reduce +))
+     :expected 2313})
+  => 2313
+  (stream-results
+    {:content dummy-text
+     :fn #(streaming/map % count)
+     :finish-fn #(->> (string/split % #"\n")
+                      (map edn/read-string)
+                      (reduce +))
+     :expected 2709})
+  => 2709
   (stream-results
     {:content dummy-text
      :fn #(-> %
@@ -172,4 +206,5 @@
                                             streaming/memory-only)]
         dstream => (partial instance? JavaDStream)
         (streaming/dstream dstream) => (partial instance? DStream)
-        (streaming/context dstream) => (partial instance? StreamingContext)))))
+        (streaming/context dstream) => (partial instance? StreamingContext)
+        (rdd/collect (streaming/wrap-rdd dstream (rdd/parallelise [1 2 3]))) => [1 2 3]))))
