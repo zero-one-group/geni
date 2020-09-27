@@ -9,7 +9,7 @@
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.streaming :as streaming])
   (:import
-    (org.apache.spark.streaming Duration StreamingContext)
+    (org.apache.spark.streaming Duration StreamingContext Time)
     (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
     (org.apache.spark.streaming.dstream DStream)))
 
@@ -78,7 +78,7 @@
     {:content dummy-text
      :fn #(-> %
               (streaming/map-partitions-to-pair aot/mapcat-split-spaces)
-              (streaming/reduce-by-key +)
+              (streaming/reduce-by-key + 2)
               streaming/->java-dstream)
      :finish-fn #(count (string/split % #"\n"))
      :expected 23})
@@ -189,11 +189,13 @@
   ;;; TODO: chain with other method
   => (throws java.lang.IllegalArgumentException))
 
-(facts "On durations" :streaming
+(facts "On durations and times" :streaming
   (fact "durations instantiatable"
     (mapv
       (fn [f] (f 1) => (partial instance? Duration))
-      [streaming/milliseconds streaming/seconds streaming/minutes])))
+      [streaming/milliseconds streaming/seconds streaming/minutes]))
+  (fact "time coerceable"
+    (streaming/->time 123) => (Time. 123)))
 
 (facts "On StreamingContext" :streaming
   (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
