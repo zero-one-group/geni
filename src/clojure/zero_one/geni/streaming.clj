@@ -1,5 +1,6 @@
 (ns zero-one.geni.streaming
   (:refer-clojure :exclude [count
+                            filter
                             print])
   (:require
     [potemkin :refer [import-vars]]
@@ -14,8 +15,8 @@
                                 Time)
     (org.apache.spark.sql SparkSession)))
 
-;; TODO: count-by-value-and-window, dstream, filter, flat-map-to-pair, flat-map-values
-;; TODO: foreachRDD, map, map-partitions-to-pair, map-to-pair, reduce, reduce-by-window
+;; TODO: count-by-value-and-window,
+;; TODO: foreachRDD, map, map-partitions-to-pair, reduce, reduce-by-window
 ;; TODO: repartition, slice, transform, transform-to-pair, transform-with,
 ;; TODO: transform-with-to-pair, window, wrap-rdd
 
@@ -36,10 +37,10 @@
   (.textFileStream context path))
 
 (defmulti save-as-text-files! (fn [head & _] (class head)))
-(defmethod save-as-text-files! JavaDStream [d-stream path]
-  (save-as-text-files! (.dstream d-stream) path))
-(defmethod save-as-text-files! :default [d-stream path]
-  (.saveAsTextFiles d-stream path ""))
+(defmethod save-as-text-files! JavaDStream [dstream path]
+  (save-as-text-files! (.dstream dstream) path))
+(defmethod save-as-text-files! :default [dstream path]
+  (.saveAsTextFiles dstream path ""))
 
 (defn start! [context]
   (future (.start context)))
@@ -50,47 +51,72 @@
 (defn stop! [context]
   (future (.stop context false true)))
 
-(defn cache [d-stream]
-  (.cache d-stream))
+(defn cache [dstream]
+  (.cache dstream))
 
-(defn checkpoint [d-stream interval]
-  (.checkpoint d-stream interval))
+(defn checkpoint [dstream interval]
+  (.checkpoint dstream interval))
 
-(defn context [d-stream]
-  (.context d-stream))
+(defn context [dstream]
+  (.context dstream))
 
 (defn ->time [value]
   (if (instance? Time value) value (Time. value)))
 
-(defn compute [d-stream t]
-  (.compute d-stream (->time t)))
+(defn compute [dstream t]
+  (.compute dstream (->time t)))
 
-(defn count [d-stream]
-  (.count d-stream))
+(defn count [dstream]
+  (.count dstream))
 
 (defn count-by-value
-  ([d-stream] (.countByValue d-stream))
-  ([d-stream num-partitions] (.countByValue d-stream num-partitions)))
+  ([dstream] (.countByValue dstream))
+  ([dstream num-partitions] (.countByValue dstream num-partitions)))
 
-(defn flat-map [d-stream f]
-  (.flatMap d-stream (function/flat-map-function f)))
+(def dstream (memfn dstream))
 
-(defn glom [d-stream]
-  (.glom d-stream))
+(defn filter [dstream f]
+  (.filter dstream (function/function f)))
+
+(defn flat-map [dstream f]
+  (.flatMap dstream (function/flat-map-function f)))
+
+(defn flat-map-to-pair [dstream f]
+  (.flatMapToPair dstream (function/pair-flat-map-function f)))
+(def mapcat-to-pair flat-map-to-pair)
+
+(defn flat-map-values [dstream f]
+  (.flatMapValues dstream (function/flat-map-function f)))
+
+(defn glom [dstream]
+  (.glom dstream))
+
+(defn map-to-pair [rdd f]
+  (.mapToPair rdd (function/pair-function f)))
 
 (defn persist
-  ([d-stream] (.persist d-stream))
-  ([d-stream storage-level] (.persist d-stream storage-level)))
+  ([dstream] (.persist dstream))
+  ([dstream storage-level] (.persist dstream storage-level)))
 
 (defn print
-  ([d-stream] (.print d-stream))
-  ([d-stream num] (.print d-stream num)))
+  ([dstream] (.print dstream))
+  ([dstream num] (.print dstream num)))
 
-(defn slide-duration [d-stream]
-  (.slideDuration d-stream))
+(defn slide-duration [dstream]
+  (.slideDuration dstream))
 
 (defn union [left right]
   (.union left right))
+
+;; Pair DStream
+(defn ->java-dstream [dstream]
+  (.toJavaDStream dstream))
+
+(defn reduce-by-key
+  ([dstream f]
+   (.reduceByKey dstream (function/function2 f)))
+  ([dstream f partitions-or-partitioner]
+   (.reduceByKey dstream (function/function2 f) partitions-or-partitioner)))
 
 (import-vars
   [zero-one.geni.storage

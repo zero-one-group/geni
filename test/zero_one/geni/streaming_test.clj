@@ -1,15 +1,16 @@
 (ns zero-one.geni.streaming-test
   (:require
     [clojure.edn :as edn]
-    [clojure.string :as string]
     [clojure.java.io :as io]
+    [clojure.string :as string]
     [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.aot-functions :as aot]
     [zero-one.geni.defaults :as defaults]
     [zero-one.geni.streaming :as streaming])
   (:import
+    (org.apache.spark.streaming Duration StreamingContext)
     (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
-    (org.apache.spark.streaming Duration StreamingContext)))
+    (org.apache.spark.streaming.dstream DStream)))
 
 (defn create-random-temp-file! [file-name]
   (let [temp-dir (System/getProperty "java.io.tmpdir")
@@ -37,69 +38,120 @@
         input-stream   (streaming/text-file-stream
                          context
                          (-> read-file .getParent .toString))
-        d-stream        ((:fn opts identity) input-stream)]
+        dstream        ((:fn opts identity) input-stream)]
     (spit read-file "")
-    (streaming/save-as-text-files! d-stream (.toString write-file))
+    (streaming/save-as-text-files! dstream (.toString write-file))
     @(streaming/start! context)
     (Thread/sleep (:sleep-ms opts 50))
     (spit read-file (str (:content opts "Hello World!")))
-    ((:action-fn opts identity) d-stream)
+    ((:action-fn opts identity) dstream)
     (Thread/sleep (:sleep-ms opts 50))
     (streaming/await-termination! context)
     @(streaming/stop! context)
     (let [result      (written-content write-file)
           n-retries   (:n-retries opts 0)
-          max-retries (:max-tries opts 5)]
-      (if (and (= result "")
+          max-retries (:max-tries opts 5)
+          expected    (:expected opts result)
+          finish-fn   (:finish-fn opts identity)]
+      (if (and (or (= result "")
+                   (not= (finish-fn result) expected))
                (< n-retries max-retries))
         (do
           (println "Retrying stream-results ...")
           (stream-results (assoc opts :n-retries (inc n-retries))))
-        result))))
+        (finish-fn result)))))
 
 (def dummy-text
   (slurp "test/resources/rdd.txt"))
 
 (facts "On DStream methods" :streaming
-  (stream-results {:content dummy-text
-                   :fn (comp streaming/count streaming/count-by-value)})
-  => #(string/includes? % "0\n")
-  (stream-results {:content dummy-text
-                   :fn (comp streaming/count #(streaming/count-by-value % 1))})
+  (stream-results
+    {:content dummy-text
+     :fn #(-> %
+              (streaming/map-to-pair aot/to-pair)
+              (streaming/flat-map-values aot/to-pair)
+              streaming/->java-dstream)
+     :finish-fn #(-> % (string/split #"\n") distinct count)
+     :expected 6})
+  => 6
+  (stream-results
+    {:content dummy-text
+     :fn #(-> %
+              (streaming/flat-map-to-pair aot/split-spaces-and-pair)
+              (streaming/reduce-by-key +)
+              streaming/->java-dstream)
+     :finish-fn #(-> % (string/split #"\n") distinct count)
+     :expected 23})
+  => 23
+  (stream-results
+    {:content dummy-text
+     :fn #(-> %
+              (streaming/flat-map aot/split-spaces)
+              (streaming/filter aot/equals-lewis))
+     :finish-fn #(set (string/split % #"\n"))
+     :expected #{"Lewis"}})
+  => #{"Lewis"}
+  (stream-results
+    {:content dummy-text
+     :fn (comp streaming/count streaming/count-by-value)})
   => #(string/includes? % "0\n")
   (stream-results
     {:content dummy-text
-     :action-fn #(assert (nil? (streaming/compute % (+ 100 (System/currentTimeMillis)))))})
+     :fn (comp streaming/count #(streaming/count-by-value % 1))})
+  => #(string/includes? % "0\n")
+  (stream-results
+    {:content dummy-text
+     :action-fn #(let [now (System/currentTimeMillis)]
+                   (assert (nil? (streaming/compute % (+ 100 now)))))})
   => string?
-  (-> (stream-results
-        {:content dummy-text
-         :fn #(streaming/flat-map % aot/split-spaces)})
-      (string/split #"\n")
-      count)
-  => pos?)
+  (stream-results
+    {:content dummy-text
+     :fn #(streaming/flat-map % aot/split-spaces)
+     :finish-fn #(count (string/split % #"\n"))
+     :expected 522})
+  => 522)
 
 (facts "On DStream testing" :streaming
-  (stream-results {:content (range 10) :fn streaming/cache})
+  (stream-results
+    {:content (range 10)
+     :fn streaming/cache})
   => (str (range 10) "\n")
-  (stream-results {:content (range 10)
-                   :fn #(streaming/checkpoint % (streaming/milliseconds 200))})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/checkpoint % (streaming/milliseconds 200))})
   => (str (range 10) "\n")
-  (stream-results {:content "abc\ndef" :fn streaming/count})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/count})
   => #(->> (string/split % #"\n") (map edn/read-string) (every? int?))
-  (stream-results {:content "abc\ndef" :fn streaming/glom})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/glom})
   => #(string/includes? % "[abc")
-  (stream-results {:content "abc\ndef" :fn streaming/persist})
-  => #(string/includes? % "abc\n")
-  (stream-results {:content "abc\ndef"
-                   :fn #(streaming/persist % streaming/memory-only)})
+  (stream-results
+    {:content "abc\ndef"
+     :fn streaming/persist
+     :expected "abc\ndef\n"})
   => "abc\ndef\n"
-  (stream-results {:content (range 10) :fn streaming/print})
+  (stream-results
+    {:content "abc\ndef"
+     :fn #(streaming/persist % streaming/memory-only)})
+  => "abc\ndef\n"
+  (stream-results
+    {:content (range 10)
+     :fn streaming/print})
   => (throws java.lang.NullPointerException)
-  (stream-results {:content (range 10) :fn #(streaming/print % 2)})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/print % 2)})
   => (throws java.lang.NullPointerException)
-  (stream-results {:content (range 10) :fn #(streaming/union % %)})
+  (stream-results
+    {:content (range 10)
+     :fn #(streaming/union % %)})
   => "(0 1 2 3 4 5 6 7 8 9)\n(0 1 2 3 4 5 6 7 8 9)\n"
-  (stream-results {:content (range 10) :fn streaming/slide-duration})
+  (stream-results
+    {:content (range 10)
+     :fn streaming/slide-duration})
   ;;; TODO: chain with other method
   => (throws java.lang.IllegalArgumentException))
 
@@ -113,10 +165,11 @@
   (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
     (fact "streaming context instantiatable"
       context => (partial instance? JavaStreamingContext))
-    (fact "retrieving context from a d-stream"
-      (let [d-stream (streaming/socket-text-stream context
-                                                   "localhost"
-                                                   9999
-                                                   streaming/memory-only)]
-        d-stream => (partial instance? JavaDStream)
-        (streaming/context d-stream) => (partial instance? StreamingContext)))))
+    (fact "retrieving context from a dstream"
+      (let [dstream (streaming/socket-text-stream context
+                                            "localhost"
+                                            9999
+                                            streaming/memory-only)]
+        dstream => (partial instance? JavaDStream)
+        (streaming/dstream dstream) => (partial instance? DStream)
+        (streaming/context dstream) => (partial instance? StreamingContext)))))
