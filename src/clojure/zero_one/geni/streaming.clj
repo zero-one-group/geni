@@ -1,7 +1,9 @@
 (ns zero-one.geni.streaming
   (:refer-clojure :exclude [count
                             filter
-                            print])
+                            map
+                            print
+                            reduce])
   (:require
     [potemkin :refer [import-vars]]
     [zero-one.geni.rdd.function :as function]
@@ -16,9 +18,9 @@
     (org.apache.spark.sql SparkSession)))
 
 ;; TODO: count-by-value-and-window,
-;; TODO: foreachRDD, map, map-partitions-to-pair, reduce, reduce-by-window
-;; TODO: repartition, slice, transform, transform-to-pair, transform-with,
-;; TODO: transform-with-to-pair, window, wrap-rdd
+;; TODO: foreachRDD, reduce-by-window
+;; TODO: slice, transform, transform-to-pair, transform-with,
+;; TODO: transform-with-to-pair, window
 
 (defn milliseconds [t] (Milliseconds/apply t))
 
@@ -91,8 +93,17 @@
 (defn glom [dstream]
   (.glom dstream))
 
-(defn map-to-pair [rdd f]
-  (.mapToPair rdd (function/pair-function f)))
+(defn map [dstream f]
+  (.map dstream (function/function f)))
+
+(defn map-partitions [dstream f]
+  (.mapPartitions dstream (function/flat-map-function f)))
+
+(defn map-partitions-to-pair [dstream f]
+  (.mapPartitionsToPair dstream (function/pair-flat-map-function f)))
+
+(defn map-to-pair [dstream f]
+  (.mapToPair dstream (function/pair-function f)))
 
 (defn persist
   ([dstream] (.persist dstream))
@@ -102,11 +113,20 @@
   ([dstream] (.print dstream))
   ([dstream num] (.print dstream num)))
 
+(defn reduce [dstream f]
+  (.reduce dstream (function/function2 f)))
+
+(defn repartition [dstream num-partitions]
+  (.repartition dstream num-partitions))
+
 (defn slide-duration [dstream]
   (.slideDuration dstream))
 
 (defn union [left right]
   (.union left right))
+
+(defn wrap-rdd [dstream rdd]
+  (.wrapRDD dstream (.rdd rdd)))
 
 ;; Pair DStream
 (defn ->java-dstream [dstream]
