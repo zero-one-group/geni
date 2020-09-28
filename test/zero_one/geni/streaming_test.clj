@@ -65,7 +65,7 @@
 (def dummy-text
   (slurp "test/resources/rdd.txt"))
 
-(facts "On DStream methods" :streaming
+(facts "On DStream methods" :streaming :slow
   (stream-results
     {:content dummy-text
      :fn #(-> %
@@ -145,7 +145,7 @@
      :expected 522})
   => 522)
 
-(facts "On DStream testing" :streaming
+(facts "On DStream testing" :streaming :slow
   (stream-results
     {:content (range 10)
      :fn streaming/cache})
@@ -198,7 +198,7 @@
     (streaming/->time 123) => (Time. 123)))
 
 (facts "On StreamingContext" :streaming
-  (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
+  (let [context (streaming/streaming-context @defaults/spark 1000)]
     (fact "streaming context instantiatable"
       context => (partial instance? JavaStreamingContext))
     (fact "retrieving context from a dstream"
