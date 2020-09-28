@@ -45,7 +45,8 @@
 (defn await-termination-or-timeout! [context timeout]
   (future (.awaitTerminationOrTimeout context timeout)))
 
-(def close (memfn close))
+; TODO: how to test without killing the SparkContext?
+; (def close (memfn close))
 
 (defn remember [context duration]
   (.remember context (->duration duration)))

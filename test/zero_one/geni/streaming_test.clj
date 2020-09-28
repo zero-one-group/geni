@@ -206,20 +206,24 @@
     (streaming/->time 123) => (Time. 123)))
 
 (facts "On StreamingContext" :streaming
-  (let [context (streaming/streaming-context @defaults/spark 1000)]
-    (fact "streaming context instantiatable"
-      context => (partial instance? JavaStreamingContext))
-    (fact "expected basic fields and methods"
-      (streaming/spark-context context) => (partial instance? JavaSparkContext)
-      (streaming/ssc context) => (partial instance? StreamingContext)
-      (.toString (streaming/state context)) => "INITIALIZED"
-      (streaming/checkpoint context "target/checkpoint/") => nil?)
-    (fact "retrieving context from a dstream"
-      (let [dstream (streaming/socket-text-stream context
-                                            "localhost"
-                                            9999
-                                            streaming/memory-only)]
-        dstream => (partial instance? JavaDStream)
-        (streaming/dstream dstream) => (partial instance? DStream)
-        (streaming/context dstream) => (partial instance? StreamingContext)
-        (rdd/collect (streaming/wrap-rdd dstream (rdd/parallelise [1 2 3]))) => [1 2 3]))))
+       (let [context (streaming/streaming-context @defaults/spark 1000)]
+         (fact "streaming context instantiatable"
+               context => (partial instance? JavaStreamingContext))
+         (fact "expected basic fields and methods"
+               (streaming/spark-context context) => (partial instance? JavaSparkContext)
+               (streaming/ssc context) => (partial instance? StreamingContext)
+               (.toString (streaming/state context)) => "INITIALIZED"
+               (streaming/checkpoint context "target/checkpoint/") => nil?
+               (streaming/remember context 1000) => nil?)
+         (fact "retrieving context from a dstream"
+               (let [dstream (streaming/socket-text-stream context
+                                                           "localhost"
+                                                           9999
+                                                           streaming/memory-only)]
+                 dstream => (partial instance? JavaDStream)
+                 (streaming/dstream dstream) => (partial instance? DStream)
+                 (streaming/context dstream) => (partial instance? StreamingContext)
+                 (->> [1 2 3]
+                      rdd/parallelise
+                      (streaming/wrap-rdd dstream)
+                      rdd/collect) => [1 2 3]))))
