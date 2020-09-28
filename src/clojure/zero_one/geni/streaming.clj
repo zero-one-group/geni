@@ -45,8 +45,7 @@
 (defn await-termination-or-timeout! [context timeout]
   (future (.awaitTerminationOrTimeout context timeout)))
 
-(defn close [context]
-  (.close context))
+(def close (memfn close))
 
 (defn remember [context duration]
   (.remember context (->duration duration)))
