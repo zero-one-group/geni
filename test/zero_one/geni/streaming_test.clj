@@ -9,6 +9,7 @@
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.streaming :as streaming])
   (:import
+    (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.streaming Duration StreamingContext Time)
     (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
     (org.apache.spark.streaming.dstream DStream)))
@@ -47,7 +48,7 @@
     (spit read-file (str (:content opts "Hello World!")))
     ((:action-fn opts identity) dstream)
     (Thread/sleep (:sleep-ms opts 50))
-    (streaming/await-termination! context)
+    ((:terminate-fn opts streaming/await-termination!) context)
     @(streaming/stop! context)
     (let [result      (written-content write-file)
           n-retries   (:n-retries opts 0)
@@ -65,7 +66,7 @@
 (def dummy-text
   (slurp "test/resources/rdd.txt"))
 
-(facts "On DStream methods" :streaming
+(facts "On DStream methods" :streaming :slow
   (stream-results
     {:content dummy-text
      :fn #(-> %
@@ -140,14 +141,21 @@
   => string?
   (stream-results
     {:content dummy-text
+     :action-fn #(let [now (System/currentTimeMillis)]
+                   (assert (nil? (streaming/compute %
+                                                    (streaming/->time (+ 100 now))))))})
+  => string?
+  (stream-results
+    {:content dummy-text
      :fn #(streaming/flat-map % aot/split-spaces)
      :finish-fn #(count (string/split % #"\n"))
      :expected 522})
   => 522)
 
-(facts "On DStream testing" :streaming
+(facts "On DStream testing" :streaming :slow
   (stream-results
     {:content (range 10)
+     :terminate-fn #(streaming/await-termination-or-timeout! % 100000)
      :fn streaming/cache})
   => (str (range 10) "\n")
   (stream-results
@@ -198,15 +206,24 @@
     (streaming/->time 123) => (Time. 123)))
 
 (facts "On StreamingContext" :streaming
-  (let [context (streaming/streaming-context @defaults/spark (streaming/seconds 1))]
-    (fact "streaming context instantiatable"
-      context => (partial instance? JavaStreamingContext))
-    (fact "retrieving context from a dstream"
-      (let [dstream (streaming/socket-text-stream context
-                                            "localhost"
-                                            9999
-                                            streaming/memory-only)]
-        dstream => (partial instance? JavaDStream)
-        (streaming/dstream dstream) => (partial instance? DStream)
-        (streaming/context dstream) => (partial instance? StreamingContext)
-        (rdd/collect (streaming/wrap-rdd dstream (rdd/parallelise [1 2 3]))) => [1 2 3]))))
+       (let [context (streaming/streaming-context @defaults/spark 1000)]
+         (fact "streaming context instantiatable"
+               context => (partial instance? JavaStreamingContext))
+         (fact "expected basic fields and methods"
+               (streaming/spark-context context) => (partial instance? JavaSparkContext)
+               (streaming/ssc context) => (partial instance? StreamingContext)
+               (.toString (streaming/state context)) => "INITIALIZED"
+               (streaming/checkpoint context "target/checkpoint/") => nil?
+               (streaming/remember context 1000) => nil?)
+         (fact "retrieving context from a dstream"
+               (let [dstream (streaming/socket-text-stream context
+                                                           "localhost"
+                                                           9999
+                                                           streaming/memory-only)]
+                 dstream => (partial instance? JavaDStream)
+                 (streaming/dstream dstream) => (partial instance? DStream)
+                 (streaming/context dstream) => (partial instance? StreamingContext)
+                 (->> [1 2 3]
+                      rdd/parallelise
+                      (streaming/wrap-rdd dstream)
+                      rdd/collect) => [1 2 3]))))
