@@ -36,7 +36,8 @@
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
-   :dev {:dependencies [[enlive "1.1.6"]
+   :dev {:dependencies [[com.taoensso/nippy "3.0.0"]
+                        [enlive "1.1.6"]
                         [midje "1.9.9"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
