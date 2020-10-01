@@ -138,3 +138,19 @@
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b" "c"]
       (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]])))
+
+(facts "On spark range"
+  (fact "should create simple datasets"
+    (let [ds (g/range 3)]
+      (g/column-names ds) => ["id"]
+      (g/collect ds) => [0 1 2])
+    (let [ds (g/range 3 5)]
+      (g/column-names ds) => ["id"]
+      (g/collect ds) => [3 4])
+    (let [ds (g/range 10 20 3)]
+      (g/column-names ds) => ["id"]
+      (g/collect ds) => [10 13 16 19])
+    (let [ds (g/range 0 100 1 5)]
+      (g/column-names ds) => ["id"]
+      (g/collect ds) => (range 100)
+      (count (g/partitions ds)) => 5)))

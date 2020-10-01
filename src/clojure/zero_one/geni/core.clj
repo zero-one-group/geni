@@ -51,6 +51,7 @@
                             rand
                             rand-int
                             rand-nth
+                            range
                             remove
                             rename-keys
                             reverse
@@ -398,6 +399,7 @@
    create-dataframe
    map->dataset
    map-type
+   range
    records->dataset
    struct-field
    struct-type
