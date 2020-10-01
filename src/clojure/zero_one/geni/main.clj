@@ -42,23 +42,6 @@
 
 (comment
 
-  (require '[zero-one.geni.defaults :as defaults])
-  (import '(org.apache.spark.streaming Seconds StreamingContext))
-
-  (def streaming-context
-    (StreamingContext. (.sparkContext @defaults/spark) (Seconds/apply 1)))
-
-  (def lines
-    (.socketTextStream streaming-context "localhost" 9999 g/memory-only))
-
-  (.print lines)
-  (future
-    (.start streaming-context))
-  (future
-    (.awaitTermination streaming-context))
-  (.stop streaming-context true true)
-
-
   (require '[zero-one.geni.test-resources :refer [melbourne-df]])
   (def dataframe melbourne-df)
   (-> dataframe g/count)
@@ -66,69 +49,14 @@
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (every-pred :streaming (complement :slow)))
-  ;(autotest :filter (every-pred (complement :slow) (complement :repl)))
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
-  (import '(org.apache.spark.api.java JavaPairRDD))
   (->> (r/reflect Long)
        ;:members
        ;(filter #(= (:name %) 'socketTextStream))
        ;(mapv :name)
        ;sort
        clojure.pprint/pprint)
-
-
-  (require '[net.cgrand.enlive-html :as html])
-  (require '[camel-snake-kebab.core :refer [->kebab-case]])
-
-  (def url-prefix
-    "https://spark.apache.org/docs/latest/api/scala/org/apache/spark/")
-
-  (def url
-    ;(str url-prefix "sql/functions$.html")
-    (str url-prefix "streaming/api/java/JavaStreamingContext.html"))
-
-  (def parent-node
-    (html/html-resource (java.net.URL. url)))
-
-
-  ;; TODO: extract all fn names
-  (def fn-candidate-nodes
-    (html/select parent-node [:li]))
-
-  (defn extract-content [node selector]
-    (-> node (html/select selector) first :content))
-
-  (defn has-name? [node]
-    (extract-content node [:span.symbol :span.name]))
-
-  (defn has-result? [node]
-    (extract-content node [:span.symbol :span.result]))
-
-  (defn extract-name [node]
-    (-> node (html/select [:span.symbol :span.name]) first html/text))
-
-  (defn extract-params [node]
-    (-> node (html/select [:span.symbol :span.params]) first html/text))
-
-  (defn extract-result [node]
-    (-> node (html/select [:span.symbol :span.result]) first html/text))
-
-  (defn extract-comment [node]
-    (-> node (html/select [:div.fullcomment :p]) first html/text))
-
-  (->> fn-candidate-nodes
-       (filter (every-pred has-name? has-result?))
-       (map #(vector (->kebab-case (extract-name %))
-                     (str (extract-params %)
-                          (extract-result %)
-                          "\n"
-                          (extract-comment %))))
-       (into {}))
-
-  ;; TODO: go through all the Spark namespaces that matter.
-  ;; TODO: create a nested map of {namespace {fn-name comment}}.
-  ;; TODO: find a way to attach it to Geni fns.
 
   0)
