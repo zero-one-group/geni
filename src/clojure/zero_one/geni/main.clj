@@ -42,23 +42,6 @@
 
 (comment
 
-  (require '[zero-one.geni.defaults :as defaults])
-  (import '(org.apache.spark.streaming Seconds StreamingContext))
-
-  (def streaming-context
-    (StreamingContext. (.sparkContext @defaults/spark) (Seconds/apply 1)))
-
-  (def lines
-    (.socketTextStream streaming-context "localhost" 9999 g/memory-only))
-
-  (.print lines)
-  (future
-    (.start streaming-context))
-  (future
-    (.awaitTermination streaming-context))
-  (.stop streaming-context true true)
-
-
   (require '[zero-one.geni.test-resources :refer [melbourne-df]])
   (def dataframe melbourne-df)
   (-> dataframe g/count)
@@ -66,14 +49,12 @@
 
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (every-pred :streaming (complement :slow)))
-  ;(autotest :filter (every-pred (complement :slow) (complement :repl)))
 
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
-  (import '(org.apache.spark.api.java JavaPairRDD))
-  (->> (r/reflect streaming-context)
-       :members
-       (filter #(= (:name %) 'socketTextStream))
+  (->> (r/reflect Long)
+       ;:members
+       ;(filter #(= (:name %) 'socketTextStream))
        ;(mapv :name)
        ;sort
        clojure.pprint/pprint)
