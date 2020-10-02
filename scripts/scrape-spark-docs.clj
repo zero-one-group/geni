@@ -191,5 +191,3 @@
   (-> spark-docs :ml :regression keys)
 
   true)
-
-;; TODO: find a way to attach doc-maps to Geni fns.

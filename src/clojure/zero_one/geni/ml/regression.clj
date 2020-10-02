@@ -169,16 +169,3 @@
                   :solver              "adamW"}
         props     (-> (merge defaults params))]
     (interop/instantiate FMRegressor props)))
-
-(defn f
-  "abc"
-  [x]
-  x)
-
-(def g f)
-
-(-> f var meta :doc) ; => "abc"
-(-> g var meta :doc) ; => nil
-
-(def ^{:doc (-> f var meta :doc)} g f)
-(-> g var meta :doc) ; => "abc"
