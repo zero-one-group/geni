@@ -7,6 +7,11 @@
 (def spark-doc-url
   "https://spark.apache.org/docs/latest/api/scala/org/apache/spark/")
 
+(defn timestamp! []
+  (-> (java.util.Date.)
+      .toInstant
+      .toString))
+
 (defn polite-html-resource [url]
   (Thread/sleep 100)
   (html/html-resource (java.net.URL. url)))
@@ -42,12 +47,13 @@
   (->> (polite-html-resource url)
        fn-candidate-nodes
        (filter (every-pred has-name? has-result?))
-       (map #(vector (->kebab-case (extract-name %))
-                     (format "Params: %s\nResult%s\n%s\nSource: %s"
+       (map #(vector (keyword (->kebab-case (extract-name %)))
+                     (format "Params: %s\nResult%s\n%s\nSource: %s\nTimestamp: %s"
                              (extract-params %)
                              (extract-result %)
                              (extract-comment %)
-                             url)))
+                             url
+                             (timestamp!))))
        (into {})))
 
 (defn extract-title [node]
@@ -59,10 +65,11 @@
 (defn url->class-docs [url]
   (let [resource  (polite-html-resource url)
         fn-name   (->kebab-case (extract-title resource))
-        class-doc (format "%s\nSource: %s"
+        class-doc (format "%s\nSource: %s\nTimestamp: %s"
                           (extract-class-comment resource)
-                          url)]
-    {fn-name class-doc}))
+                          url
+                          (timestamp!))]
+    {(keyword fn-name) class-doc}))
 
 (def class-doc-url-map
   {:ml {:classification ["ml/classification/DecisionTreeClassifier.html"
@@ -163,7 +170,7 @@
                     :else            (url->map (prefix-url url-node))))))
          (into {}))))
 
-(defn -main []
+(defn scrape-spark-docs! []
   (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
         complete-docs (merge method-docs class-docs)]
@@ -174,12 +181,14 @@
 
 (comment
 
-  (-main)
+  (scrape-spark-docs!)
 
-  (def thawed
+  (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> thawed :ml :regression (#(% "fm-regressor")) println)
+  (-> spark-docs :ml :regression :fm-regressor (or "") println)
+
+  (-> spark-docs :ml :regression keys)
 
   true)
 
