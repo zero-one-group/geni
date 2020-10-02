@@ -87,7 +87,7 @@
   (nippy/freeze-to-file
     "target/docs.nippy"
     complete-docs
-    {:compressor nippy/lz4-compressor})
+    {:compressor nippy/lz4hc-compressor})
 
   (def thawed
     (nippy/thaw-from-file "target/docs.nippy"))
