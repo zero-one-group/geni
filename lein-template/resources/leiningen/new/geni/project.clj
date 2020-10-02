@@ -5,7 +5,7 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [zero.one/geni "0.0.30"]
-                 [expound "0.8.5"]
+                 [expound "0.8.6"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.0.1"]
                  [org.apache.spark/spark-hive_2.12 "3.0.1"]

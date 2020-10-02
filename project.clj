@@ -24,9 +24,10 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.1"]
-                 [expound "0.8.5"]
+                 [expound "0.8.6"]
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
+                 [com.taoensso/nippy "3.0.0"]
                  [nrepl "0.8.2"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]

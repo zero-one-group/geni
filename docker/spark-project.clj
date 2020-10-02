@@ -8,7 +8,7 @@
                  [reply "0.4.4"]
                  [zero.one/fxl "0.0.4"]
                  ;; Dev
-                 [expound "0.8.5"]
+                 [expound "0.8.6"]
                  [lein-ancient "0.6.15"]
                  [lein-cloverage "1.2.1"]
                  [lein-midje "3.2.1"]

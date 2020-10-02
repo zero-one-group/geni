@@ -24,9 +24,10 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.1"]
-                 [expound "0.8.5"]
+                 [expound "0.8.6"]
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
+                 [com.taoensso/nippy "3.0.0"]
                  [nrepl "0.8.2"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]
@@ -36,7 +37,8 @@
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
-   :dev {:dependencies [[midje "1.9.9"]]
+   :dev {:dependencies [[enlive "1.1.6"]
+                        [midje "1.9.9"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]]
