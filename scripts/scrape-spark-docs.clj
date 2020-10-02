@@ -4,6 +4,13 @@
     [net.cgrand.enlive-html :as html]
     [taoensso.nippy :as nippy]))
 
+(def spark-doc-url
+  "https://spark.apache.org/docs/latest/api/scala/org/apache/spark/")
+
+(defn polite-html-resource [url]
+  (Thread/sleep 100)
+  (html/html-resource (java.net.URL. url)))
+
 (defn fn-candidate-nodes [initial-node]
   (html/select initial-node [:li]))
 
@@ -32,8 +39,7 @@
   (extract-text node [:div.fullcomment :p]))
 
 (defn url->method-docs [url]
-  (Thread/sleep 100)
-  (->> (html/html-resource (java.net.URL. url))
+  (->> (polite-html-resource url)
        fn-candidate-nodes
        (filter (every-pred has-name? has-result?))
        (map #(vector (->kebab-case (extract-name %))
@@ -44,8 +50,88 @@
                              url)))
        (into {})))
 
-(def spark-doc-url
-  "https://spark.apache.org/docs/latest/api/scala/org/apache/spark/")
+(defn extract-title [node]
+  (extract-text node [:h1 :a]))
+
+(defn extract-class-comment [node]
+  (extract-text node [:div#comment :div.comment.cmt]))
+
+(defn url->class-docs [url]
+  (let [resource  (polite-html-resource url)
+        fn-name   (->kebab-case (extract-title resource))
+        class-doc (format "%s\nSource: %s"
+                          (extract-class-comment resource)
+                          url)]
+    {fn-name class-doc}))
+
+(def class-doc-url-map
+  {:ml {:classification ["ml/classification/DecisionTreeClassifier.html"
+                         "ml/classification/FMClassifier.html"
+                         "ml/classification/GBTClassifier.html"
+                         "ml/classification/LinearSVC.html"
+                         "ml/classification/LogisticRegression.html"
+                         "ml/classification/MultilayerPerceptronClassifier.html"
+                         "ml/classification/NaiveBayes.html"
+                         "ml/classification/OneVsRest.html"
+                         "ml/classification/RandomForestClassifier.html"]
+        :clustering ["ml/clustering/BisectingKMeans.html"
+                     "ml/clustering/GaussianMixture.html"
+                     "ml/clustering/KMeans.html"
+                     "ml/clustering/LDA.html"
+                     "ml/clustering/PowerIterationClustering.html"]
+        :tuning ["ml/tuning/CrossValidator.html"
+                 "ml/tuning/TrainValidationSplit.html"]
+        :evaluation ["ml/evaluation/BinaryClassificationEvaluator.html"
+                     "ml/evaluation/ClusteringEvaluator.html"
+                     "ml/evaluation/MulticlassClassificationEvaluator.html"
+                     "ml/evaluation/MultilabelClassificationEvaluator.html"
+                     "ml/evaluation/RankingEvaluator.html"
+                     "ml/evaluation/RegressionEvaluator.html"]
+        :regression ["ml/regression/AFTSurvivalRegression.html"
+                     "ml/regression/DecisionTreeRegressor.html"
+                     "ml/regression/FMRegressor.html"
+                     "ml/regression/GBTRegressor.html"
+                     "ml/regression/GeneralizedLinearRegression.html"
+                     "ml/regression/IsotonicRegression.html"
+                     "ml/regression/LinearRegression.html"
+                     "ml/regression/RandomForestRegressor.html"]
+        :recommendation ["ml/recommendation/ALS.html"]
+        :feature ["ml/feature/Binarizer.html"
+                  "ml/feature/BucketedRandomProjectionLSH.html"
+                  "ml/feature/Bucketizer.html"
+                  "ml/feature/ChiSqSelector.html"
+                  "ml/feature/CountVectorizer.html"
+                  "ml/feature/DCT.html"
+                  "ml/feature/ElementwiseProduct.html"
+                  "ml/feature/FeatureHasher.html"
+                  "ml/feature/HashingTF.html"
+                  "ml/feature/IDF.html"
+                  "ml/feature/Imputer.html"
+                  "ml/feature/IndexToString.html"
+                  "ml/feature/Interaction.html"
+                  "ml/feature/LabeledPoint.html"
+                  "ml/feature/MaxAbsScaler.html"
+                  "ml/feature/MinHashLSH.html"
+                  "ml/feature/MinMaxScaler.html"
+                  "ml/feature/NGram.html"
+                  "ml/feature/Normalizer.html"
+                  "ml/feature/OneHotEncoder.html"
+                  "ml/feature/PCA.html"
+                  "ml/feature/PolynomialExpansion.html"
+                  "ml/feature/QuantileDiscretizer.html"
+                  "ml/feature/RegexTokenizer.html"
+                  "ml/feature/RFormula.html"
+                  "ml/feature/RobustScaler.html"
+                  "ml/feature/SQLTransformer.html"
+                  "ml/feature/StandardScaler.html"
+                  "ml/feature/StopWordsRemover.html"
+                  "ml/feature/StringIndexer.html"
+                  "ml/feature/Tokenizer.html"
+                  "ml/feature/VectorAssembler.html"
+                  "ml/feature/VectorIndexer.html"
+                  "ml/feature/VectorSizeHint.html"
+                  "ml/feature/VectorSlicer.html"
+                  "ml/feature/Word2Vec.html"]}})
 
 (def method-doc-url-map
   {:core {:column    "sql/Column.html"
@@ -55,7 +141,6 @@
           :na-fns    "sql/DataFrameNaFunctions.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
           :window    "sql/expressions/Window.html"}
-   :ml {}
    :rdd {:rdd      "api/java/JavaRDD.html"
          :pair-rdd "api/java/JavaPairRDD.html"}
    :spark {:session "sql/SparkSession.html"
@@ -65,36 +150,37 @@
                :pair-dstream "streaming/api/java/JavaPairDStream.html"}})
 
 (defn walk-doc-map [url->map package-map]
-  (->> package-map
-       (map (fn [[path-key map-or-url]]
-              (vector path-key
-                      (if (map? map-or-url)
-                        (walk-doc-map url->map map-or-url)
-                        (url->map (str spark-doc-url map-or-url))))))
-       (into {})))
+  (letfn [(prefix-url [url] (str spark-doc-url url))]
+    (->> package-map
+         (map (fn [[path-key url-node]]
+                (vector
+                  path-key
+                  (cond
+                    (map? url-node)  (walk-doc-map url->map url-node)
+                    (coll? url-node) (->> url-node
+                                          (map (comp url->map prefix-url))
+                                          (apply merge))
+                    :else            (url->map (prefix-url url-node))))))
+         (into {}))))
 
-;; TODO: url->class-doc
-;; TODO: class-doc-url-map
-;; TODO: (def class-docs (walk-doc-map url->class-doc class-doc-url-map))
+(defn -main []
+  (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
+        method-docs   (walk-doc-map url->method-docs method-doc-url-map)
+        complete-docs (merge method-docs class-docs)]
+    (nippy/freeze-to-file
+      "resources/spark-docs.nippy"
+      complete-docs
+      {:compressor nippy/lz4hc-compressor})))
 
 (comment
 
-  (def method-docs (walk-doc-map url->method-docs method-doc-url-map))
-  (-> method-docs :spark :session (#(% "to-string")) print)
-
-  (def complete-docs (merge method-docs {}))
-
-  (nippy/freeze-to-file
-    "target/docs.nippy"
-    complete-docs
-    {:compressor nippy/lz4hc-compressor})
+  (-main)
 
   (def thawed
-    (nippy/thaw-from-file "target/docs.nippy"))
+    (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> thawed :spark :session (#(% "to-string")) println)
+  (-> thawed :ml :regression (#(% "fm-regressor")) println)
 
   true)
 
-;; TODO: what about storage level?
 ;; TODO: find a way to attach doc-maps to Geni fns.
