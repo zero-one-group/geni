@@ -47,4 +47,5 @@
   :repl-options {:init-ns zero-one.geni.main}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
+  :resource-paths ["resources"]
   :main ^:skip-aot zero-one.geni.main)
