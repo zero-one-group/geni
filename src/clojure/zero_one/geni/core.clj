@@ -80,6 +80,7 @@
     [zero-one.geni.core.polymorphic]
     [zero-one.geni.core.window]
     [zero-one.geni.interop]
+    [zero-one.geni.spark-context]
     [zero-one.geni.spark]
     [zero-one.geni.storage]))
 
@@ -93,6 +94,23 @@
   [zero-one.geni.spark
    create-spark-session
    spark-conf])
+
+(import-vars
+  [zero-one.geni.spark-context
+   app-name
+   binary-files
+   checkpoint-dir
+   conf
+   default-min-partitions
+   default-parallelism
+   jars
+   java-spark-context
+   master
+   resources
+   sc
+   spark-context
+   spark-home
+   version])
 
 (import-vars
   [zero-one.geni.core.column
