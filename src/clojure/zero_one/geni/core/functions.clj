@@ -12,6 +12,7 @@
                             when])
   (:require
     [zero-one.geni.core.column :refer [->col-array ->column]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map]])
   (:import
@@ -347,3 +348,7 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 (def var-samp variance)
+
+(docs/alter-docs-in-ns!
+  'zero-one.geni.core.functions
+  [(-> docs/spark-docs :core :functions)])

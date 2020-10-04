@@ -185,6 +185,8 @@
 
 (comment
 
+  (ns-publics 'scripts.scrape-spark-docs)
+
   (scrape-spark-docs!)
 
   (def spark-docs
