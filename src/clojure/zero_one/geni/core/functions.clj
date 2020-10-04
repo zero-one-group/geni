@@ -11,6 +11,7 @@
                             struct
                             when])
   (:require
+    [potemkin :refer [import-fn]]
     [zero-one.geni.core.column :refer [->col-array ->column]]
     [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
@@ -75,7 +76,6 @@
 (defn exists [expr predicate]
   (functions/exists (->column expr) (interop/->scala-function1 predicate)))
 (defn explode [expr] (functions/explode (->column expr)))
-(def explode-outer explode)
 (defn element-at [expr value]
   (functions/element_at (->column expr) (clojure.core/int value)))
 (defn flatten [expr] (functions/flatten (->column expr)))
@@ -99,7 +99,6 @@
 (defn map-zip-with [left right merge-fn]
   (functions/map_zip_with (->column left) (->column right) (interop/->scala-function3 merge-fn)))
 (defn posexplode [expr] (functions/posexplode (->column expr)))
-(def posexplode-outer posexplode)
 (defn reverse [expr]
   (functions/reverse (->column expr)))
 (defn schema-of-csv
@@ -147,7 +146,6 @@
   (functions/date_trunc fmt (->column expr)))
 (defn datediff [l-expr r-expr]
   (functions/datediff (->column l-expr) (->column r-expr)))
-(def date-diff datediff)
 (defn day-of-month [expr] (functions/dayofmonth (->column expr)))
 (defn day-of-week [expr] (functions/dayofweek (->column expr)))
 (defn day-of-year [expr] (functions/dayofyear (->column expr)))
@@ -167,14 +165,11 @@
 (defn to-date
   ([expr] (functions/to_date (->column expr)))
   ([expr date-format] (functions/to_date (->column expr) date-format)))
-(def ->date-col to-date)
 (defn to-timestamp
   ([expr] (functions/to_timestamp (->column expr)))
   ([expr date-format] (functions/to_timestamp (->column expr) date-format)))
-(def ->timestamp-col to-timestamp)
 (defn to-utc-timestamp [expr]
   (functions/to_timestamp (->column expr)))
-(def ->utc-timestamp to-utc-timestamp)
 (defn unix-timestamp
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
@@ -196,7 +191,6 @@
 (defn bin [expr] (functions/bin (->column expr)))
 (defn bround [expr] (functions/bround (->column expr)))
 (defn cbrt [expr] (functions/cbrt (->column expr)))
-(def cube-root cbrt)
 (defn ceil [expr] (functions/ceil (->column expr)))
 (defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
 (defn cos [expr] (functions/cos (->column expr)))
@@ -214,7 +208,6 @@
 (defn log2 [expr] (functions/log2 (->column expr)))
 (defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
 (defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
-(def ** pow)
 (defn radians [expr] (functions/radians (->column expr)))
 (defn rint [expr] (functions/rint (->column expr)))
 (defn round [expr] (functions/round (->column expr)))
@@ -222,7 +215,6 @@
 (defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
 (defn shift-right-unsigned [expr num-bits] (functions/shiftRightUnsigned (->column expr) num-bits))
 (defn signum [expr] (functions/signum (->column expr)))
-(def sign signum)
 (defn sin [expr] (functions/sin (->column expr)))
 (defn sinh [expr] (functions/sinh (->column expr)))
 (defn sqr [expr] (.multiply (->column expr) (->column expr)))
@@ -255,7 +247,6 @@
 (defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
 (defn negate [expr] (functions/negate (->column expr)))
 (defn not [expr] (functions/not (->column expr)))
-(def ! not)
 (defn randn
   ([] (functions/randn))
   ([seed] (functions/randn seed)))
@@ -336,19 +327,34 @@
 ;;;; Stats Functions
 (defn covar [l-expr r-expr]
   (functions/covar_samp (->column l-expr) (->column r-expr)))
-(def covar-samp covar)
 (defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
 (defn kurtosis [expr] (functions/kurtosis (->column expr)))
 (defn skewness [expr] (functions/skewness (->column expr)))
 (defn stddev [expr] (functions/stddev (->column expr)))
-(def stddev-samp stddev)
-(def std stddev)
 (defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
 (defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
-(def var-samp variance)
 
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.functions
   [(-> docs/spark-docs :core :functions)])
+
+;; Aliases
+(import-fn cbrt cube-root)
+(import-fn covar covar-samp)
+(import-fn datediff date-diff)
+(import-fn explode explode-outer)
+(import-fn not !)
+(import-fn posexplode posexplode-outer)
+(import-fn pow **)
+(import-fn signum sign)
+(import-fn stddev std)
+(import-fn stddev stddev-samp)
+(import-fn to-date ->date-col)
+(import-fn to-timestamp ->timestamp-col)
+(import-fn to-utc-timestamp ->utc-timestamp)
+(import-fn variance var-samp)
+
+;; TODO: address docless vars
+; (docs/docless-vars *ns*)
