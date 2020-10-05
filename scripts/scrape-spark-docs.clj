@@ -1,6 +1,7 @@
 (ns scripts.scrape-spark-docs
   (:require
     [camel-snake-kebab.core :refer [->kebab-case]]
+    [clojure.string :as string]
     [net.cgrand.enlive-html :as html]
     [taoensso.nippy :as nippy]
     [zero-one.geni.core :as g]))
@@ -33,7 +34,10 @@
   (has-content? node [:span.symbol :span.result]))
 
 (defn extract-text [node selector]
-  (-> node (html/select selector) first html/text (or "")))
+  ;(-> node (html/select selector) first html/text (or ""))
+  (->> (html/select node selector)
+       (mapv html/text)
+       (string/join "\n")))
 
 (defn extract-name [node]
   (extract-text node [:span.symbol :span.name]))
@@ -61,10 +65,10 @@
        (into {})))
 
 (defn extract-title [node]
-  (extract-text node [:h1 :a]))
+  (extract-text node [:h1 :> :a]))
 
 (defn extract-class-comment [node]
-  (extract-text node [:div#comment :div.comment.cmt]))
+  (extract-text node [:div#comment :div.comment.cmt :p]))
 
 (defn url->class-docs [url]
   (let [resource  (polite-html-resource url)
@@ -192,7 +196,7 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :ml :regression :fm-regressor (or "") println)
+  (-> spark-docs :ml :regression :fm-regressor println)
 
   (-> spark-docs :ml :regression keys)
 
