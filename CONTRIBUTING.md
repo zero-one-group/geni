@@ -24,6 +24,8 @@ To make sure that the project builds correctly, clone your forked repository and
 
 Note that, on macOS, you must allow file sharing for the temporary folders. To do this, go to Docker's Preferences > Resources > File Sharing and add `/var/folders/`.
 
+If your tests failed, the failure could come from Spark. In this case, it may be helpful to re-run your the tests with a more verbose log level for debugging purposes. Note that the default log level for Spark is `INFO`, which makes for a very noisy REPL, so Geni opts for `WARNING` as the default instead. Change the log level to `INFO` on the default `SparkSession` by adding the key-value pair `{:log-level "INFO"}` on the [`defaults.clj`](src/clojure/zero_one/geni/defaults.clj) source file.
+
 As much as possible, we would like to keep the test coverage close to (and ideally at) 100%. Much of the actual data work is done by Spark, so it should be sufficient to check that we are calling the right Spark functions and methods. There should also be zero lint errors and warnings.
 
 Once you are happy with the changes, run `make ci` once again to check that all the CI steps pass. Every pull request will additionally trigger [actions](https://github.com/zero-one-group/geni/blob/develop/.github/workflows/continuous-integration.yml) to check these conditions.
