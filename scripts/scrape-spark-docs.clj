@@ -2,10 +2,14 @@
   (:require
     [camel-snake-kebab.core :refer [->kebab-case]]
     [net.cgrand.enlive-html :as html]
-    [taoensso.nippy :as nippy]))
+    [taoensso.nippy :as nippy]
+    [zero-one.geni.core :as g]))
+
+(def spark-version (g/version))
 
 (def spark-doc-url
-  "https://spark.apache.org/docs/latest/api/scala/org/apache/spark/")
+  (format "https://spark.apache.org/docs/%s/api/scala/org/apache/spark/"
+          spark-version))
 
 (defn timestamp! []
   (-> (java.util.Date.)
