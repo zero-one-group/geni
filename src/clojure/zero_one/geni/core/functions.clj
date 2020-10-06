@@ -146,9 +146,9 @@
   (functions/date_trunc fmt (->column expr)))
 (defn datediff [l-expr r-expr]
   (functions/datediff (->column l-expr) (->column r-expr)))
-(defn day-of-month [expr] (functions/dayofmonth (->column expr)))
-(defn day-of-week [expr] (functions/dayofweek (->column expr)))
-(defn day-of-year [expr] (functions/dayofyear (->column expr)))
+(defn dayofmonth [expr] (functions/dayofmonth (->column expr)))
+(defn dayofweek [expr] (functions/dayofweek (->column expr)))
+(defn dayofyear [expr] (functions/dayofyear (->column expr)))
 (defn from-unixtime
   ([expr] (functions/from_unixtime (->column expr)))
   ([expr fmt] (functions/from_unixtime (->column expr) fmt)))
@@ -174,20 +174,22 @@
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
   ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
-(defn time-window
+(defn window
   ([time-expr duration] (functions/window (->column time-expr) duration))
   ([time-expr duration slide] (functions/window (->column time-expr) duration slide))
   ([time-expr duration slide start] (functions/window (->column time-expr) duration slide start)))
-(defn week-of-year [expr] (functions/weekofyear (->column expr)))
+(defn weekofyear [expr] (functions/weekofyear (->column expr)))
 (defn year [expr] (functions/year (->column expr)))
 
 ;;;; Maths Functions
-(def pi (functions/lit Math/PI))
+(def pi
+  "The double value that is closer than any other to pi, the ratio of the circumference of a circle to its diameter."
+  (functions/lit Math/PI))
 (defn abs [expr] (functions/abs (->column expr)))
 (defn acos [expr] (functions/acos (->column expr)))
 (defn asin [expr] (functions/asin (->column expr)))
 (defn atan [expr] (functions/atan (->column expr)))
-(defn atan2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
+(defn atan-2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
 (defn bin [expr] (functions/bin (->column expr)))
 (defn bround [expr] (functions/bround (->column expr)))
 (defn cbrt [expr] (functions/cbrt (->column expr)))
@@ -197,15 +199,15 @@
 (defn cosh [expr] (functions/cosh (->column expr)))
 (defn degrees [expr] (functions/degrees (->column expr)))
 (defn exp [expr] (functions/exp (->column expr)))
-(defn expm1 [expr] (functions/expm1 (->column expr)))
+(defn expm-1 [expr] (functions/expm1 (->column expr)))
 (defn factorial [expr] (functions/factorial (->column expr)))
 (defn floor [expr] (functions/floor (->column expr)))
 (defn hex [expr] (functions/hex (->column expr)))
 (defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
 (defn log [expr] (functions/log (->column expr)))
-(defn log10 [expr] (functions/log10 (->column expr)))
-(defn log1p [expr] (functions/log1p (->column expr)))
-(defn log2 [expr] (functions/log2 (->column expr)))
+(defn log-10 [expr] (functions/log10 (->column expr)))
+(defn log-1p [expr] (functions/log1p (->column expr)))
+(defn log-2 [expr] (functions/log2 (->column expr)))
 (defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
 (defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
 (defn radians [expr] (functions/radians (->column expr)))
@@ -217,19 +219,22 @@
 (defn signum [expr] (functions/signum (->column expr)))
 (defn sin [expr] (functions/sin (->column expr)))
 (defn sinh [expr] (functions/sinh (->column expr)))
-(defn sqr [expr] (.multiply (->column expr) (->column expr)))
+(defn sqr
+  "Returns the value of the first argument raised to the power of two."
+  [expr]
+  (.multiply (->column expr) (->column expr)))
 (defn sqrt [expr] (functions/sqrt (->column expr)))
 (defn tan [expr] (functions/tan (->column expr)))
 (defn tanh [expr] (functions/tanh (->column expr)))
 (defn unhex [expr] (functions/unhex (->column expr)))
 
 ;;;; Misc Functions
-(defn crc32 [expr] (functions/crc32 (->column expr)))
+(defn crc-32 [expr] (functions/crc32 (->column expr)))
 (defn hash [& exprs] (functions/hash (->col-array exprs)))
-(defn md5 [expr] (functions/md5 (->column expr)))
-(defn sha1 [expr] (functions/sha1 (->column expr)))
-(defn sha2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
-(defn xxhash64 [& exprs] (functions/xxhash64 (->col-array exprs)))
+(defn md-5 [expr] (functions/md5 (->column expr)))
+(defn sha-1 [expr] (functions/sha1 (->column expr)))
+(defn sha-2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
+(defn xxhash-64 [& exprs] (functions/xxhash64 (->col-array exprs)))
 
 ;;;; Non-Agg Functions
 (defn array [& exprs]
@@ -270,7 +275,7 @@
 
 ;;;; String Functions
 (defn ascii [expr] (functions/ascii (->column expr)))
-(defn base64 [expr] (functions/base64 (->column expr)))
+(defn base-64 [expr] (functions/base64 (->column expr)))
 (defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
 (defn decode [expr charset] (functions/decode (->column expr) charset))
 (defn encode [expr charset] (functions/encode (->column expr) charset))
@@ -307,7 +312,7 @@
 (defn translate [expr match replacement]
   (functions/translate (->column expr) match replacement))
 (defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
-(defn unbase64 [expr] (functions/unbase64 (->column expr)))
+(defn unbase-64 [expr] (functions/unbase64 (->column expr)))
 (defn upper [expr] (functions/upper (->column expr)))
 
 ;;;; Window Functions
@@ -325,7 +330,7 @@
 (defn row-number [] (functions/row_number))
 
 ;;;; Stats Functions
-(defn covar [l-expr r-expr]
+(defn covar-samp [l-expr r-expr]
   (functions/covar_samp (->column l-expr) (->column r-expr)))
 (defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
 (defn kurtosis [expr] (functions/kurtosis (->column expr)))
@@ -341,20 +346,34 @@
   [(-> docs/spark-docs :core :functions)])
 
 ;; Aliases
+(import-fn atan-2 atan2)
+(import-fn base-64 base64)
 (import-fn cbrt cube-root)
-(import-fn covar covar-samp)
+(import-fn covar-samp covar)
+(import-fn crc-32 crc32)
 (import-fn datediff date-diff)
+(import-fn dayofmonth day-of-month)
+(import-fn dayofweek day-of-week)
+(import-fn dayofyear day-of-year)
 (import-fn explode explode-outer)
+(import-fn expm-1 expm1)
+(import-fn log-10 log10)
+(import-fn log-1p log1p)
+(import-fn log-2 log2)
+(import-fn md-5 md5)
 (import-fn not !)
 (import-fn posexplode posexplode-outer)
 (import-fn pow **)
+(import-fn sha-1 sha1)
+(import-fn sha-2 sha2)
 (import-fn signum sign)
 (import-fn stddev std)
 (import-fn stddev stddev-samp)
 (import-fn to-date ->date-col)
 (import-fn to-timestamp ->timestamp-col)
 (import-fn to-utc-timestamp ->utc-timestamp)
+(import-fn unbase-64 unbase64)
 (import-fn variance var-samp)
-
-;; TODO: address docless vars
-; (docs/docless-vars *ns*)
+(import-fn weekofyear week-of-year)
+(import-fn window time-window)
+(import-fn xxhash-64 xxhash64)
