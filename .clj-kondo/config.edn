@@ -2,5 +2,6 @@
  :lint-as {serializable.fn/fn clojure.core/fn}
  :linters
   {:unresolved-symbol
-    {:exclude [(zero-one.geni.utils/with-dynamic-import)
+    {:exclude [(potemkin/import-fn)
+               (zero-one.geni.utils/with-dynamic-import)
                (zero-one.geni.rdd.function/gen-function)]}}}
