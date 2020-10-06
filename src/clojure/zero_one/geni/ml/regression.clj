@@ -1,6 +1,7 @@
 (ns zero-one.geni.ml.regression
   (:require
-    [zero-one.geni.docs :refer [spark-docs]]
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [coalesce]])
   (:import
@@ -13,9 +14,7 @@
                                     LinearRegression
                                     RandomForestRegressor)))
 
-(defn linear-regression
-  {:doc (-> spark-docs :ml :regression :linear-regression)}
-  [params]
+(defn linear-regression [params]
   (let [defaults {:max-iter          100,
                   :tol               1.0E-6,
                   :elastic-net-param 0.0,
@@ -37,9 +36,7 @@
                       (assoc :standardization std))]
     (interop/instantiate LinearRegression props)))
 
-(defn generalised-linear-regression
-  {:doc (-> spark-docs :ml :regression :generalized-linear-regression)}
-  [params]
+(defn generalized-linear-regression [params]
   (let [defaults {:max-iter       25,
                   :variance-power 0.0,
                   :family         "gaussian",
@@ -52,13 +49,8 @@
                   :solver         "irls"}
         props     (merge defaults params)]
     (interop/instantiate GeneralizedLinearRegression props)))
-(def generalized-linear-regression
-  generalised-linear-regression)
-(def glm generalised-linear-regression)
 
-(defn decision-tree-regressor
-  {:doc (-> spark-docs :ml :regression :decision-tree-regressor)}
-  [params]
+(defn decision-tree-regressor [params]
   (let [defaults {:max-bins                     32,
                   :min-info-gain                0.0,
                   :impurity                     "variance",
@@ -76,9 +68,7 @@
         props     (merge defaults params)]
     (interop/instantiate DecisionTreeRegressor props)))
 
-(defn random-forest-regressor
-  {:doc (-> spark-docs :ml :regression :random-forest-regressor)}
-  [params]
+(defn random-forest-regressor [params]
   (let [defaults {:max-bins                     32,
                   :subsampling-rate             1.0,
                   :min-info-gain                0.0,
@@ -99,9 +89,7 @@
         props     (merge defaults params)]
     (interop/instantiate RandomForestRegressor props)))
 
-(defn gbt-regressor
-  {:doc (-> spark-docs :ml :regression :gbt-regressor)}
-  [params]
+(defn gbt-regressor [params]
   (let [defaults {:max-bins                     32,
                   :subsampling-rate             1.0,
                   :max-iter                     20,
@@ -123,9 +111,7 @@
         props     (merge defaults params)]
     (interop/instantiate GBTRegressor props)))
 
-(defn aft-survival-regression
-  {:doc (-> spark-docs :ml :regression :aft-survival-regression)}
-  [params]
+(defn aft-survival-regression [params]
   (let [q-probs  [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
         defaults {:max-iter               100,
                   :tol                    1.0E-6,
@@ -139,9 +125,7 @@
         props     (-> (merge defaults params))]
     (interop/instantiate AFTSurvivalRegression props)))
 
-(defn isotonic-regression
-  {:doc (-> spark-docs :ml :regression :isotonic-regression)}
-  [params]
+(defn isotonic-regression [params]
   (let [defaults {:prediction-col "prediction",
                   :features-col   "features",
                   :isotonic       true,
@@ -150,9 +134,7 @@
         props     (-> (merge defaults params))]
     (interop/instantiate IsotonicRegression props)))
 
-(defn fm-regressor
-  {:doc (-> spark-docs :ml :regression :fm-regressor)}
-  [params]
+(defn fm-regressor [params]
   (let [defaults {:max-iter            100,
                   :step-size           1.0,
                   :tol                 1.0E-6,
@@ -169,3 +151,11 @@
                   :solver              "adamW"}
         props     (-> (merge defaults params))]
     (interop/instantiate FMRegressor props)))
+
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.regression
+  [(-> docs/spark-docs :ml :regression)])
+
+;; Aliases
+(import-fn generalized-linear-regression generalised-linear-regression)
+(import-fn generalized-linear-regression glm)
