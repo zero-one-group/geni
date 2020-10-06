@@ -34,7 +34,6 @@
   (has-content? node [:span.symbol :span.result]))
 
 (defn extract-text [node selector]
-  ;(-> node (html/select selector) first html/text (or ""))
   (->> (html/select node selector)
        (mapv html/text)
        (string/join "\n")))
@@ -196,8 +195,8 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :ml :regression :fm-regressor println)
+  (-> spark-docs :ml :regression :fm-regressor)
 
-  (-> spark-docs :ml :regression keys)
+  (-> spark-docs :rdd :functions)
 
   true)
