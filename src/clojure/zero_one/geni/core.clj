@@ -200,7 +200,9 @@
    ascii
    asin
    atan
+   atan-2
    atan2
+   base-64
    base64
    bin
    bitwise-not
@@ -219,6 +221,7 @@
    covar
    covar-pop
    covar-samp
+   crc-32
    crc32
    cube-root
    cume-dist
@@ -233,6 +236,9 @@
    day-of-month
    day-of-week
    day-of-year
+   dayofmonth
+   dayofweek
+   dayofyear
    decode
    degrees
    dense-rank
@@ -241,6 +247,7 @@
    exists
    exp
    explode
+   expm-1
    expm1
    expr
    factorial
@@ -271,6 +278,9 @@
    levenshtein
    locate
    log
+   log-10
+   log-1p
+   log-2
    log10
    log1p
    log2
@@ -286,6 +296,7 @@
    map-keys
    map-values
    map-zip-with
+   md-5
    md5
    minute
    monotonically-increasing-id
@@ -320,6 +331,8 @@
    schema-of-json
    second
    sequence
+   sha-1
+   sha-2
    sha1
    sha2
    shift-left
@@ -357,6 +370,7 @@
    transform-values
    translate
    trim
+   unbase-64
    unbase64
    unhex
    unix-timestamp
@@ -364,8 +378,10 @@
    var-pop
    var-samp
    variance
+   weekofyear
    week-of-year
    when
+   xxhash-64
    xxhash64
    year
    zip-with])
