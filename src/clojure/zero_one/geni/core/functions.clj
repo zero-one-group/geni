@@ -341,6 +341,7 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 
+;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.functions
   [(-> docs/spark-docs :core :functions)])
