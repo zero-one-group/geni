@@ -14,7 +14,7 @@
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.text Normalizer Normalizer$Form)
-    (org.apache.spark.sql SparkSession)))
+    (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
 
 (defn- configure-reader-or-writer [unconfigured options]
   (reduce
@@ -154,18 +154,20 @@
 (defn- partition-by-arg [partition-id]
   (into-array java.lang.String (map name (ensure-coll partition-id))))
 
-(defn- write-data! [format dataframe path options]
+
+(defn- configure-base-writer ^DataFrameWriter
+  [writer options]
   (let [mode                (:mode options)
         partition-id        (:partition-by options)
-        unconfigured-writer (-> dataframe
-                                (.write)
-                                (.format format)
-                                (cond-> mode (.mode mode))
-                                (cond-> partition-id
-                                  (.partitionBy (partition-by-arg partition-id))))
-        configured-writer   (configure-reader-or-writer
-                              unconfigured-writer
-                              (dissoc options :mode :partition-by))]
+        writer (-> writer
+                   (cond-> mode (.mode mode))
+                   (cond-> partition-id (.partitionBy (partition-by-arg partition-id))))]
+        (configure-reader-or-writer writer (dissoc options :mode :partition-by))))
+
+(defn- write-data! [format dataframe path options]
+  (let [configured-writer (-> (.write dataframe)
+                              (.format format)
+                              (configure-base-writer options)) ]
     (.save configured-writer path)))
 
 (defn write-parquet!
@@ -314,3 +316,58 @@
          dataset   (dataset-creation/table->dataset spark table col-names)]
      (-> dataset
          (cond-> (:kebab-columns options) ->kebab-columns)))))
+
+; Hive/Managed Tables
+(defmulti read-table!
+  "Reads a managed (hive) table and returns the result as a DataFrame."
+  (fn [head & _] (class head)))
+(defmethod read-table! :default
+  ([table-name] (read-table! @defaults/spark table-name)))
+(defmethod read-table! SparkSession
+  ([spark table-name] (.table spark table-name)))
+
+(defn write-table!
+  "Writes the dataset to a managed (hive) table."
+  ([^Dataset dataframe ^String table-name]
+   (write-table! dataframe table-name {}))
+  ([^Dataset dataframe ^String table-name options]
+   (-> dataframe
+       (.write)
+       (configure-base-writer options)
+       (.saveAsTable table-name))))
+
+(defn create-temp-view!
+  "Creates a local temporary view using the given name.
+
+  Local temporary view is session-scoped. Its lifetime is the lifetime of the session that
+  created it, i.e. it will be automatically dropped when the session terminates. It's not tied
+  to any databases, i.e. we can't use `db1.view1` to reference a local temporary view."
+  [^Dataset dataframe ^String view-name]
+  (.createTempView dataframe view-name))
+
+(defn create-or-replace-temp-view!
+  "Creates or replaces a local temporary view using the given name.
+
+  The lifetime of this temporary view is tied to the `SparkSession` that was used to create this Dataset."
+  [^Dataset dataframe ^String view-name]
+  (.createOrReplaceTempView dataframe view-name))
+
+(defn create-global-temp-view!
+  "Creates a global temporary view using the given name.
+
+  Global temporary view is cross-session. Its lifetime is the lifetime of the Spark application,
+  i.e. it will be automatically dropped when the application terminates. It's tied to a system
+  preserved database `global_temp`, and we must use the qualified name to refer a global temp
+  view, e.g. `SELECT * FROM global_temp.view1`."
+  [^Dataset dataframe ^String view-name]
+  (.createGlobalTempView dataframe view-name))
+
+(defn create-or-replace-global-temp-view!
+  "Creates or replaces a global temporary view using the given name.
+
+  Global temporary view is cross-session. Its lifetime is the lifetime of the Spark application,
+  i.e. it will be automatically dropped when the application terminates. It's tied to a system
+  preserved database `global_temp`, and we must use the qualified name to refer a global temp
+  view, e.g. `SELECT * FROM global_temp.view1`."
+  [^Dataset dataframe ^String view-name]
+  (.createOrReplaceGlobalTempView dataframe view-name))

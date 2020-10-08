@@ -1,7 +1,6 @@
 (ns zero-one.geni.data-sources-test
   (:require
     [clojure.edn :as edn]
-    [clojure.test :refer :all]
     [midje.sweet :refer [facts fact => throws with-state-changes before after]]
     [zero-one.geni.core :as g]
     [zero-one.geni.catalog :as c]
@@ -285,5 +284,5 @@
       (let [dataset (g/range 3)
             table-name "tbl"]
         (g/write-table! dataset table-name)
-        (c/table-exists (c/catalog @spark) "tbl") => true
+        (c/table-exists? (c/catalog @spark) "tbl") => true
         (g/collect (g/order-by (g/read-table! table-name) :id)) => (g/collect (g/order-by (g/to-df dataset) :id))))))

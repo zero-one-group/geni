@@ -513,6 +513,10 @@
 (import-vars
   [zero-one.geni.core.data-sources
    ->kebab-columns
+   create-temp-view!
+   create-or-replace-temp-view!
+   create-global-temp-view!
+   create-or-replace-global-temp-view!
    read-avro!
    read-csv!
    read-edn!
@@ -520,6 +524,7 @@
    read-json!
    read-libsvm!
    read-parquet!
+   read-table!
    read-text!
    read-xlsx!
    write-avro!
@@ -529,6 +534,7 @@
    write-json!
    write-libsvm!
    write-parquet!
+   write-table!
    write-text!
    write-xlsx!])
 
