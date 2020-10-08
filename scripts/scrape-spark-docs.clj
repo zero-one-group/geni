@@ -6,6 +6,8 @@
     [taoensso.nippy :as nippy]
     [zero-one.geni.core :as g]))
 
+;; TODO: add Bloom (util/sketch/BloomFilter.html)
+;; TODO: add CountMinSketch (util/sketch/CountMinSketch.html)
 (def spark-version (g/version))
 
 (def spark-doc-url

@@ -7,13 +7,13 @@
                             take])
   (:require
     [clojure.walk :refer [keywordize-keys]]
+    [potemkin :refer [import-fn]]
     [zero-one.geni.core.column :refer [->col-array ->column]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql Column)))
-
-;; TODO: RDD-based functions, streaming-based functions
 
 ;;;; Actions
 (defn- collected->maps [collected]
@@ -57,7 +57,10 @@
   ([dataframe] (.checkpoint dataframe true))
   ([dataframe eager] (.checkpoint dataframe eager)))
 
-(defn columns [dataframe] (->> dataframe .columns seq (map keyword)))
+(defn columns
+  "Returns all column names as an array of keywords."
+  [dataframe]
+  (->> dataframe .columns seq (map keyword)))
 
 (defn dtypes [dataframe]
   (let [dtypes-as-tuples (-> dataframe .dtypes seq)]
@@ -69,10 +72,8 @@
 (defn input-files [dataframe] (seq (.inputFiles dataframe)))
 
 (defn is-empty [dataframe] (.isEmpty dataframe))
-(def empty? is-empty)
 
 (defn is-local [dataframe] (.isLocal dataframe))
-(def local? is-local)
 
 (defn persist
   ([dataframe] (.persist dataframe))
@@ -91,7 +92,6 @@
 
 ;;;; Streaming
 (defn is-streaming [dataframe] (.isStreaming dataframe))
-(def streaming? is-streaming)
 
 ;;;; Typed Transformations
 (defn distinct [dataframe] (.distinct dataframe))
@@ -116,9 +116,9 @@
 (defn limit [dataframe n-rows] (.limit dataframe n-rows))
 
 (defn order-by [dataframe & exprs] (.orderBy dataframe (->col-array exprs)))
-(def sort order-by)
 
-(defn partitions [dataframe] (seq (.. dataframe rdd partitions)))
+(defn partitions [dataframe]
+  (seq (.. dataframe rdd partitions)))
 
 (defn random-split
   ([dataframe weights] (.randomSplit dataframe (double-array weights)))
@@ -155,7 +155,9 @@
   (let [[head & tail] (->col-array args)]
     (.agg dataframe head (into-array Column tail))))
 
-(defn agg-all [dataframe agg-fn]
+(defn agg-all
+  "Aggregates on all columns of the entire Dataset without groups."
+  [dataframe agg-fn]
   (let [agg-cols (map agg-fn (-> dataframe .columns seq))]
     (apply agg dataframe agg-cols)))
 
@@ -229,7 +231,6 @@
 (defn bit-size [bloom] (.bitSize bloom))
 (defn expected-fpp [bloom] (.expectedFpp bloom))
 (defn is-compatible [bloom other] (.isCompatible bloom other))
-(def compatible? is-compatible)
 (defn might-contain [bloom item] (.mightContain bloom item))
 (defn put [bloom item] (.put bloom item))
 
@@ -293,11 +294,14 @@
 
 ;;;; Convenience Functions
 ;; Actions
-(defn collect-vals [dataframe]
+(defn collect-vals
+  "Returns the vector values of the Dataset collected."
+  [dataframe]
   (let [cols (columns dataframe)]
     (-> dataframe .collect (collected->vectors cols))))
 
 (defn head-vals
+  "Returns the vector values of the first n rows in the Dataset collected."
   ([dataframe]
    (let [cols (columns dataframe)]
      (-> dataframe (.head 1) (collected->vectors cols) first)))
@@ -305,36 +309,83 @@
    (let [cols (columns dataframe)]
      (-> dataframe (.head n-rows) (collected->vectors cols)))))
 
-(defn take-vals [dataframe n-rows]
+(defn take-vals
+  "Returns the vector values of the first n rows in the Dataset collected."
+  [dataframe n-rows]
   (let [cols (columns dataframe)]
     (-> dataframe (.take n-rows) (collected->vectors cols))))
 
-(defn tail-vals [dataframe n-rows]
+(defn tail-vals
+  "Returns the vector values of the last n rows in the Dataset collected."
+  [dataframe n-rows]
   (let [cols (columns dataframe)]
     (-> dataframe (.tail n-rows) (collected->vectors cols))))
 
-(defn collect-col [dataframe col-name]
+(defn collect-col
+  "Returns a vector that contains all rows in the column of the Dataset."
+  [dataframe col-name]
   (map (keyword col-name) (-> dataframe (select col-name) collect)))
 
-(defn first-vals [dataframe]
+(defn first-vals
+  "Returns the vector values of the first row in the Dataset collected."
+  [dataframe]
   (-> dataframe (take-vals 1) first))
 
-(defn last-vals [dataframe]
+(defn last-vals
+  "Returns the vector values of the last row in the Dataset collected."
+  [dataframe]
   (-> dataframe (tail-vals 1) first))
 
 ;; Basic
 (defn show-vertical
+  "Displays the Dataset in a list-of-records form."
   ([dataframe] (show dataframe {:vertical true}))
   ([dataframe options] (show dataframe (assoc options :vertical true))))
 
-(defn column-names [dataframe] (-> dataframe .columns seq))
+(defn column-names
+  "Returns all column names as an array of strings."
+  [dataframe]
+  (-> dataframe .columns seq))
 
 (defn hint [dataframe hint-name & args]
   (.hint dataframe hint-name (interop/->scala-seq args)))
 
-(defn rename-columns [dataframe rename-map]
+(defn rename-columns
+  "Returns a new Dataset with a column renamed according to the rename-map."
+  [dataframe rename-map]
   (reduce
     (fn [acc-df [old-name new-name]]
       (.withColumnRenamed acc-df (name old-name) (name new-name)))
     dataframe
     rename-map))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.core.dataset
+  [(-> docs/spark-docs :core :dataset)
+   (-> docs/spark-docs :core :grouped)
+   (-> docs/spark-docs :core :na-fns)
+   (-> docs/spark-docs :core :stat-fns)])
+
+(docs/add-doc!
+  (var partitions)
+  (-> docs/spark-docs :rdd :rdd :partitions))
+
+(docs/add-doc!
+  (var drop-na)
+  (-> docs/spark-docs :core :na-fns :drop))
+
+(docs/add-doc!
+  (var fill-na)
+  (-> docs/spark-docs :core :na-fns :fill))
+
+(docs/add-doc!
+  (var replace-na)
+  (-> docs/spark-docs :core :na-fns :replace))
+
+;; Aliases
+(import-fn is-local local?)
+(import-fn is-empty empty?)
+(import-fn is-streaming streaming?)
+(import-fn order-by sort)
+(import-fn is-compatible compatible?)
