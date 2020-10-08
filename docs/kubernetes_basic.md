@@ -4,7 +4,7 @@
 Geni works on any Spark cluster, including Spark on Kubernetes.
 There are lots of different variations, how Spark can be run on Kubernetes.
 
-I will show here the most simple one, which can be replicated on a single computer, using minikube.
+I will show here the most simple one, which can be replicated on a single computer, using Minikube.
 
 ## Prerequisits
 
@@ -20,7 +20,6 @@ so we need to download it first.
 wget https://downloads.apache.org/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz
 tar xzf spark-3.0.1-bin-hadoop2.7.tgz
 cd spark-3.0.1-bin-hadoop2.7/
-
 ```
 
 ## Minikube
@@ -75,10 +74,9 @@ The minimal clojure dependencies to get the following code work are these:
 
 ```bash
 clj -Sdeps '{:deps {zero.one/geni {:mvn/version "0.0.29" :exclusions [reply/reply]} org.apache.spark/spark-core_2.12 {:mvn/version "3.0.1" } org.apache.spark/spark-mllib_2.12 {:mvn/version "3.0.1"} org.apache.spark/spark-kubernetes_2.12 {:mvn/version  "3.0.1"}}}'
-                 
 ```
 
-This will start a clojure repl including the needed dependencies of Geni and Spark on Kubernetes.
+This will start a Clojure REPL including the needed dependencies of Geni and Spark on Kubernetes.
 
 ## Create Spark session
 
@@ -129,11 +127,9 @@ NAME                             READY   STATUS    RESTARTS   AGE
 my-app-a9f44174fa720b22-exec-1   1/1     Running   0          89s
 my-app-a9f44174fa720b22-exec-2   1/1     Running   0          89s
 my-app-a9f44174fa720b22-exec-3   1/1     Running   0          89s
-
-
 ```
 
 ## Shutting down
 
-The moment we close the clojure repl session, the worker pods get deleted in Kubernetes.
+The moment we close the Clojure REPL session, the worker pods get deleted in Kubernetes.
 
