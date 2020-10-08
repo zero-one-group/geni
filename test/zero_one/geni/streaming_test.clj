@@ -5,9 +5,10 @@
     [clojure.string :as string]
     [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.aot-functions :as aot]
-    [zero-one.geni.defaults :as defaults]
+    ;[zero-one.geni.defaults :as defaults]
     [zero-one.geni.rdd :as rdd]
-    [zero-one.geni.streaming :as streaming])
+    [zero-one.geni.streaming :as streaming]
+    [zero-one.geni.test-resources :as tr])
   (:import
     (org.apache.spark.api.java JavaSparkContext)
     (org.apache.spark.streaming Duration StreamingContext Time)
@@ -33,7 +34,7 @@
 
 (defn stream-results [opts]
   (let [context         (streaming/streaming-context
-                          @defaults/spark
+                          @tr/spark
                           (streaming/milliseconds (:duration-ms opts 100)))
         read-file      (create-random-temp-file! "read.txt")
         write-file     (create-random-temp-file! "write")
@@ -206,7 +207,7 @@
     (streaming/->time 123) => (Time. 123)))
 
 (facts "On StreamingContext" :streaming
-       (let [context (streaming/streaming-context @defaults/spark 1000)]
+       (let [context (streaming/streaming-context @tr/spark 1000)]
          (fact "streaming context instantiatable"
                context => (partial instance? JavaStreamingContext))
          (fact "expected basic fields and methods"

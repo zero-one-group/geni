@@ -2,15 +2,15 @@
   (:require
     [midje.sweet :refer [fact =>]]
     [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [df-20]]))
+    [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (fact "On update"
-  (-> (g/table->dataset (mapv vector (range 5)) [:i])
+  (-> (g/table->dataset @spark (mapv vector (range 5)) [:i])
       (g/update :i g/+ 1 2 3)
       (g/collect-col :i)) => [6 7 8 9 10])
 
 (fact "On cond" :slow
-  (-> df-20
+  (-> (df-20)
       (g/with-column :cond (g/cond
                              (g/< :Price 8e5) (g/lit "low")
                              (g/< :Price 1e6) (g/lit "medium")
@@ -19,7 +19,7 @@
       set) => #{"high" "medium" "low"})
 
 (fact "On condp" :slow
-  (-> (g/table->dataset (mapv vector (range 1 16)) [:idx])
+  (-> (g/table->dataset @spark (mapv vector (range 1 16)) [:idx])
       (g/with-column :fb (g/condp #(g/zero? (g/mod %2 %1)) :idx
                            15 (g/lit "fizzbuzz")
                            5 (g/lit "buzz")
@@ -40,7 +40,7 @@
                      {:idx 13, :fb "13"}
                      {:idx 14, :fb "14"}
                      {:idx 15, :fb "fizzbuzz"}]
-  (-> (g/table->dataset (mapv vector (range 1 16)) [:idx])
+  (-> (g/table->dataset @spark (mapv vector (range 1 16)) [:idx])
       (g/with-column :fb (g/condp #(g/zero? (g/mod %2 %1)) :idx
                            15 (g/lit "fizzbuzz")
                            5 (g/lit "buzz")
@@ -55,7 +55,7 @@
                      {:fb "fizzbuzz" :idx 15}])
 
 (fact "On case" :slow
-  (-> df-20
+  (-> (df-20)
       (g/limit 10)
       (g/with-column :case (g/case :SellerG
                              (g/lit "Biggin") 0
@@ -66,7 +66,7 @@
       set) => #{{:SellerG "Biggin" :case 0}
                 {:SellerG "Jellis" :case 2}
                 {:SellerG "Nelson" :case 1}}
-  (-> df-20
+  (-> (df-20)
       (g/limit 10)
       (g/with-column :case (g/case :SellerG
                              (g/lit "Biggin") 0
@@ -76,7 +76,7 @@
       set) => #{{:SellerG "Biggin" :case 0}
                 {:SellerG "Jellis" :case nil}
                 {:SellerG "Nelson" :case 1}}
-  (-> df-20
+  (-> (df-20)
       (g/limit 10)
       (g/with-column :case (g/case :SellerG
                              (g/lit "Jellis") 0
@@ -89,7 +89,7 @@
                 {:SellerG "Nelson" :case 1}})
 
 (fact "On if" :slow
-  (-> df-20
+  (-> (df-20)
       (g/with-column :if (g/if (g/< :Price 1e6)
                            (g/lit "high")
                            (g/lit "low")))

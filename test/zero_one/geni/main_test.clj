@@ -16,7 +16,7 @@
     (repl/geni-prompt "xyz") => "geni-repl (xyz)\nλ ")
 
   (fact "correct welcome note"
-    (repl/spark-welcome-note (.version spark))
+    (repl/spark-welcome-note (.version @spark))
     => #(clojure.string/includes? % "spark"))
 
   (fact "correct nREPL connection"

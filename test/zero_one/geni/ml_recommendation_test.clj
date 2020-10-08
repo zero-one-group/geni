@@ -11,16 +11,16 @@
                              :user-col   :user-id
                              :item-col   :movie-id
                              :rating-col :rating})
-        model       (ml/fit ratings-df estimator)
+        model       (ml/fit (ratings-df) estimator)
         predictions (do
                       (.setColdStartStrategy model "drop")
-                      (ml/transform ratings-df model))
+                      (ml/transform (ratings-df) model))
         evaluator   (ml/regression-evaluator {:metric-name    "rmse"
                                               :label-col      :rating
                                               :prediction-col :prediction})
         rmse        (ml/evaluate predictions evaluator)
-        some-users  (-> ratings-df (g/select :user-id) g/distinct (g/limit 3))
-        some-items  (-> ratings-df (g/select :movie-id) g/distinct (g/limit 5))]
+        some-users  (-> (ratings-df) (g/select :user-id) g/distinct (g/limit 3))
+        some-items  (-> (ratings-df) (g/select :movie-id) g/distinct (g/limit 5))]
     rmse => #(<= % 0.9)
     (g/count (ml/item-factors model)) => 100
     (g/count (ml/user-factors model)) => 30
