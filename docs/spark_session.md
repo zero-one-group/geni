@@ -3,7 +3,7 @@
 > "The entry point into all functionality in Spark is the [SparkSession](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/SparkSession.html) class."  
 [Spark's Official Getting Started](https://spark.apache.org/docs/latest/sql-getting-started.html)
 
-Most Geni functions for dataset creation (including reading data from different sources) use a Spark session in the background. For instance, it is optional to pass a Spark session to the function `g/read-csv!` as the first argument. When a Spark session is not present, Geni uses the default Spark session that can be found [here](../src/zero_one/geni/defaults.clj). The default is designed to optimise for the out-of-the-box experience.
+Most Geni functions for dataset creation (including reading data from different sources) use a Spark session in the background. For instance, it is optional to pass a Spark session to the function `g/read-csv!` as the first argument. When a Spark session is not present, Geni uses the default Spark session that can be found [here](../src/clojure/zero_one/geni/defaults.clj). The default is designed to optimise for the out-of-the-box experience.
 
 Note that the default Spark session is a delayed object that never gets instantiated unless invoked by these dataset-creation functions.
 
