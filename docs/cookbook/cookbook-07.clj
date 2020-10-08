@@ -5,13 +5,7 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.ml :as ml]))
 
-(defn download-data! [source-url target-path]
-  (if (-> target-path clojure.java.io/file .exists)
-    :already-exists
-    (do
-      (clojure.java.io/make-parents target-path)
-      (clojure.java.shell/sh "wget" "-O" target-path source-url)
-      :downloaded)))
+(load-file "docs/cookbook/cookbook-util.clj")
 
 ;; Part 7: Timestamps and Dates
 
