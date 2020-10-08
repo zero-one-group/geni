@@ -28,6 +28,18 @@
 
 (g/print-schema chinook-tracks)
 
+;;=>
+;; root
+;; |-- TrackId: integer (nullable = true)
+;; |-- Name: string (nullable = true)
+;; |-- AlbumId: integer (nullable = true)
+;; |-- MediaTypeId: integer (nullable = true)
+;; |-- GenreId: integer (nullable = true)
+;; |-- Composer: string (nullable = true)
+;; |-- Milliseconds: integer (nullable = true)
+;; |-- Bytes: integer (nullable = true)
+;; |-- UnitPrice: decimal(10,2) (nullable = true)
+
 (g/show chinook-tracks {:num-rows 3})
 
 ;; 9.2 Writing to SQLite

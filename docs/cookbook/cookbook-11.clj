@@ -25,6 +25,7 @@
 
 (g/print-schema houses)
 
+;;=>
 ;; root
 ;;  |-- longitude: double (nullable = true)
 ;;  |-- latitude: double (nullable = true)
@@ -81,6 +82,8 @@
       (g/with-column :error (g/- :prediction :median-house-value))))
 
 (-> predictions (g/limit 5) g/show)
+
+;;=>
 ;; +------------------+------------------+-----------------+
 ;; |prediction        |median-house-value|error            |
 ;; +------------------+------------------+-----------------+
@@ -94,7 +97,8 @@
 (let [evaluator (ml/regression-evaluator {:label-col :median-house-value
                                           :metric-name "mae"})]
   (println (format "MAE: %.2f" (ml/evaluate predictions evaluator))))
-;; MAE: 54554.34
+
+;;=> MAE: 54554.34
 
 ;; 11.3 Random Forest Feature Importances
 
@@ -106,6 +110,8 @@
        (zipmap (ml/input-cols assembler))))
 
 feature-importances
+
+;;=>
 ;; {"housing-median-age" 0.060262475752573055,
 ;;  "median-income" 0.7847621702619059,
 ;;  "bedrooms-per-house" 0.010547166447551434,
