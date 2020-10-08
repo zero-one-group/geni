@@ -36,7 +36,7 @@
 (defn extract-text [node selector]
   (->> (html/select node selector)
        (mapv html/text)
-       (string/join "\n")))
+       (string/join "\n\n")))
 
 (defn extract-name [node]
   (extract-text node [:span.symbol :span.name]))
@@ -55,7 +55,7 @@
        fn-candidate-nodes
        (filter (every-pred has-name? has-result?))
        (map #(vector (keyword (->kebab-case (extract-name %)))
-                     (format "Params: %s\nResult%s\n%s\nSource: %s\nTimestamp: %s"
+                     (format "Params: %s\n\nResult%s\n\n%s\n\nSource: %s\n\nTimestamp: %s"
                              (extract-params %)
                              (extract-result %)
                              (extract-comment %)
@@ -72,7 +72,7 @@
 (defn url->class-docs [url]
   (let [resource  (polite-html-resource url)
         fn-name   (->kebab-case (extract-title resource))
-        class-doc (format "%s\nSource: %s\nTimestamp: %s"
+        class-doc (format "%s\n\nSource: %s\n\nTimestamp: %s"
                           (extract-class-comment resource)
                           url
                           (timestamp!))]
