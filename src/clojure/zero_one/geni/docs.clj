@@ -12,11 +12,17 @@
       IOUtils/toByteArray
       nippy/thaw))
 
+(defn no-doc? [v]
+  (-> v meta :doc nil?))
+
+(defn add-doc! [fn-var doc]
+  (alter-meta! fn-var assoc :doc doc))
+
 (defn alter-doc! [fn-name fn-var doc-maps]
   (let [fn-key (keyword fn-name)
         doc    (->> doc-maps (mapv fn-key) (remove nil?) first)]
-    (when doc
-      (alter-meta! fn-var assoc :doc doc))))
+    (when (and doc (no-doc? fn-var))
+      (add-doc! fn-var doc))))
 
 (defn alter-docs-in-ns! [ns-sym doc-maps]
   (let [public-vars (ns-publics ns-sym)]
@@ -29,4 +35,4 @@
 (defn docless-vars [ns-sym]
   (->> (ns-publics ns-sym)
        (mapv second)
-       (filter #(-> % meta :doc nil?))))
+       (filter no-doc?)))

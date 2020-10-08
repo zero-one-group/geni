@@ -26,6 +26,8 @@
                             str
                             zero?])
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql Column
@@ -43,52 +45,55 @@
 (defmethod col java.lang.String [x & _] (functions/col x))
 (defmethod col clojure.lang.Keyword [x & _] (functions/col (name x)))
 (defmethod col Dataset [dataframe & args] (.col dataframe (name (first args))))
-(def ->column col)
 
-(defn ->col-seq [arg]
+(defn ->col-seq
+  "Coerce a value into a coll of columns."
+  [arg]
   (cond
-    (map? arg)  (for [[k v] arg] (.as (->column v) (name k)))
-    (coll? arg) (map ->column arg)
-    :else       [(->column arg)]))
+    (map? arg)  (for [[k v] arg] (.as (col v) (name k)))
+    (coll? arg) (map col arg)
+    :else       [(col arg)]))
 
-(defn ->col-array [args]
+(defn ->col-array
+  "Coerce a coll of coerceable values into a coll of columns."
+  [args]
   (->> args
        (mapcat ->col-seq)
        (into-array Column)))
 
 ;;;; Column Methods
 (defn % [left-expr right-expr]
-  (.mod (->column left-expr) (->column right-expr)))
+  (.mod (col left-expr) (col right-expr)))
 (def mod %)
 
 (defn && [& exprs]
-  (reduce #(.and (->column %1) (->column %2))
+  (reduce #(.and (col %1) (col %2))
           (lit true)
           (->col-array exprs)))
 
 (defn * [& exprs]
-  (reduce #(.multiply (->column %1) (->column %2))
+  (reduce #(.multiply (col %1) (col %2))
           (lit 1)
           (->col-array exprs)))
 
 (defn + [& exprs]
-  (reduce #(.plus (->column %1) (->column %2))
+  (reduce #(.plus (col %1) (col %2))
           (lit 0)
           (->col-array exprs)))
 
-(defn - [& exprs]
-  (reduce #(.minus (->column %1) (->column %2))
+(defn minus [& exprs]
+  (reduce #(.minus (col %1) (col %2))
           (->col-array exprs)))
 
 (defn / [& exprs]
-  (reduce #(.divide (->column %1) (->column %2))
+  (reduce #(.divide (col %1) (col %2))
           (->col-array exprs)))
 
 (defn- compare-columns [compare-fn expr-0 & exprs]
   (let [exprs (-> exprs (conj expr-0))]
     (reduce
       (fn [acc-col [l-expr r-expr]]
-        (&& acc-col (compare-fn (->column l-expr) (->column r-expr))))
+        (&& acc-col (compare-fn (col l-expr) (col r-expr))))
       (lit true)
       (clojure.core/map vector exprs (rest exprs)))))
 
@@ -113,82 +118,104 @@
 (def >= (partial compare-columns #(.geq %1 %2)))
 (def geq >=)
 
-(defn & [left-expr right-expr]
-  (.bitwiseAND (->column left-expr) (->column right-expr)))
-(def bitwise-and &)
+(defn bitwise-and [left-expr right-expr]
+  (.bitwiseAND (col left-expr) (col right-expr)))
 
-(defn | [left-expr right-expr]
-  (.bitwiseOR (->column left-expr) (->column right-expr)))
-(def bitwise-or |)
+(defn bitwise-or [left-expr right-expr]
+  (.bitwiseOR (col left-expr) (col right-expr)))
 
 (defn bitwise-xor [left-expr right-expr]
-  (.bitwiseXOR (->column left-expr) (->column right-expr)))
+  (.bitwiseXOR (col left-expr) (col right-expr)))
 
-(defn cast [expr new-type] (.cast (->column expr) new-type))
+(defn cast [expr new-type] (.cast (col expr) new-type))
 
-(defn contains [expr literal] (.contains (->column expr) literal))
+(defn contains [expr literal] (.contains (col expr) literal))
 
-(defn ends-with [expr literal] (.endsWith (->column expr) literal))
+(defn ends-with [expr literal] (.endsWith (col expr) literal))
 
-(defn get-field [expr field-name] (.getField (->column expr) (name field-name)))
+(defn get-field [expr field-name] (.getField (col expr) (name field-name)))
 
-(defn get-item [expr k] (.getItem (->column expr) (try
-                                                    (name k)
-                                                    (catch Exception _ k))))
+(defn get-item [expr k] (.getItem (col expr) (try
+                                               (name k)
+                                               (catch Exception _ k))))
 
 (defn is-in-collection [expr coll]
-  (.isInCollection (->column expr) coll))
+  (.isInCollection (col expr) coll))
 
-(defn is-nan [expr] (.isNaN (->column expr)))
-(def nan? is-nan)
+(defn is-na-n [expr] (.isNaN (col expr)))
 
-(defn is-not-null [expr] (.isNotNull (->column expr)))
-(def not-null? is-not-null)
+(defn is-not-null [expr] (.isNotNull (col expr)))
 
-(defn is-null [expr] (.isNull (->column expr)))
-(def null? is-null)
+(defn is-null [expr] (.isNull (col expr)))
 
-(defn isin [expr coll] (.isin (->column expr) (interop/->scala-seq coll)))
+(defn isin [expr coll] (.isin (col expr) (interop/->scala-seq coll)))
 
-(defn like [expr literal] (.like (->column expr) literal))
+(defn like [expr literal] (.like (col expr) literal))
 
-(defn rlike [expr literal] (.rlike (->column expr) literal))
+(defn rlike [expr literal] (.rlike (col expr) literal))
 
-(defn starts-with [expr literal] (.startsWith (->column expr) literal))
+(defn starts-with [expr literal] (.startsWith (col expr) literal))
 
 (defn || [& exprs]
-  (reduce #(.or (->column %1) (->column %2))
+  (reduce #(.or (col %1) (col %2))
           (lit false)
           (->col-array exprs)))
 
 ;;;; Sorting Functions
-(defn asc [expr] (.asc (->column expr)))
-(defn asc-nulls-first [expr] (.asc_nulls_first (->column expr)))
-(defn asc-nulls-last [expr] (.asc_nulls_last (->column expr)))
-(defn desc [expr] (.desc (->column expr)))
-(defn desc-nulls-first [expr] (.desc_nulls_first (->column expr)))
-(defn desc-nulls-last [expr] (.desc_nulls_last (->column expr)))
+(defn asc [expr] (.asc (col expr)))
+(defn asc-nulls-first [expr] (.asc_nulls_first (col expr)))
+(defn asc-nulls-last [expr] (.asc_nulls_last (col expr)))
+(defn desc [expr] (.desc (col expr)))
+(defn desc-nulls-first [expr] (.desc_nulls_first (col expr)))
+(defn desc-nulls-last [expr] (.desc_nulls_last (col expr)))
 
 ;; Java Expressions
 (defn between [expr lower-bound upper-bound]
-  (.between (->column expr) lower-bound upper-bound))
+  (.between (col expr) lower-bound upper-bound))
 
 ;; Support Functions
-(defn hash-code [expr] (.hashCode (->column expr)))
+(defn hash-code [expr] (.hashCode (col expr)))
 
 ;; Shortcut Functions
-(defn null-rate [expr]
+(defn null-rate
+  "Aggregate function: returns the null rate of a column."
+  [expr]
   (-> expr
-      ->column
-      null?
+      col
+      is-null
       (cast "int")
       functions/mean
       (.as (clojure.core/str "null_rate(" (name expr) ")"))))
 
-(defn null-count [expr]
+(defn null-count
+  "Aggregate function: returns the null count of a column."
+  [expr]
   (-> expr
-      ->column
-      null?
+      col
+      is-null
       (cast "int")
       functions/sum
       (.as (clojure.core/str "null_count(" (name expr) ")"))))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.core.column
+  [(-> docs/spark-docs :core :column)])
+
+(docs/add-doc!
+  (var col)
+  (-> docs/spark-docs :core :functions :col))
+
+(docs/add-doc!
+  (var lit)
+  (-> docs/spark-docs :core :functions :lit))
+
+;; Aliases
+(import-fn bitwise-and &)
+(import-fn bitwise-or |)
+(import-fn is-na-n is-nan)
+(import-fn is-na-n nan?)
+(import-fn is-not-null not-null?)
+(import-fn is-null null?)
+(import-fn minus -)
+(import-fn col ->column)

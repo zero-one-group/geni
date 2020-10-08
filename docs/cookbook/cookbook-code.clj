@@ -66,6 +66,9 @@
 (-> renamed-df (g/limit 3) g/show)
 
 ;; 1.3 Describing Columns
+(-> renamed-df
+    g/describe
+    g/show)
 
 ;; 1.4 Writing Datasets
 (g/write-parquet! renamed-df "data/cookbook/bikes.parquet" {:mode "overwrite"})
