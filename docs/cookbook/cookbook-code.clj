@@ -325,7 +325,7 @@ columns-to-select
       {:n-snow-days (g/count-distinct
                      (g/when (g/like (g/lower :weather) "%snow%") :day))
        :n-days      (g/count-distinct :day)
-       :mean-temp   (g/mean :temp)})
+       :mean-temp   (g/mean :temp-c)})
     (g/order-by :year :month)
     (g/select {:year      :year
                :month     :month
@@ -337,7 +337,7 @@ columns-to-select
 (-> weather-2012
     (g/with-column :weather-description (g/explode (g/split :weather ",")))
     (g/group-by :weather-description)
-    (g/agg {:mean-temp (g/mean :temp)
+    (g/agg {:mean-temp (g/mean :temp-c)
             :n-days    (g/count-distinct :year :month :day)})
     (g/order-by (g/desc :mean-temp))
     (g/select {:weather-description :weather-description
