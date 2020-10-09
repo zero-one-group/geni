@@ -21,9 +21,7 @@
 (defn- set-rows-between [window-spec range-map]
   (.rowsBetween window-spec (:start range-map) (:end range-map)))
 
-(defn window
-  ;; TODO: add window class doc here.
-  [{:keys [partition-by order-by range-between rows-between]}]
+(defn window [{:keys [partition-by order-by range-between rows-between]}]
   (-> (new-window)
       (cond-> partition-by (set-partition-by (ensure-coll partition-by)))
       (cond-> order-by (set-order-by (ensure-coll order-by)))
@@ -34,7 +32,7 @@
 
 (def unbounded-following (Window/unboundedFollowing))
 
-(def unbounded-preceeding (Window/unboundedPreceding))
+(def unbounded-preceding (Window/unboundedPreceding))
 
 (def current-row (Window/currentRow))
 
@@ -52,8 +50,9 @@
 ;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.window
-  [(-> docs/spark-docs :core :window)])
+  [(-> docs/spark-docs :methods :core :window)
+   (-> docs/spark-docs :classes :core :window)])
 
 (docs/add-doc!
   (var over)
-  (-> docs/spark-docs :core :column :over))
+  (-> docs/spark-docs :methods :core :column :over))

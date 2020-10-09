@@ -344,7 +344,7 @@
 ;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.functions
-  [(-> docs/spark-docs :core :functions)])
+  [(-> docs/spark-docs :methods :core :functions)])
 
 ;; Aliases
 (import-fn atan-2 atan2)
@@ -378,3 +378,4 @@
 (import-fn weekofyear week-of-year)
 (import-fn window time-window)
 (import-fn xxhash-64 xxhash64)
+

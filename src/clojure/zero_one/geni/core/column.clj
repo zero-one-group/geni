@@ -200,15 +200,15 @@
 ;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.column
-  [(-> docs/spark-docs :core :column)])
+  [(-> docs/spark-docs :methods :core :column)])
 
 (docs/add-doc!
   (var col)
-  (-> docs/spark-docs :core :functions :col))
+  (-> docs/spark-docs :methods :core :functions :col))
 
 (docs/add-doc!
   (var lit)
-  (-> docs/spark-docs :core :functions :lit))
+  (-> docs/spark-docs :methods :core :functions :lit))
 
 ;; Aliases
 (import-fn bitwise-and &)

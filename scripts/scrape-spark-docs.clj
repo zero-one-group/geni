@@ -81,7 +81,7 @@
     {(keyword fn-name) class-doc}))
 
 (def class-doc-url-map
-  {:window ["sql/expressions/Window$.html"]
+  {:core {:window ["sql/expressions/Window$.html"]}
    :ml {:classification ["ml/classification/DecisionTreeClassifier.html"
                          "ml/classification/FMClassifier.html"
                          "ml/classification/GBTClassifier.html"
@@ -158,6 +158,9 @@
           :na-fns    "sql/DataFrameNaFunctions.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
           :window    "sql/expressions/Window$.html"}
+   :util {:bloom "util/sketch/BloomFilter.html"
+          :cms   "util/sketch/CountMinSketch.html"}
+   :ml {} ;; TODO: add models' attributes (e.g. intercept, factors)
    :rdd {:rdd      "api/java/JavaRDD.html"
          :pair-rdd "api/java/JavaPairRDD.html"}
    :spark {:session "sql/SparkSession.html"
@@ -183,10 +186,7 @@
 (defn scrape-spark-docs! []
   (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
-        ;; TODO: refactor this to {:methods method-docs :classes :class-docs}.
-        ;; TODO: change key of [:classes :window].
-        ;; TODO: refresh all docs.
-        complete-docs (merge method-docs class-docs)]
+        complete-docs {:methods method-docs :classes class-docs}]
     (nippy/freeze-to-file
       "resources/spark-docs.nippy"
       complete-docs
@@ -201,8 +201,8 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :core :window keys sort)
+  (-> spark-docs :classes :core :window keys sort)
 
-  (-> spark-docs :window)
+  (-> spark-docs :classes :core :window :window)
 
   true)
