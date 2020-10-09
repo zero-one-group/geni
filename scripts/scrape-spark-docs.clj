@@ -156,7 +156,7 @@
           :grouped   "sql/RelationalGroupedDataset.html"
           :na-fns    "sql/DataFrameNaFunctions.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
-          :window    "sql/expressions/Window.html"}
+          :window    "sql/expressions/Window$.html"}
    :rdd {:rdd      "api/java/JavaRDD.html"
          :pair-rdd "api/java/JavaPairRDD.html"}
    :spark {:session "sql/SparkSession.html"
