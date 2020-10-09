@@ -2,7 +2,7 @@
   (:require
     [zero-one.geni.core :as g]))
 
-(def data-path "/data/performance-benchmark-data")
+(def data-path "data/performance-benchmark-data")
 
 (def skeleton-df
   (g/cache (g/table->dataset (repeat (int 2e6) [1]) [:dummy])))
@@ -55,4 +55,4 @@
       (g/describe :count)
       g/show)
 
-  true)
+  )
