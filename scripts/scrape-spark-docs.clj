@@ -6,8 +6,6 @@
     [taoensso.nippy :as nippy]
     [zero-one.geni.core :as g]))
 
-;; TODO: add Bloom (util/sketch/BloomFilter.html)
-;; TODO: add CountMinSketch (util/sketch/CountMinSketch.html)
 (def spark-version (g/version))
 
 (def spark-doc-url
@@ -96,8 +94,11 @@
                      "ml/clustering/KMeans.html"
                      "ml/clustering/LDA.html"
                      "ml/clustering/PowerIterationClustering.html"]
+        :stat ["ml/stat/ChiSquareTest$.html"
+               "ml/stat/KolmogorovSmirnovTest$.html"]
         :tuning ["ml/tuning/CrossValidator.html"
                  "ml/tuning/TrainValidationSplit.html"]
+        :pipeline ["ml/Pipeline.html"]
         :evaluation ["ml/evaluation/BinaryClassificationEvaluator.html"
                      "ml/evaluation/ClusteringEvaluator.html"
                      "ml/evaluation/MulticlassClassificationEvaluator.html"
@@ -160,7 +161,37 @@
           :window    "sql/expressions/Window$.html"}
    :util {:bloom "util/sketch/BloomFilter.html"
           :cms   "util/sketch/CountMinSketch.html"}
-   :ml {} ;; TODO: add models' attributes (e.g. intercept, factors)
+   :ml {:functions   "ml/functions$.html"
+        :estimator   "ml/Estimator.html"
+        :transformer "ml/Transformer.html"
+        :evaluator   "ml/evaluation/Evaluator.html"
+        :features
+        {:count-vectorizer "ml/feature/CountVectorizerModel.html"
+         :idf              "ml/feature/IDFModel.html"
+         :imputer          "ml/feature/ImputerModel.html"
+         :max-abs          "ml/feature/MaxAbsScalerModel.html"
+         :one-hot-encoder  "ml/feature/OneHotEncoderModel.html"
+         :pca              "ml/feature/PCAModel.html"
+         :standard-scaler  "ml/feature/StandardScalerModel.html"
+         :vector-indexer   "ml/feature/VectorIndexerModel.html"
+         :vector-size-hint "ml/feature/VectorSizeHint.html"}
+        :models
+        {:classification      "ml/classification/ClassificationModel.html"
+         :cross-validator     "ml/tuning/CrossValidatorModel.html"
+         :decision-tree       "ml/classification/DecisionTreeClassificationModel.html"
+         :fp-growth           "ml/fpm/FPGrowthModel.html"
+         :gaussian-mixture    "ml/clustering/GaussianMixtureModel.html"
+         :isotonic-regression "ml/regression/IsotonicRegressionModel.html"
+         :k-means             "ml/clustering/KMeansModel.html"
+         :lda                 "ml/clustering/LDAModel.html"
+         :logistic-regression "ml/classification/LogisticRegressionModel.html"
+         :lsh                 "ml/feature/MinHashLSHModel.html"
+         :naive-bayes         "ml/classification/NaiveBayesModel.html"
+         :pipeline            "ml/PipelineModel.html"
+         :prediciton          "ml/PredictionModel.html"
+         :prefix-span         "ml/fpm/PrefixSpan.html"
+         :probabilistic       "ml/classification/ProbabilisticClassifier.html"
+         :random-forest       "ml/classification/RandomForestClassificationModel.html"}}
    :rdd {:rdd      "api/java/JavaRDD.html"
          :pair-rdd "api/java/JavaPairRDD.html"}
    :spark {:session "sql/SparkSession.html"
