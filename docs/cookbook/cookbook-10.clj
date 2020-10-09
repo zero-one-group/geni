@@ -1,6 +1,6 @@
 (ns geni.cookbook-10
   (:require
-   [clojure.java.io]
+   [clojure.java.io :as io]
    [clojure.java.shell]
    [zero-one.geni.core :as g]
    [zero-one.geni.ml :as ml]))
@@ -10,6 +10,15 @@
 ;; Part 10: Avoiding Repeated Computations with Caching
 
 (def dummy-data-path "data/performance-benchmark-data")
+
+;; We need to first pre-populate test data before we can read if not already done
+;; NOTE: this step will take sometime to complete, please be patient!
+(if-not (-> dummy-data-path io/file .exists)
+  (do
+    (println "Creating sample data for performance testing.")
+    (load-file "docs/cookbook/cookbook-performance-data.clj")
+    (println "Test data for performance testing is ready."))
+  (println (format "Test data exists at %s" dummy-data-path)))
 
 (def transactions (g/read-parquet! dummy-data-path))
 
