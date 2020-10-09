@@ -80,6 +80,7 @@
 
 (def class-doc-url-map
   {:core {:window ["sql/expressions/Window$.html"]}
+   :hash-partitioner ["HashPartitioner.html"]
    :ml {:classification ["ml/classification/DecisionTreeClassifier.html"
                          "ml/classification/FMClassifier.html"
                          "ml/classification/GBTClassifier.html"
@@ -159,12 +160,13 @@
           :na-fns    "sql/DataFrameNaFunctions.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
           :window    "sql/expressions/Window$.html"}
+   :hash-partitioner "HashPartitioner.html"
    :util {:bloom "util/sketch/BloomFilter.html"
           :cms   "util/sketch/CountMinSketch.html"}
-   :ml {:functions   "ml/functions$.html"
-        :estimator   "ml/Estimator.html"
-        :transformer "ml/Transformer.html"
+   :ml {:estimator   "ml/Estimator.html"
         :evaluator   "ml/evaluation/Evaluator.html"
+        :functions   "ml/functions$.html"
+        :transformer "ml/Transformer.html"
         :features
         {:count-vectorizer "ml/feature/CountVectorizerModel.html"
          :idf              "ml/feature/IDFModel.html"
@@ -192,10 +194,11 @@
          :prefix-span         "ml/fpm/PrefixSpan.html"
          :probabilistic       "ml/classification/ProbabilisticClassifier.html"
          :random-forest       "ml/classification/RandomForestClassificationModel.html"}}
-   :rdd {:rdd      "api/java/JavaRDD.html"
-         :pair-rdd "api/java/JavaPairRDD.html"}
-   :spark {:session "sql/SparkSession.html"
-           :context "api/java/JavaSparkContext.html"}
+   :partial-result "partial/PartialResult.html"
+   :rdd {:pair-rdd "api/java/JavaPairRDD.html"
+         :rdd      "api/java/JavaRDD.html"}
+   :spark {:context "api/java/JavaSparkContext.html"
+           :session "sql/SparkSession.html"}
    :streaming {:context      "streaming/api/java/JavaStreamingContext.html"
                :dstream      "streaming/api/java/JavaDStream.html"
                :pair-dstream "streaming/api/java/JavaPairDStream.html"}})
@@ -221,7 +224,7 @@
     (nippy/freeze-to-file
       "resources/spark-docs.nippy"
       complete-docs
-      {:compressor nippy/lz4hc-compressor})))
+      {:compressor nippy/lz4c-compressor})))
 
 (comment
 

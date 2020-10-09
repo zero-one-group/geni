@@ -16,7 +16,6 @@
     [zero-one.geni.core.dataset :as dataset]
     [zero-one.geni.core.dataset-creation :as dataset-creation]
     [zero-one.geni.core.functions :as sql]
-    [zero-one.geni.docs :as docs]
     [zero-one.geni.defaults]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
