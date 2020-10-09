@@ -81,7 +81,8 @@
     {(keyword fn-name) class-doc}))
 
 (def class-doc-url-map
-  {:ml {:classification ["ml/classification/DecisionTreeClassifier.html"
+  {:window ["sql/expressions/Window$.html"]
+   :ml {:classification ["ml/classification/DecisionTreeClassifier.html"
                          "ml/classification/FMClassifier.html"
                          "ml/classification/GBTClassifier.html"
                          "ml/classification/LinearSVC.html"
@@ -182,6 +183,9 @@
 (defn scrape-spark-docs! []
   (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
+        ;; TODO: refactor this to {:methods method-docs :classes :class-docs}.
+        ;; TODO: change key of [:classes :window].
+        ;; TODO: refresh all docs.
         complete-docs (merge method-docs class-docs)]
     (nippy/freeze-to-file
       "resources/spark-docs.nippy"
@@ -197,8 +201,8 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :ml :regression :fm-regressor)
+  (-> spark-docs :core :window keys sort)
 
-  (-> spark-docs :rdd :functions)
+  (-> spark-docs :window)
 
   true)
