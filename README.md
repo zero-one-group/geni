@@ -38,6 +38,7 @@ Geni provides an idiomatic Spark interface for Clojure without the hassle of Jav
             <li><a href="docs/xgboost.md">Optional XGBoost Support</a></li>
             <li><a href="docs/pandas_numpy_and_other_idioms.md">Pandas, NumPy and Other Idioms</a></li>
             <li><a href="docs/dataproc.md">Using Dataproc</a></li>
+            <li><a href="docs/kubernetes_basic.md">Using Kubernetes</a></li>
             <li><a href="docs/spark_session.md">Where's The Spark Session</a></li>
             <li><a href="docs/why.md">Why?</a></li>
             <li><a href="docs/sql_maps.md">Working with SQL Maps</a></li>
