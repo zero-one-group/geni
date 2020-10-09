@@ -32,7 +32,7 @@
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
-                 [reply "0.4.4"]
+                 [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
                  [zero.one/fxl "0.0.4"]]
   :profiles
   {:provided {:dependencies ~spark-deps}
