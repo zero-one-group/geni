@@ -9,7 +9,8 @@
 
 ;; Part 12: Customer Segmentation with NMF
 
-;; TODO: may need to download this data first?
+;; Note: need to get this from Kaggle - registration required
+;; e.g. https://www.kaggle.com/hikne707/online-retail?select=online_retail_II.xlsx
 (def invoices
   (g/read-csv! "data/online_retail_ii" {:kebab-columns true}))
 
