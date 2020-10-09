@@ -21,7 +21,9 @@
 (defn- set-rows-between [window-spec range-map]
   (.rowsBetween window-spec (:start range-map) (:end range-map)))
 
-(defn window [{:keys [partition-by order-by range-between rows-between]}]
+(defn window
+  ;; TODO: add window class doc here.
+  [{:keys [partition-by order-by range-between rows-between]}]
   (-> (new-window)
       (cond-> partition-by (set-partition-by (ensure-coll partition-by)))
       (cond-> order-by (set-order-by (ensure-coll order-by)))
