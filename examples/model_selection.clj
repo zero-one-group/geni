@@ -47,13 +47,32 @@
 
 (def testing
   (g/table->dataset
-    [[4 "spark i j k"]
-     [5 "l m n"]
-     [6 "mapreduce spark"]
-     [7 "apache hadoop"]]
-    [:id :text]))
+   [[4 "spark i j k"]
+    [5 "l m n"]
+    [6 "mapreduce spark"]
+    [7 "apache hadoop"]]
+   [:id :text]))
 
 (-> testing
     (ml/transform cv-model)
     (g/select :id :text :probability :prediction)
     g/collect)
+
+;;=>
+#_
+({:id 4,
+  :text "spark i j k",
+  :probability (1.994512925146874E-4 0.9998005487074854),
+  :prediction 1.0}
+ {:id 5,
+  :text "l m n",
+  :probability (0.9326577483128498 0.06734225168715033),
+  :prediction 0.0}
+ {:id 6,
+  :text "mapreduce spark",
+  :probability (0.5561018462768792 0.4438981537231208),
+  :prediction 0.0}
+ {:id 7,
+  :text "apache hadoop",
+  :probability (0.9488612611950926 0.051138738804907484),
+  :prediction 0.0})
