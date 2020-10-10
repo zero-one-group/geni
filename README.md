@@ -46,34 +46,34 @@ Geni provides an idiomatic Spark interface for Clojure without the hassle of Jav
       </td>
       <td>
         <ol start="0">
-            <li><a href="docs/cookbook/part_0_getting_started_with_clojure_geni_and_spark.md">
+            <li><a href="docs/cookbook/part_00_getting_started_with_clojure_geni_and_spark.md">
                 Getting Started with Clojure, Geni and Spark
             </a></li>
-            <li><a href="docs/cookbook/part_1_reading_and_writing_datasets.md">
+            <li><a href="docs/cookbook/part_01_reading_and_writing_datasets.md">
                 Reading and Writing Datasets
             </a></li>
-            <li><a href="docs/cookbook/part_2_selecting_rows_and_columns.md">
+            <li><a href="docs/cookbook/part_02_selecting_rows_and_columns.md">
                 Selecting Rows and Columns
             </a></li>
-            <li><a href="docs/cookbook/part_3_grouping_and_aggregating.md">
+            <li><a href="docs/cookbook/part_03_grouping_and_aggregating.md">
                 Grouping and Aggregating
             </a></li>
-            <li><a href="docs/cookbook/part_4_combining_datasets_with_joins_and_unions.md">
+            <li><a href="docs/cookbook/part_04_combining_datasets_with_joins_and_unions.md">
                 Combining Datasets with Joins and Unions
             </a></li>
-            <li><a href="docs/cookbook/part_5_string_operations.md">
+            <li><a href="docs/cookbook/part_05_string_operations.md">
                 String Operations
             </a></li>
-            <li><a href="docs/cookbook/part_6_cleaning_up_messy_data.md">
+            <li><a href="docs/cookbook/part_06_cleaning_up_messy_data.md">
                 Cleaning up Messy Data
             </a></li>
-            <li><a href="docs/cookbook/part_7_timestamps_and_dates.md">
+            <li><a href="docs/cookbook/part_07_timestamps_and_dates.md">
                 Timestamps and Dates
             </a></li>
-            <li><a href="docs/cookbook/part_8_window_functions.md">
+            <li><a href="docs/cookbook/part_08_window_functions.md">
                 Window Functions
             </a></li>
-            <li><a href="docs/cookbook/part_9_reading_from_and_writing_to_sql_databases.md">
+            <li><a href="docs/cookbook/part_09_reading_from_and_writing_to_sql_databases.md">
                 Reading from and Writing to SQL Databases
             </a></li>
             <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
