@@ -301,7 +301,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                 ;; Databases
                 [mysql/mysql-connector-java "8.0.21"]
-                [org.postgresql/postgresql "42.2.14"]
+                [org.postgresql/postgresql "42.2.17"]
                 [org.xerial/sqlite-jdbc "3.32.3.1"]
                 ;; Optional: Spark XGBoost
                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
