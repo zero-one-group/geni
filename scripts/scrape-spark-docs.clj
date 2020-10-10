@@ -95,26 +95,12 @@
                      "ml/clustering/KMeans.html"
                      "ml/clustering/LDA.html"
                      "ml/clustering/PowerIterationClustering.html"]
-        :stat ["ml/stat/ChiSquareTest$.html"
-               "ml/stat/KolmogorovSmirnovTest$.html"]
-        :tuning ["ml/tuning/CrossValidator.html"
-                 "ml/tuning/TrainValidationSplit.html"]
-        :pipeline ["ml/Pipeline.html"]
         :evaluation ["ml/evaluation/BinaryClassificationEvaluator.html"
                      "ml/evaluation/ClusteringEvaluator.html"
                      "ml/evaluation/MulticlassClassificationEvaluator.html"
                      "ml/evaluation/MultilabelClassificationEvaluator.html"
                      "ml/evaluation/RankingEvaluator.html"
                      "ml/evaluation/RegressionEvaluator.html"]
-        :regression ["ml/regression/AFTSurvivalRegression.html"
-                     "ml/regression/DecisionTreeRegressor.html"
-                     "ml/regression/FMRegressor.html"
-                     "ml/regression/GBTRegressor.html"
-                     "ml/regression/GeneralizedLinearRegression.html"
-                     "ml/regression/IsotonicRegression.html"
-                     "ml/regression/LinearRegression.html"
-                     "ml/regression/RandomForestRegressor.html"]
-        :recommendation ["ml/recommendation/ALS.html"]
         :feature ["ml/feature/Binarizer.html"
                   "ml/feature/BucketedRandomProjectionLSH.html"
                   "ml/feature/Bucketizer.html"
@@ -150,7 +136,25 @@
                   "ml/feature/VectorIndexer.html"
                   "ml/feature/VectorSizeHint.html"
                   "ml/feature/VectorSlicer.html"
-                  "ml/feature/Word2Vec.html"]}})
+                  "ml/feature/Word2Vec.html"]
+        :fpm ["ml/fpm/FPGrowthModel.html"
+              "ml/fpm/PrefixSpan.html"]
+        :pipeline ["ml/Pipeline.html"]
+        :recommendation ["ml/recommendation/ALS.html"]
+        :regression ["ml/regression/AFTSurvivalRegression.html"
+                     "ml/regression/DecisionTreeRegressor.html"
+                     "ml/regression/FMRegressor.html"
+                     "ml/regression/GBTRegressor.html"
+                     "ml/regression/GeneralizedLinearRegression.html"
+                     "ml/regression/IsotonicRegression.html"
+                     "ml/regression/LinearRegression.html"
+                     "ml/regression/RandomForestRegressor.html"]
+        :stat ["ml/stat/ChiSquareTest$.html" ;; FIXME: absent doc
+               "ml/stat/Correlation$.html"
+               "ml/stat/KolmogorovSmirnovTest$.html"]
+        :tuning ["ml/tuning/CrossValidator.html"
+                 "ml/tuning/ParamGridBuilder.html"
+                 "ml/tuning/TrainValidationSplit.html"]}})
 
 (def method-doc-url-map
   {:core {:column    "sql/Column.html"
@@ -172,13 +176,16 @@
          :idf              "ml/feature/IDFModel.html"
          :imputer          "ml/feature/ImputerModel.html"
          :max-abs          "ml/feature/MaxAbsScalerModel.html"
+         :min-max-scaler   "ml/feature/MinMaxScalerModel.html"
          :one-hot-encoder  "ml/feature/OneHotEncoderModel.html"
          :pca              "ml/feature/PCAModel.html"
          :standard-scaler  "ml/feature/StandardScalerModel.html"
+         :string-indexer   "ml/feature/StringIndexerModel.html"
          :vector-indexer   "ml/feature/VectorIndexerModel.html"
          :vector-size-hint "ml/feature/VectorSizeHint.html"}
         :models
-        {:classification      "ml/classification/ClassificationModel.html"
+        {:als                 "ml/recommendation/ALSModel.html"
+         :classification      "ml/classification/ClassificationModel.html"
          :cross-validator     "ml/tuning/CrossValidatorModel.html"
          :decision-tree       "ml/classification/DecisionTreeClassificationModel.html"
          :fp-growth           "ml/fpm/FPGrowthModel.html"
@@ -186,11 +193,12 @@
          :isotonic-regression "ml/regression/IsotonicRegressionModel.html"
          :k-means             "ml/clustering/KMeansModel.html"
          :lda                 "ml/clustering/LDAModel.html"
+         :linear-regression   "ml/regression/LinearRegressionModel.html"
          :logistic-regression "ml/classification/LogisticRegressionModel.html"
          :lsh                 "ml/feature/MinHashLSHModel.html"
          :naive-bayes         "ml/classification/NaiveBayesModel.html"
          :pipeline            "ml/PipelineModel.html"
-         :prediciton          "ml/PredictionModel.html"
+         :prediction          "ml/PredictionModel.html"
          :prefix-span         "ml/fpm/PrefixSpan.html"
          :probabilistic       "ml/classification/ProbabilisticClassifier.html"
          :random-forest       "ml/classification/RandomForestClassificationModel.html"}}

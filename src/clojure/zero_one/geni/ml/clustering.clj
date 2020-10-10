@@ -1,5 +1,7 @@
 (ns zero-one.geni.ml.clustering
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.clustering BisectingKMeans
@@ -29,7 +31,6 @@
                   :prediction-col "prediction"}
         props     (merge defaults params)]
     (interop/instantiate GaussianMixture props)))
-(def gmm gaussian-mixture)
 
 (defn k-means [params]
   (let [defaults {:max-iter         20,
@@ -59,7 +60,6 @@
                   :features-col "features"}
         props     (merge defaults params)]
     (interop/instantiate LDA props)))
-(def latent-dirichlet-allocation lda)
 
 (defn power-iteration-clustering [params]
   (let [defaults {:k         2,
@@ -69,3 +69,12 @@
                   :max-iter  20}
         props     (merge defaults params)]
     (interop/instantiate PowerIterationClustering props)))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.clustering
+  [(-> docs/spark-docs :classes :ml :clustering)])
+
+;; Aliases
+(import-fn gaussian-mixture gmm)
+(import-fn lda latent-dirichlet-allocation)

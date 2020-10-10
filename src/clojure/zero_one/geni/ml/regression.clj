@@ -152,6 +152,7 @@
         props     (-> (merge defaults params))]
     (interop/instantiate FMRegressor props)))
 
+;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.ml.regression
   [(-> docs/spark-docs :classes :ml :regression)])

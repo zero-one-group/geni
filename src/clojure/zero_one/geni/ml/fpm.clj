@@ -1,5 +1,7 @@
 (ns zero-one.geni.ml.fpm
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.fpm FPGrowth
@@ -12,7 +14,6 @@
                   :prediction-col "prediction"}
         props     (merge defaults params)]
     (interop/instantiate FPGrowth props)))
-(def frequent-pattern-growth fp-growth)
 
 (defn prefix-span [params]
   (let [defaults {:min-support            0.1,
@@ -21,3 +22,11 @@
                   :max-local-proj-db-size 32000000}
         props     (merge defaults params)]
     (interop/instantiate PrefixSpan props)))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.fpm
+  [(-> docs/spark-docs :classes :ml :fpm)])
+
+;; Aliases
+(import-fn fp-growth frequent-pattern-growth)
