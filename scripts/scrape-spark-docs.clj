@@ -222,9 +222,9 @@
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
         complete-docs {:methods method-docs :classes class-docs}]
     (nippy/freeze-to-file
-      "resources/spark-docs.nippy"
-      complete-docs
-      {:compressor nippy/lz4c-compressor})))
+     "resources/spark-docs.nippy"
+     complete-docs
+     {:compressor nippy/lz4hc-compressor})))
 
 (comment
 
