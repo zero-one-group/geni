@@ -497,7 +497,7 @@
   [zero-one.geni.core.window
    over
    unbounded-following
-   unbounded-preceeding
+   unbounded-preceding
    window
    windowed])
 

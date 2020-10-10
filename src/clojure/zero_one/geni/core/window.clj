@@ -1,6 +1,7 @@
 (ns zero-one.geni.core.window
   (:require
     [zero-one.geni.core.column :refer [->col-array]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (org.apache.spark.sql.expressions Window)))
@@ -31,13 +32,27 @@
 
 (def unbounded-following (Window/unboundedFollowing))
 
-(def unbounded-preceeding (Window/unboundedPreceding))
+(def unbounded-preceding (Window/unboundedPreceding))
 
 (def current-row (Window/currentRow))
 
-(defn windowed [options]
+(defn windowed
+  "Shortcut to create WindowSpec that takes a map as the argument.
+
+  Expected keys:  [:partition-by :order-by :range-between :rows-between]"
+  [options]
   (over (:window-col options)
         (window (select-keys options [:partition-by
                                       :order-by
                                       :range-between
                                       :rows-between]))))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.core.window
+  [(-> docs/spark-docs :methods :core :window)
+   (-> docs/spark-docs :classes :core :window)])
+
+(docs/add-doc!
+  (var over)
+  (-> docs/spark-docs :methods :core :column :over))
