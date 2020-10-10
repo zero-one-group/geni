@@ -362,26 +362,28 @@
 ;; Docs
 (docs/alter-docs-in-ns!
   'zero-one.geni.core.dataset
-  [(-> docs/spark-docs :core :dataset)
-   (-> docs/spark-docs :core :grouped)
-   (-> docs/spark-docs :core :na-fns)
-   (-> docs/spark-docs :core :stat-fns)])
+  [(-> docs/spark-docs :methods :core :dataset)
+   (-> docs/spark-docs :methods :core :grouped)
+   (-> docs/spark-docs :methods :core :na-fns)
+   (-> docs/spark-docs :methods :core :stat-fns)
+   (-> docs/spark-docs :methods :util :bloom)
+   (-> docs/spark-docs :methods :util :cms)])
 
 (docs/add-doc!
   (var partitions)
-  (-> docs/spark-docs :rdd :rdd :partitions))
+  (-> docs/spark-docs :methods :rdd :rdd :partitions))
 
 (docs/add-doc!
   (var drop-na)
-  (-> docs/spark-docs :core :na-fns :drop))
+  (-> docs/spark-docs :methods :core :na-fns :drop))
 
 (docs/add-doc!
   (var fill-na)
-  (-> docs/spark-docs :core :na-fns :fill))
+  (-> docs/spark-docs :methods :core :na-fns :fill))
 
 (docs/add-doc!
   (var replace-na)
-  (-> docs/spark-docs :core :na-fns :replace))
+  (-> docs/spark-docs :methods :core :na-fns :replace))
 
 ;; Aliases
 (import-fn is-local local?)
@@ -389,3 +391,4 @@
 (import-fn is-streaming streaming?)
 (import-fn order-by sort)
 (import-fn is-compatible compatible?)
+

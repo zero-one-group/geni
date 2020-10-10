@@ -154,7 +154,7 @@
 
 (docs/alter-docs-in-ns!
   'zero-one.geni.ml.regression
-  [(-> docs/spark-docs :ml :regression)])
+  [(-> docs/spark-docs :classes :ml :regression)])
 
 ;; Aliases
 (import-fn generalized-linear-regression generalised-linear-regression)

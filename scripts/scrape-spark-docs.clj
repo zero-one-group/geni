@@ -6,8 +6,6 @@
     [taoensso.nippy :as nippy]
     [zero-one.geni.core :as g]))
 
-;; TODO: add Bloom (util/sketch/BloomFilter.html)
-;; TODO: add CountMinSketch (util/sketch/CountMinSketch.html)
 (def spark-version (g/version))
 
 (def spark-doc-url
@@ -81,7 +79,9 @@
     {(keyword fn-name) class-doc}))
 
 (def class-doc-url-map
-  {:ml {:classification ["ml/classification/DecisionTreeClassifier.html"
+  {:core {:window ["sql/expressions/Window$.html"]}
+   :hash-partitioner ["HashPartitioner.html"]
+   :ml {:classification ["ml/classification/DecisionTreeClassifier.html"
                          "ml/classification/FMClassifier.html"
                          "ml/classification/GBTClassifier.html"
                          "ml/classification/LinearSVC.html"
@@ -95,8 +95,11 @@
                      "ml/clustering/KMeans.html"
                      "ml/clustering/LDA.html"
                      "ml/clustering/PowerIterationClustering.html"]
+        :stat ["ml/stat/ChiSquareTest$.html"
+               "ml/stat/KolmogorovSmirnovTest$.html"]
         :tuning ["ml/tuning/CrossValidator.html"
                  "ml/tuning/TrainValidationSplit.html"]
+        :pipeline ["ml/Pipeline.html"]
         :evaluation ["ml/evaluation/BinaryClassificationEvaluator.html"
                      "ml/evaluation/ClusteringEvaluator.html"
                      "ml/evaluation/MulticlassClassificationEvaluator.html"
@@ -156,11 +159,46 @@
           :grouped   "sql/RelationalGroupedDataset.html"
           :na-fns    "sql/DataFrameNaFunctions.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
-          :window    "sql/expressions/Window.html"}
-   :rdd {:rdd      "api/java/JavaRDD.html"
-         :pair-rdd "api/java/JavaPairRDD.html"}
-   :spark {:session "sql/SparkSession.html"
-           :context "api/java/JavaSparkContext.html"}
+          :window    "sql/expressions/Window$.html"}
+   :hash-partitioner "HashPartitioner.html"
+   :util {:bloom "util/sketch/BloomFilter.html"
+          :cms   "util/sketch/CountMinSketch.html"}
+   :ml {:estimator   "ml/Estimator.html"
+        :evaluator   "ml/evaluation/Evaluator.html"
+        :functions   "ml/functions$.html"
+        :transformer "ml/Transformer.html"
+        :features
+        {:count-vectorizer "ml/feature/CountVectorizerModel.html"
+         :idf              "ml/feature/IDFModel.html"
+         :imputer          "ml/feature/ImputerModel.html"
+         :max-abs          "ml/feature/MaxAbsScalerModel.html"
+         :one-hot-encoder  "ml/feature/OneHotEncoderModel.html"
+         :pca              "ml/feature/PCAModel.html"
+         :standard-scaler  "ml/feature/StandardScalerModel.html"
+         :vector-indexer   "ml/feature/VectorIndexerModel.html"
+         :vector-size-hint "ml/feature/VectorSizeHint.html"}
+        :models
+        {:classification      "ml/classification/ClassificationModel.html"
+         :cross-validator     "ml/tuning/CrossValidatorModel.html"
+         :decision-tree       "ml/classification/DecisionTreeClassificationModel.html"
+         :fp-growth           "ml/fpm/FPGrowthModel.html"
+         :gaussian-mixture    "ml/clustering/GaussianMixtureModel.html"
+         :isotonic-regression "ml/regression/IsotonicRegressionModel.html"
+         :k-means             "ml/clustering/KMeansModel.html"
+         :lda                 "ml/clustering/LDAModel.html"
+         :logistic-regression "ml/classification/LogisticRegressionModel.html"
+         :lsh                 "ml/feature/MinHashLSHModel.html"
+         :naive-bayes         "ml/classification/NaiveBayesModel.html"
+         :pipeline            "ml/PipelineModel.html"
+         :prediciton          "ml/PredictionModel.html"
+         :prefix-span         "ml/fpm/PrefixSpan.html"
+         :probabilistic       "ml/classification/ProbabilisticClassifier.html"
+         :random-forest       "ml/classification/RandomForestClassificationModel.html"}}
+   :partial-result "partial/PartialResult.html"
+   :rdd {:pair-rdd "api/java/JavaPairRDD.html"
+         :rdd      "api/java/JavaRDD.html"}
+   :spark {:context "api/java/JavaSparkContext.html"
+           :session "sql/SparkSession.html"}
    :streaming {:context      "streaming/api/java/JavaStreamingContext.html"
                :dstream      "streaming/api/java/JavaDStream.html"
                :pair-dstream "streaming/api/java/JavaPairDStream.html"}})
@@ -182,11 +220,11 @@
 (defn scrape-spark-docs! []
   (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
-        complete-docs (merge method-docs class-docs)]
+        complete-docs {:methods method-docs :classes class-docs}]
     (nippy/freeze-to-file
       "resources/spark-docs.nippy"
       complete-docs
-      {:compressor nippy/lz4hc-compressor})))
+      {:compressor nippy/lz4c-compressor})))
 
 (comment
 
@@ -197,8 +235,8 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :ml :regression :fm-regressor)
+  (-> spark-docs :classes :core :window keys sort)
 
-  (-> spark-docs :rdd :functions)
+  (-> spark-docs :classes :core :window :window)
 
   true)
