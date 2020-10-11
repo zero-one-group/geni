@@ -8,7 +8,7 @@ I will show here the most simple one, which can be replicated on a single comput
 
 ## Prerequisits
 
-The following steps assume a Linux based OS having [https://docs.docker.com/engine/install/](Docker) and [https://kubernetes.io/docs/tasks/tools/install-minikube/](Minikube) installed.
+The following steps assume a Linux based OS having [Docker](https://docs.docker.com/engine/install/) and [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) installed.
 
 ## Install spark distribution
 Running spark on Kubernetes requires to create Docker images for the nodes.
