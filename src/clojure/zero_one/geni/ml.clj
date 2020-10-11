@@ -3,9 +3,10 @@
   (:require
     [camel-snake-kebab.core :refer [->kebab-case]]
     [clojure.walk :refer [keywordize-keys]]
-    [potemkin :refer [import-vars]]
+    [potemkin :refer [import-fn import-vars]]
     [zero-one.geni.core.column :as column]
     [zero-one.geni.core.polymorphic :as polymorphic]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.ml.classification]
     [zero-one.geni.ml.clustering]
@@ -90,6 +91,7 @@
    vector-assembler
    vector-indexer
    vector-size-hint
+   word-2-vec
    word2vec])
 
 (import-vars
@@ -139,14 +141,14 @@
 
 (import-vars
   [zero-one.geni.ml.tuning
-   param-grid
    cross-validator
+   param-grid
+   param-grid-builder
    train-validation-split])
 
 (defn vector-to-array
   ([expr] (vector-to-array (column/->column expr) "float64"))
   ([expr dtype] (functions/vector_to_array (column/->column expr) dtype)))
-(def vector->array vector-to-array)
 
 (def corr polymorphic/corr)
 
@@ -178,7 +180,7 @@
          (into {})
          keywordize-keys)))
 
-(defn approx-nearest-neighbours
+(defn approx-nearest-neighbors
   ([dataset model key-v n-nearest]
    (.approxNearestNeighbors model dataset (interop/dense key-v) n-nearest))
   ([dataset model key-v n-nearest dist-col]
@@ -203,37 +205,24 @@
 (defn feature-importances [model] (interop/->clojure (.featureImportances model)))
 (defn find-frequent-sequential-patterns [dataset prefix-span]
   (.findFrequentSequentialPatterns prefix-span dataset))
-(def find-patterns find-frequent-sequential-patterns)
-(defn frequent-item-sets [model] (.freqItemsets model))
-(def freq-itemsets frequent-item-sets)
+(defn freq-itemsets [model] (.freqItemsets model))
 (defn gaussians-df [model] (.gaussiansDF model))
 (defn get-features-col [model] (.getFeaturesCol model))
-(def features-col get-features-col)
 (defn get-input-col [model] (.getInputCol model))
-(def input-col get-input-col)
 (defn get-input-cols [model] (seq (.getInputCols model)))
-(def input-cols get-input-cols)
 (defn get-label-col [model] (.getLabelCol model))
-(def label-col get-label-col)
 (defn get-output-col [model] (.getOutputCol model))
-(def output-col get-output-col)
 (defn get-output-cols [model] (seq (.getOutputCols model)))
-(def output-cols get-output-cols)
 (defn get-prediction-col [model] (.getPredictionCol model))
-(def prediction-col get-prediction-col)
 (defn get-probability-col [model] (.getProbabilityCol model))
-(def probability-col get-probability-col)
 (defn get-raw-prediction-col [model] (.getRawPredictionCol model))
-(def raw-prediction-col get-raw-prediction-col)
 (defn get-thresholds [model] (seq (.getThresholds model)))
-(def thresholds get-thresholds)
 (defn get-num-trees [model] (.getNumTrees model))
 (defn get-size [model] (.getSize model))
 (defn idf-vector [model] (interop/vector->seq (.idf model)))
 (defn intercept [model] (.intercept model))
 (defn intercept-vector [model] (interop/vector->seq (.interceptVector model)))
 (defn is-distributed [model] (.isDistributed model))
-(def distributed? is-distributed)
 (defn labels [model] (seq (.labels model)))
 (defn log-likelihood [dataset model] (.logLikelihood model dataset))
 (defn log-perplexity [dataset model] (.logPerplexity model dataset))
@@ -245,13 +234,11 @@
 (defn original-max [model] (interop/vector->seq (.originalMax model)))
 (defn original-min [model] (interop/vector->seq (.originalMin model)))
 (defn pc [model] (interop/matrix->seqs (.pc model)))
-(def principal-components pc)
 (defn pi [model] (interop/vector->seq (.pi model)))
 (defn root-node [model] (.rootNode model))
 (defn scale [model] (.scale model))
 (defn summary [model] (.summary model))
 (defn supported-optimizers [model] (seq (.supportedOptimizers model)))
-(def supported-optimisers supported-optimizers)
 (defn stages [model] (seq (.stages model)))
 (defn std [model] (interop/vector->seq (.std model)))
 (defn surrogate-df [model] (.surrogateDF model))
@@ -277,11 +264,11 @@
                                 (dissoc options :mode))]
      (.save configured-writer path))))
 
-(defn load-method? [^java.lang.reflect.Method method]
+(defn- load-method? [^java.lang.reflect.Method method]
   (and ; (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
        (= "load" (.getName method))))
 
-(defn load-method [cls]
+(defn- load-method [cls]
   (->> cls
        .getMethods
        (filter load-method?)
@@ -290,7 +277,54 @@
 (defn read-stage! [model-cls path]
   (.invoke (load-method model-cls) model-cls (into-array [path])))
 
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml
+  (-> docs/spark-docs :methods :ml :models vals))
+
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml
+  (-> docs/spark-docs :methods :ml :features vals))
+
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml
+  [(-> docs/spark-docs :classes :ml :stat)])
+
+(docs/add-doc!
+  (var idf-vector)
+  (-> docs/spark-docs :methods :ml :features :idf :idf))
+
+(docs/add-doc!
+  (var pipeline)
+  (-> docs/spark-docs :classes :ml :pipeline))
+
+(docs/add-doc!
+  (var vector-to-array)
+  (-> docs/spark-docs :methods :ml :functions :vector-to-array))
+
+;; Aliases
+(import-fn approx-nearest-neighbors approx-nearest-neighbours)
+(import-fn find-frequent-sequential-patterns find-patterns)
+(import-fn freq-itemsets frequent-item-sets)
+(import-fn get-features-col features-col)
+(import-fn get-input-col input-col)
+(import-fn get-input-cols input-cols)
+(import-fn get-label-col label-col)
+(import-fn get-output-col output-col)
+(import-fn get-output-cols output-cols)
+(import-fn get-prediction-col prediction-col)
+(import-fn get-probability-col probability-col)
+(import-fn get-raw-prediction-col raw-prediction-col)
+(import-fn get-thresholds thresholds)
+(import-fn is-distributed distributed?)
+(import-fn pc principal-components)
+(import-fn supported-optimizers supported-optimisers)
+(import-fn vector-to-array vector->array)
+
 (comment
+
+  (count (docs/docless-vars *ns*))
+  (-> docs/spark-docs :classes :ml :feature keys sort)
 
   (import '(org.apache.spark.ml.classification GBTRegressor))
   (params (GBTRegressor))

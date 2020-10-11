@@ -1,12 +1,14 @@
 (ns zero-one.geni.ml.tuning
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.tuning CrossValidator
                                 ParamGridBuilder
                                 TrainValidationSplit)))
 
-(defn param-grid [grids]
+(defn param-grid-builder [grids]
   (let [builder (ParamGridBuilder.)]
     (doall
       (for [[stage grid-map] grids]
@@ -34,3 +36,12 @@
       (cond-> estimator-param-maps (.setEstimatorParamMaps estimator-param-maps))
       (cond-> seed (.setSeed seed))
       (cond-> parallelism (.setParallelism parallelism))))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.tuning
+  [(-> docs/spark-docs :classes :ml :tuning)])
+
+;; Aliases
+(import-fn param-grid-builder param-grid)
+

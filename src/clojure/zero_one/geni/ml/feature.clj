@@ -1,5 +1,7 @@
 (ns zero-one.geni.ml.feature
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
   (:import
@@ -71,11 +73,10 @@
         props    (merge defaults params)]
     (interop/instantiate NGram props)))
 
-(defn binariser [params]
+(defn binarizer [params]
   (let [defaults {:threshold 0.5}
         props    (merge defaults params)]
     (interop/instantiate Binarizer props)))
-(def binarizer binariser)
 
 (defn pca [params]
   (interop/instantiate PCA params))
@@ -85,11 +86,10 @@
         props    (merge defaults params)]
     (interop/instantiate PolynomialExpansion props)))
 
-(defn discrete-cosine-transform [params]
+(defn dct [params]
   (let [defaults {:inverse false}
         props    (merge defaults params)]
     (interop/instantiate DCT props)))
-(def dct discrete-cosine-transform)
 
 (defn string-indexer [params]
   (let [defaults {:handle-invalid "error"
@@ -113,11 +113,10 @@
 (defn interaction [params]
   (interop/instantiate Interaction params))
 
-(defn normaliser [params]
+(defn normalizer [params]
   (let [defaults {:p 2.0}
         props    (merge defaults params)]
     (interop/instantiate Normalizer props)))
-(def normalizer normaliser)
 
 (defn standard-scaler [params]
   (let [defaults {:with-std true :with-mean false}
@@ -132,11 +131,10 @@
 (defn max-abs-scaler [params]
   (interop/instantiate MaxAbsScaler params))
 
-(defn bucketiser [params]
+(defn bucketizer [params]
   (let [defaults {:handle-invalid "error"}
         props    (merge defaults params)]
     (interop/instantiate Bucketizer props)))
-(def bucketizer bucketiser)
 
 (defn elementwise-product [params]
   (let [params (if (:scaling-vec params)
@@ -152,13 +150,12 @@
         props    (merge defaults params)]
     (interop/instantiate VectorSizeHint props)))
 
-(defn quantile-discretiser [params]
+(defn quantile-discretizer [params]
   (let [defaults {:handle-invalid "error"
                   :num-buckets    2
                   :relative-error 0.001}
         props    (merge defaults params)]
     (interop/instantiate QuantileDiscretizer props)))
-(def quantile-discretizer quantile-discretiser)
 
 (defn imputer [params]
   (let [defaults {:missing-value ##NaN
@@ -178,7 +175,7 @@
         props    (merge defaults params)]
     (interop/instantiate MinHashLSH props)))
 
-(defn count-vectoriser [params]
+(defn count-vectorizer [params]
   (let [defaults {:vocab-size 262144,
                   :min-df     1.0,
                   :min-tf     1.0,
@@ -186,16 +183,14 @@
                   :max-df     9.223372036854776E18}
         props    (merge defaults params)]
     (interop/instantiate CountVectorizer props)))
-(def count-vectorizer count-vectoriser)
 
 (defn idf [params]
   (let [defaults {:min-doc-freq 0}
         props    (merge defaults params)]
     (interop/instantiate IDF props)))
 
-(defn tokeniser [params]
+(defn tokenizer [params]
   (interop/instantiate Tokenizer params))
-(def tokenizer tokeniser)
 
 (defn hashing-tf [params]
   (let [defaults {:binary       false
@@ -204,7 +199,7 @@
     (interop/instantiate HashingTF props)))
 
 
-(defn word2vec [params]
+(defn word-2-vec [params]
   (let [defaults {:max-iter            1,
                   :step-size           0.025,
                   :window-size         5,
@@ -216,14 +211,13 @@
         props    (merge defaults params)]
     (interop/instantiate Word2Vec props)))
 
-(defn regex-tokeniser [params]
+(defn regex-tokenizer [params]
   (let [defaults {:to-lowercase true,
                   :pattern "\\s+",
                   :min-token-length 1,
                   :gaps true}
         props    (merge defaults params)]
     (interop/instantiate RegexTokenizer props)))
-(def regex-tokenizer regex-tokeniser)
 
 (defn robust-scaler [params]
   (let [defaults {:upper          0.75,
@@ -233,3 +227,20 @@
                   :with-scaling   true}
         props    (merge defaults params)]
     (interop/instantiate RobustScaler props)))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.feature
+  [(-> docs/spark-docs :classes :ml :feature)])
+
+;; Aliases
+(import-fn binarizer binariser)
+(import-fn bucketizer bucketiser)
+(import-fn count-vectorizer count-vectoriser)
+(import-fn dct discrete-cosine-transform)
+(import-fn normalizer normaliser)
+(import-fn quantile-discretizer quantile-discretiser)
+(import-fn regex-tokenizer regex-tokeniser)
+(import-fn tokenizer tokeniser)
+(import-fn word-2-vec word2vec)
+

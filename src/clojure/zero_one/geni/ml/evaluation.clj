@@ -1,5 +1,6 @@
 (ns zero-one.geni.ml.evaluation
   (:require
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
@@ -26,4 +27,9 @@
 
 (defn regression-evaluator [params]
   (interop/instantiate RegressionEvaluator params))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.evaluation
+  [(-> docs/spark-docs :classes :ml :evaluation)])
 

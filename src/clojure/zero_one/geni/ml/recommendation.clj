@@ -1,5 +1,7 @@
 (ns zero-one.geni.ml.recommendation
   (:require
+    [potemkin :refer [import-fn]]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.ml.recommendation ALS)))
@@ -24,7 +26,6 @@
                   :num-user-blocks 10}
         props    (merge defaults params)]
     (interop/instantiate ALS props)))
-(def alternating-least-squares als)
 
 (defn recommend-for-all-users [model num-items]
   (.recommendForAllUsers model num-items))
@@ -49,3 +50,13 @@
 (defn item-factors [model] (.itemFactors model))
 
 (defn user-factors [model] (.userFactors model))
+
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.ml.recommendation
+  [(-> docs/spark-docs :classes :ml :recommendation)
+   (-> docs/spark-docs :methods :ml :models :als)])
+
+;; Aliases
+(import-fn als alternating-least-squares)
+
