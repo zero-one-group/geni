@@ -29,13 +29,31 @@
     (ml/transform pipeline-model)
     (g/collect-col :features))
 
+;;=>
+#_
+((0.28768207245178085
+  0.6931471805599453
+  0.28768207245178085
+  0.5753641449035617)
+ (0.6931471805599453
+  0.6931471805599453
+  1.3862943611198906
+  0.28768207245178085
+  0.6931471805599453
+  0.28768207245178085)
+ (0.6931471805599453
+  0.6931471805599453
+  0.28768207245178085
+  0.6931471805599453
+  0.6931471805599453))
+
 ;; PCA
 (def dataframe
   (g/table->dataset
-    [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
-     [(g/dense 2.0 0.0 3.0 4.0 5.0)]
-     [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
-    [:features]))
+   [[(g/dense 0.0 1.0 0.0 7.0 0.0)]
+    [(g/dense 2.0 0.0 3.0 4.0 5.0)]
+    [(g/dense 4.0 0.0 0.0 6.0 7.0)]]
+   [:features]))
 
 (def pca
   (ml/fit dataframe (ml/pca {:input-col :features
@@ -45,6 +63,12 @@
 (-> dataframe
     (ml/transform pca)
     (g/collect-col :pca-features))
+
+;;=>
+#_
+((1.6485728230883814 -4.0132827005162985 -1.0091435193998504)
+ (-4.645104331781533 -1.1167972663619048 -1.0091435193998501)
+ (-6.428880535676488 -5.337951427775359 -1.009143519399851))
 
 ;; Standard Scaler
 (def scaler
@@ -63,8 +87,8 @@
 ;; Vector Assembler
 (def dataset
   (g/table->dataset
-    [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
-    [:id :hour :mobile :user-features :clicked]))
+   [[0 18 1.0 (g/dense 0.0 10.0 0.5) 1.0]]
+   [:id :hour :mobile :user-features :clicked]))
 
 (def assembler
   (ml/vector-assembler {:input-cols [:hour :mobile :user-features]
@@ -74,3 +98,10 @@
     (ml/transform assembler)
     (g/select :features :clicked)
     g/show)
+
+;;=>
+;; +-----------------------+-------+
+;; |features               |clicked|
+;; +-----------------------+-------+
+;; |[18.0,1.0,0.0,10.0,0.5]|1.0    |
+;; +-----------------------+-------+
