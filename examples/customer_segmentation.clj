@@ -1,8 +1,9 @@
 (ns examples.customer-segmentation
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]))
 
+;; TODO: need to first get this data before we can read them
 (def invoices
   (g/->kebab-columns (g/read-csv! "data/online_retail_ii")))
 
