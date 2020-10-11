@@ -1,9 +1,9 @@
 ;; Taken from https://github.com/amperity/sparkplug
 (ns zero-one.geni.rdd.unmangle
   (:require
-    [clojure.string :as string])
+   [clojure.string :as string])
   (:import
-    (clojure.lang Compiler)))
+   (clojure.lang Compiler)))
 
 (defn- internal-call?  [^StackTraceElement element]
   (let [class-name (.getClassName element)]
