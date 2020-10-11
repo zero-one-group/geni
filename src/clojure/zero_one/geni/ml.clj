@@ -303,7 +303,7 @@
   (-> docs/spark-docs :methods :ml :functions :vector-to-array))
 
 ;; Aliases
-(import-fn approx-nearest-neighbors aprox-nearest-neighbours)
+(import-fn approx-nearest-neighbors approx-nearest-neighbours)
 (import-fn find-frequent-sequential-patterns find-patterns)
 (import-fn freq-itemsets frequent-item-sets)
 (import-fn get-features-col features-col)
