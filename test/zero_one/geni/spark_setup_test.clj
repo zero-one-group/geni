@@ -1,12 +1,12 @@
 (ns zero-one.geni.spark-setup-test
   (:require
-    [clojure.string]
-    [midje.sweet :refer [fact =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.test-resources :refer [spark melbourne-df]])
+   [clojure.string]
+   [midje.sweet :refer [fact =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.test-resources :refer [spark melbourne-df]])
   (:import
-    (org.apache.spark.sql Dataset SparkSession)))
+   (org.apache.spark.sql Dataset SparkSession)))
 
 (fact "Test spark session and dataframe"
   spark => #(instance? SparkSession %)
@@ -25,8 +25,7 @@
   => {:spark.master                                  "local[*]",
       :spark.app.name                                "Geni App",
       :spark.sql.adaptive.enabled                    "true",
-      :spark.sql.adaptive.coalescePartitions.enabled "true",})
-
+      :spark.sql.adaptive.coalescePartitions.enabled "true"})
 
 (fact "Test primary key is the product of address, date and seller"
   (-> melbourne-df

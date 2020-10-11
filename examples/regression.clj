@@ -1,7 +1,7 @@
 (ns examples.regression
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]))
 
 ;; Linear Regression
 (def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
@@ -49,9 +49,9 @@
 
 (def pipeline
   (ml/pipeline
-    feature-indexer
-    (ml/random-forest-regressor {:label-col :label
-                                 :features-col :indexed-features})))
+   feature-indexer
+   (ml/random-forest-regressor {:label-col :label
+                                :features-col :indexed-features})))
 
 (def model (ml/fit train-data pipeline))
 (def predictions (ml/transform test-data model))
@@ -93,8 +93,8 @@
 
 (def aft
   (ml/aft-survival-regression
-    {:quantile-probabilities quantile-probabilities
-     :quantiles-col :quantiles}))
+   {:quantile-probabilities quantile-probabilities
+    :quantiles-col :quantiles}))
 
 (def aft-model (ml/fit train aft))
 

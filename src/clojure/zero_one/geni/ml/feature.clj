@@ -1,41 +1,41 @@
 (ns zero-one.geni.ml.feature
   (:require
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
   (:import
-    (org.apache.spark.ml.feature Binarizer
-                                 Bucketizer
-                                 BucketedRandomProjectionLSH
-                                 ChiSqSelector
-                                 CountVectorizer
-                                 DCT
-                                 ElementwiseProduct
-                                 FeatureHasher
-                                 HashingTF
-                                 IDF
-                                 Imputer
-                                 IndexToString
-                                 Interaction
-                                 MaxAbsScaler
-                                 MinHashLSH
-                                 MinMaxScaler
-                                 NGram
-                                 Normalizer
-                                 OneHotEncoder
-                                 PCA
-                                 PolynomialExpansion
-                                 QuantileDiscretizer
-                                 RegexTokenizer
-                                 RobustScaler
-                                 SQLTransformer
-                                 StandardScaler
-                                 StopWordsRemover
-                                 StringIndexer
-                                 Tokenizer
-                                 VectorAssembler
-                                 VectorIndexer
-                                 VectorSizeHint
-                                 Word2Vec)))
+   (org.apache.spark.ml.feature Binarizer
+                                Bucketizer
+                                BucketedRandomProjectionLSH
+                                ChiSqSelector
+                                CountVectorizer
+                                DCT
+                                ElementwiseProduct
+                                FeatureHasher
+                                HashingTF
+                                IDF
+                                Imputer
+                                IndexToString
+                                Interaction
+                                MaxAbsScaler
+                                MinHashLSH
+                                MinMaxScaler
+                                NGram
+                                Normalizer
+                                OneHotEncoder
+                                PCA
+                                PolynomialExpansion
+                                QuantileDiscretizer
+                                RegexTokenizer
+                                RobustScaler
+                                SQLTransformer
+                                StandardScaler
+                                StopWordsRemover
+                                StringIndexer
+                                Tokenizer
+                                VectorAssembler
+                                VectorIndexer
+                                VectorSizeHint
+                                Word2Vec)))
 
 (defn stop-words-remover [params]
   (let [defaults {:locale         "en_US",
@@ -162,7 +162,7 @@
 
 (defn imputer [params]
   (let [defaults {:missing-value ##NaN
-                  :strategy      "mean"}
+                                   :strategy      "mean"}
         props    (merge defaults params)]
     (interop/instantiate Imputer props)))
 
@@ -202,7 +202,6 @@
                   :num-features 262144}
         props    (merge defaults params)]
     (interop/instantiate HashingTF props)))
-
 
 (defn word2vec [params]
   (let [defaults {:max-iter            1,

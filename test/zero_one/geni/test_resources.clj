@@ -1,12 +1,12 @@
 (ns zero-one.geni.test-resources
   (:require
-    [clojure.string :refer [split-lines split]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.defaults])
+   [clojure.string :refer [split-lines split]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.defaults])
   (:import
-    (java.io File)
-    (java.nio.file.attribute FileAttribute)
-    (java.nio.file Files)))
+   (java.io File)
+   (java.nio.file.attribute FileAttribute)
+   (java.nio.file Files)))
 
 (def spark @zero-one.geni.defaults/spark)
 

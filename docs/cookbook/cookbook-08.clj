@@ -27,9 +27,9 @@
 
 (def rank-by-category
   (g/windowed
-    {:window-col   (g/dense-rank)
-     :partition-by :category
-     :order-by     (g/desc :revenue)}))
+   {:window-col   (g/dense-rank)
+    :partition-by :category
+    :order-by     (g/desc :revenue)}))
 
 (-> product-revenue
     (g/with-column :rank-by-category rank-by-category)
@@ -39,8 +39,8 @@
 ;; 8.2 Revenue Differences of Best and Second Best in Every Category
 (def max-by-category
   (g/windowed
-    {:window-col   (g/max :revenue)
-     :partition-by :category}))
+   {:window-col   (g/max :revenue)
+    :partition-by :category}))
 
 (-> product-revenue
     (g/with-column :max-by-category max-by-category)

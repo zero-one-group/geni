@@ -1,11 +1,11 @@
 (ns zero-one.geni.spark-context
   (:require
-    [zero-one.geni.defaults :as defaults]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.rdd.unmangle :as unmangle])
+   [zero-one.geni.defaults :as defaults]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.rdd.unmangle :as unmangle])
   (:import
-    (org.apache.spark.api.java JavaSparkContext)
-    (org.apache.spark.sql SparkSession)))
+   (org.apache.spark.api.java JavaSparkContext)
+   (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context [spark]
   (JavaSparkContext/fromSparkContext (.sparkContext spark)))

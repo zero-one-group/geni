@@ -29,13 +29,13 @@
                             zero?
                             zipmap])
   (:require
-    [zero-one.geni.core.column :as column]
-    [zero-one.geni.core.dataset :as dataset]
-    [zero-one.geni.core.polymorphic :as polymorphic]
-    [zero-one.geni.core.functions :as sql]
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.core.column :as column]
+   [zero-one.geni.core.dataset :as dataset]
+   [zero-one.geni.core.polymorphic :as polymorphic]
+   [zero-one.geni.core.functions :as sql]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql functions)))
+   (org.apache.spark.sql functions)))
 
 ;; Collections
 (defn remove [dataframe expr]
@@ -76,17 +76,17 @@
 
 (defn- rename-cols [k kmap]
   (concat
-    (map
-      (fn [[old-k new-k]]
-        (sql/when (.equalTo (column/->column k) (column/->column old-k))
-          (column/->column new-k)))
-      kmap)
-    [(column/->column k)]))
+   (map
+    (fn [[old-k new-k]]
+      (sql/when (.equalTo (column/->column k) (column/->column old-k))
+        (column/->column new-k)))
+    kmap)
+   [(column/->column k)]))
 
 (defn rename-keys [expr kmap]
   (sql/transform-keys
-    expr
-    (fn [k _] (functions/coalesce (column/->col-array (rename-cols k kmap))))))
+   expr
+   (fn [k _] (functions/coalesce (column/->col-array (rename-cols k kmap))))))
 
 (defn select-keys [expr ks]
   (sql/map-filter expr (fn [k _] (.isin k (interop/->scala-seq ks)))))
@@ -107,7 +107,7 @@
                             ({:else (column/->column then)} pred (sql/when pred then)))
                           predicates
                           then-cols)]
-     (apply polymorphic/coalesce whenned-cols)))
+    (apply polymorphic/coalesce whenned-cols)))
 
 (defn condp [pred expr & clauses]
   (let [default      (when (clojure.core/odd? (count clauses))
@@ -115,12 +115,12 @@
         test-exprs   (take-nth 2 clauses)
         then-cols    (take-nth 2 (rest clauses))
         whenned-cols (map #(sql/when
-                             (pred (column/->column %1)
-                                   (column/->column expr))
+                            (pred (column/->column %1)
+                                  (column/->column expr))
                              %2)
                           test-exprs
                           then-cols)]
-     (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
+    (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
 
 (defn case [expr & clauses]
   (let [default    (when (clojure.core/odd? (count clauses))
@@ -128,4 +128,4 @@
         match-cols (take-nth 2 clauses)
         then-cols  (take-nth 2 (rest clauses))
         whenned-cols (map #(sql/when (column/=== %1 expr) %2) match-cols then-cols)]
-     (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))
+    (apply polymorphic/coalesce (concat whenned-cols [(column/->column default)]))))

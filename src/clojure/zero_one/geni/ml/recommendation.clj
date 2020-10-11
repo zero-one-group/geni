@@ -1,8 +1,8 @@
 (ns zero-one.geni.ml.recommendation
   (:require
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.recommendation ALS)))
+   (org.apache.spark.ml.recommendation ALS)))
 
 (defn als [params]
   (let [defaults {:implicit-prefs false,

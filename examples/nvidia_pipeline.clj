@@ -1,9 +1,9 @@
 (ns examples.nvidia-pipeline
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml])
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml])
   (:import
-    (org.apache.spark.ml.tuning CrossValidatorModel)))
+   (org.apache.spark.ml.tuning CrossValidatorModel)))
 
 ;; Load Data
 (def dataframe
@@ -76,9 +76,9 @@
 ;; Model Training
 (def param-grid
   (ml/param-grid
-    {random-forest {:max-bins (map int [100 200])
-                    :max-depth (map int [2 7 10])
-                    :num-trees (map int [5 20])}}))
+   {random-forest {:max-bins (map int [100 200])
+                   :max-depth (map int [2 7 10])
+                   :num-trees (map int [5 20])}}))
 
 (def evaluator
   (ml/regression-evaluator {:label-col :median_house_value
@@ -163,8 +163,8 @@
 
 (def rmse
   (ml/evaluate
-    predictions
-    (ml/regression-evaluator {:label-col :median_house_value :metric-name "rmse"})))
+   predictions
+   (ml/regression-evaluator {:label-col :median_house_value :metric-name "rmse"})))
 
 (println (format "MAE: %,.2f, RMSE: %,.2f" mae rmse))
 

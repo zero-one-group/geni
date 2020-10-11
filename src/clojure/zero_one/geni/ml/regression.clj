@@ -1,18 +1,18 @@
 (ns zero-one.geni.ml.regression
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [coalesce]])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [coalesce]])
   (:import
-    (org.apache.spark.ml.regression AFTSurvivalRegression
-                                    DecisionTreeRegressor
-                                    FMRegressor
-                                    GBTRegressor
-                                    GeneralizedLinearRegression
-                                    IsotonicRegression
-                                    LinearRegression
-                                    RandomForestRegressor)))
+   (org.apache.spark.ml.regression AFTSurvivalRegression
+                                   DecisionTreeRegressor
+                                   FMRegressor
+                                   GBTRegressor
+                                   GeneralizedLinearRegression
+                                   IsotonicRegression
+                                   LinearRegression
+                                   RandomForestRegressor)))
 
 (defn linear-regression [params]
   (let [defaults {:max-iter          100,
@@ -153,8 +153,8 @@
     (interop/instantiate FMRegressor props)))
 
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.regression
-  [(-> docs/spark-docs :classes :ml :regression)])
+ 'zero-one.geni.ml.regression
+ [(-> docs/spark-docs :classes :ml :regression)])
 
 ;; Aliases
 (import-fn generalized-linear-regression generalised-linear-regression)

@@ -1,12 +1,12 @@
 (ns zero-one.geni.ml.clustering
   (:require
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.clustering BisectingKMeans
-                                    GaussianMixture
-                                    KMeans
-                                    LDA
-                                    PowerIterationClustering)))
+   (org.apache.spark.ml.clustering BisectingKMeans
+                                   GaussianMixture
+                                   KMeans
+                                   LDA
+                                   PowerIterationClustering)))
 
 (defn bisecting-k-means [params]
   (let [defaults {:distance-measure "euclidean",

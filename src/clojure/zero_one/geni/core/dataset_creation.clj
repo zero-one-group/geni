@@ -1,12 +1,12 @@
 (ns zero-one.geni.core.dataset-creation
   (:require
-    [zero-one.geni.defaults]
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.defaults]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql.types ArrayType DataType DataTypes)
-    (org.apache.spark.ml.linalg VectorUDT
-                                DenseVector
-                                SparseVector)))
+   (org.apache.spark.sql.types ArrayType DataType DataTypes)
+   (org.apache.spark.ml.linalg VectorUDT
+                               DenseVector
+                               SparseVector)))
 
 (def default-spark zero-one.geni.defaults/spark)
 
@@ -38,13 +38,13 @@
 
 (defn array-type [val-type nullable]
   (DataTypes/createArrayType
-    (data-type->spark-type val-type)
-    nullable))
+   (data-type->spark-type val-type)
+   nullable))
 
 (defn map-type [key-type val-type]
   (DataTypes/createMapType
-    (data-type->spark-type key-type)
-    (data-type->spark-type val-type)))
+   (data-type->spark-type key-type)
+   (data-type->spark-type val-type)))
 
 (defn ->schema [value]
   (cond
@@ -100,7 +100,7 @@
 
 (defn infer-schema [col-names values]
   (DataTypes/createStructType
-    (mapv infer-struct-field col-names values)))
+   (mapv infer-struct-field col-names values)))
 
 (defn first-non-nil [values]
   (first (clojure.core/filter identity values)))
@@ -131,17 +131,17 @@
 (defn conj-record [map-of-values record]
   (let [col-names (keys map-of-values)]
     (reduce
-      (fn [acc-map col-name]
-        (update acc-map col-name #(conj % (get record col-name))))
-      map-of-values
-      col-names)))
+     (fn [acc-map col-name]
+       (update acc-map col-name #(conj % (get record col-name))))
+     map-of-values
+     col-names)))
 
 (defn records->dataset
   ([records] (records->dataset @default-spark records))
   ([spark records]
    (let [col-names     (-> (map keys records) flatten clojure.core/distinct)
          map-of-values (reduce
-                         conj-record
-                         (zipmap col-names (repeat []))
-                         records)]
+                        conj-record
+                        (zipmap col-names (repeat []))
+                        records)]
      (map->dataset spark map-of-values))))

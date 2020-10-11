@@ -1,17 +1,17 @@
 (ns zero-one.geni.ml.classification
   (:require
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [coalesce]])
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [coalesce]])
   (:import
-    (org.apache.spark.ml.classification DecisionTreeClassifier
-                                        FMClassifier
-                                        GBTClassifier
-                                        LinearSVC
-                                        LogisticRegression
-                                        MultilayerPerceptronClassifier
-                                        NaiveBayes
-                                        OneVsRest
-                                        RandomForestClassifier)))
+   (org.apache.spark.ml.classification DecisionTreeClassifier
+                                       FMClassifier
+                                       GBTClassifier
+                                       LinearSVC
+                                       LogisticRegression
+                                       MultilayerPerceptronClassifier
+                                       NaiveBayes
+                                       OneVsRest
+                                       RandomForestClassifier)))
 
 (defn logistic-regression [params]
   (let [defaults {:max-iter           100,

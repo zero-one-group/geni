@@ -1,10 +1,10 @@
 (ns zero-one.geni.spark
   (:require
-    [clojure.walk]
-    [zero-one.geni.interop :as interop])
+   [clojure.walk]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql SparkSession)
-    (org.apache.log4j Logger Level)))
+   (org.apache.spark.sql SparkSession)
+   (org.apache.log4j Logger Level)))
 
 (defn- non-verbose-get-or-create-session [builder log-level]
   (let [logger         (Logger/getLogger "org")
@@ -24,9 +24,9 @@
                          (appName app-name)
                          (master master))
         configured   (reduce
-                       (fn [s [k v]] (.config s (name k) v))
-                       unconfigured
-                       configs)
+                      (fn [s [k v]] (.config s (name k) v))
+                      unconfigured
+                      configs)
         session      (non-verbose-get-or-create-session configured log-level)
         context      (.sparkContext session)]
     (.setLogLevel context log-level)

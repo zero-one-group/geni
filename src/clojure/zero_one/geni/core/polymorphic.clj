@@ -11,19 +11,19 @@
                             shuffle
                             update])
   (:require
-    [clojure.string]
-    [zero-one.geni.core.column :refer [->col-array ->column]]
-    [zero-one.geni.core.dataset :as dataset]
-    [zero-one.geni.core.dataset-creation :as dataset-creation]
-    [zero-one.geni.core.functions :as sql]
-    [zero-one.geni.defaults]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
+   [clojure.string]
+   [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.core.dataset :as dataset]
+   [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.functions :as sql]
+   [zero-one.geni.defaults]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
   (:import
-    (org.apache.spark.ml.stat Correlation)
-    (org.apache.spark.sql Dataset
-                          RelationalGroupedDataset
-                          functions)))
+   (org.apache.spark.ml.stat Correlation)
+   (org.apache.spark.sql Dataset
+                         RelationalGroupedDataset
+                         functions)))
 
 (def default-spark zero-one.geni.defaults/spark)
 
@@ -150,18 +150,18 @@
 (defmulti dissoc (fn [head & _] (class head)))
 (defmethod dissoc :default [expr & ks]
   (sql/map-filter
-    expr
-    (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
+   expr
+   (fn [k _] (functions/not (.isin k (interop/->scala-seq ks))))))
 (defmethod dissoc Dataset [dataframe & col-names]
   (apply dataset/drop dataframe col-names))
 
 (defmulti update (fn [head & _] (class head)))
 (defmethod update :default [expr k f & args]
   (sql/transform-values
-    expr
-    (fn [k' v] (sql/when (.equalTo (->column k') (->column k))
-                 (apply f v args)
-                 v))))
+   expr
+   (fn [k' v] (sql/when (.equalTo (->column k') (->column k))
+                (apply f v args)
+                v))))
 (defmethod update Dataset [dataframe k f & args]
   (dataset/with-column dataframe k (apply f k args)))
 

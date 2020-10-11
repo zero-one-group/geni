@@ -1,7 +1,7 @@
 (ns zero-one.geni.partitioner
   (:refer-clojure :exclude [partition])
   (:import
-    (org.apache.spark HashPartitioner)))
+   (org.apache.spark HashPartitioner)))
 
 (defn hash-partitioner [partitions]
   (HashPartitioner. partitions))

@@ -5,17 +5,17 @@
                             print
                             reduce])
   (:require
-    [potemkin :refer [import-vars]]
-    [zero-one.geni.rdd.function :as function]
-    [zero-one.geni.storage]
-    [zero-one.geni.spark-context :as spark-context])
+   [potemkin :refer [import-vars]]
+   [zero-one.geni.rdd.function :as function]
+   [zero-one.geni.storage]
+   [zero-one.geni.spark-context :as spark-context])
   (:import
-    (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
-    (org.apache.spark.streaming Duration
-                                Milliseconds
-                                Minutes
-                                Seconds
-                                Time)))
+   (org.apache.spark.streaming.api.java JavaDStream JavaStreamingContext)
+   (org.apache.spark.streaming Duration
+                               Milliseconds
+                               Minutes
+                               Seconds
+                               Time)))
 
 ;; TODO: count-by-value-and-window,
 ;; TODO: foreachRDD, reduce-by-window
@@ -36,8 +36,8 @@
 ;; StreamingContext
 (defn streaming-context [spark duration]
   (JavaStreamingContext.
-    (spark-context/java-spark-context spark)
-    (->duration duration)))
+   (spark-context/java-spark-context spark)
+   (->duration duration)))
 
 (defn await-termination! [context]
   (future (.awaitTermination context)))
@@ -165,19 +165,19 @@
 ;; StorageLevel
 
 (import-vars
-  [zero-one.geni.storage
-   disk-only
-   disk-only-2
-   memory-and-disk
-   memory-and-disk-2
-   memory-and-disk-ser
-   memory-and-disk-ser-2
-   memory-only
-   memory-only-2
-   memory-only-ser
-   memory-only-ser-2
-   none
-   off-heap])
+ [zero-one.geni.storage
+  disk-only
+  disk-only-2
+  memory-and-disk
+  memory-and-disk-2
+  memory-and-disk-ser
+  memory-and-disk-ser-2
+  memory-only
+  memory-only-2
+  memory-only-ser
+  memory-only-ser-2
+  none
+  off-heap])
 
 ;; Polymorphic
 (defmulti checkpoint (fn [head & _] (class head)))

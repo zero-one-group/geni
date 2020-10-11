@@ -1,9 +1,9 @@
 (ns zero-one.geni.ml.fpm
   (:require
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.fpm FPGrowth
-                             PrefixSpan)))
+   (org.apache.spark.ml.fpm FPGrowth
+                            PrefixSpan)))
 
 (defn fp-growth [params]
   (let [defaults {:items-col      "items",

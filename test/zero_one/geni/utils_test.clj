@@ -1,11 +1,11 @@
 (ns zero-one.geni.utils-test
   (:require
-    [clojure.string]
-    [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [ensure-coll with-dynamic-import]])
+   [clojure.string]
+   [midje.sweet :refer [facts fact =>]]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [ensure-coll with-dynamic-import]])
   (:import
-    (scala.collection Seq)))
+   (scala.collection Seq)))
 
 (facts "On dynamic imports"
   (fact "succeeds with valid import forms"

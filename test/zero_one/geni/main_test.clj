@@ -1,9 +1,9 @@
 (ns zero-one.geni.main-test
   (:require
-    [clojure.string]
-    [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.repl :as repl]
-    [zero-one.geni.test-resources :refer [spark]]))
+   [clojure.string]
+   [midje.sweet :refer [facts fact =>]]
+   [zero-one.geni.repl :as repl]
+   [zero-one.geni.test-resources :refer [spark]]))
 
 (defn exit-stream []
   (-> "exit\n" (.getBytes "UTF-8") (java.io.ByteArrayInputStream.)))

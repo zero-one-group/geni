@@ -1,6 +1,6 @@
 (ns zero-one.geni.storage
   (:import
-    (org.apache.spark.storage StorageLevel)))
+   (org.apache.spark.storage StorageLevel)))
 
 (def disk-only (StorageLevel/DISK_ONLY))
 
