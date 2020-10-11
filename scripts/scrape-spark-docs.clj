@@ -232,7 +232,7 @@
     (nippy/freeze-to-file
       "resources/spark-docs.nippy"
       complete-docs
-      {:compressor nippy/lz4c-compressor})))
+      {:compressor nippy/lz4hc-compressor})))
 
 (comment
 
