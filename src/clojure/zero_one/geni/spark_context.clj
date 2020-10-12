@@ -150,4 +150,5 @@
 (import-fn is-local local?)
 (import-fn parallelize parallelise)
 (import-fn parallelize-doubles parallelise-doubles)
+(import-fn parallelize-pairs parallelise-pairs)
 (import-fn sc spark-context)
