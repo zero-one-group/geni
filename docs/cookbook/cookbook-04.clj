@@ -98,9 +98,9 @@ columns-to-select
 
 (def joined
   (g/join
-    (average-by-day-of-month weather-mar-2012 :mean-temp-mar-2012)
-    (average-by-day-of-month weather-oct-2012 :mean-temp-oct-2012)
-    :day))
+   (average-by-day-of-month weather-mar-2012 :mean-temp-mar-2012)
+   (average-by-day-of-month weather-oct-2012 :mean-temp-oct-2012)
+   :day))
 
 (-> joined
     (g/order-by :day)

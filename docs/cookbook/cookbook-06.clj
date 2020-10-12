@@ -64,8 +64,8 @@
 
 (def close?
   (g/||
-    (g/starts-with :incident-zip "0")
-    (g/starts-with :incident-zip "1")))
+   (g/starts-with :incident-zip "0")
+   (g/starts-with :incident-zip "1")))
 
 (-> fixed-dashed-zips
     (g/filter (g/&& (g/not close?) (g/not-null? :incident-zip)))
