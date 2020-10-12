@@ -162,6 +162,7 @@
           :functions "sql/functions$.html"
           :grouped   "sql/RelationalGroupedDataset.html"
           :na-fns    "sql/DataFrameNaFunctions.html"
+          :row       "sql/Row$.html"
           :stat-fns  "sql/DataFrameStatFunctions.html"
           :window    "sql/expressions/Window$.html"}
    :hash-partitioner "HashPartitioner.html"
@@ -183,6 +184,8 @@
          :string-indexer   "ml/feature/StringIndexerModel.html"
          :vector-indexer   "ml/feature/VectorIndexerModel.html"
          :vector-size-hint "ml/feature/VectorSizeHint.html"}
+        :linalg
+        {:vectors "ml/linalg/Vectors$.html"}
         :models
         {:als                 "ml/recommendation/ALSModel.html"
          :classification      "ml/classification/ClassificationModel.html"
