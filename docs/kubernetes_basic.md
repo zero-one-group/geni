@@ -109,7 +109,6 @@ The driver will then launch 3 pods in Kubernetes using the provided Docker image
    :spark.kubernetes.container.image "spark:v3.0.1" ;; this is for local docker images, works for minikube
    :spark.kubernetes.namespace "spark"
    :spark.kubernetes.authenticate.serviceAccountName "spark" ;; created above
-   :spark.kubernetes.authenticate.driver.serviceAccountName "spark-serviceaccount" ; created above
    :spark.executor.instances 3}})
 
 ```
