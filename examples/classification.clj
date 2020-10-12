@@ -1,7 +1,7 @@
 (ns examples.classification
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]))
 
 ;; Logistic Regression
 (def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
@@ -52,15 +52,15 @@
 
 (def pipeline
   (ml/pipeline
-    label-indexer
-    feature-indexer
-    (ml/gbt-classifier {:label-col :indexed-label
-                        :features-col :indexed-features
-                        :max-iter 10
-                        :feature-subset-strategy "auto"})
-    (ml/index-to-string {:input-col :prediction
-                         :output-col :predicted-label
-                         :labels (.labels label-indexer)})))
+   label-indexer
+   feature-indexer
+   (ml/gbt-classifier {:label-col :indexed-label
+                       :features-col :indexed-features
+                       :max-iter 10
+                       :feature-subset-strategy "auto"})
+   (ml/index-to-string {:input-col :prediction
+                        :output-col :predicted-label
+                        :labels (.labels label-indexer)})))
 
 (def model (ml/fit train-data pipeline))
 

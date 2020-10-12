@@ -1,26 +1,26 @@
 (ns examples.features
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [libsvm-df]]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]
+   [zero-one.geni.test-resources :refer [libsvm-df]]))
 
 ;; Tokeniser, Hashing TF and IDF
 (def sentence-data
   (g/table->dataset
-    [[0.0 "Hi I heard about Spark"]
-     [0.0 "I wish Java could use case classes"]
-     [1.0 "Logistic regression models are neat"]]
-    [:label :sentence]))
+   [[0.0 "Hi I heard about Spark"]
+    [0.0 "I wish Java could use case classes"]
+    [1.0 "Logistic regression models are neat"]]
+   [:label :sentence]))
 
 (def pipeline
   (ml/pipeline
-    (ml/tokenizer {:input-col :sentence
-                    :output-col :words})
-    (ml/hashing-tf {:num-features 20
-                    :input-col :words
-                    :output-col :raw-features})
-    (ml/idf {:input-col :raw-features
-              :output-col :features})))
+   (ml/tokenizer {:input-col :sentence
+                  :output-col :words})
+   (ml/hashing-tf {:num-features 20
+                   :input-col :words
+                   :output-col :raw-features})
+   (ml/idf {:input-col :raw-features
+            :output-col :features})))
 
 (def pipeline-model
   (ml/fit sentence-data pipeline))
@@ -30,22 +30,21 @@
     (g/collect-col :features))
 
 ;;=>
-#_
-((0.28768207245178085
-  0.6931471805599453
-  0.28768207245178085
-  0.5753641449035617)
- (0.6931471805599453
-  0.6931471805599453
-  1.3862943611198906
-  0.28768207245178085
-  0.6931471805599453
-  0.28768207245178085)
- (0.6931471805599453
-  0.6931471805599453
-  0.28768207245178085
-  0.6931471805599453
-  0.6931471805599453))
+#_((0.28768207245178085
+    0.6931471805599453
+    0.28768207245178085
+    0.5753641449035617)
+   (0.6931471805599453
+    0.6931471805599453
+    1.3862943611198906
+    0.28768207245178085
+    0.6931471805599453
+    0.28768207245178085)
+   (0.6931471805599453
+    0.6931471805599453
+    0.28768207245178085
+    0.6931471805599453
+    0.6931471805599453))
 
 ;; PCA
 (def dataframe
@@ -65,10 +64,9 @@
     (g/collect-col :pca-features))
 
 ;;=>
-#_
-((1.6485728230883814 -4.0132827005162985 -1.0091435193998504)
- (-4.645104331781533 -1.1167972663619048 -1.0091435193998501)
- (-6.428880535676488 -5.337951427775359 -1.009143519399851))
+#_((1.6485728230883814 -4.0132827005162985 -1.0091435193998504)
+   (-4.645104331781533 -1.1167972663619048 -1.0091435193998501)
+   (-6.428880535676488 -5.337951427775359 -1.009143519399851))
 
 ;; Standard Scaler
 (def scaler
