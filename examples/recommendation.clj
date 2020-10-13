@@ -1,8 +1,8 @@
 (ns examples.recommendation
   (:require
-    [clojure.string]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]))
+   [clojure.string]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]))
 
 (defonce ratings-df
   (->> (slurp "test/resources/sample_movielens_ratings.txt")

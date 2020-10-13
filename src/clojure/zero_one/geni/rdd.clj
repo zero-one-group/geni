@@ -16,73 +16,73 @@
                             take
                             vals])
   (:require
-    [potemkin :refer [import-vars]]
-    [zero-one.geni.defaults]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.partial-result]
-    [zero-one.geni.rdd.function :as function]
-    [zero-one.geni.rdd.unmangle :as unmangle]
-    [zero-one.geni.spark-context]
-    [zero-one.geni.storage])
+   [potemkin :refer [import-vars]]
+   [zero-one.geni.defaults]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.partial-result]
+   [zero-one.geni.rdd.function :as function]
+   [zero-one.geni.rdd.unmangle :as unmangle]
+   [zero-one.geni.spark-context]
+   [zero-one.geni.storage])
   (:import
-    (org.apache.spark.partial PartialResult)
-    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
+   (org.apache.spark.partial PartialResult)
+   (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
 (def rdd? (partial instance? JavaRDD))
 
 (import-vars
-  [zero-one.geni.spark-context
-   app-name
-   binary-files
-   broadcast
-   checkpoint-dir
-   conf
-   default-min-partitions
-   default-parallelism
-   empty-rdd
-   is-local
-   jars
-   java-spark-context
-   local-property
-   local?
-   master
-   parallelise
-   parallelise-doubles
-   parallelise-pairs
-   parallelize
-   parallelize-doubles
-   parallelize-pairs
-   persistent-rdds
-   resources
-   sc
-   spark-context
-   spark-home
-   text-file
-   value
-   version
-   whole-text-files])
+ [zero-one.geni.spark-context
+  app-name
+  binary-files
+  broadcast
+  checkpoint-dir
+  conf
+  default-min-partitions
+  default-parallelism
+  empty-rdd
+  is-local
+  jars
+  java-spark-context
+  local-property
+  local?
+  master
+  parallelise
+  parallelise-doubles
+  parallelise-pairs
+  parallelize
+  parallelize-doubles
+  parallelize-pairs
+  persistent-rdds
+  resources
+  sc
+  spark-context
+  spark-home
+  text-file
+  value
+  version
+  whole-text-files])
 
 (import-vars
-  [zero-one.geni.storage
-   disk-only
-   disk-only-2
-   memory-and-disk
-   memory-and-disk-2
-   memory-and-disk-ser
-   memory-and-disk-ser-2
-   memory-only
-   memory-only-2
-   memory-only-ser
-   memory-only-ser-2
-   none
-   off-heap])
+ [zero-one.geni.storage
+  disk-only
+  disk-only-2
+  memory-and-disk
+  memory-and-disk-2
+  memory-and-disk-ser
+  memory-and-disk-ser-2
+  memory-only
+  memory-only-2
+  memory-only-ser
+  memory-only-ser-2
+  none
+  off-heap])
 
 (import-vars
-  [zero-one.geni.partial-result
-   final-value
-   final?
-   initial-value
-   is-initial-value-final])
+ [zero-one.geni.partial-result
+  final-value
+  final?
+  initial-value
+  is-initial-value-final])
 
 ;; Getters
 (defn context [rdd] (JavaSparkContext/fromSparkContext (.context rdd)))
@@ -192,8 +192,8 @@
   ([rdd f] (map-partitions-to-pair rdd f false))
   ([rdd f preserves-partitioning]
    (-> (.mapPartitionsToPair rdd
-                            (function/pair-flat-map-function f)
-                            preserves-partitioning)
+                             (function/pair-flat-map-function f)
+                             preserves-partitioning)
        (unmangle/unmangle-name f))))
 
 (defn map-partitions-with-index
@@ -349,7 +349,7 @@
   ([rdd with-replacement n]
    (-> rdd (.takeSample with-replacement n) seq interop/->clojure))
   ([rdd with-replacement n seed] (.takeSample rdd with-replacement n seed)
-   (-> rdd (.takeSample with-replacement n) seq interop/->clojure)))
+                                 (-> rdd (.takeSample with-replacement n) seq interop/->clojure)))
 
 (defn top
   ([rdd n] (-> rdd (.top n) seq interop/->clojure))
@@ -385,10 +385,10 @@
                                merge-combiner-fn)))
   ([rdd create-fn merge-value-fn merge-combiner-fn partitions-or-partitioner]
    (-> (.combineByKey rdd
-                     (function/function create-fn)
-                     (function/function2 merge-value-fn)
-                     (function/function2 merge-combiner-fn)
-                     partitions-or-partitioner)
+                      (function/function create-fn)
+                      (function/function2 merge-value-fn)
+                      (function/function2 merge-combiner-fn)
+                      partitions-or-partitioner)
        (unmangle/unmangle-name create-fn
                                merge-value-fn
                                merge-combiner-fn

@@ -1,10 +1,10 @@
 ;; Taken from https://github.com/amperity/sparkplug
 (ns zero-one.geni.rdd.function
   (:require
-    [clojure.string :as str])
+   [clojure.string :as str])
   (:import
-    (java.lang.reflect Field Modifier)
-    (java.util HashSet)))
+   (java.lang.reflect Field Modifier)
+   (java.util HashSet)))
 
 (defn access-field [^Field field obj]
   (try
@@ -28,14 +28,14 @@
       (do
         (when (map? obj)
           (doall
-            (for [entry obj]
-              (walk-object-vars references visited entry))))
+           (for [entry obj]
+             (walk-object-vars references visited entry))))
         (doall
-          (for [^Field field (.getDeclaredFields (class obj))]
-            (when (or (not (map? obj)) (Modifier/isStatic (.getModifiers field)))
-              (let [value (access-field field obj)]
-                (when (or (ifn? value) (map? value))
-                  (walk-object-vars references visited value))))))))))
+         (for [^Field field (.getDeclaredFields (class obj))]
+           (when (or (not (map? obj)) (Modifier/isStatic (.getModifiers field)))
+             (let [value (access-field field obj)]
+               (when (or (ifn? value) (map? value))
+                 (walk-object-vars references visited value))))))))))
 
 (defn namespace-references [^Object obj]
   (let [obj-ns (-> (.. obj getClass getName)

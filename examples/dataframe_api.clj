@@ -1,7 +1,7 @@
 (ns examples.dataframe-api
   (:require
-    [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [melbourne-df]]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.test-resources :refer [melbourne-df]]))
 
 (def dataframe melbourne-df)
 
