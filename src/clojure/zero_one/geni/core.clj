@@ -103,6 +103,11 @@
    conf
    default-min-partitions
    default-parallelism
+   get-checkpoint-dir
+   get-conf
+   get-local-property
+   get-persistent-rdds
+   get-spark-home
    jars
    java-spark-context
    master
@@ -626,3 +631,7 @@
 
 (def to-debug-string (memfn toDebugString))
 (def ->debug-string to-debug-string)
+
+(comment
+  (require '[zero-one.geni.docs :as docs])
+  (docs/docless-vars *ns*))

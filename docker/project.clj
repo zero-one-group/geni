@@ -41,7 +41,15 @@
                         [midje "1.9.9"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
-                   [lein-midje "3.2.2"]]
+                   [lein-midje "3.2.2"]
+                   [lein-cljfmt "0.7.0"]]
+         :cljfmt {:split-keypairs-over-multiple-lines?   false
+                  :remove-multiple-non-indenting-spaces? false
+                  ;; Note: we add custom rules to handle code from midje test library
+                  ;; See https://github.com/weavejester/cljfmt/blob/master/cljfmt/resources/cljfmt/indents/clojure.clj
+                  ;; for more control
+                  :indents {facts [[:inner 0] [:block 1]]
+                            fact  [[:inner 0] [:block 1]]}}
          :aot [zero-one.geni.rdd.function
                zero-one.geni.aot-functions]}}
   :repl-options {:init-ns zero-one.geni.main}

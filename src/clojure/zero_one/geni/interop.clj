@@ -4,6 +4,7 @@
     [clojure.java.data :as j]
     [clojure.string :refer [replace-first]]
     [clojure.walk :as walk]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.utils :refer [ensure-coll]])
   (:import
     (java.io ByteArrayOutputStream)
@@ -98,6 +99,7 @@
 
 (defn ->sparse-vector [size indices values]
   (SparseVector. size (int-array indices) (double-array values)))
+(def sparse ->sparse-vector)
 
 (defn array? [value] (.isArray (class value)))
 
@@ -210,7 +212,17 @@
   (let [flattened (mapcat ensure-coll values)]
     (->dense-vector flattened)))
 
-(def sparse ->sparse-vector)
-
 (defn row [& values]
   (->spark-row values))
+
+(docs/add-doc!
+  (var dense)
+  (-> docs/spark-docs :methods :ml :linalg :vectors :dense))
+
+(docs/add-doc!
+  (var sparse)
+  (-> docs/spark-docs :methods :ml :linalg :vectors :sparse))
+
+(docs/add-doc!
+  (var row)
+  (-> docs/spark-docs :methods :core :row :from-seq))

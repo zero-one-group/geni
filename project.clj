@@ -46,7 +46,8 @@
          :cljfmt {:split-keypairs-over-multiple-lines?   false
                   :remove-multiple-non-indenting-spaces? false
                   ;; Note: we add custom rules to handle code from midje test library
-                  ;; See: https://github.com/weavejester/cljfmt/blob/master/cljfmt/resources/cljfmt/indents/clojure.clj ;; for more control
+                  ;; See https://github.com/weavejester/cljfmt/blob/master/cljfmt/resources/cljfmt/indents/clojure.clj
+                  ;; for more control
                   :indents {facts [[:inner 0] [:block 1]]
                             fact  [[:inner 0] [:block 1]]}}
          :aot [zero-one.geni.rdd.function
