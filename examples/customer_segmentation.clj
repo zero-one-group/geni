@@ -45,11 +45,11 @@
   (-> invoices
       (g/remove (g/null? :description))
       (ml/transform
-        (ml/tokeniser {:input-col  :description
-                       :output-col :descriptors}))
+       (ml/tokeniser {:input-col  :description
+                      :output-col :descriptors}))
       (ml/transform
-        (ml/stop-words-remover {:input-col  :descriptors
-                                :output-col :cleaned-descriptors}))
+       (ml/stop-words-remover {:input-col  :descriptors
+                               :output-col :cleaned-descriptors}))
       (g/with-column :descriptor (g/explode :cleaned-descriptors))
       (g/with-column :descriptor (g/regexp-replace :descriptor
                                                    (g/lit "[^a-zA-Z'']")
@@ -84,9 +84,9 @@
 (def log-spending
   (-> descriptors
       (g/remove (g/||
-                  (g/null? :customer-id)
-                  (g/< :price 0.01)
-                  (g/< :quantity 1)))
+                 (g/null? :customer-id)
+                 (g/< :price 0.01)
+                 (g/< :quantity 1)))
       (g/group-by :customer-id :descriptor)
       (g/agg {:log-spend (g/log1p (g/sum (g/* :price :quantity)))})
       (g/order-by (g/desc :log-spend))))
@@ -104,24 +104,24 @@
 
 (def nmf-pipeline
   (ml/pipeline
-    (ml/string-indexer {:input-col  :descriptor
-                        :output-col :descriptor-id})
-    (ml/als {:max-iter    100
-             :reg-param   0.01
-             :rank        8
-             :nonnegative true
-             :user-col    :customer-id
-             :item-col    :descriptor-id
-             :rating-col  :log-spend})))
+   (ml/string-indexer {:input-col  :descriptor
+                       :output-col :descriptor-id})
+   (ml/als {:max-iter    100
+            :reg-param   0.01
+            :rank        8
+            :nonnegative true
+            :user-col    :customer-id
+            :item-col    :descriptor-id
+            :rating-col  :log-spend})))
 
 (def nmf-pipeline-model
   (ml/fit log-spending nmf-pipeline))
 
 (def id->descriptor
   (ml/index-to-string
-    {:input-col  :id
-     :output-col :descriptor
-     :labels     (ml/labels (first (ml/stages nmf-pipeline-model)))}))
+   {:input-col  :id
+    :output-col :descriptor
+    :labels     (ml/labels (first (ml/stages nmf-pipeline-model)))}))
 
 (def nmf-model (last (ml/stages nmf-pipeline-model)))
 

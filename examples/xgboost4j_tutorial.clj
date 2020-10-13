@@ -1,20 +1,20 @@
 (ns examples.xgboost4j-tutorial
   (:require
-    [clojure.java.io]
-    [clojure.java.shell]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml])
+   [clojure.java.io]
+   [clojure.java.shell]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml])
   (:import
-    (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel)))
+   (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel)))
 
 (def iris-path "data/iris.data")
 
 (when-not (-> iris-path clojure.java.io/file .exists)
   (clojure.java.shell/sh
-    "wget"
-    "-O"
-    iris-path
-    "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"))
+   "wget"
+   "-O"
+   iris-path
+   "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"))
 
 (def raw-input
   (-> (g/read-csv! iris-path {:header false})
@@ -26,9 +26,9 @@
 
 (def string-indexer
   (ml/fit
-    raw-input
-    (ml/string-indexer {:input-col  :class
-                        :output-col :class-index})))
+   raw-input
+   (ml/string-indexer {:input-col  :class
+                       :output-col :class-index})))
 
 (def label-transformed
   (-> raw-input
@@ -62,8 +62,8 @@
   (-> xgb-input
       (ml/transform xgb-classifier-model)
       (g/select
-        :class-index
-        (g/element-at (ml/vector->array "probability") 1))))
+       :class-index
+       (g/element-at (ml/vector->array "probability") 1))))
 
 (ml/write-stage! xgb-classifier-model "target/xgb_classification_model" {:mode "overwrite"})
 

@@ -1,6 +1,6 @@
 (ns examples.performance-benchmark-data
   (:require
-    [zero-one.geni.core :as g]))
+   [zero-one.geni.core :as g]))
 
 (def data-path "data/performance-benchmark-data")
 
@@ -31,21 +31,21 @@
                12 30})
 
 (doall
-  (for [month (range 1 13)]
-    (-> skeleton-df
-        (g/select
-          {:trx-id    (transaction-id-col)
-           :member-id (g/int (g/rexp 5e-6))
-           :quantity  (g/int (g/inc (g/rexp)))
-           :price     (g/pow 2 (g/random-int 16 20))
-           :style-id  (g/int (g/rexp 1e-2))
-           :brand-id  (g/int (g/rexp 1e-2))
-           :year      2019
-           :month     month
-           :day       (g/random-int 1 (inc (max-days month)))})
-        (g/with-column :date (g/to-date date-col))
-        (g/coalesce 1)
-        (g/write-parquet! data-path {:mode "append"}))))
+ (for [month (range 1 13)]
+   (-> skeleton-df
+       (g/select
+        {:trx-id    (transaction-id-col)
+         :member-id (g/int (g/rexp 5e-6))
+         :quantity  (g/int (g/inc (g/rexp)))
+         :price     (g/pow 2 (g/random-int 16 20))
+         :style-id  (g/int (g/rexp 1e-2))
+         :brand-id  (g/int (g/rexp 1e-2))
+         :year      2019
+         :month     month
+         :day       (g/random-int 1 (inc (max-days month)))})
+       (g/with-column :date (g/to-date date-col))
+       (g/coalesce 1)
+       (g/write-parquet! data-path {:mode "append"}))))
 
 (comment
 
@@ -53,6 +53,4 @@
       (g/group-by :trx-id)
       g/count
       (g/describe :count)
-      g/show)
-
-  )
+      g/show))
