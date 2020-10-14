@@ -634,4 +634,4 @@
 
 (comment
   (require '[zero-one.geni.docs :as docs])
-  (docs/docless-vars *ns*))
+  (count (docs/docless-vars *ns*)))
