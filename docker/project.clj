@@ -17,7 +17,7 @@
     [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
     [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
 
-(defproject zero.one/geni "0.0.31"
+(defproject zero.one/geni "0.0.32"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
@@ -33,7 +33,7 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.4"]]
+                 [zero.one/fxl "0.0.5"]]
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
