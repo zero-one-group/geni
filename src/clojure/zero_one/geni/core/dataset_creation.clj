@@ -103,7 +103,7 @@
     (mapv infer-struct-field col-names values)))
 
 (defn first-non-nil [values]
-  (first (clojure.core/filter identity values)))
+  (first (filter identity values)))
 
 (defn transpose [xs]
   (apply map list xs))
@@ -139,7 +139,7 @@
 (defn records->dataset
   ([records] (records->dataset @default-spark records))
   ([spark records]
-   (let [col-names     (-> (map keys records) flatten clojure.core/distinct)
+   (let [col-names     (-> (map keys records) flatten distinct)
          map-of-values (reduce
                          conj-record
                          (zipmap col-names (repeat []))

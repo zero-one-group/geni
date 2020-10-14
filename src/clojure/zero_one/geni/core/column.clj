@@ -95,7 +95,7 @@
       (fn [acc-col [l-expr r-expr]]
         (&& acc-col (compare-fn (col l-expr) (col r-expr))))
       (lit true)
-      (clojure.core/map vector exprs (rest exprs)))))
+      (map vector exprs (rest exprs)))))
 
 (def === (partial compare-columns #(.equalTo %1 %2)))
 (def equal-to ===)

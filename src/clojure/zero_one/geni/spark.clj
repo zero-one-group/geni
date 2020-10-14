@@ -30,7 +30,7 @@
         session      (non-verbose-get-or-create-session configured log-level)
         context      (.sparkContext session)]
     (.setLogLevel context log-level)
-    (clojure.core/when checkpoint-dir
+    (when checkpoint-dir
       (.setCheckpointDir context checkpoint-dir))
     session))
 
