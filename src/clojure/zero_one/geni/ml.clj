@@ -296,7 +296,7 @@
 
 (docs/add-doc!
   (var pipeline)
-  (-> docs/spark-docs :classes :ml :pipeline))
+  (-> docs/spark-docs :classes :ml :pipeline :pipeline))
 
 (docs/add-doc!
   (var vector-to-array)
@@ -323,6 +323,8 @@
 
 (comment
 
+  (docs/invalid-doc-vars *ns*)
+
   (count (docs/docless-vars *ns*))
   (-> docs/spark-docs :classes :ml :feature keys sort)
 
@@ -330,3 +332,4 @@
   (params (GBTRegressor))
 
   true)
+

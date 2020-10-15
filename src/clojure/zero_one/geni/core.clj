@@ -634,4 +634,9 @@
 
 (comment
   (require '[zero-one.geni.docs :as docs])
-  (count (docs/docless-vars *ns*)))
+  (count (docs/docless-vars *ns*))
+
+  (docs/invalid-doc-vars *ns*)
+
+  true)
+
