@@ -33,6 +33,3 @@
 ;; Aliases
 (import-fn equals equals?)
 
-(comment
-  (require '[zero-one.geni.docs :as docs])
-  (count (docs/docless-vars *ns*)))

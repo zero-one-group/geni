@@ -1,6 +1,7 @@
 (ns zero-one.geni.spark
   (:require
     [clojure.walk]
+    [zero-one.geni.docs :as docs]
     [zero-one.geni.interop :as interop])
   (:import
     (org.apache.spark.sql SparkSession)
@@ -15,11 +16,13 @@
     (.setLevel logger original-level)
     session))
 
-(defn create-spark-session [{:keys [app-name master configs log-level checkpoint-dir]
-                             :or   {app-name  "Geni App"
-                                    master    "local[*]"
-                                    configs   {}
-                                    log-level "WARN"}}]
+(defn create-spark-session
+  "The entry point to programming Spark with the Dataset and DataFrame API."
+  [{:keys [app-name master configs log-level checkpoint-dir]
+    :or   {app-name  "Geni App"
+           master    "local[*]"
+           configs   {}
+           log-level "WARN"}}]
   (let [unconfigured (.. (SparkSession/builder)
                          (appName app-name)
                          (master master))
@@ -39,3 +42,8 @@
        .sparkContext
        .getConf
        interop/spark-conf->map))
+
+;; Docs
+(docs/add-doc!
+  (var spark-conf)
+  (-> docs/spark-docs :methods :spark :context :get-conf))

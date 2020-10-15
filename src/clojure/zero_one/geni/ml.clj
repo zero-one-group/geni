@@ -323,6 +323,7 @@
 
 (comment
 
+  (require '[zero-one.geni.docs :as docs])
   (docs/invalid-doc-vars *ns*)
 
   (count (docs/docless-vars *ns*))
