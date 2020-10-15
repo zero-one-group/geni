@@ -77,7 +77,7 @@
   (functions/exists (->column expr) (interop/->scala-function1 predicate)))
 (defn explode [expr] (functions/explode (->column expr)))
 (defn element-at [expr value]
-  (functions/element_at (->column expr) (clojure.core/int value)))
+  (functions/element_at (->column expr) (int value)))
 (defn flatten [expr] (functions/flatten (->column expr)))
 (defn forall [expr predicate]
   (functions/forall (->column expr) (interop/->scala-function1 predicate)))

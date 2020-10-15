@@ -1,6 +1,10 @@
+;; Docstring Sources:
+;; https://numpy.org/doc/
+;; https://pandas.pydata.org/docs/
 (ns zero-one.geni.core.foreign-idioms
   (:require
     [clojure.string :as string]
+    [potemkin :refer [import-fn]]
     [zero-one.geni.core.column :as column]
     [zero-one.geni.core.data-sources :as data-sources]
     [zero-one.geni.core.dataset :as dataset]
@@ -12,7 +16,9 @@
     (org.apache.spark.sql Column functions)))
 
 ;; NumPy
-(defn clip [expr low high]
+(defn clip
+  "Returns a new Column where values outside `[low, high]` are clipped to the interval edges."
+  [expr low high]
   (let [col (column/->column expr)]
     (-> (polymorphic/coalesce
           (sql/when (column/<= col low) low)
@@ -24,31 +30,35 @@
                                 (str high))))))
 
 (defn random-uniform
+  "Returns a new Column of draws from a uniform distribution."
   ([] (random-uniform 0.0 1.0))
   ([low high] (random-uniform low high (rand-int Integer/MAX_VALUE)))
   ([low high seed]
    (let [length (Math/abs (- high low))
          base   (min high low)]
      (column/+ base (column/* length (sql/rand seed))))))
-(def runiform random-uniform)
-(def runif random-uniform)
+(import-fn random-uniform runiform)
+(import-fn random-uniform runif)
 
 (defn random-norm
+  "Returns a new Column of draws from a normal distribution."
   ([] (random-norm 0.0 1.0))
   ([mu sigma] (random-norm mu sigma (rand-int Integer/MAX_VALUE)))
   ([mu sigma seed] (column/+ mu (column/* sigma (sql/randn seed)))))
-(def rnorm random-norm)
+(import-fn random-norm rnorm)
 
 (defn random-exp
+  "Returns a new Column of draws from an exponential distribution."
   ([] (random-exp 1.0))
   ([rate] (random-exp rate (rand-int Integer/MAX_VALUE)))
   ([rate seed] (-> (sql/rand seed)
                    sql/log
                    (column/* -1.0)
                    (column// rate))))
-(def rexp random-exp)
+(import-fn random-exp rexp)
 
 (defn random-int
+  "Returns a new Column of random integers from `low` (inclusive) to `high` (exclusive)."
   ([] (random-int 0 (dec Integer/MAX_VALUE)))
   ([low high] (random-int low high (rand-int Integer/MAX_VALUE)))
   ([low high seed]
@@ -58,6 +68,7 @@
      (column/+ (->long base) (->long (column/* length (sql/rand seed)))))))
 
 (defn random-choice
+  "Returns a new Column of a random sample from a given collection of `choices`."
   ([choices]
    (let [n-choices (count choices)]
      (random-choice choices (take n-choices (repeat (/ 1.0 n-choices))))))
@@ -77,29 +88,42 @@
                           cum-probs)]
      (.as (apply polymorphic/coalesce choice-cols)
           (format "choice(%s, %s)" (str choices) (str probs))))))
-(def rchoice random-choice)
+(import-fn random-choice rchoice)
 
 ;; Pandas
-(defn value-counts [dataframe]
+(defn value-counts
+  "Returns a Dataset containing counts of unique rows.
+
+  The resulting object will be in descending order so that the
+  first element is the most frequently-occurring element."
+  [dataframe]
   (-> dataframe
       (dataset/group-by (dataset/columns dataframe))
       (dataset/agg {:count (functions/count "*")})
       (dataset/order-by (.desc (column/->column :count)))))
 
-(defn shape [dataframe]
+(defn shape
+  "Returns a vector representing the dimensionality of the Dataset."
+  [dataframe]
   [(.count dataframe) (count (.columns dataframe))])
 
-(defn nlargest [dataframe n-rows expr]
+(defn nlargest
+  "Return the Dataset with the first `n-rows` rows ordered by `expr` in descending order."
+  [dataframe n-rows expr]
   (-> dataframe
       (dataset/order-by (.desc (column/->column expr)))
       (dataset/limit n-rows)))
 
-(defn nsmallest [dataframe n-rows expr]
+(defn nsmallest
+  "Return the Dataset with the first `n-rows` rows ordered by `expr` in ascending order."
+  [dataframe n-rows expr]
   (-> dataframe
       (dataset/order-by (column/->column expr))
       (dataset/limit n-rows)))
 
-(defn nunique [dataframe]
+(defn nunique
+  "Count distinct observations over all columns in the Dataset."
+  [dataframe]
   (dataset/agg-all dataframe #(functions/countDistinct
                                 (column/->column %)
                                 (into-array Column []))))
@@ -113,7 +137,10 @@
       num-buckets-or-probs)
     (map #(/ (inc %) (double num-buckets-or-probs)) (range (dec num-buckets-or-probs)))))
 
-(defn qcut [expr num-buckets-or-probs]
+(defn qcut
+  "Returns a new Column of discretised `expr` into equal-sized buckets based
+  on rank or based on sample quantiles."
+  [expr num-buckets-or-probs]
   (let [probs     (resolve-probs num-buckets-or-probs)
         col       (column/->column expr)
         rank-col  (window/windowed {:window-col (sql/percent-rank) :order-by col})
@@ -128,7 +155,9 @@
     (.as (apply polymorphic/coalesce qcut-cols)
          (format "qcut(%s, %s)" (.toString col) (str probs)))))
 
-(defn cut [expr bins]
+(defn cut
+  "Returns a new Column of discretised `expr` into the intervals of bins."
+  [expr bins]
   (assert (apply < bins))
   (let [col      (column/->column expr)
         cut-cols (map (fn [low high]
@@ -143,14 +172,16 @@
          (format "cut(%s, %s)" (.toString col) (str bins)))))
 
 ;; Tech ML
-(defn apply-options [dataset options]
+(defn- apply-options [dataset options]
   (-> dataset
       (cond-> (:column-whitelist options)
         (dataset/select (map name (:column-whitelist options))))
       (cond-> (:n-records options)
         (dataset/limit (:n-records options)))))
 
-(defmulti ->dataset (fn [head & _] (class head)))
+(defmulti ->dataset
+  "Create a Dataset from a path or a collection of records."
+  (fn [head & _] (class head)))
 
 ;; TODO: support excel files
 (defmethod ->dataset java.lang.String
@@ -167,6 +198,6 @@
   ([records] (dataset-creation/records->dataset records))
   ([records options] (apply-options (->dataset records) options)))
 
-(def name-value-seq->dataset dataset-creation/map->dataset)
+(import-fn dataset-creation/map->dataset name-value-seq->dataset)
 
-(def select-columns dataset/select)
+(import-fn dataset/select select-columns)

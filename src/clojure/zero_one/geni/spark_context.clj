@@ -81,7 +81,7 @@
   ([spark data]
    (-> spark
        java-spark-context
-       (.parallelizeDoubles (clojure.core/map double data))
+       (.parallelizeDoubles (map double data))
        unmangle/unmangle-name)))
 
 (defn parallelize-pairs
@@ -89,7 +89,7 @@
   ([spark data]
    (-> spark
        java-spark-context
-       (.parallelizePairs (clojure.core/map interop/->scala-tuple2 data))
+       (.parallelizePairs (map interop/->scala-tuple2 data))
        unmangle/unmangle-name)))
 
 (defn get-persistent-rd-ds

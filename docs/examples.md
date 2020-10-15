@@ -601,8 +601,8 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
               {:user-id   (Integer/parseInt (first row))
                :movie-id  (Integer/parseInt (second row))
                :rating    (Float/parseFloat (nth row 2))
-               :timestamp (clojure.core/long (Integer/parseInt (nth row 3)))}))
-       g/records->dataset)))
+               :timestamp (long (Integer/parseInt (nth row 3)))}))
+       g/records->dataset))
 
 (def model
   (ml/fit ratings-df (ml/als {:max-iter   5
