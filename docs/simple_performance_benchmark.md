@@ -182,7 +182,7 @@ Note that, at this point, the TMD comparisons are not 100% apples-to-apples, as 
 
 ## Results
 
-The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981. The table below shows the number of seconds it took to complete the group-by-aggregate operation with one twelfth (N=2,000,000) of the data and the full data (N=24,000,000) - lower is better:
+The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981. The table below shows the number of seconds it took to complete the group-by-aggregate operation with one twelfth (N=2,000,000) of the data and the full data (N=24,000,000), so lower is better:
 
 | Language | Runtime (seconds)                    | N=2,000,000 | N=24,000,000 |
 | --       | ---                                  | ---         | ---          |
