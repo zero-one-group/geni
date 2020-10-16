@@ -1,17 +1,33 @@
 
-# Create Azure Kubernetes cluster and Azure Contaier Registry
+# Prerequisits
+
+az cli 
+docker
+kubectl
+azure subscription
+
+
+# Create resource group in azure
 
 ```bash
 az group create --name geni-azure-demo --location westeurope
-az acr create --resource-group geni-azure-demo --name genidemo18w --sku Basic
-
-
-az aks create --resource-group geni-azure-demo --name geniCluster --node-count 3  --generate-ssh-keys --attach-acr genidemo18w
-az aks get-credentials --resource-group geni-azure-demo --name geniCluster
-
 ```
 
-# Create storage accont
+# Create Azure Container Registry 
+
+```bash
+az acr create --resource-group geni-azure-demo --name genidemo18w --sku Basic
+```
+# Create Kubernetes Cluster
+
+```bash
+az aks create --resource-group geni-azure-demo --name geniCluster --node-count 3  --generate-ssh-keys --attach-acr genidemo18w
+
+# install credentails into kubectl
+az aks get-credentials --resource-group geni-azure-demo --name geniCluster
+```
+
+# Create storage account to hold data to analyse
 
 ```
 # Change these four parameters as needed for your own environment
@@ -38,6 +54,7 @@ echo Storage account name: $AKS_PERS_STORAGE_ACCOUNT_NAME
 echo Storage account key: $STORAGE_KEY
 
 ```
+# Create persistent volume claim in Kubernetes
 
 ```
 kubectl create secret generic azure-secret --from-literal=azurestorageaccountname=$AKS_PERS_STORAGE_ACCOUNT_NAME --from-literal=azurestorageaccountkey=$STORAGE_KEY -n spark
@@ -79,8 +96,8 @@ spec:
 
     
 
-
-# Create Docker image for driver
+# Prepare Spark driver pod 
+## Create Docker image for driver
 
 ```Dockerfile
 FROM clojure:latest
@@ -103,7 +120,8 @@ az acr login --resource-group geni-azure-demo --name genidemo18w
 docker push genidemo18w.azurecr.io/geni
 ```
 
-# create namespaces
+## create namespace in kubernetes
+
 ```bash
 kubectl create namespace spark
 kubectl create serviceaccount spark-serviceaccount --namespace spark
@@ -111,7 +129,15 @@ kubectl create clusterrolebinding spark-rolebinding --clusterrole=edit --service
 
 ```
 
-# Create headless service
+## Start Spark driver pod
+
+```bash
+kubectl run geni -ti --image=genidemo18w.azurecr.io/geni -n spark --serviceaccount=spark-serviceaccount --labels="app=geni"
+
+```
+
+
+## Create headless service for Spark driver
 
 ```yaml
 
@@ -133,11 +159,41 @@ spec:
 kubectl apply -f headless.yaml
 ```
 
+# Prepare Spark worker pods
+
+## Install spark distribution
+Running spark on Kubernetes requires to create Docker images for the nodes.
+
+The Spark distribution contains tools to ease the creation of suitable Docker images,
+so we need to download it first.
 
 ```bash
-kubectl run geni -ti --image=genidemo18w.azurecr.io/geni -n spark --serviceaccount=spark-serviceaccount --labels="app=geni"
-
+wget https://downloads.apache.org/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz
+tar xzf spark-3.0.1-bin-hadoop2.7.tgz
+cd spark-3.0.1-bin-hadoop2.7/
 ```
+
+## Download  additional jars into spark distribution
+
+```bash
+cd jars
+wegt https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-azure/2.7.4/hadoop-azure-2.7.4.jar
+wget https://mvnrepository.com/artifact/com.microsoft.azure/azure-storage/2.0.0
+```
+
+## Build images for workers
+
+```bash
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark:v3.0.1 -t v3.0.1 build
+```
+
+## Push images for worker into registry
+
+```bash
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark:v3.0.1 -t v3.0.1 push
+```
+
+# Run clojre/geni code on driver pod
 
 
 ```clojure
