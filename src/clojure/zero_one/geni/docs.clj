@@ -36,3 +36,10 @@
   (->> (ns-publics ns-sym)
        (mapv second)
        (filter no-doc?)))
+
+(defn invalid-doc-vars [ns-sym]
+  (->> (ns-publics ns-sym)
+       (filter (fn [[_ v]]
+                 (let [doc (-> v meta :doc)]
+                   (not (or (nil? doc) (string? doc))))))
+       (into {})))

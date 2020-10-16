@@ -633,5 +633,11 @@
 (def ->debug-string to-debug-string)
 
 (comment
+
   (require '[zero-one.geni.docs :as docs])
-  (count (docs/docless-vars *ns*)))
+  (docs/invalid-doc-vars *ns*)
+
+  (count (docs/docless-vars *ns*))
+
+  true)
+

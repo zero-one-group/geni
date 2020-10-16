@@ -9,5 +9,13 @@
   "some dummy doc"
   [])
 
+(defn some-fn-with-invalid-doc
+  [])
+(docs/add-doc!
+  (var some-fn-with-invalid-doc)
+  ["This doc is not a string."])
+
 (fact "Correct docless vars identification" :docs
-  (docs/docless-vars 'zero-one.geni.docs-test) => [(var some-docless-fn)])
+  (docs/docless-vars 'zero-one.geni.docs-test) => [(var some-docless-fn)]
+  (docs/invalid-doc-vars 'zero-one.geni.docs-test)
+  => {'some-fn-with-invalid-doc (var some-fn-with-invalid-doc)})
