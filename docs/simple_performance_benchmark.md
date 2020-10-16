@@ -1,10 +1,8 @@
 # A Simple Performance Benchmark
 
-The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' poor single-threaded performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure for our data jobs.
+The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' unpredictable performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure for our data jobs.
 
 The following piece does not attempt to present a fair, rigorous performance benchmark results. Instead, it is to illustrate typical speedups that were up for grasp for our team and for our specific use cases. Therefore, the results presented here should be taken with a grain of salt.
-
-For the sake of completeness, we also include the popular Clojure library [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) (or TMD) and the popular R library [dplyr](https://dplyr.tidyverse.org/).
 
 ## Dummy Retail Data
 
@@ -184,19 +182,19 @@ Note that, at this point, the TMD comparisons are not 100% apples-to-apples, as 
 
 ## Results
 
-The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981.
+The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981. The table below shows the number of seconds it took to complete the group-by-aggregate operation with one twelfth (N=2,000,000) of the data and the full data (N=24,000,000), so lower is better:
 
-| Language | Runtime (s)                          | N=2,000,000 | xGeni | N=24,000,000 | xGeni |
-| --       | ---                                  | ---         | ---   | ---          | ---   |
-| Python   | Pandas (with custom agg function)    | 587         | x73.4 | 1,132        | x29.0 |
-| R        | dplyr                                | 461         | x57.6 | 992          | x25.4 |
-| Julia    | DataFrames (with Parquet)            | 87          | x10.9 | 868          | x22.3 |
-| Clojure  | tablecloth                           | 48          | x6.0  | 151          | x3.9  |
-| R        | data.table                           | 28          | x3.5  | 143          | x3.7  |
-| Clojure  | tech.ml.dataset (optimised)          | 18          | x2.3  | 133          | x3.4  |
-| Julia    | DataFrames (with Feather)            | 16          | x2.0  | 41           | x1.1  |
-| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | x1.1  | 36           | x0.9  |
-| Clojure  | Geni                                 | 8           | x1.0  | 39           | x1.0  |
-| Python   | Pandas (with builtin agg functions)  | 3           | x0.4  | 42           | x1.1  |
+| Language | Runtime (seconds)                    | N=2,000,000 | N=24,000,000 |
+| --       | ---                                  | ---         | ---          |
+| Python   | Pandas (with custom agg function)    | 587         | 1,132        |
+| R        | dplyr                                | 461         | 992          |
+| Julia    | DataFrames (with Parquet)            | 87          | 868          |
+| Clojure  | tablecloth                           | 48          | 151          |
+| R        | data.table                           | 28          | 143          |
+| Clojure  | tech.ml.dataset (optimised)          | 18          | 133          |
+| Julia    | DataFrames (with Feather)            | 16          | 41           |
+| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | 36           |
+| Clojure  | Geni                                 | 8           | 39           |
+| Python   | Pandas (with builtin agg functions)  | 3           | 42           |
 
 Thanks to Spark, Geni is fast out of the box with minimal tweaks!
