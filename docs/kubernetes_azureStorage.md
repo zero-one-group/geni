@@ -1,10 +1,10 @@
 
 # Prerequisits
 
-az cli 
-docker
-kubectl
-azure subscription
+* az cli 
+* docker
+* kubectl
+* access to azure subscription with Contributor or Owner role
 
 
 # Create resource group in azure
@@ -22,8 +22,10 @@ az acr create --resource-group geni-azure-demo --name genidemo18w --sku Basic
 
 ```bash
 az aks create --resource-group geni-azure-demo --name geniCluster --node-count 3  --generate-ssh-keys --attach-acr genidemo18w
+```
+# install Kubernetes credentials into kubectl
 
-# install credentails into kubectl
+```bash
 az aks get-credentials --resource-group geni-azure-demo --name geniCluster
 ```
 
@@ -55,11 +57,21 @@ echo Storage account key: $STORAGE_KEY
 
 ```
 # Create persistent volume claim in Kubernetes
+## create namespace and service account in kubernetes
 
+```bash
+kubectl create namespace spark
+kubectl create serviceaccount spark-serviceaccount --namespace spark
+kubectl create clusterrolebinding spark-rolebinding --clusterrole=edit --serviceaccount=spark:spark-serviceaccount --namespace=spark
+
+```
+
+## Create secret to access storage
 ```
 kubectl create secret generic azure-secret --from-literal=azurestorageaccountname=$AKS_PERS_STORAGE_ACCOUNT_NAME --from-literal=azurestorageaccountkey=$STORAGE_KEY -n spark
 ```
 
+Create file pvc.yaml with content:
 
 ```yaml
 apiVersion: v1
@@ -77,9 +89,7 @@ spec:
     secretName: azure-secret
     shareName: aksshare
     readOnly: false
-```
-
-```
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -94,7 +104,10 @@ spec:
       storage: 5Gi
 ```
 
-    
+```bash
+kubectl create -f pvc.yaml
+```
+
 
 # Prepare Spark driver pod 
 ## Create Docker image for driver
@@ -110,42 +123,31 @@ RUN printf  '{:deps {zero.one/geni {:mvn/version "0.0.31"} \n\
 RUN clj -P
 CMD ["clojure"]
 ```
-
-
+## build driver image
 
 ```bash
 docker build -t genidemo18w.azurecr.io/geni .
+```
+Push image to registry
 
+```bash
 az acr login --resource-group geni-azure-demo --name genidemo18w
 docker push genidemo18w.azurecr.io/geni
 ```
 
-## create namespace in kubernetes
 
-```bash
-kubectl create namespace spark
-kubectl create serviceaccount spark-serviceaccount --namespace spark
-kubectl create clusterrolebinding spark-rolebinding --clusterrole=edit --serviceaccount=spark:spark-serviceaccount --namespace=spark
-
-```
-
-## Start Spark driver pod
-
-```bash
-kubectl run geni -ti --image=genidemo18w.azurecr.io/geni -n spark --serviceaccount=spark-serviceaccount --labels="app=geni"
-
-```
 
 
 ## Create headless service for Spark driver
 
+write to headless.yaml
 ```yaml
 
 apiVersion: v1
 kind: Service
 metadata:
   name: headless-geni-service
-  namespace spark
+  namespace: spark
 spec:
   clusterIP: None 
   selector:
@@ -158,6 +160,40 @@ spec:
 ```bash
 kubectl apply -f headless.yaml
 ```
+
+## Start Spark driver pod
+
+write into driver.yaml
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spark
+  name: geni
+  labels:
+    app: geni
+spec:
+  volumes:
+    - name: data-storage
+      persistentVolumeClaim:
+        claimName: azurefile
+  containers:
+  - name: geni
+    image: genidemo18w.azurecr.io/geni
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
+    volumeMounts:
+        - mountPath: "/data"
+          name: data-storage
+  serviceAccountName: spark-serviceaccount
+  restartPolicy: Never
+```
+
+```bash
+kubectl create -f driver.yaml
+```
+
 
 # Prepare Spark worker pods
 
@@ -174,27 +210,28 @@ cd spark-3.0.1-bin-hadoop2.7/
 ```
 
 ## Download  additional jars into spark distribution
-
+needed ?
 ```bash
-cd jars
-wegt https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-azure/2.7.4/hadoop-azure-2.7.4.jar
-wget https://mvnrepository.com/artifact/com.microsoft.azure/azure-storage/2.0.0
+#cd jars
+#wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-azure/2.7.4/hadoop-azure-2.7.4.jar
+#wget https://repo1.maven.org/maven2/com/microsoft/azure/azure-storage/2.0.0/azure-storage-2.0.0.jar
 ```
 
 ## Build images for workers
 
 ```bash
-bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark:v3.0.1 -t v3.0.1 build
+cd ..
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark -t v3.0.1 build
 ```
 
 ## Push images for worker into registry
 
 ```bash
-bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark:v3.0.1 -t v3.0.1 push
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark -t v3.0.1 push
 ```
 
 # Run clojre/geni code on driver pod
-
+## run Clojure repl on existing pod
 
 ```clojure
 (require '[zero-one.geni.core :as g])
