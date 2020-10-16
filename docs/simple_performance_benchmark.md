@@ -184,17 +184,17 @@ Note that, at this point, the TMD comparisons are not 100% apples-to-apples, as 
 
 The following results are obtained from a machine with a 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz, 3 x 8GB of Corsair's DDR4 RAM and 512GB Samsung Electronics NVMe SSD Controller SM981/PM981. The table below shows the number of seconds it took to complete the group-by-aggregate operation with one twelfth (N=2,000,000) of the data and the full data (N=24,000,000), so lower is better:
 
-| Language | Runtime (seconds)                    | N=2,000,000 | N=24,000,000 |
-| --       | ---                                  | ---         | ---          |
-| Python   | Pandas (with custom agg function)    | 587         | 1,132        |
-| R        | dplyr                                | 461         | 992          |
-| Julia    | DataFrames (with Parquet)            | 87          | 868          |
-| Clojure  | tablecloth                           | 48          | 151          |
-| R        | data.table                           | 28          | 143          |
-| Clojure  | tech.ml.dataset (optimised)          | 18          | 133          |
-| Julia    | DataFrames (with Feather)            | 16          | 41           |
-| Clojure  | tech.ml.dataset (optimised by Chris) | 9           | 36           |
-| Clojure  | Geni                                 | 8           | 39           |
-| Python   | Pandas (with builtin agg functions)  | 3           | 42           |
+| Language | Library                              | N=2,000,000 (secs) | N=24,000,000 (secs) |
+| --       | ---                                  | ---                | ---                 |
+| Python   | Pandas (with custom agg function)    | 587                | 1,132               |
+| R        | dplyr                                | 461                | 992                 |
+| Julia    | DataFrames (with Parquet)            | 87                 | 868                 |
+| Clojure  | tablecloth                           | 48                 | 151                 |
+| R        | data.table                           | 28                 | 143                 |
+| Clojure  | tech.ml.dataset (optimised)          | 18                 | 133                 |
+| Julia    | DataFrames (with Feather)            | 16                 | 41                  |
+| Clojure  | tech.ml.dataset (optimised by Chris) | 9                  | 36                  |
+| Clojure  | Geni                                 | 8                  | 39                  |
+| Python   | Pandas (with builtin agg functions)  | 3                  | 42                  |
 
 Thanks to Spark, Geni is fast out of the box with minimal tweaks!
