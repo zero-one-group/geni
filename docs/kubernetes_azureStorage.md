@@ -33,10 +33,10 @@ az aks get-credentials --resource-group geni-azure-demo --name geniCluster
 
 ```
 # Change these four parameters as needed for your own environment
-AKS_PERS_STORAGE_ACCOUNT_NAME=genistorageaccount$RANDOM
-AKS_PERS_RESOURCE_GROUP=geni-azure-demo
-AKS_PERS_LOCATION=westeurope
-AKS_PERS_SHARE_NAME=aksshare
+export AKS_PERS_STORAGE_ACCOUNT_NAME=genistorageaccount$RANDOM
+export AKS_PERS_RESOURCE_GROUP=geni-azure-demo
+export AKS_PERS_LOCATION=westeurope
+export AKS_PERS_SHARE_NAME=aksshare
 
 
 # Create a storage account
@@ -49,7 +49,7 @@ export AZURE_STORAGE_CONNECTION_STRING=$(az storage account show-connection-stri
 az storage share create -n $AKS_PERS_SHARE_NAME --connection-string $AZURE_STORAGE_CONNECTION_STRING
 
 # Get storage account key
-STORAGE_KEY=$(az storage account keys list --resource-group $AKS_PERS_RESOURCE_GROUP --account-name $AKS_PERS_STORAGE_ACCOUNT_NAME --query "[0].value" -o tsv)
+export STORAGE_KEY=$(az storage account keys list --resource-group $AKS_PERS_RESOURCE_GROUP --account-name $AKS_PERS_STORAGE_ACCOUNT_NAME --query "[0].value" -o tsv)
 
 # Echo storage account name and key
 echo Storage account name: $AKS_PERS_STORAGE_ACCOUNT_NAME
@@ -81,7 +81,7 @@ metadata:
   namespace: spark
 spec:
   capacity:
-    storage: 5Gi
+    storage: 50Gi
   accessModes:
     - ReadWriteMany
   storageClassName: azurefile
@@ -101,7 +101,7 @@ spec:
   storageClassName: azurefile
   resources:
     requests:
-      storage: 5Gi
+      storage: 50Gi
 ```
 
 ```bash
@@ -114,7 +114,7 @@ kubectl create -f pvc.yaml
 
 ```Dockerfile
 FROM clojure:latest
-
+RUN apt-get update && apt-get install -y wget
 RUN printf  '{:deps {zero.one/geni {:mvn/version "0.0.31"} \n\
                      org.apache.spark/spark-core_2.12 {:mvn/version "3.0.1" } \n\
                      org.apache.spark/spark-mllib_2.12 {:mvn/version "3.0.1"} \n\
@@ -158,7 +158,7 @@ spec:
 ```
 
 ```bash
-kubectl apply -f headless.yaml
+kubectl create -f headless.yaml
 ```
 
 ## Start Spark driver pod
@@ -220,18 +220,40 @@ needed ?
 ## Build images for workers
 
 ```bash
-cd ..
-bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark -t v3.0.1 build
+
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io -t v3.0.1 build
 ```
 
 ## Push images for worker into registry
 
 ```bash
-bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark -t v3.0.1 push
+bin/docker-image-tool.sh -r genidemo18w.azurecr.io -t v3.0.1 push
 ```
+
+# Copy data into storage
+
+```bash
+kubectl exec -ti geni -n spark -- /bin/bash
+```
+
+https://data.cityofnewyork.us/Transportation/2018-Yellow-Taxi-Trip-Data/t29m-gskq
+
+```bash
+cd /data
+# its 10 GB, takes a while
+wget "https://data.cityofnewyork.us/api/views/t29m-gskq/rows.csv?accessType=DOWNLOAD" -O nyc_taxi.csv
+```
+
+
+
 
 # Run clojre/geni code on driver pod
 ## run Clojure repl on existing pod
+
+```bash
+kubectl exec -tui geni -n spark -- clj
+```
+
 
 ```clojure
 (require '[zero-one.geni.core :as g])
@@ -254,3 +276,53 @@ bin/docker-image-tool.sh -r genidemo18w.azurecr.io/spark -t v3.0.1 push
    }})
 
 ```
+# access Spark web ui
+In an other bash shell
+
+```bash
+kubectl port-forward pod/geni -n spark 4040:4040
+```
+
+## start analysis
+
+```clojure
+(def df (g/read-csv! "/data/nyc_taxi.csv" {:inferSchema false}))
+(g/print-schema df)
+root
+ |-- vendor-id: string (nullable = true)
+ |-- tpep-pickup-datetime: string (nullable = true)
+ |-- tpep-dropoff-datetime: string (nullable = true)
+ |-- passenger-count: string (nullable = true)
+ |-- trip-distance: string (nullable = true)
+ |-- ratecode-id: string (nullable = true)
+ |-- store-and-fwd-flag: string (nullable = true)
+ |-- pu-location-id: string (nullable = true)
+ |-- do-location-id: string (nullable = true)
+ |-- payment-type: string (nullable = true)
+ |-- fare-amount: string (nullable = true)
+ |-- extra: string (nullable = true)
+ |-- mta-tax: string (nullable = true)
+ |-- tip-amount: string (nullable = true)
+ |-- tolls-amount: string (nullable = true)
+ |-- improvement-surcharge: string (nullable = true)
+ |-- total-amount: string (nullable = true)
+
+ ```
+
+
+```clojure
+
+(def df (g/read-csv! "/data/nyc_taxi.csv" 
+  {:schema (g/struct-type 
+    (g/struct-field :amount :long true)
+    (g/struct-field :tip-amount :long true)
+    (g/struct-field :tools-amount :long true)
+    (g/struct-field :payment-type :string true))
+
+    }))
+
+(g/cache df)
+(g/show (g/agg df (g/sum  :amount)))
+```
+
+
