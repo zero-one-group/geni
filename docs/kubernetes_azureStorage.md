@@ -286,7 +286,7 @@ kubectl port-forward pod/geni -n spark 4040:4040
 ## start analysis
 
 ```clojure
-(def df (g/read-csv! "/data/nyc_taxi.csv" {:inferSchema false}))
+(def df (g/read-csv! "/data/nyc_taxi.csv" {:inferSchema false :kebab-columns true}))
 (g/print-schema df)
 root
  |-- vendor-id: string (nullable = true)
@@ -313,7 +313,8 @@ root
 ```clojure
 
 (def df (g/read-csv! "/data/nyc_taxi.csv" 
-  {:schema (g/struct-type 
+  {:kebab-columns true
+   :schema (g/struct-type 
     (g/struct-field :amount :long true)
     (g/struct-field :tip-amount :long true)
     (g/struct-field :tools-amount :long true)
@@ -322,7 +323,9 @@ root
     }))
 
 (g/cache df)
-(g/show (g/agg df (g/sum  :amount)))
+(-> df  (g/agg df (g/sum  :amount)) g/show)
+(-> df (g/group-by :payment-type ) (g/sum  :amount) g/show)
+
 ```
 
 
