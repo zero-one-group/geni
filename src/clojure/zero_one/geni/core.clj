@@ -69,7 +69,7 @@
                             zero?
                             zipmap])
   (:require
-    [potemkin :refer [import-vars]]
+    [potemkin :refer [import-fn import-vars]]
     [zero-one.geni.core.clojure-idioms]
     [zero-one.geni.core.column]
     [zero-one.geni.core.data-sources]
@@ -393,6 +393,7 @@
 
 (import-vars
   [zero-one.geni.core.dataset-creation
+   ->schema
    array-type
    create-dataframe
    map->dataset
@@ -626,18 +627,16 @@
    shape
    value-counts])
 
-(def to-string (memfn toString))
-(def ->string to-string)
+(def to-string
+  "Coerce to string."
+  (memfn toString))
+(import-fn to-string ->string)
 
-(def to-debug-string (memfn toDebugString))
-(def ->debug-string to-debug-string)
+(def to-debug-string
+  "Coerce to string useful for debugging."
+  (memfn toDebugString))
+(import-fn to-debug-string ->debug-string)
 
 (comment
-
   (require '[zero-one.geni.docs :as docs])
-  (docs/invalid-doc-vars *ns*)
-
-  (count (docs/docless-vars *ns*))
-
-  true)
-
+  (docs/invalid-doc-vars *ns*))

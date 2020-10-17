@@ -11,9 +11,11 @@
 (require '[net.cgrand.parsley.fold])
 
 (def spark
+  "The default SparkSession as a Future object."
   (future @zero-one.geni.defaults/spark))
 
 (def init-eval
+  "The initial form evaluated when the REPL starts up."
   '(do
      (require 'zero-one.geni.main
               '[zero-one.geni.core :as g]
@@ -21,7 +23,7 @@
               '[zero-one.geni.rdd :as rdd])
      (def spark zero-one.geni.main/spark)))
 
-(defn custom-stream [script-path]
+(defn- custom-stream [script-path]
   (try
     (-> (str (slurp script-path) "\nexit\n")
         (.getBytes "UTF-8")
@@ -30,7 +32,16 @@
       (println (str "Cannot find file " script-path "!"))
       (System/exit 1))))
 
-(defn -main [& args]
+(defn -main
+  "The Geni CLI entrypoint.
+
+  It does the following:
+  - Prints the Spark config and a welcome note.
+  - Launches an nREPL server, which writes to `.nrepl-port` for a
+    text editor to connect to.
+  - Starts a REPL(-y).
+  "
+  [& args]
   (clojure.pprint/pprint (g/spark-conf @spark))
   (println (repl/spark-welcome-note (.version @spark)))
   (let [script-path (if (empty? args) nil (first args))]
