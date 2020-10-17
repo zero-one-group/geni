@@ -141,13 +141,13 @@ In Geni all file reading happens via functions of form  `g/read_xxx_!`. We can u
 
 The reading of  files by Geni can be achieved in 4 different ways:
 
-0. (Just copy the data files into the same path in all the Kubernetes pods and the driver machine. This is very adhoc and likely not suitable in most scenarios, as the data files would be lost at the end of the REPL session due to pods being terminated.)
+0. __Copy the data files__ into the same path __in all Kubernetes pods__ and the driver machine. This is very adhoc and likely not suitable in most scenarios, as the data files would be lost at the end of the REPL session due to pods being terminated.
  
-1. (Add data files to custom  Docker images used for Driver and Worker nodes. This is rather inconvenient as well, as any change in the data requires different Docker images)
+1. __Add data files to custom  Docker images__ used for Driver and Worker nodes. This is rather inconvenient as well, as any change in the data requires different Docker images
  
-2. Mount remote filesystem into the pod on operating system level. This makes them accessible as local files. Example: [blobfuse](https://github.com/Azure/azure-storage-fuse). This has direct support for Kubenetes as well: [kubernetes volume driver](https://github.com/Azure/kubernetes-volume-drivers) (This is then the same as 3.)
+2. __Mount remote filesystem__ into the pod on __operating system level__. This makes them accessible as local files. See for example: [blobfuse](https://github.com/Azure/azure-storage-fuse). This has direct support for Kubenetes as well through [kubernetes volume driver](https://github.com/Azure/kubernetes-volume-drivers) (This is then the same as 3.)
  
-3. __Mount Kubernetes data volumes into pods:__ Using a __local__ file path __and__ make sure that these path exist and work in all workers __and__ the driver. In Kubernets/Docker we can do this by __mounting__ (eventually remote) filesystems into the pods at certain location. Doing this, the files would look like local files and urls would not have a specific prefix, and be for example `(g/read "/data/test.csv")` This approach can eventually become easier, if we make sure, that the driver is running as well inside Kubernetes. (In the minikube setup above, the driver runs __outside__ Kubernetes)
+3. __Mount Kubernetes data volumes into pods:__ Using a __local__ file path __and__ make sure that these path exist and work in all workers __and__ the driver. In Kubernets/Docker we can do this by __mounting__ (eventually remote) filesystems into the pods at certain location. Doing this, the files would look like local files and urls would not have a specific prefix, and be for example `(g/read "/data/test.csv")` This approach can eventually become easier if we make sure, that the driver is running as well inside Kubernetes. In the minikube setup above, the driver runs __outside__ Kubernetes.
  
 4. __Using remote file systems:__ Spark can work with various types of remoe filesystem (hdfs, Amazon S3, Azure Storage based, others). This needs to be setup correctly (inside or outside Kubernetes). This might require 3 changes to the basic Minikube setup:
 
