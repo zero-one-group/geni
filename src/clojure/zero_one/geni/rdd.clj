@@ -16,8 +16,9 @@
                             take
                             vals])
   (:require
-   [potemkin :refer [import-vars]]
+   [potemkin :refer [import-fn import-vars]]
    [zero-one.geni.defaults]
+   [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.partial-result]
    [zero-one.geni.rdd.function :as function]
@@ -28,7 +29,10 @@
    (org.apache.spark.partial PartialResult)
    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
-(def rdd? (partial instance? JavaRDD))
+(defn rdd?
+  "Tests if `value` is an instance of `JavaRDD`."
+  [value]
+  (instance? JavaRDD value))
 
 (import-vars
  [zero-one.geni.spark-context
@@ -90,21 +94,19 @@
 (defn id [rdd] (.id rdd))
 
 (defn is-checkpointed [rdd] (.isCheckpointed rdd))
-(def checkpointed? is-checkpointed)
 
 (defn is-empty [rdd] (.isEmpty rdd))
-(def empty? is-empty)
 
 (defn name [rdd] (.name rdd))
 
-(defn num-partitions [rdd] (.getNumPartitions rdd))
+(defn get-num-partitions [rdd] (.getNumPartitions rdd))
 
 (defn partitioner [rdd]
   (interop/optional->nillable (.partitioner rdd)))
 
 (defn partitions [rdd] (.partitions rdd))
 
-(defn storage-level [rdd] (.getStorageLevel rdd))
+(defn get-storage-level [rdd] (.getStorageLevel rdd))
 
 ;; Transformations
 (defn cache [rdd]
@@ -145,12 +147,10 @@
 (defn flat-map [rdd f]
   (-> (.flatMap rdd (function/flat-map-function f))
       (unmangle/unmangle-name f)))
-(def mapcat flat-map)
 
 (defn flat-map-to-pair [rdd f]
   (-> (.flatMapToPair rdd (function/pair-flat-map-function f))
       (unmangle/unmangle-name f)))
-(def mapcat-to-pair flat-map-to-pair)
 
 (defn glom [rdd]
   (unmangle/unmangle-name (.glom rdd)))
@@ -485,13 +485,12 @@
 
 (defn values [rdd]
   (unmangle/unmangle-name (.values rdd)))
-(def vals values)
 
 ;; PairRDD Actions
 (defn count-by-key [rdd]
   (into {} (.countByKey rdd)))
 
-(defn bounded-double-map->nested-map [m]
+(defn- bounded-double-map->nested-map [m]
   (into {} (for [[k v] m] [k (bounded-double->map v)])))
 
 (defn count-by-key-approx
@@ -512,3 +511,16 @@
 (defn reduce-by-key-locally [rdd f]
   (into {} (.reduceByKeyLocally rdd (function/function2 f))))
 
+;; Docs
+(docs/alter-docs-in-ns!
+  'zero-one.geni.rdd
+  [(-> docs/spark-docs :methods :rdd :rdd)
+   (-> docs/spark-docs :methods :rdd :pair-rdd)])
+
+(import-fn flat-map mapcat)
+(import-fn flat-map-to-pair mapcat-to-pair)
+(import-fn get-num-partitions num-partitions)
+(import-fn get-storage-level storage-level)
+(import-fn is-checkpointed checkpointed?)
+(import-fn is-empty empty?)
+(import-fn values vals)
