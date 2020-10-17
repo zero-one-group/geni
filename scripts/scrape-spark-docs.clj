@@ -64,7 +64,8 @@
        (into {})))
 
 (defn extract-title [node]
-  (extract-text node [:h1 :> :a]))
+  ;(extract-text node [:h1 :> :a])
+  (extract-text node [:h4#signature :> :span.symbol :> :span.name]))
 
 (defn extract-class-comment [node]
   (extract-text node [:div#comment :div.comment.cmt :p]))
