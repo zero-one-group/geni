@@ -16,7 +16,7 @@
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.21"]
-                 [org.postgresql/postgresql "42.2.17"]
+                 [org.postgresql/postgresql "42.2.18"]
                  [org.xerial/sqlite-jdbc "3.32.3.2"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]
