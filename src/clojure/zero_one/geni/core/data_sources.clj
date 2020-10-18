@@ -7,7 +7,7 @@
     [clojure.java.io :as io]
     [jsonista.core :as jsonista]
     [zero-one.fxl.core :as fxl]
-    [zero-one.geni.defaults]
+    [zero-one.geni.defaults :as defaults]
     [zero-one.geni.interop :as interop]
     [zero-one.geni.core.dataset-creation :as dataset-creation]
     [zero-one.geni.core.dataset :as dataset]
@@ -16,26 +16,27 @@
     (java.text Normalizer Normalizer$Form)
     (org.apache.spark.sql SparkSession)))
 
-(def default-spark zero-one.geni.defaults/spark)
-
-(defn configure-reader-or-writer [unconfigured options]
+(defn- configure-reader-or-writer [unconfigured options]
   (reduce
     (fn [r [k v]] (.option r (->camelCase (name  k)) v))
     unconfigured
     options))
 
 (def default-options
+  "Default DataFrameReader options."
   {"csv" {:header "true" :infer-schema "true"}})
 
-(defn deaccent [string]
+(defn- deaccent [string]
   ;; Source: https://gist.github.com/maio/e5f85d69c3f6ca281ccd
   (let [normalized (Normalizer/normalize string Normalizer$Form/NFD)]
     (string/replace normalized #"\p{InCombiningDiacriticalMarks}+" "")))
 
-(defn remove-punctuations [string]
+(defn- remove-punctuations [string]
   (string/replace string #"[.,\/#!$%\^&\*;:{}=\`~()°]" ""))
 
-(defn ->kebab-columns [dataset]
+(defn ->kebab-columns
+  "Returns a new Dataset with all columns renamed to kebab cases."
+  [dataset]
   (let [new-columns (->> dataset
                          .columns
                          (map remove-punctuations)
@@ -43,7 +44,7 @@
                          (map camel-snake-kebab.core/->kebab-case))]
     (.toDF dataset (interop/->scala-seq new-columns))))
 
-(defn read-data! [format-name spark path options]
+(defn- read-data! [format-name spark path options]
   (let [reader-opts (dissoc options :kebab-columns :schema)
         defaults    (default-options format-name)
         schema      (:schema options)
@@ -54,56 +55,97 @@
     (-> (.load reader path)
         (cond-> (:kebab-columns options) ->kebab-columns))))
 
-(defmulti read-avro! (fn [head & _] (class head)))
+(defmulti read-avro!
+  "Loads an Avro file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-avro! :default
-  ([path] (read-avro! @default-spark path))
-  ([path options] (read-avro! @default-spark path options)))
+  ([path] (read-avro! @defaults/spark path))
+  ([path options] (read-avro! @defaults/spark path options)))
 (defmethod read-avro! SparkSession
   ([spark path] (read-avro! spark path {}))
   ([spark path options] (read-data! "avro" spark path options)))
 
-(defmulti read-parquet! (fn [head & _] (class head)))
+(defmulti read-parquet!
+  "Loads a Parquet file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-parquet! :default
-  ([path] (read-parquet! @default-spark path))
-  ([path options] (read-parquet! @default-spark path options)))
+  ([path] (read-parquet! @defaults/spark path))
+  ([path options] (read-parquet! @defaults/spark path options)))
 (defmethod read-parquet! SparkSession
   ([spark path] (read-parquet! spark path {}))
   ([spark path options] (read-data! "parquet" spark path options)))
 
-(defmulti read-csv! (fn [head & _] (class head)))
+(defmulti read-csv!
+  "Loads a CSV file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-csv! :default
-  ([path] (read-csv! @default-spark path))
-  ([path options] (read-csv! @default-spark path options)))
+  ([path] (read-csv! @defaults/spark path))
+  ([path options] (read-csv! @defaults/spark path options)))
 (defmethod read-csv! SparkSession
   ([spark path] (read-csv! spark path {}))
   ([spark path options] (read-data! "csv" spark path options)))
 
-(defmulti read-libsvm! (fn [head & _] (class head)))
+(defmulti read-libsvm!
+  "Loads a LIBSVM file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-libsvm! :default
-  ([path] (read-libsvm! @default-spark path))
-  ([path options] (read-libsvm! @default-spark path options)))
+  ([path] (read-libsvm! @defaults/spark path))
+  ([path options] (read-libsvm! @defaults/spark path options)))
 (defmethod read-libsvm! SparkSession
   ([spark path] (read-libsvm! spark path {}))
   ([spark path options] (read-data! "libsvm" spark path options)))
 
-(defmulti read-json! (fn [head & _] (class head)))
+(defmulti read-json!
+  "Loads a JSON file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-json! :default
-  ([path] (read-json! @default-spark path))
-  ([path options] (read-json! @default-spark path options)))
+  ([path] (read-json! @defaults/spark path))
+  ([path options] (read-json! @defaults/spark path options)))
 (defmethod read-json! SparkSession
   ([spark path] (read-json! spark path {}))
   ([spark path options] (read-data! "json" spark path options)))
 
-(defmulti read-text! (fn [head & _] (class head)))
+(defmulti read-text!
+  "Loads a text file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  (fn [head & _] (class head)))
 (defmethod read-text! :default
-  ([path] (read-text! @default-spark path))
-  ([path options] (read-text! @default-spark path options)))
+  ([path] (read-text! @defaults/spark path))
+  ([path options] (read-text! @defaults/spark path options)))
 (defmethod read-text! SparkSession
   ([spark path] (read-text! spark path {}))
   ([spark path options] (read-data! "text" spark path options)))
 
 (defn read-jdbc!
-  ([options] (read-jdbc! @default-spark options))
+  "Loads a database table and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  ([options] (read-jdbc! @defaults/spark options))
   ([spark options]
    (let [unconfigured-reader (.. spark sqlContext read (format "jdbc"))
          configured-reader   (configure-reader-or-writer unconfigured-reader options)]
@@ -112,7 +154,7 @@
 (defn- partition-by-arg [partition-id]
   (into-array java.lang.String (map name (ensure-coll partition-id))))
 
-(defn write-data! [format dataframe path options]
+(defn- write-data! [format dataframe path options]
   (let [mode                (:mode options)
         partition-id        (:partition-by options)
         unconfigured-writer (-> dataframe
@@ -127,30 +169,66 @@
     (.save configured-writer path)))
 
 (defn write-parquet!
+  "Writes a Parquet file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-parquet! dataframe path {}))
   ([dataframe path options] (write-data! "parquet" dataframe path options)))
 
 (defn write-csv!
+  "Writes a CSV file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-csv! dataframe path {"header" "true"}))
   ([dataframe path options] (write-data! "csv" dataframe path (merge options {"header" "true"}))))
 
 (defn write-libsvm!
+  "Writes a LIBSVM file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-libsvm! dataframe path {}))
   ([dataframe path options] (write-data! "libsvm" dataframe path options)))
 
 (defn write-json!
+  "Writes a JSON file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-json! dataframe path {}))
   ([dataframe path options] (write-data! "json" dataframe path options)))
 
 (defn write-text!
+  "Writes a text file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-text! dataframe path {}))
   ([dataframe path options] (write-data! "text" dataframe path options)))
 
 (defn write-avro!
+  "Writes an Avro file at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([dataframe path] (write-avro! dataframe path {}))
   ([dataframe path options] (write-data! "avro" dataframe path options)))
 
-(defn write-jdbc! [dataframe options]
+(defn write-jdbc!
+  "Writes a database table.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+  [dataframe options]
   (let [mode                (:mode options)
         unconfigured-writer (-> dataframe
                                 (.write)
@@ -162,13 +240,14 @@
     (.save configured-writer)))
 
 ;; EDN
-(defn file-exists? [path]
+(defn- file-exists? [path]
   (.exists (io/file path)))
 
-(defn read-as-keywords [json-str]
+(defn- read-as-keywords [json-str]
   (jsonista/read-value json-str jsonista/keyword-keys-object-mapper))
 
 (defn write-edn!
+  "Writes an EDN file at the specified path."
   ([dataframe path] (write-edn! dataframe path {}))
   ([dataframe path options]
    (let [records   (->> dataframe
@@ -180,10 +259,12 @@
        (spit path records)
        (throw (Exception. (format "path file:%s already exists!" path)))))))
 
-(defmulti read-edn! (fn [head & _] (class head)))
+(defmulti read-edn!
+  "Loads an EDN file and returns the results as a DataFrame."
+  (fn [head & _] (class head)))
 (defmethod read-edn! :default
-  ([path] (read-edn! @default-spark path))
-  ([path options] (read-edn! @default-spark path options)))
+  ([path] (read-edn! @defaults/spark path))
+  ([path options] (read-edn! @defaults/spark path options)))
 (defmethod read-edn! SparkSession
   ([spark path] (read-edn! spark path {}))
   ([spark path options]
@@ -196,6 +277,7 @@
 
 ;; Excel
 (defn write-xlsx!
+  "Writes an Excel file at the specified path."
   ([dataframe path] (write-xlsx! dataframe path {}))
   ([dataframe path options]
    (let [records   (dataset/collect dataframe)
@@ -209,10 +291,17 @@
          path)
        (throw (Exception. (format "path file:%s already exists!" path)))))))
 
-(defmulti read-xlsx! (fn [head & _] (class head)))
+(defmulti read-xlsx!
+  "Loads an Excel file and returns the results as a DataFrame.
+
+   Example options:
+   ```clojure
+   {:header true :sheet \"Sheet2\"}
+   ```"
+  (fn [head & _] (class head)))
 (defmethod read-xlsx! :default
-  ([path] (read-xlsx! @default-spark path))
-  ([path options] (read-xlsx! @default-spark path options)))
+  ([path] (read-xlsx! @defaults/spark path))
+  ([path options] (read-xlsx! @defaults/spark path options)))
 (defmethod read-xlsx! SparkSession
   ([spark path] (read-xlsx! spark path {:header true}))
   ([spark path options]
