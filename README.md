@@ -300,7 +300,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.spark/spark-streaming_2.12 "3.0.0"]
                 [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                 ;; Databases
-                [mysql/mysql-connector-java "8.0.21"]
+                [mysql/mysql-connector-java "8.0.22"]
                 [org.postgresql/postgresql "42.2.18"]
                 [org.xerial/sqlite-jdbc "3.32.3.1"]
                 ;; Optional: Spark XGBoost

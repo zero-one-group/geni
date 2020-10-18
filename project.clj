@@ -10,7 +10,7 @@
     [org.apache.spark/spark-sql_2.12 "3.0.1"]
     [org.apache.spark/spark-streaming_2.12 "3.0.1"]
     ; Databases
-    [mysql/mysql-connector-java "8.0.21"]
+    [mysql/mysql-connector-java "8.0.22"]
     [org.postgresql/postgresql "42.2.18"]
     [org.xerial/sqlite-jdbc "3.32.3.2"]
     ;; Optional: Spark XGBoost
