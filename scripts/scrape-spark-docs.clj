@@ -64,7 +64,8 @@
        (into {})))
 
 (defn extract-title [node]
-  (extract-text node [:h1 :> :a]))
+  ;(extract-text node [:h1 :> :a])
+  (extract-text node [:h4#signature :> :span.symbol :> :span.name]))
 
 (defn extract-class-comment [node]
   (extract-text node [:div#comment :div.comment.cmt :p]))
@@ -149,7 +150,7 @@
                      "ml/regression/IsotonicRegression.html"
                      "ml/regression/LinearRegression.html"
                      "ml/regression/RandomForestRegressor.html"]
-        :stat ["ml/stat/ChiSquareTest$.html" ;; FIXME: absent doc
+        :stat ["ml/stat/ChiSquareTest$.html"
                "ml/stat/Correlation$.html"
                "ml/stat/KolmogorovSmirnovTest$.html"]
         :tuning ["ml/tuning/CrossValidator.html"
@@ -246,7 +247,7 @@
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :classes :core :window keys sort)
+  (-> spark-docs :classes :hash-partitioner :hash-partitioner)
 
   (-> spark-docs :classes :core :window :window)
 

@@ -327,7 +327,7 @@
   (docs/invalid-doc-vars *ns*)
 
   (count (docs/docless-vars *ns*))
-  (-> docs/spark-docs :classes :ml :feature keys sort)
+  (-> docs/spark-docs :classes :ml :stat sort)
 
   (import '(org.apache.spark.ml.classification GBTRegressor))
   (params (GBTRegressor))
