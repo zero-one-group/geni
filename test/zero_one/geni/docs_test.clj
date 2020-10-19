@@ -19,3 +19,10 @@
   (docs/docless-vars 'zero-one.geni.docs-test) => [(var some-docless-fn)]
   (docs/invalid-doc-vars 'zero-one.geni.docs-test)
   => {'some-fn-with-invalid-doc (var some-fn-with-invalid-doc)})
+
+(fact "Frequently required namespaces must have complete docs" :docs
+  (docs/docless-vars 'zero-one.geni.core) => empty?
+  (docs/docless-vars 'zero-one.geni.main) => empty?
+  (docs/docless-vars 'zero-one.geni.ml) => empty?
+  (docs/docless-vars 'zero-one.geni.rdd) => empty?
+  (docs/docless-vars 'zero-one.geni.repl) => empty?)
