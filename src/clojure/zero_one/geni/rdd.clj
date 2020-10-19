@@ -524,3 +524,8 @@
 (import-fn is-checkpointed checkpointed?)
 (import-fn is-empty empty?)
 (import-fn values vals)
+
+(comment
+  (require '[zero-one.geni.docs :as docs])
+  (docs/invalid-doc-vars *ns*)
+  (docs/docless-vars *ns*))
