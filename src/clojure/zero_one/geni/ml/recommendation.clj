@@ -57,7 +57,13 @@
   [(-> docs/spark-docs :classes :ml :recommendation)
    (-> docs/spark-docs :methods :ml :models :als)])
 
+(docs/add-doc!
+  (var recommend-users)
+  (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-items))
+
+(docs/add-doc!
+  (var recommend-items)
+  (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-users))
+
 ;; Aliases
 (import-fn als alternating-least-squares)
-(import-fn recommend-for-all-items recommend-users)
-(import-fn recommend-for-all-users recommend-items)
