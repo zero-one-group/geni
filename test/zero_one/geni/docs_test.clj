@@ -1,7 +1,12 @@
 (ns zero-one.geni.docs-test
   (:require
     [midje.sweet :refer [fact =>]]
-    [zero-one.geni.docs :as docs]))
+    [zero-one.geni.core]
+    [zero-one.geni.docs :as docs]
+    [zero-one.geni.main]
+    [zero-one.geni.ml]
+    [zero-one.geni.rdd]
+    [zero-one.geni.repl]))
 
 (defn some-docless-fn [])
 
