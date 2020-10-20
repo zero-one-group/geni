@@ -94,7 +94,8 @@
 (import-vars
   [zero-one.geni.spark
    create-spark-session
-   spark-conf])
+   spark-conf
+   sql])
 
 (import-vars
   [zero-one.geni.spark-context
