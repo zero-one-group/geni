@@ -45,8 +45,11 @@
 (def -tmp-dir-attr
   (into-array FileAttribute '()))
 
-(defn create-temp-file! [extension]
-  (let [temp-dir (.toFile (Files/createTempDirectory "tmp-dir" -tmp-dir-attr))]
+(defn create-temp-dir! ^File []
+  (.toFile (Files/createTempDirectory "tmp-dir-" -tmp-dir-attr)))
+
+(defn create-temp-file! ^File [extension]
+  (let [temp-dir (create-temp-dir!)]
     (File/createTempFile "temporary" extension temp-dir)))
 
 (defn recursive-delete-dir
