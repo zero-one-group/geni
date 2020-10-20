@@ -103,7 +103,7 @@ Note that you will have to **change the `:spark.master` address** according to `
 
 ;; This should be the first function executed in the repl.
 
-(def spark
+(def spark-session
   (g/create-spark-session
    {:app-name "my-app"
     :log-level "INFO" ;; default is WARN
@@ -113,8 +113,9 @@ Note that you will have to **change the `:spark.master` address** according to `
      :spark.kubernetes.namespace "spark"
      :spark.kubernetes.authenticate.serviceAccountName "spark" ;; created above
      :spark.executor.instances 3}}))
-
 ```
+
+Verify that `(g/spark-conf spark-session)` returns a map with the `:spark.master` key pointing to `k8s`.
 
 ## List running pods
 
