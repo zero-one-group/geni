@@ -150,8 +150,6 @@
   ([expr] (vector-to-array (column/->column expr) "float64"))
   ([expr dtype] (functions/vector_to_array (column/->column expr) dtype)))
 
-(def corr polymorphic/corr)
-
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
 
@@ -252,6 +250,7 @@
 (defn weights [model] (seq (.weights model)))
 
 (defn write-stage!
+  "Save a PipelineStage to the specified path."
   ([stage path] (write-stage! stage path {}))
   ([stage path options]
    (let [unconfigured-writer (-> stage
@@ -274,7 +273,9 @@
        (filter load-method?)
        first))
 
-(defn read-stage! [model-cls path]
+(defn read-stage!
+  "Load a saved PipelineStage."
+  [model-cls path]
   (.invoke (load-method model-cls) model-cls (into-array [path])))
 
 ;; Docs
@@ -318,6 +319,7 @@
 (import-fn get-thresholds thresholds)
 (import-fn is-distributed distributed?)
 (import-fn pc principal-components)
+(import-fn polymorphic/corr corr)
 (import-fn supported-optimizers supported-optimisers)
 (import-fn vector-to-array vector->array)
 

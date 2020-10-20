@@ -138,7 +138,7 @@
                   "ml/feature/VectorSizeHint.html"
                   "ml/feature/VectorSlicer.html"
                   "ml/feature/Word2Vec.html"]
-        :fpm ["ml/fpm/FPGrowthModel.html"
+        :fpm ["ml/fpm/FPGrowth.html"
               "ml/fpm/PrefixSpan.html"]
         :pipeline ["ml/Pipeline.html"]
         :recommendation ["ml/recommendation/ALS.html"]
@@ -242,13 +242,11 @@
 
   (ns-publics 'scripts.scrape-spark-docs)
 
-  (scrape-spark-docs!)
+  (time (scrape-spark-docs!))
 
   (def spark-docs
     (nippy/thaw-from-file "resources/spark-docs.nippy"))
 
-  (-> spark-docs :classes :hash-partitioner :hash-partitioner)
-
-  (-> spark-docs :classes :core :window :window)
+  (-> spark-docs :methods :ml :recommendation)
 
   true)
