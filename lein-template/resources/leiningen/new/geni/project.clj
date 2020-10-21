@@ -22,8 +22,8 @@
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
                  ;; Optional: Spark XGBoost
-                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]{{/xgboost?}}]{{#dataproc?}}:plugins [[lein-shell "0.5.0"]]
+                 [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
+                 [ml.dmlc/xgboost4j_2.12 "1.2.0"]{{/xgboost?}}]{{#dataproc?}}:plugins [[lein-shell "0.5.0"]]
   :jar-name "{{raw-name}}.jar"
   :uberjar-name "{{raw-name}}-standalone.jar"
   :aliases {"spark-submit" ["do"
