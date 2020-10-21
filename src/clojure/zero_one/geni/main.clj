@@ -61,6 +61,10 @@
   (require '[midje.repl :refer [autotest]])
   (autotest :filter (every-pred :docs (complement :slow)))
 
+  (require '[zero-one.geni.core])
+  (require '[zero-one.geni.docs :as docs])
+  (docs/docless-vars 'zero-one.geni.repl)
+
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
   (->> (r/reflect Long)
