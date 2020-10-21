@@ -1,6 +1,8 @@
 .geni-stdout
 .nrepl-history
 *.cast
+spark-warehouse/
+spark-warehouses/
 
 *.DS_Store*
 .clj-kondo/.cache

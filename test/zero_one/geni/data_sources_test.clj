@@ -1,19 +1,23 @@
 (ns zero-one.geni.data-sources-test
   (:require
     [clojure.edn :as edn]
-    [midje.sweet :refer [facts fact => throws]]
+    [midje.sweet :refer [facts fact => throws with-state-changes before after]]
     [zero-one.geni.core :as g]
+    [zero-one.geni.catalog :as c]
     [zero-one.geni.test-resources :refer [create-temp-file!
                                           melbourne-df
-                                          libsvm-df]])
+                                          libsvm-df
+                                          spark
+                                          reset-session!
+                                          delete-warehouse!]])
   (:import
     (org.apache.spark.sql AnalysisException)))
 
 (def write-df
-  (-> melbourne-df (g/select :Method :Type) (g/limit 5)))
+  (-> (melbourne-df) (g/select :Method :Type) (g/limit 5)))
 
 (facts "On data-oriented schema" :schema
-  (let [dummy-df (-> melbourne-df
+  (let [dummy-df (-> (melbourne-df)
                      (g/limit 2)
                      g/->kebab-columns
                      (g/select {:rooms (g/struct :rooms :bathroom)
@@ -30,6 +34,7 @@
                                           "StructField(bathroom,DoubleType,true))")})
     (fact "correct direct schema option"
       (-> (g/read-parquet!
+            @spark
             temp-file
             {:schema (g/struct-type
                        (g/struct-field :rooms
@@ -46,6 +51,7 @@
                                     "StructField(bathroom,FloatType,true))")})
     (fact "correct data-oriented schema option"
       (-> (g/read-parquet!
+            @spark
             temp-file
             {:schema {:coord [:short]
                       :prop  [:string :string]
@@ -60,17 +66,17 @@
   (let [csv-path "test/resources/sample_csv_data.csv"
         selected [:InvoiceDate :Price]]
     (fact "correct schemaless baseline"
-      (-> (g/read-csv! csv-path)
+      (-> (g/read-csv! @spark csv-path)
           (g/select selected)
           g/dtypes) => {:InvoiceDate "StringType" :Price "DoubleType"})
     (fact "correct direct schema option"
-      (-> (g/read-csv! csv-path {:schema (g/struct-type
-                                           (g/struct-field :InvoiceDate :date true)
-                                           (g/struct-field :Price :int true))})
+      (-> (g/read-csv! @spark csv-path {:schema (g/struct-type
+                                                  (g/struct-field :InvoiceDate :date true)
+                                                  (g/struct-field :Price :int true))})
           (g/select selected)
           g/dtypes) => {:InvoiceDate "DateType" :Price "IntegerType"})
     (fact "correct data-oriented schema option"
-      (-> (g/read-csv! csv-path {:schema {:InvoiceDate :date :Price :long}})
+      (-> (g/read-csv! @spark csv-path {:schema {:InvoiceDate :date :Price :long}})
           (g/select selected)
           g/dtypes) => {:InvoiceDate "DateType" :Price "LongType"})))
 
@@ -78,18 +84,18 @@
   (let [temp-file  (.toString (create-temp-file! ".xlsx"))
         read-df    (do
                      (g/write-xlsx! write-df temp-file {:mode "overwrite"})
-                     (g/read-xlsx! temp-file))
-        headerless (g/read-xlsx! temp-file {:header false :kebab-columns true})]
+                     (g/read-xlsx! @spark temp-file))
+        headerless (g/read-xlsx! @spark temp-file {:header false :kebab-columns true})]
     (fact "read and write xlsx work"
       (g/collect read-df) => (g/collect write-df)
       (g/write-xlsx! write-df temp-file) => (throws Exception))
     (fact "read edge cases"
-      (g/read-xlsx! temp-file {:sheet "Sheet2"}) => g/empty?
+      (g/read-xlsx! @spark temp-file {:sheet "Sheet2"}) => g/empty?
       (g/count headerless) => 6
       (g/first headerless) => {:c-0 "Method" :c-1 "Type"})))
 
 (facts "On edn" :edn
-  (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 3))
+  (let [write-df  (-> (melbourne-df) (g/select :Price :Rooms) (g/limit 3))
         temp-file (.toString (create-temp-file! ".edn"))]
     (fact "write-edn! works as expected"
       (g/write-edn! write-df temp-file {:mode "overwrite"})
@@ -98,21 +104,22 @@
                                               {:Price 1465000.0 :Rooms 3}]
       (g/write-edn! write-df temp-file) => (throws Exception))
     (fact "read-edn! works as expected"
-      (g/collect (g/read-edn! temp-file)) => [{:Price 1480000.0 :Rooms 2}
-                                              {:Price 1035000.0 :Rooms 2}
-                                              {:Price 1465000.0 :Rooms 3}]
-      (g/column-names (g/read-edn! temp-file {:kebab-columns true}))
+      (g/collect (g/read-edn! @spark temp-file)) => [{:Price 1480000.0 :Rooms 2}
+                                                     {:Price 1035000.0 :Rooms 2}
+                                                     {:Price 1465000.0 :Rooms 3}]
+      (g/column-names (g/read-edn! @spark temp-file {:kebab-columns true}))
       => ["price" "rooms"])))
 
 (facts "On options" :slow
   (fact "infer-schema can be turned off"
-    (let [write-df  (-> melbourne-df (g/select :Price :Rooms) (g/limit 5))
+    (let [write-df  (-> (melbourne-df) (g/select :Price :Rooms) (g/limit 5))
           temp-file (.toString (create-temp-file! ".csv"))
           read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
-                       (g/read-csv! temp-file {:infer-schema false}))]
+                       (g/read-csv! @spark temp-file {:infer-schema false}))]
       (g/dtypes read-df)) => {:Price "StringType" :Rooms "StringType"})
   (fact "kebab-columns option works"
     (let [dataframe (g/table->dataset
+                      @spark
                       [[1 2 3 4]]
                       ["Brébeuf (données non disponibles)"
                        "X Coordinate (State Plane)"
@@ -120,13 +127,12 @@
                        "already-kebab-case"])
           temp-file (.toString (create-temp-file! ""))]
       (g/write-csv! dataframe temp-file {:mode "overwrite"})
-      (g/column-names (g/read-csv! temp-file {:kebab-columns true})))
+      (g/column-names (g/read-csv! @spark temp-file {:kebab-columns true})))
     => ["brebeuf-donnees-non-disponibles"
         "x-coordinate-state-plane"
         "col-with-underscore"
         "already-kebab-case"]
-    (-> "test/resources/melbourne_housing_snapshot.parquet"
-        (g/read-parquet! {:kebab-columns true})
+    (-> (g/read-parquet! @spark "test/resources/melbourne_housing_snapshot.parquet" {:kebab-columns true})
         g/columns) => [:suburb
                        :address
                        :rooms
@@ -161,8 +167,8 @@
         (write-fn! write-df temp-file {:mode "overwrite"})
         (write-fn! write-df temp-file) => (throws AnalysisException))))
   (let [temp-file (.toString (create-temp-file! ""))]
-    (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
-    (g/write-libsvm! libsvm-df temp-file) => (throws AnalysisException))
+    (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
+    (g/write-libsvm! (libsvm-df) temp-file) => (throws AnalysisException))
   (let [write-df  (g/select write-df :Type)
         temp-file (.toString (create-temp-file! ""))
         options   {:driver  "org.sqlite.JDBC"
@@ -173,75 +179,76 @@
 
 (fact "Can read with options" :slow
   (let [read-df (g/read-parquet!
+                  @spark
                   "test/resources/melbourne_housing_snapshot.parquet"
                   {"mergeSchema" "true"})]
     (g/count read-df) => 13580)
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
-                     (g/read-csv! temp-file {:header false}))]
+                     (g/read-csv! @spark temp-file {:header false}))]
     (set (g/column-names read-df)) => #(not= % #{:Method :Type}))
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
-        read-df  (do (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
-                     (g/read-libsvm! temp-file {:num-features "780"}))]
-    (g/collect read-df) => (g/collect libsvm-df))
+        read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
+                     (g/read-libsvm! @spark temp-file {:num-features "780"}))]
+    (g/collect read-df) => (g/collect (libsvm-df)))
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
-                     (g/read-json! temp-file {}))]
+                     (g/read-json! @spark temp-file {}))]
     (g/collect write-df) => (g/collect read-df))
   (let [write-df  (g/select write-df :Type)
         temp-file (.toString (create-temp-file! ".txt"))
         read-df  (do (g/write-text! write-df temp-file {:mode "overwrite"})
-                     (g/read-text! temp-file {}))]
+                     (g/read-text! @spark temp-file {}))]
     (g/collect-vals write-df) => (g/collect-vals read-df)))
 
 (fact "Can read and write csv"
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode      "overwrite"
                                                        :delimiter "|"})
-                     (g/read-csv! temp-file {:delimiter "|"}))]
+                     (g/read-csv! @spark temp-file {:delimiter "|"}))]
     (g/collect write-df) => (g/collect read-df))
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
-                     (g/read-csv! temp-file))]
+                     (g/read-csv! @spark temp-file))]
     (g/collect write-df) => (g/collect read-df))
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
-                     (g/read-csv! temp-file {}))]
+                     (g/read-csv! @spark temp-file {}))]
     (g/column-names read-df) => (g/column-names write-df)))
 
 (fact "Can read and write avro"
   (let [temp-file (.toString (create-temp-file! ".avro"))
         read-df  (do (g/write-avro! write-df temp-file {:mode "overwrite"})
-                     (g/read-avro! temp-file))]
+                     (g/read-avro! @spark temp-file))]
     (g/collect write-df) => (g/collect read-df))
   (let [temp-file (.toString (create-temp-file! ".avro"))
         read-df  (do (g/write-avro! write-df temp-file {:mode "overwrite"})
-                     (g/read-avro! temp-file {}))]
+                     (g/read-avro! @spark temp-file {}))]
     (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write parquet"
   (let [temp-file (.toString (create-temp-file! ".parquet"))
         read-df  (do (g/write-parquet! write-df temp-file {:mode "overwrite"})
-                     (g/read-parquet! temp-file))]
+                     (g/read-parquet! @spark temp-file))]
     (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write libsvm"
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
-        read-df  (do (g/write-libsvm! libsvm-df temp-file {:mode "overwrite"})
-                     (g/read-libsvm! temp-file))]
-    (g/collect libsvm-df) => (g/collect read-df)))
+        read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
+                     (g/read-libsvm! @spark temp-file))]
+    (g/collect (libsvm-df)) => (g/collect read-df)))
 
 (fact "Can read and write json"
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
-                     (g/read-json! temp-file))]
+                     (g/read-json! @spark temp-file))]
     (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write text"
   (let [write-df  (g/select write-df :Type)
         temp-file (.toString (create-temp-file! ".text"))
         read-df   (do (g/write-text! write-df temp-file {:mode "overwrite"})
-                      (g/read-text! temp-file))]
+                      (g/read-text! @spark temp-file))]
     (g/collect-vals write-df) => (g/collect-vals read-df)))
 
 (fact "Can read and write jdbc" :slow
@@ -252,7 +259,8 @@
                                               :driver  "org.sqlite.JDBC"
                                               :url     (str "jdbc:sqlite:" temp-file)
                                               :dbtable "housing"})
-                    (g/read-jdbc! {:driver  "org.sqlite.JDBC"
+                    (g/read-jdbc! @spark
+                                  {:driver  "org.sqlite.JDBC"
                                    :url     (str "jdbc:sqlite:" temp-file)
                                    :dbtable "housing"}))]
     (g/collect-vals write-df) => (g/collect-vals read-df)))
@@ -263,5 +271,18 @@
                        write-df
                        temp-file
                        {:mode "overwrite" :partition-by [:Method]})
-                     (g/read-parquet! temp-file))]
+                     (g/read-parquet! @spark temp-file))]
     (set (g/collect write-df)) => (set (g/collect read-df))))
+
+(facts "On read/write of managed tables"
+  (with-state-changes [(before :facts (reset-session!))
+                       (after :facts (delete-warehouse!))]
+    (fact "throws if the table doesn't exist."
+      (g/read-table! @spark "i_dont_exist") => (throws AnalysisException))
+
+    (fact "can read and write tables"
+      (let [dataset (g/range 3)
+            table-name "tbl"]
+        (g/write-table! dataset table-name)
+        (c/table-exists? (c/catalog @spark) "tbl") => true
+        (g/collect (g/order-by (g/read-table! table-name) :id)) => (g/collect (g/order-by (g/to-df dataset) :id))))))

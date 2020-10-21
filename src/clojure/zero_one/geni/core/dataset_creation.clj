@@ -1,6 +1,7 @@
 ;; Docstring Sources:
 ;; - https://github.com/apache/spark/blob/v3.0.1/sql/catalyst/src/main/java/org/apache/spark/sql/types/DataTypes.java
 (ns zero-one.geni.core.dataset-creation
+  (:refer-clojure :exclude [range])
   (:require
     [zero-one.geni.defaults :as defaults]
     [zero-one.geni.docs :as docs]
@@ -9,7 +10,8 @@
     (org.apache.spark.sql.types ArrayType DataType DataTypes)
     (org.apache.spark.ml.linalg VectorUDT
                                 DenseVector
-                                SparseVector)))
+                                SparseVector)
+    (org.apache.spark.sql SparkSession)))
 
 (def data-type->spark-type
   "A mapping from type keywords to Spark types."
@@ -214,6 +216,40 @@
                          (zipmap col-names (repeat []))
                          records)]
      (map->dataset spark map-of-values))))
+
+(defmulti range
+  "Creates a `Dataset` with a single `LongType` column named `id`.
+
+  The `Dataset` contains elements in a range from `start` (default 0) to `end` (exclusive)
+  with the given `step` (default 1).
+
+  If `num-partitions` is specified, the dataset will be distributed into the specified number
+  of partitions. Otherwise, spark uses internal logic to determine the number of partitions."
+  (fn [& args] (mapv class args)))
+(defmethod range [Long]
+  [^Long end]
+  (range @defaults/spark end))
+(defmethod range [Long Long]
+  [^Long start ^Long end]
+  (range @defaults/spark start end))
+(defmethod range [Long Long Long]
+  [^Long start ^Long end ^Long step]
+  (range @defaults/spark start end step))
+(defmethod range [Long Long Long Long]
+  [^Long start ^Long end ^Long step ^Integer num-partitions]
+  (range @defaults/spark start end step num-partitions))
+(defmethod range [SparkSession Long]
+  [^SparkSession spark ^Long end]
+  (.range spark end))
+(defmethod range [SparkSession Long Long]
+  [^SparkSession spark ^Long start ^Long end]
+  (.range spark start end))
+(defmethod range [SparkSession Long Long Long]
+  [^SparkSession spark ^Long start ^Long end ^Long step]
+  (.range spark start end step))
+(defmethod range [SparkSession Long Long Long Long]
+  [^SparkSession spark ^Long start ^Long end ^Long step ^Integer num-partitions]
+  (.range spark start end step num-partitions))
 
 ;; Docs
 (docs/add-doc!

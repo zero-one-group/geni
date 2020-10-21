@@ -5,13 +5,13 @@
     [zero-one.geni.test-resources :refer [create-temp-file! melbourne-df]]))
 
 (def dummy-df
-  (-> melbourne-df (g/select :Method) (g/limit 5)))
+  (-> (melbourne-df) (g/select :Method) (g/limit 5)))
 
 (fact "On rand-nth" :slow
   (g/rand-nth dummy-df) => map?
-  (g/rand-nth melbourne-df) => map?
-  (g/rand-nth (g/limit melbourne-df 1)) => map?
-  (g/rand-nth (g/limit melbourne-df 2)) => map?)
+  (g/rand-nth (melbourne-df)) => map?
+  (g/rand-nth (g/limit (melbourne-df) 1)) => map?
+  (g/rand-nth (g/limit (melbourne-df) 2)) => map?)
 
 (fact "On assoc and dissoc"
   (-> dummy-df
