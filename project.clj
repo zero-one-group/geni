@@ -14,8 +14,8 @@
     [org.postgresql/postgresql "42.2.18"]
     [org.xerial/sqlite-jdbc "3.32.3.2"]
     ;; Optional: Spark XGBoost
-    [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-    [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
+    [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
+    [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
 
 (defproject zero.one/geni "0.0.33"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
