@@ -9,15 +9,15 @@
     (org.apache.spark.sql Dataset SparkSession)))
 
 (fact "Test spark session and dataframe"
-  spark => #(instance? SparkSession %)
-  melbourne-df => #(instance? Dataset %)
-  (-> spark .conf .getAll interop/scala-map->map)
+  @spark => #(instance? SparkSession %)
+  (melbourne-df) => #(instance? Dataset %)
+  (-> @spark .conf .getAll interop/scala-map->map)
   => #(= (% "spark.master") "local[*]")
-  (-> spark .sparkContext .getCheckpointDir .get)
+  (-> @spark .sparkContext .getCheckpointDir .get)
   => #(clojure.string/includes? % "target/checkpoint/")
-  (-> spark .sparkContext .getConf g/to-debug-string)
+  (-> @spark .sparkContext .getConf g/to-debug-string)
   => #(clojure.string/includes? % "spark.app.id")
-  (select-keys (g/spark-conf spark) [:spark.master
+  (select-keys (g/spark-conf @spark) [:spark.master
                                      :spark.app.name
                                      :spark.testing.memory
                                      :spark.sql.adaptive.enabled
@@ -29,7 +29,7 @@
 
 
 (fact "Test primary key is the product of address, date and seller"
-  (-> melbourne-df
+  (-> (melbourne-df)
       (g/with-column
         "entry_id"
         (g/concat "Address" (g/lit "::") "Date" (g/lit "::") "SellerG"))

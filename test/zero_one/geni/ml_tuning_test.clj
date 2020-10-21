@@ -37,7 +37,7 @@
                         :estimator-param-maps param-grid
                         :evaluator (ml/binary-classification-evaluator {})
                         :num-folds 2})
-          model      (ml/fit libsvm-df cv)]
+          model      (ml/fit (libsvm-df) cv)]
       (ml/best-model model) => (partial instance? LogisticRegressionModel))))
 
 (facts "On cross validator"

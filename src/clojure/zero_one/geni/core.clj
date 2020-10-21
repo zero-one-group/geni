@@ -51,6 +51,7 @@
                             rand
                             rand-int
                             rand-nth
+                            range
                             remove
                             rename-keys
                             reverse
@@ -93,7 +94,8 @@
 (import-vars
   [zero-one.geni.spark
    create-spark-session
-   spark-conf])
+   spark-conf
+   sql])
 
 (import-vars
   [zero-one.geni.spark-context
@@ -398,6 +400,7 @@
    create-dataframe
    map->dataset
    map-type
+   range
    records->dataset
    struct-field
    struct-type
@@ -510,6 +513,10 @@
 (import-vars
   [zero-one.geni.core.data-sources
    ->kebab-columns
+   create-temp-view!
+   create-or-replace-temp-view!
+   create-global-temp-view!
+   create-or-replace-global-temp-view!
    read-avro!
    read-csv!
    read-edn!
@@ -517,6 +524,7 @@
    read-json!
    read-libsvm!
    read-parquet!
+   read-table!
    read-text!
    read-xlsx!
    write-avro!
@@ -526,6 +534,7 @@
    write-json!
    write-libsvm!
    write-parquet!
+   write-table!
    write-text!
    write-xlsx!])
 

@@ -43,6 +43,17 @@
        .getConf
        interop/spark-conf->map))
 
+(defn sql
+  "Executes a SQL query using Spark, returning the result as a `DataFrame`.
+
+  The dialect that is used for SQL parsing can be configured with 'spark.sql.dialect'.
+
+  ```clojure
+  (g/sql spark \"SELECT * FROM my_table\")
+  ```"
+  [^SparkSession spark ^String sql-text]
+  (. spark sql sql-text))
+
 ;; Docs
 (docs/add-doc!
   (var spark-conf)
