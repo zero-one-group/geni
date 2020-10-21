@@ -89,17 +89,17 @@
                                       :persistSubModels "true"}) => nil))
 
 (facts "On feature extraction" :slow
-  (let [indexer (ml/fit libsvm-df (ml/string-indexer {:input-col :label
-                                                      :output-col :indexed-label}))]
+  (let [indexer (ml/fit (libsvm-df) (ml/string-indexer {:input-col :label
+                                                        :output-col :indexed-label}))]
     (ml/labels indexer) => ["1.0" "0.0"])
   (let [ds-a     (g/table->dataset
-                   spark
+                   @spark
                    [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
                     [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
                     [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
                    [:id :features])
         ds-b     (g/table->dataset
-                   spark
+                   @spark
                    [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
                     [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
                     [5 (g/dense 0.0 1.0 1.0 0.0 1.0 0.0)]]
@@ -121,12 +121,12 @@
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6) => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6 "JaccardDistance") => #(instance? Dataset %))
   (let [dataset   (g/table->dataset
-                    spark
+                    @spark
                     [[0 ["a" "b" "c"]]] [:id :words])
         count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
     (ml/vocabulary count-vec) => #(every? string? %))
   (let [dataset (g/table->dataset
-                  spark
+                  @spark
                   [[(g/dense 2.0  1.0)]
                    [(g/dense 0.0  0.0)]
                    [(g/dense 3.0 -1.0)]]
@@ -134,7 +134,7 @@
         pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
     (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
   (let [dataset (g/table->dataset
-                  spark
+                  @spark
                   [[0.0  1.0]
                    [0.0  0.0]
                    [0.0  1.0]
@@ -146,39 +146,39 @@
                                        :output-cols [:x :y]}))]
     (ml/category-sizes ohe) => [2 2])
   (let [indexer (ml/fit
-                  (g/limit libsvm-df 10)
+                  (g/limit (libsvm-df) 10)
                   (ml/vector-indexer {:input-col "features" :output-col "indexed"}))]
     (ml/category-maps indexer) => #(and (map? %)
                                        (every? int? (map first %))
                                        (every? map? (map second %))))
   (let [model (ml/fit
-               (g/limit libsvm-df 10)
+               (g/limit (libsvm-df) 10)
                (ml/standard-scaler {:input-col :features
                                     :with-mean true
                                     :with-std true}))]
     (ml/mean model) => #(every? double? %)
     (ml/std model) => #(every? double? %))
   (let [model (ml/fit
-                (g/limit libsvm-df 10)
+                (g/limit (libsvm-df) 10)
                 (ml/min-max-scaler {:input-col "features"}))]
     (ml/original-min model) => #(every? double? %)
     (ml/original-max model) => #(every? double? %))
   (let [model (ml/fit
-               (g/limit libsvm-df 10)
+               (g/limit (libsvm-df) 10)
                (ml/max-abs-scaler {:input-col "features"}))]
     (ml/max-abs model) => #(every? double? %))
   (let [model (ml/vector-size-hint {:input-col "features" :size 111})]
     (ml/get-size model) => 111)
   (let [model (ml/fit
-               (g/select melbourne-df "BuildingArea")
+               (g/select (melbourne-df) "BuildingArea")
                (ml/imputer {:input-cols ["BuildingArea"]
                             :output-cols ["ImputedBuildingArea"]}))]
     (ml/surrogate-df model) => #(instance? Dataset %)))
 
 (facts "On clustering" :slow
   (let [estimator   (ml/k-means {:k 3})
-        model       (ml/fit k-means-df estimator)
-        predictions (ml/transform k-means-df model)
+        model       (ml/fit (k-means-df) estimator)
+        predictions (ml/transform (k-means-df) model)
         evaluator   (ml/clustering-evaluator {})
         silhoutte   (ml/evaluate predictions evaluator)]
     silhoutte => #(<= 0.6 % 1.0)
@@ -197,8 +197,8 @@
                        :reg-param 0.3
                        :elastic-net-param 0.8
                        :family "multinomial"})
-        model       (ml/fit libsvm-df estimator)
-        predictions (-> libsvm-df
+        model       (ml/fit (libsvm-df) estimator)
+        predictions (-> (libsvm-df)
                         (ml/transform model)
                         (g/select "prediction" "label" "features"))
         evaluator   (ml/multiclass-classification-evaluator
@@ -229,7 +229,7 @@
                        :max-iter 10
                        :reg-param 0.3
                        :elastic-net-param 0.8})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "trainable binary logistic regression"
      (ml/coefficients model) => #(every? double? %)
      (ml/intercept model) => double?)
@@ -249,7 +249,7 @@
 
 (facts "On decision-tree classifier" :slow
   (let [estimator   (ml/decision-tree-classifier {})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "Attributes are callable"
      (ml/depth model) => 2
      (ml/num-nodes model) => 5
@@ -257,7 +257,7 @@
 
 (facts "On random forest classifier" :slow
   (let [estimator   (ml/random-forest-classifier {})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "Attributes are callable"
      (ml/feature-importances model) => #(every? double? %)
      (ml/total-num-nodes model) => int?
@@ -265,7 +265,7 @@
 
 (facts "On gradient boosted tree classifier" :slow
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "Attributes are callable"
      (ml/feature-importances model) => #(every? double? %)
      (ml/total-num-nodes model) => int?
@@ -275,7 +275,7 @@
 
 (facts "On naive bayes classifier" :slow
   (let [estimator   (ml/naive-bayes {})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "Attributes are callable"
      (ml/theta model) => #(and (every? seq? %)
                                (every? double? (flatten %)))
@@ -283,13 +283,13 @@
 
 (facts "On isotonic regressor" :slow
   (let [estimator   (ml/isotonic-regression {})
-        model       (ml/fit libsvm-df estimator)]
+        model       (ml/fit (libsvm-df) estimator)]
    (fact "Attributes are callable"
      (ml/boundaries model) => #(every? double? %))))
 
 (facts "On AFT survival regression" :slow
   (let [dataset   (g/table->dataset
-                     spark
+                     @spark
                      [[1.218 1.0 (g/dense [1.560 -0.605])]
                       [2.949 0.0 (g/dense [0.346  2.158])]
                       [3.627 0.0 (g/dense [1.380  0.231])]
@@ -303,33 +303,33 @@
 
 (facts "On K-Means clustering" :slow
   (let [estimator   (ml/k-means {})
-        model       (ml/fit k-means-df estimator)]
+        model       (ml/fit (k-means-df) estimator)]
    (fact "Attributes are callable"
      (ml/cluster-centers model) => #(and (every? seq? %)
                                          (every? double? (flatten %))))))
 
 (facts "On LDA clustering" :slow
   (let [estimator   (ml/lda {})
-        model       (ml/fit k-means-df estimator)]
+        model       (ml/fit (k-means-df) estimator)]
    (fact "Attributes are callable"
      (ml/distributed? model) => boolean?
      (ml/describe-topics model) => #(instance? Dataset %)
      (ml/estimated-doc-concentration model) => #(every? double? %)
-     (ml/log-likelihood k-means-df model) => double?
-     (ml/log-perplexity k-means-df model) => double?
+     (ml/log-likelihood (k-means-df) model) => double?
+     (ml/log-perplexity (k-means-df) model) => double?
      (ml/supported-optimisers model) => #(every? string? %)
      (ml/vocab-size model) => int?)))
 
 (facts "On GMM clustering" :slow
   (let [estimator   (ml/gmm {})
-        model       (ml/fit k-means-df estimator)]
+        model       (ml/fit (k-means-df) estimator)]
    (fact "Attributes are callable"
      (ml/weights model) => #(every? double? %)
      (ml/gaussians-df model) => #(instance? Dataset %))))
 
 (fact "On XGB native" :slow
   (let [estimator   (ml/xgboost-classifier {})
-        model       (ml/fit libsvm-df estimator)
+        model       (ml/fit (libsvm-df) estimator)
         temp-file   (.toString (create-temp-file! ""))]
     (ml/write-native-model! model temp-file)) => nil?)
 
@@ -678,7 +678,7 @@
 (facts "On pipeline" :slow
   (fact "should be able to fit the example stages" :slow
     (let [dataset     (g/table->dataset
-                        spark
+                        @spark
                         [[0, "a b c d e spark", 1.0]
                          [1, "b d", 0.0]
                          [2, "spark f g h", 1.0],
@@ -701,7 +701,7 @@
       (:prediction dtypes) => "DoubleType"))
   (fact "should be able to fit the idf example" :slow
     (let [dataset     (g/table->dataset
-                        spark
+                        @spark
                         [[0.0 "Hi I heard about Spark"]
                          [0.0 "I wish Java could use case classes"]
                          [1.0 "Logistic regression models are neat"]]
@@ -722,7 +722,7 @@
       (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
   (fact "should be able to fit the word2vec example" :slow
     (let [dataset     (g/table->dataset
-                        spark
+                        @spark
                         [["Hi I heard about Spark"]
                          ["I wish Java could use case classes"]
                          ["Logistic regression models are neat"]]
@@ -742,7 +742,7 @@
 
 (facts "On hypothesis testing"
   (let [dataset (g/table->dataset
-                   spark
+                   @spark
                    [[0.0 (g/dense 0.5 10.0)]
                     [0.0 (g/dense 1.5 20.0)]
                     [1.0 (g/dense 1.5 30.0)]
@@ -756,14 +756,14 @@
           g/first-vals
           first) => #(every? double? %))
    (fact "able to do KS test"
-     (-> df-20
+     (-> (df-20)
          (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])
          g/first-vals) => #(and (< 0.01 (first %) 0.1)
                                 (< 0.25 (second %) 0.35)))))
 
 (facts "On correlation" :slow
   (let [dataset     (g/table->dataset
-                       spark
+                       @spark
                        [[1.0 0.0 -2.0 0.0]
                         [4.0 5.0 0.0  3.0]
                         [6.0 7.0 0.0  8.0]

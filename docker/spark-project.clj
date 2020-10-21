@@ -30,5 +30,5 @@
                  ;; Optional: Dataproc
                  [org.apache.spark/spark-yarn_2.12 "3.0.1"]
                  ;; Optional: Spark XGBoost
-                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]])
+                 [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
+                 [ml.dmlc/xgboost4j_2.12 "1.2.0"]])

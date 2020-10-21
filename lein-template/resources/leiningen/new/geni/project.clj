@@ -4,7 +4,7 @@
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [zero.one/geni "0.0.32"]
+                 [zero.one/geni "0.0.33"]
                  [expound "0.8.6"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.0.1"]
@@ -22,8 +22,8 @@
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
                  ;; Optional: Spark XGBoost
-                 [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                 [ml.dmlc/xgboost4j_2.12 "1.0.0"]{{/xgboost?}}]{{#dataproc?}}:plugins [[lein-shell "0.5.0"]]
+                 [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
+                 [ml.dmlc/xgboost4j_2.12 "1.2.0"]{{/xgboost?}}]{{#dataproc?}}:plugins [[lein-shell "0.5.0"]]
   :jar-name "{{raw-name}}.jar"
   :uberjar-name "{{raw-name}}-standalone.jar"
   :aliases {"spark-submit" ["do"
