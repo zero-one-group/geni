@@ -13,6 +13,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # cljfmt
+# FIXME: do `lein cljfmt check` once all files have been reformatted
 lein cljfmt check src/clojure/zero_one/geni/ml
 lein cljfmt check src/clojure/zero_one/geni/ml.clj
 echo "cljfmt succeeded for ml namespaces!"
