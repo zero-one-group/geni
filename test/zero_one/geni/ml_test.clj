@@ -1,84 +1,84 @@
 (ns zero-one.geni.ml-test
   (:require
-    [clojure.string :refer [includes?]]
-    [midje.sweet :refer [facts fact => throws]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [create-temp-file!
-                                          df-20
-                                          melbourne-df
-                                          k-means-df
-                                          libsvm-df
-                                          spark]])
+   [clojure.string :refer [includes?]]
+   [midje.sweet :refer [facts fact => throws]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]
+   [zero-one.geni.test-resources :refer [create-temp-file!
+                                         df-20
+                                         melbourne-df
+                                         k-means-df
+                                         libsvm-df
+                                         spark]])
   (:import
-    (ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
-                                   XGBoostRegressor)
-    (org.apache.spark.ml.classification DecisionTreeClassifier
-                                        FMClassifier
-                                        GBTClassifier
-                                        LinearSVC
-                                        LogisticRegression
-                                        MultilayerPerceptronClassifier
-                                        NaiveBayes
-                                        OneVsRest
-                                        RandomForestClassifier)
-    (org.apache.spark.ml.clustering BisectingKMeans
-                                    GaussianMixture
-                                    KMeans
-                                    KMeansModel
-                                    LDA
-                                    PowerIterationClustering)
-    (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
-                                    ClusteringEvaluator
-                                    MulticlassClassificationEvaluator
-                                    MultilabelClassificationEvaluator
-                                    RankingEvaluator
-                                    RegressionEvaluator)
-    (org.apache.spark.ml.feature Binarizer
-                                 Bucketizer
-                                 BucketedRandomProjectionLSH
-                                 ChiSqSelector
-                                 CountVectorizer
-                                 DCT
-                                 ElementwiseProduct
-                                 FeatureHasher
-                                 HashingTF
-                                 IDF
-                                 Imputer
-                                 IndexToString
-                                 Interaction
-                                 MaxAbsScaler
-                                 MinHashLSH
-                                 MinMaxScaler
-                                 NGram
-                                 Normalizer
-                                 OneHotEncoder
-                                 PCA
-                                 PolynomialExpansion
-                                 QuantileDiscretizer
-                                 RegexTokenizer
-                                 RobustScaler
-                                 SQLTransformer
-                                 StandardScaler
-                                 StopWordsRemover
-                                 StringIndexer
-                                 Tokenizer
-                                 VectorAssembler
-                                 VectorIndexer
-                                 VectorSizeHint
-                                 Word2Vec)
-    (org.apache.spark.ml.fpm FPGrowth
-                             PrefixSpan)
-    (org.apache.spark.ml.recommendation ALS)
-    (org.apache.spark.ml.regression AFTSurvivalRegression
-                                    DecisionTreeRegressor
-                                    FMRegressor
-                                    GBTRegressor
-                                    GeneralizedLinearRegression
-                                    IsotonicRegression
-                                    LinearRegression
-                                    RandomForestRegressor)
-    (org.apache.spark.sql Dataset)))
+   (ml.dmlc.xgboost4j.scala.spark XGBoostClassifier
+                                  XGBoostRegressor)
+   (org.apache.spark.ml.classification DecisionTreeClassifier
+                                       FMClassifier
+                                       GBTClassifier
+                                       LinearSVC
+                                       LogisticRegression
+                                       MultilayerPerceptronClassifier
+                                       NaiveBayes
+                                       OneVsRest
+                                       RandomForestClassifier)
+   (org.apache.spark.ml.clustering BisectingKMeans
+                                   GaussianMixture
+                                   KMeans
+                                   KMeansModel
+                                   LDA
+                                   PowerIterationClustering)
+   (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
+                                   ClusteringEvaluator
+                                   MulticlassClassificationEvaluator
+                                   MultilabelClassificationEvaluator
+                                   RankingEvaluator
+                                   RegressionEvaluator)
+   (org.apache.spark.ml.feature Binarizer
+                                Bucketizer
+                                BucketedRandomProjectionLSH
+                                ChiSqSelector
+                                CountVectorizer
+                                DCT
+                                ElementwiseProduct
+                                FeatureHasher
+                                HashingTF
+                                IDF
+                                Imputer
+                                IndexToString
+                                Interaction
+                                MaxAbsScaler
+                                MinHashLSH
+                                MinMaxScaler
+                                NGram
+                                Normalizer
+                                OneHotEncoder
+                                PCA
+                                PolynomialExpansion
+                                QuantileDiscretizer
+                                RegexTokenizer
+                                RobustScaler
+                                SQLTransformer
+                                StandardScaler
+                                StopWordsRemover
+                                StringIndexer
+                                Tokenizer
+                                VectorAssembler
+                                VectorIndexer
+                                VectorSizeHint
+                                Word2Vec)
+   (org.apache.spark.ml.fpm FPGrowth
+                            PrefixSpan)
+   (org.apache.spark.ml.recommendation ALS)
+   (org.apache.spark.ml.regression AFTSurvivalRegression
+                                   DecisionTreeRegressor
+                                   FMRegressor
+                                   GBTRegressor
+                                   GeneralizedLinearRegression
+                                   IsotonicRegression
+                                   LinearRegression
+                                   RandomForestRegressor)
+   (org.apache.spark.sql Dataset)))
 
 (facts "On reading and writing"
   (let [stage     (ml/vector-assembler {})
@@ -93,64 +93,64 @@
                                                         :output-col :indexed-label}))]
     (ml/labels indexer) => ["1.0" "0.0"])
   (let [ds-a     (g/table->dataset
-                   @spark
-                   [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
-                    [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
-                    [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
-                   [:id :features])
+                  @spark
+                  [[0 (g/dense 1.0 1.0 1.0 0.0 0.0 0.0)]
+                   [1 (g/dense 0.0 0.0 0.0 1.0 1.0 1.0)]
+                   [2 (g/dense 1.0 1.0 0.0 1.0 0.0 0.0)]]
+                  [:id :features])
         ds-b     (g/table->dataset
-                   @spark
-                   [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
-                    [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
-                    [5 (g/dense 0.0 1.0 1.0 0.0 1.0 0.0)]]
-                   [:id :features])
+                  @spark
+                  [[3 (g/dense 1.0 0.0 1.0 0.0 1.0 0.0)]
+                   [4 (g/dense 0.0 0.0 1.0 1.0 1.0 0.0)]
+                   [5 (g/dense 0.0 1.0 1.0 0.0 1.0 0.0)]]
+                  [:id :features])
         min-hash (ml/fit ds-a (ml/min-hash-lsh {:input-col "features"
                                                 :output-col "hashes"
                                                 :num-hash-tables 5}))]
     (ml/approx-nearest-neighbours
-      ds-a
-      min-hash
-      [0.0 1.0 0.0 1.0 0.0 0.0]
-      2) => #(instance? Dataset %)
+     ds-a
+     min-hash
+     [0.0 1.0 0.0 1.0 0.0 0.0]
+     2) => #(instance? Dataset %)
     (ml/approx-nearest-neighbours
-      ds-a
-      min-hash
-      [0.0 1.0 0.0 1.0 0.0 0.0]
-      2
-      "distCol") => #(instance? Dataset %)
+     ds-a
+     min-hash
+     [0.0 1.0 0.0 1.0 0.0 0.0]
+     2
+     "distCol") => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6) => #(instance? Dataset %)
     (ml/approx-similarity-join ds-a ds-b min-hash 0.6 "JaccardDistance") => #(instance? Dataset %))
   (let [dataset   (g/table->dataset
-                    @spark
-                    [[0 ["a" "b" "c"]]] [:id :words])
+                   @spark
+                   [[0 ["a" "b" "c"]]] [:id :words])
         count-vec (ml/fit dataset (ml/count-vectoriser {:input-col "words"}))]
     (ml/vocabulary count-vec) => #(every? string? %))
   (let [dataset (g/table->dataset
-                  @spark
-                  [[(g/dense 2.0  1.0)]
-                   [(g/dense 0.0  0.0)]
-                   [(g/dense 3.0 -1.0)]]
-                  [:features])
+                 @spark
+                 [[(g/dense 2.0  1.0)]
+                  [(g/dense 0.0  0.0)]
+                  [(g/dense 3.0 -1.0)]]
+                 [:features])
         pca     (ml/fit dataset (ml/pca {:input-col "features" :k 2}))]
     (ml/principal-components pca) => #(and (seq? %) (= (count %) 2)))
   (let [dataset (g/table->dataset
-                  @spark
-                  [[0.0  1.0]
-                   [0.0  0.0]
-                   [0.0  1.0]
-                   [1.0  0.0]]
-                  [:i :j])
+                 @spark
+                 [[0.0  1.0]
+                  [0.0  0.0]
+                  [0.0  1.0]
+                  [1.0  0.0]]
+                 [:i :j])
         ohe     (ml/fit
-                  dataset
-                  (ml/one-hot-encoder {:input-cols [:i :j]
-                                       :output-cols [:x :y]}))]
+                 dataset
+                 (ml/one-hot-encoder {:input-cols [:i :j]
+                                      :output-cols [:x :y]}))]
     (ml/category-sizes ohe) => [2 2])
   (let [indexer (ml/fit
-                  (g/limit (libsvm-df) 10)
-                  (ml/vector-indexer {:input-col "features" :output-col "indexed"}))]
+                 (g/limit (libsvm-df) 10)
+                 (ml/vector-indexer {:input-col "features" :output-col "indexed"}))]
     (ml/category-maps indexer) => #(and (map? %)
-                                       (every? int? (map first %))
-                                       (every? map? (map second %))))
+                                        (every? int? (map first %))
+                                        (every? map? (map second %))))
   (let [model (ml/fit
                (g/limit (libsvm-df) 10)
                (ml/standard-scaler {:input-col :features
@@ -159,8 +159,8 @@
     (ml/mean model) => #(every? double? %)
     (ml/std model) => #(every? double? %))
   (let [model (ml/fit
-                (g/limit (libsvm-df) 10)
-                (ml/min-max-scaler {:input-col "features"}))]
+               (g/limit (libsvm-df) 10)
+               (ml/min-max-scaler {:input-col "features"}))]
     (ml/original-min model) => #(every? double? %)
     (ml/original-max model) => #(every? double? %))
   (let [model (ml/fit
@@ -192,27 +192,27 @@
 
 (facts "On multinomial classification" :slow
   (let [estimator   (ml/logistic-regression
-                      {:thresholds [0.5 1.0]
-                       :max-iter 10
-                       :reg-param 0.3
-                       :elastic-net-param 0.8
-                       :family "multinomial"})
+                     {:thresholds [0.5 1.0]
+                      :max-iter 10
+                      :reg-param 0.3
+                      :elastic-net-param 0.8
+                      :family "multinomial"})
         model       (ml/fit (libsvm-df) estimator)
         predictions (-> (libsvm-df)
                         (ml/transform model)
                         (g/select "prediction" "label" "features"))
         evaluator   (ml/multiclass-classification-evaluator
-                      {:label-col "label"
-                       :prediction-col "prediction"
-                       :metric-name "accuracy"})
+                     {:label-col "label"
+                      :prediction-col "prediction"
+                      :metric-name "accuracy"})
         accuracy   (ml/evaluate predictions evaluator)]
-   (fact "trainable logistic regression"
-     (ml/coefficient-matrix model) => #(and (seq %)
-                                            (every? seq? %)
-                                            (every? double? (flatten %)))
-     (ml/intercept-vector model) => #(every? double? %))
-   (fact "evaluator works"
-     accuracy => #(<= 0.9 % 1.0))))
+    (fact "trainable logistic regression"
+      (ml/coefficient-matrix model) => #(and (seq %)
+                                             (every? seq? %)
+                                             (every? double? (flatten %)))
+      (ml/intercept-vector model) => #(every? double? %))
+    (fact "evaluator works"
+      accuracy => #(<= 0.9 % 1.0))))
 
 (facts "On param getters"
   (let [estimator (ml/vector-assembler {:input-cols ["x" "y" "z"]})]
@@ -225,107 +225,107 @@
 
 (facts "On binary classification" :slow
   (let [estimator   (ml/logistic-regression
-                      {:thresholds [0.5 1.0]
-                       :max-iter 10
-                       :reg-param 0.3
-                       :elastic-net-param 0.8})
+                     {:thresholds [0.5 1.0]
+                      :max-iter 10
+                      :reg-param 0.3
+                      :elastic-net-param 0.8})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "trainable binary logistic regression"
-     (ml/coefficients model) => #(every? double? %)
-     (ml/intercept model) => double?)
-   (fact "other attributes are callable"
-     (ml/binary-summary model) => (complement nil?)
-     (ml/summary model) => (complement nil?)
-     (ml/uid model) => string?
-     (ml/num-classes model) => 2
-     (ml/num-features model) => 780)
-   (fact "basic param getters"
-     (ml/label-col model) => "label"
-     (ml/features-col model) => "features"
-     (ml/prediction-col model) => "prediction"
-     (ml/raw-prediction-col model) => "rawPrediction"
-     (ml/probability-col model) => "probability"
-     (ml/thresholds model) => [0.5 1.0])))
+    (fact "trainable binary logistic regression"
+      (ml/coefficients model) => #(every? double? %)
+      (ml/intercept model) => double?)
+    (fact "other attributes are callable"
+      (ml/binary-summary model) => (complement nil?)
+      (ml/summary model) => (complement nil?)
+      (ml/uid model) => string?
+      (ml/num-classes model) => 2
+      (ml/num-features model) => 780)
+    (fact "basic param getters"
+      (ml/label-col model) => "label"
+      (ml/features-col model) => "features"
+      (ml/prediction-col model) => "prediction"
+      (ml/raw-prediction-col model) => "rawPrediction"
+      (ml/probability-col model) => "probability"
+      (ml/thresholds model) => [0.5 1.0])))
 
 (facts "On decision-tree classifier" :slow
   (let [estimator   (ml/decision-tree-classifier {})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/depth model) => 2
-     (ml/num-nodes model) => 5
-     (ml/root-node model) => (complement nil?))))
+    (fact "Attributes are callable"
+      (ml/depth model) => 2
+      (ml/num-nodes model) => 5
+      (ml/root-node model) => (complement nil?))))
 
 (facts "On random forest classifier" :slow
   (let [estimator   (ml/random-forest-classifier {})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/feature-importances model) => #(every? double? %)
-     (ml/total-num-nodes model) => int?
-     (ml/trees model) => seq?)))
+    (fact "Attributes are callable"
+      (ml/feature-importances model) => #(every? double? %)
+      (ml/total-num-nodes model) => int?
+      (ml/trees model) => seq?)))
 
 (facts "On gradient boosted tree classifier" :slow
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/feature-importances model) => #(every? double? %)
-     (ml/total-num-nodes model) => int?
-     (ml/trees model) => seq?
-     (ml/get-num-trees model) => int?
-     (ml/tree-weights model) => #(every? double? %))))
+    (fact "Attributes are callable"
+      (ml/feature-importances model) => #(every? double? %)
+      (ml/total-num-nodes model) => int?
+      (ml/trees model) => seq?
+      (ml/get-num-trees model) => int?
+      (ml/tree-weights model) => #(every? double? %))))
 
 (facts "On naive bayes classifier" :slow
   (let [estimator   (ml/naive-bayes {})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/theta model) => #(and (every? seq? %)
-                               (every? double? (flatten %)))
-     (ml/pi model) => #(every? double? %))))
+    (fact "Attributes are callable"
+      (ml/theta model) => #(and (every? seq? %)
+                                (every? double? (flatten %)))
+      (ml/pi model) => #(every? double? %))))
 
 (facts "On isotonic regressor" :slow
   (let [estimator   (ml/isotonic-regression {})
         model       (ml/fit (libsvm-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/boundaries model) => #(every? double? %))))
+    (fact "Attributes are callable"
+      (ml/boundaries model) => #(every? double? %))))
 
 (facts "On AFT survival regression" :slow
   (let [dataset   (g/table->dataset
-                     @spark
-                     [[1.218 1.0 (g/dense [1.560 -0.605])]
-                      [2.949 0.0 (g/dense [0.346  2.158])]
-                      [3.627 0.0 (g/dense [1.380  0.231])]
-                      [0.273 1.0 (g/dense [0.520  1.151])]
-                      [4.199 0.0 (g/dense [0.795 -0.226])]]
-                     [:label :censor :features])
+                   @spark
+                   [[1.218 1.0 (g/dense [1.560 -0.605])]
+                    [2.949 0.0 (g/dense [0.346  2.158])]
+                    [3.627 0.0 (g/dense [1.380  0.231])]
+                    [0.273 1.0 (g/dense [0.520  1.151])]
+                    [4.199 0.0 (g/dense [0.795 -0.226])]]
+                   [:label :censor :features])
         estimator (ml/aft-survival-regression {})
         model     (ml/fit dataset estimator)]
-   (fact "Attributes are callable"
-     (ml/scale model) => #(pos? %))))
+    (fact "Attributes are callable"
+      (ml/scale model) => #(pos? %))))
 
 (facts "On K-Means clustering" :slow
   (let [estimator   (ml/k-means {})
         model       (ml/fit (k-means-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/cluster-centers model) => #(and (every? seq? %)
-                                         (every? double? (flatten %))))))
+    (fact "Attributes are callable"
+      (ml/cluster-centers model) => #(and (every? seq? %)
+                                          (every? double? (flatten %))))))
 
 (facts "On LDA clustering" :slow
   (let [estimator   (ml/lda {})
         model       (ml/fit (k-means-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/distributed? model) => boolean?
-     (ml/describe-topics model) => #(instance? Dataset %)
-     (ml/estimated-doc-concentration model) => #(every? double? %)
-     (ml/log-likelihood (k-means-df) model) => double?
-     (ml/log-perplexity (k-means-df) model) => double?
-     (ml/supported-optimisers model) => #(every? string? %)
-     (ml/vocab-size model) => int?)))
+    (fact "Attributes are callable"
+      (ml/distributed? model) => boolean?
+      (ml/describe-topics model) => #(instance? Dataset %)
+      (ml/estimated-doc-concentration model) => #(every? double? %)
+      (ml/log-likelihood (k-means-df) model) => double?
+      (ml/log-perplexity (k-means-df) model) => double?
+      (ml/supported-optimisers model) => #(every? string? %)
+      (ml/vocab-size model) => int?)))
 
 (facts "On GMM clustering" :slow
   (let [estimator   (ml/gmm {})
         model       (ml/fit (k-means-df) estimator)]
-   (fact "Attributes are callable"
-     (ml/weights model) => #(every? double? %)
-     (ml/gaussians-df model) => #(instance? Dataset %))))
+    (fact "Attributes are callable"
+      (ml/weights model) => #(every? double? %)
+      (ml/gaussians-df model) => #(instance? Dataset %))))
 
 (fact "On XGB native" :slow
   (let [estimator   (ml/xgboost-classifier {})
@@ -678,20 +678,20 @@
 (facts "On pipeline" :slow
   (fact "should be able to fit the example stages" :slow
     (let [dataset     (g/table->dataset
-                        @spark
-                        [[0, "a b c d e spark", 1.0]
-                         [1, "b d", 0.0]
-                         [2, "spark f g h", 1.0],
-                         [3, "hadoop mapreduce", 0.0]]
-                        [:id :text :label])
+                       @spark
+                       [[0, "a b c d e spark", 1.0]
+                        [1, "b d", 0.0]
+                        [2, "spark f g h", 1.0],
+                        [3, "hadoop mapreduce", 0.0]]
+                       [:id :text :label])
           estimator   (ml/pipeline
-                        (ml/tokenizer {:input-col "text"
-                                       :output-col "words"})
-                        (ml/hashing-tf {:num-features 1000
-                                        :input-col "words"
-                                        :output-col "features"})
-                        (ml/logistic-regression {:max-iter 10
-                                                 :reg-param 0.001}))
+                       (ml/tokenizer {:input-col "text"
+                                      :output-col "words"})
+                       (ml/hashing-tf {:num-features 1000
+                                       :input-col "words"
+                                       :output-col "features"})
+                       (ml/logistic-regression {:max-iter 10
+                                                :reg-param 0.001}))
           transformer (ml/fit dataset estimator)
           dtypes      (-> dataset
                           (ml/transform transformer)
@@ -701,19 +701,19 @@
       (:prediction dtypes) => "DoubleType"))
   (fact "should be able to fit the idf example" :slow
     (let [dataset     (g/table->dataset
-                        @spark
-                        [[0.0 "Hi I heard about Spark"]
-                         [0.0 "I wish Java could use case classes"]
-                         [1.0 "Logistic regression models are neat"]]
-                        [:label :sentence])
+                       @spark
+                       [[0.0 "Hi I heard about Spark"]
+                        [0.0 "I wish Java could use case classes"]
+                        [1.0 "Logistic regression models are neat"]]
+                       [:label :sentence])
           estimator   (ml/pipeline
-                        (ml/tokenizer {:input-col "sentence"
-                                       :output-col "words"})
-                        (ml/hashing-tf {:num-features 20
-                                        :input-col "words"
-                                        :output-col "raw-features"})
-                        (ml/idf {:input-col "raw-features"
-                                 :output-col "features"}))
+                       (ml/tokenizer {:input-col "sentence"
+                                      :output-col "words"})
+                       (ml/hashing-tf {:num-features 20
+                                       :input-col "words"
+                                       :output-col "raw-features"})
+                       (ml/idf {:input-col "raw-features"
+                                :output-col "features"}))
           transformer (ml/fit dataset estimator)
           transformed (-> dataset
                           (ml/transform transformer)
@@ -722,18 +722,18 @@
       (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
   (fact "should be able to fit the word2vec example" :slow
     (let [dataset     (g/table->dataset
-                        @spark
-                        [["Hi I heard about Spark"]
-                         ["I wish Java could use case classes"]
-                         ["Logistic regression models are neat"]]
-                        [:sentence])
+                       @spark
+                       [["Hi I heard about Spark"]
+                        ["I wish Java could use case classes"]
+                        ["Logistic regression models are neat"]]
+                       [:sentence])
           estimator   (ml/pipeline
-                        (ml/tokenizer {:input-col "sentence"
-                                       :output-col "text"})
-                        (ml/word2vec {:vector-size 3
-                                      :min-count 0
-                                      :input-col "text"
-                                      :output-col "result"}))
+                       (ml/tokenizer {:input-col "sentence"
+                                      :output-col "text"})
+                       (ml/word2vec {:vector-size 3
+                                     :min-count 0
+                                     :input-col "text"
+                                     :output-col "result"}))
           transformer (ml/fit dataset estimator)
           transformed (-> dataset
                           (ml/transform transformer)
@@ -742,35 +742,35 @@
 
 (facts "On hypothesis testing"
   (let [dataset (g/table->dataset
-                   @spark
-                   [[0.0 (g/dense 0.5 10.0)]
-                    [0.0 (g/dense 1.5 20.0)]
-                    [1.0 (g/dense 1.5 30.0)]
-                    [0.0 (g/dense 3.5 30.0)]
-                    [0.0 (g/dense 3.5 40.0)]
-                    [1.0 (g/dense 3.5 40.0)]]
-                   [:label :features])]
+                 @spark
+                 [[0.0 (g/dense 0.5 10.0)]
+                  [0.0 (g/dense 1.5 20.0)]
+                  [1.0 (g/dense 1.5 30.0)]
+                  [0.0 (g/dense 3.5 30.0)]
+                  [0.0 (g/dense 3.5 40.0)]
+                  [1.0 (g/dense 3.5 40.0)]]
+                 [:label :features])]
     (fact "able to do chi-squared test"
       (-> dataset
           (ml/chi-square-test "features" "label")
           g/first-vals
           first) => #(every? double? %))
-   (fact "able to do KS test"
-     (-> (df-20)
-         (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])
-         g/first-vals) => #(and (< 0.01 (first %) 0.1)
-                                (< 0.25 (second %) 0.35)))))
+    (fact "able to do KS test"
+      (-> (df-20)
+          (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])
+          g/first-vals) => #(and (< 0.01 (first %) 0.1)
+                                 (< 0.25 (second %) 0.35)))))
 
 (facts "On correlation" :slow
   (let [dataset     (g/table->dataset
-                       @spark
-                       [[1.0 0.0 -2.0 0.0]
-                        [4.0 5.0 0.0  3.0]
-                        [6.0 7.0 0.0  8.0]
-                        [9.0 0.0 1.0  0.0]]
-                       [:a :b :c :d])
+                     @spark
+                     [[1.0 0.0 -2.0 0.0]
+                      [4.0 5.0 0.0  3.0]
+                      [6.0 7.0 0.0  8.0]
+                      [9.0 0.0 1.0  0.0]]
+                     [:a :b :c :d])
         v-assembler (ml/vector-assembler
-                      {:input-cols ["a" "b" "c" "d"] :output-col "features"})
+                     {:input-cols ["a" "b" "c" "d"] :output-col "features"})
         features-df (-> dataset
                         (ml/transform v-assembler)
                         (g/select "features"))]

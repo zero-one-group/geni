@@ -1,10 +1,10 @@
 (ns zero-one.geni.rdd-function-test
   (:require
-    [clojure.set :as set]
-    [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.rdd.function :as function])
+   [clojure.set :as set]
+   [midje.sweet :refer [facts fact =>]]
+   [zero-one.geni.rdd.function :as function])
   (:import
-    (java.util HashSet)))
+   (java.util HashSet)))
 
 (facts "On serialisability"
   (fact "On access-field"
@@ -18,12 +18,12 @@
     (function/namespace-references clojure.lang.Keyword) => #{})
   (fact "On walk-object-vars"
     (doall
-      (for [obj [nil true "abc" 123 :def 'ghi (ref {})]]
-        (let [refs (HashSet.)
-              visited (HashSet.)]
-          (function/walk-object-vars refs visited obj)
-          (into #{} refs) => empty?
-          (into #{} visited) => empty?)))
+     (for [obj [nil true "abc" 123 :def 'ghi (ref {})]]
+       (let [refs (HashSet.)
+             visited (HashSet.)]
+         (function/walk-object-vars refs visited obj)
+         (into #{} refs) => empty?
+         (into #{} visited) => empty?)))
     (let [refs (HashSet.)
           visited (HashSet.)]
       (function/walk-object-vars refs visited {:abc function/walk-object-vars})

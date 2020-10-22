@@ -1,9 +1,9 @@
 (ns zero-one.geni.ml-recommendation-test
   (:require
-    [midje.sweet :refer [facts =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.ml :as ml]
-    [zero-one.geni.test-resources :refer [ratings-df]]))
+   [midje.sweet :refer [facts =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.ml :as ml]
+   [zero-one.geni.test-resources :refer [ratings-df]]))
 
 (facts "On recommendation" :slow
   (let [estimator   (ml/als {:max-iter   1
