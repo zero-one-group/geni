@@ -1,11 +1,11 @@
 (ns zero-one.geni.ml.fpm
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.fpm FPGrowth
-                             PrefixSpan)))
+   (org.apache.spark.ml.fpm FPGrowth
+                            PrefixSpan)))
 
 (defn fp-growth [params]
   (let [defaults {:items-col      "items",
@@ -25,8 +25,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.fpm
-  [(-> docs/spark-docs :classes :ml :fpm)])
+ 'zero-one.geni.ml.fpm
+ [(-> docs/spark-docs :classes :ml :fpm)])
 
 ;; Aliases
 (import-fn fp-growth frequent-pattern-growth)

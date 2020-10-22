@@ -1,6 +1,6 @@
 (ns zero-one.geni.defaults
   (:require
-    [zero-one.geni.spark]))
+   [zero-one.geni.spark]))
 
 (def session-config
   {:configs {:spark.sql.adaptive.enabled "true"
@@ -10,4 +10,4 @@
 (def spark
   "The default SparkSession as a Delayed object."
   (atom
-    (zero-one.geni.spark/create-spark-session session-config)))
+   (zero-one.geni.spark/create-spark-session session-config)))

@@ -1,13 +1,13 @@
 (ns zero-one.geni.spark-context
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.defaults :as defaults]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.rdd.unmangle :as unmangle])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.defaults :as defaults]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.rdd.unmangle :as unmangle])
   (:import
-    (org.apache.spark.api.java JavaSparkContext)
-    (org.apache.spark.sql SparkSession)))
+   (org.apache.spark.api.java JavaSparkContext)
+   (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context
   "Converts a SparkSession to a JavaSparkContext."
@@ -137,8 +137,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.spark-context
-  [(-> docs/spark-docs :methods :spark :context)])
+ 'zero-one.geni.spark-context
+ [(-> docs/spark-docs :methods :spark :context)])
 
 ;; Aliases
 (import-fn get-checkpoint-dir checkpoint-dir)

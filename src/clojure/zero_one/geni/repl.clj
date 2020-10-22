@@ -1,9 +1,9 @@
 (ns zero-one.geni.repl
   (:require
-    [clojure.string]
-    [clojure.java.io :as io]
-    [nrepl.server]
-    [reply.main]))
+   [clojure.string]
+   [clojure.java.io :as io]
+   [nrepl.server]
+   [reply.main]))
 
 (defn- client [opts]
   (let [port (:port opts)
@@ -31,11 +31,11 @@
   "A REPL welcome note, similar to the one in `spark-shell`."
   [version]
   (clojure.string/join
-    "\n"
-    ["Spark session available as a future object - deref with `@spark`."
-     "Welcome to"
-     "      ____              __"
-     "     / __/__  ___ _____/ /__"
-     "    _\\ \\/ _ \\/ _ `/ __/  '_/"
-     (str "   /___/ .__/\\_,_/_/ /_/\\_\\   version " version)
-     "      /_/"]))
+   "\n"
+   ["Spark session available as a future object - deref with `@spark`."
+    "Welcome to"
+    "      ____              __"
+    "     / __/__  ___ _____/ /__"
+    "    _\\ \\/ _ \\/ _ `/ __/  '_/"
+    (str "   /___/ .__/\\_,_/_/ /_/\\_\\   version " version)
+    "      /_/"]))

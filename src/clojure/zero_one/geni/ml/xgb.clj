@@ -1,7 +1,7 @@
 (ns zero-one.geni.ml.xgb
   (:require
-     [zero-one.geni.interop :as interop]
-     [zero-one.geni.utils :refer [coalesce with-dynamic-import]]))
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [coalesce with-dynamic-import]]))
 
 (declare xgboost-classifier
          xgboost-regressor

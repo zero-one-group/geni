@@ -1,10 +1,10 @@
 (ns zero-one.geni.partitioner
   (:refer-clojure :exclude [partition])
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs])
   (:import
-    (org.apache.spark HashPartitioner)))
+   (org.apache.spark HashPartitioner)))
 
 (defn hash-partitioner [partitions]
   (HashPartitioner. partitions))
@@ -23,8 +23,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.partitioner
-  [(-> docs/spark-docs :methods :hash-partitioner)])
+ 'zero-one.geni.partitioner
+ [(-> docs/spark-docs :methods :hash-partitioner)])
 
 ; FIXME
 ;(docs/add-doc!

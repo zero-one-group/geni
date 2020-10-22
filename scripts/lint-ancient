@@ -2,14 +2,26 @@
 
 set -euo pipefail
 
+# clj-kondo
 clj-kondo \
     --lint src/clojure/zero_one test/zero_one \
     --cache false
+echo "clj-kondo succeeded!"
 if [ $? -ne 0 ]; then
     echo "clj-kondo failed!"
     exit 1
 fi
 
+# cljfmt
+lein cljfmt check src/clojure/zero_one/geni/ml
+lein cljfmt check src/clojure/zero_one/geni/ml.clj
+echo "cljfmt succeeded for ml namespaces!"
+
+lein cljfmt check src/clojure/zero_one/geni/rdd
+lein cljfmt check src/clojure/zero_one/geni/rdd.clj
+echo "cljfmt succeeded for rdd namespaces!"
+
+# Ancient
 mkdir -p target
 lein ancient
 

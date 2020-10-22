@@ -1,27 +1,27 @@
 (ns zero-one.geni.interop
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case]]
-    [clojure.java.data :as j]
-    [clojure.string :refer [replace-first]]
-    [clojure.walk :as walk]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.utils :refer [ensure-coll]])
+   [camel-snake-kebab.core :refer [->kebab-case]]
+   [clojure.java.data :as j]
+   [clojure.string :refer [replace-first]]
+   [clojure.walk :as walk]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-    (java.io ByteArrayOutputStream)
-    (org.apache.spark.ml.linalg DenseVector
-                                DenseMatrix
-                                SparseVector
-                                Vectors)
-    (org.apache.spark.sql Row)
-    (scala Console
-           Function0
-           Function1
-           Function2
-           Function3
-           Tuple2
-           Tuple3)
-    (scala.collection JavaConversions Map Seq)
-    (scala.collection.convert Wrappers$IterableWrapper)))
+   (java.io ByteArrayOutputStream)
+   (org.apache.spark.ml.linalg DenseVector
+                               DenseMatrix
+                               SparseVector
+                               Vectors)
+   (org.apache.spark.sql Row)
+   (scala Console
+          Function0
+          Function1
+          Function2
+          Function3
+          Tuple2
+          Tuple3)
+   (scala.collection JavaConversions Map Seq)
+   (scala.collection.convert Wrappers$IterableWrapper)))
 
 (declare ->clojure)
 
@@ -48,8 +48,8 @@
 
 (defn scala-map->map [^Map m]
   (into {}
-    (for [[k v] (JavaConversions/mapAsJavaMap m)]
-      [k (->clojure v)])))
+        (for [[k v] (JavaConversions/mapAsJavaMap m)]
+          [k (->clojure v)])))
 
 (defn ->scala-seq [coll]
   (JavaConversions/asScalaBuffer (seq coll)))
@@ -81,10 +81,10 @@
 
 (defmacro with-scala-out-str [& body]
   `(let [out-buffer# (ByteArrayOutputStream.)]
-      (Console/withOut
-        out-buffer#
-        (->scala-function0 (fn [] ~@body)))
-      (.toString out-buffer# "UTF-8")))
+     (Console/withOut
+      out-buffer#
+      (->scala-function0 (fn [] ~@body)))
+     (.toString out-buffer# "UTF-8")))
 
 (defn spark-conf->map [conf]
   (->> conf
@@ -188,11 +188,11 @@
    (let [setters  (setters-map cls)
          instance (.newInstance cls)]
      (reduce
-       (fn [_ [k v]]
-         (when-let [setter (setters k)]
-           (set-value setter instance (convert-keywords v))))
-       instance
-       props))))
+      (fn [_ [k v]]
+        (when-let [setter (setters k)]
+          (set-value setter instance (convert-keywords v))))
+      instance
+      props))))
 
 (defn zero-arity? [^java.lang.reflect.Method method]
   (= 0 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method))))
@@ -216,13 +216,13 @@
   (->spark-row values))
 
 (docs/add-doc!
-  (var dense)
-  (-> docs/spark-docs :methods :ml :linalg :vectors :dense))
+ (var dense)
+ (-> docs/spark-docs :methods :ml :linalg :vectors :dense))
 
 (docs/add-doc!
-  (var sparse)
-  (-> docs/spark-docs :methods :ml :linalg :vectors :sparse))
+ (var sparse)
+ (-> docs/spark-docs :methods :ml :linalg :vectors :sparse))
 
 (docs/add-doc!
-  (var row)
-  (-> docs/spark-docs :methods :core :row :from-seq))
+ (var row)
+ (-> docs/spark-docs :methods :core :row :from-seq))

@@ -1,43 +1,43 @@
 (ns zero-one.geni.ml.feature
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.ml.default-stop-words :refer [default-stop-words]])
   (:import
-    (org.apache.spark.ml.feature Binarizer
-                                 Bucketizer
-                                 BucketedRandomProjectionLSH
-                                 ChiSqSelector
-                                 CountVectorizer
-                                 DCT
-                                 ElementwiseProduct
-                                 FeatureHasher
-                                 HashingTF
-                                 IDF
-                                 Imputer
-                                 IndexToString
-                                 Interaction
-                                 MaxAbsScaler
-                                 MinHashLSH
-                                 MinMaxScaler
-                                 NGram
-                                 Normalizer
-                                 OneHotEncoder
-                                 PCA
-                                 PolynomialExpansion
-                                 QuantileDiscretizer
-                                 RegexTokenizer
-                                 RobustScaler
-                                 SQLTransformer
-                                 StandardScaler
-                                 StopWordsRemover
-                                 StringIndexer
-                                 Tokenizer
-                                 VectorAssembler
-                                 VectorIndexer
-                                 VectorSizeHint
-                                 Word2Vec)))
+   (org.apache.spark.ml.feature Binarizer
+                                Bucketizer
+                                BucketedRandomProjectionLSH
+                                ChiSqSelector
+                                CountVectorizer
+                                DCT
+                                ElementwiseProduct
+                                FeatureHasher
+                                HashingTF
+                                IDF
+                                Imputer
+                                IndexToString
+                                Interaction
+                                MaxAbsScaler
+                                MinHashLSH
+                                MinMaxScaler
+                                NGram
+                                Normalizer
+                                OneHotEncoder
+                                PCA
+                                PolynomialExpansion
+                                QuantileDiscretizer
+                                RegexTokenizer
+                                RobustScaler
+                                SQLTransformer
+                                StandardScaler
+                                StopWordsRemover
+                                StringIndexer
+                                Tokenizer
+                                VectorAssembler
+                                VectorIndexer
+                                VectorSizeHint
+                                Word2Vec)))
 
 (defn stop-words-remover [params]
   (let [defaults {:locale         "en_US",
@@ -159,7 +159,7 @@
 
 (defn imputer [params]
   (let [defaults {:missing-value ##NaN
-                  :strategy      "mean"}
+                                   :strategy      "mean"}
         props    (merge defaults params)]
     (interop/instantiate Imputer props)))
 
@@ -198,7 +198,6 @@
         props    (merge defaults params)]
     (interop/instantiate HashingTF props)))
 
-
 (defn word-2-vec [params]
   (let [defaults {:max-iter            1,
                   :step-size           0.025,
@@ -230,8 +229,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.feature
-  [(-> docs/spark-docs :classes :ml :feature)])
+ 'zero-one.geni.ml.feature
+ [(-> docs/spark-docs :classes :ml :feature)])
 
 ;; Aliases
 (import-fn binarizer binariser)
