@@ -1,16 +1,16 @@
 (ns zero-one.geni.rdd-test
   (:require
-    [clojure.java.io :as io]
-    [clojure.string :as string]
-    [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.aot-functions :as aot]
-    [zero-one.geni.defaults]
-    [zero-one.geni.partitioner :as partitioner]
-    [zero-one.geni.rdd :as rdd]
-    [zero-one.geni.test-resources :refer [create-temp-file!]])
+   [clojure.java.io :as io]
+   [clojure.string :as string]
+   [midje.sweet :refer [facts fact =>]]
+   [zero-one.geni.aot-functions :as aot]
+   [zero-one.geni.defaults]
+   [zero-one.geni.partitioner :as partitioner]
+   [zero-one.geni.rdd :as rdd]
+   [zero-one.geni.test-resources :refer [create-temp-file!]])
   (:import
-    (org.apache.spark SparkContext)
-    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
+   (org.apache.spark SparkContext)
+   (org.apache.spark.api.java JavaRDD JavaSparkContext)))
 
 (def dummy-rdd
   (rdd/text-file "test/resources/rdd.txt"))
@@ -21,13 +21,13 @@
 (facts "On variadic functions" :rdd
   (fact "expected 0-adic and 1-adic returns"
     (doall
-      (for [variadic-fn [rdd/cartesian rdd/union rdd/intersection rdd/subtract]]
-        (do
-          (variadic-fn) => rdd/empty?
-          (let [rand-num (rand-int 100)]
-            (-> (rdd/parallelise [rand-num])
-                variadic-fn
-                rdd/collect) => [rand-num])))))
+     (for [variadic-fn [rdd/cartesian rdd/union rdd/intersection rdd/subtract]]
+       (do
+         (variadic-fn) => rdd/empty?
+         (let [rand-num (rand-int 100)]
+           (-> (rdd/parallelise [rand-num])
+               variadic-fn
+               rdd/collect) => [rand-num])))))
   (fact "expected 3-adic returns"
     (let [left  (rdd/parallelise [1 2 3])
           mid   (rdd/parallelise [3 4 5])
@@ -235,7 +235,7 @@
   (fact "binary-files works"
     (rdd/count (rdd/binary-files "test/resources/housing.parquet/*.parquet")) => 1
     (rdd/count
-      (rdd/binary-files "test/resources/housing.parquet/*.parquet" 2)) => 1)
+     (rdd/binary-files "test/resources/housing.parquet/*.parquet" 2)) => 1)
   (fact "save-as-text-file works"
     (let [write-rdd (rdd/parallelise (mapv (fn [_] (rand-int 100)) (range 100)))
           temp-file (create-temp-file! ".rdd")
@@ -409,8 +409,8 @@
         (rdd/flat-map-to-pair aot/split-spaces-and-pair)
         (rdd/reduce-by-key +)
         rdd/collect
-        set)=> #{["spark" 2] ["world" 1] ["and" 1] ["geni!" 1] ["the" 1]
-                 ["awesome!" 1] ["is" 1] ["hello" 2] ["world!" 1]})
+        set) => #{["spark" 2] ["world" 1] ["and" 1] ["geni!" 1] ["the" 1]
+                  ["awesome!" 1] ["is" 1] ["hello" 2] ["world!" 1]})
   (fact "map-partitions works"
     (-> (rdd/parallelise ["abc def" "ghi jkl" "mno pqr"])
         (rdd/map-partitions aot/map-split-spaces)

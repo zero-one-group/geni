@@ -1,10 +1,10 @@
 (ns zero-one.geni.ml.recommendation
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.recommendation ALS)))
+   (org.apache.spark.ml.recommendation ALS)))
 
 (defn als [params]
   (let [defaults {:implicit-prefs false,
@@ -53,17 +53,17 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.recommendation
-  [(-> docs/spark-docs :classes :ml :recommendation)
-   (-> docs/spark-docs :methods :ml :models :als)])
+ 'zero-one.geni.ml.recommendation
+ [(-> docs/spark-docs :classes :ml :recommendation)
+  (-> docs/spark-docs :methods :ml :models :als)])
 
 (docs/add-doc!
-  (var recommend-users)
-  (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-items))
+ (var recommend-users)
+ (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-items))
 
 (docs/add-doc!
-  (var recommend-items)
-  (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-users))
+ (var recommend-items)
+ (-> docs/spark-docs :methods :ml :models :als :recommend-for-all-users))
 
 ;; Aliases
 (import-fn als alternating-least-squares)

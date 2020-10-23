@@ -1,14 +1,14 @@
 (ns zero-one.geni.ml.clustering
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.clustering BisectingKMeans
-                                    GaussianMixture
-                                    KMeans
-                                    LDA
-                                    PowerIterationClustering)))
+   (org.apache.spark.ml.clustering BisectingKMeans
+                                   GaussianMixture
+                                   KMeans
+                                   LDA
+                                   PowerIterationClustering)))
 
 (defn bisecting-k-means [params]
   (let [defaults {:distance-measure "euclidean",
@@ -72,8 +72,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.clustering
-  [(-> docs/spark-docs :classes :ml :clustering)])
+ 'zero-one.geni.ml.clustering
+ [(-> docs/spark-docs :classes :ml :clustering)])
 
 ;; Aliases
 (import-fn gaussian-mixture gmm)

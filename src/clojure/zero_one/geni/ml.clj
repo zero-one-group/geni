@@ -1,150 +1,150 @@
 (ns zero-one.geni.ml
   (:refer-clojure :exclude [Double])
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case]]
-    [clojure.walk :refer [keywordize-keys]]
-    [potemkin :refer [import-fn import-vars]]
-    [zero-one.geni.core.column :as column]
-    [zero-one.geni.core.polymorphic :as polymorphic]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.ml.classification]
-    [zero-one.geni.ml.clustering]
-    [zero-one.geni.ml.evaluation]
-    [zero-one.geni.ml.feature]
-    [zero-one.geni.ml.fpm]
-    [zero-one.geni.ml.recommendation]
-    [zero-one.geni.ml.regression]
-    [zero-one.geni.ml.tuning]
-    [zero-one.geni.ml.xgb])
+   [camel-snake-kebab.core :refer [->kebab-case]]
+   [clojure.walk :refer [keywordize-keys]]
+   [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.core.column :as column]
+   [zero-one.geni.core.polymorphic :as polymorphic]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.ml.classification]
+   [zero-one.geni.ml.clustering]
+   [zero-one.geni.ml.evaluation]
+   [zero-one.geni.ml.feature]
+   [zero-one.geni.ml.fpm]
+   [zero-one.geni.ml.recommendation]
+   [zero-one.geni.ml.regression]
+   [zero-one.geni.ml.tuning]
+   [zero-one.geni.ml.xgb])
   (:import
-    (org.apache.spark.ml Pipeline
-                         PipelineStage
-                         functions)
-    (org.apache.spark.ml.stat ChiSquareTest
-                              KolmogorovSmirnovTest)))
+   (org.apache.spark.ml Pipeline
+                        PipelineStage
+                        functions)
+   (org.apache.spark.ml.stat ChiSquareTest
+                             KolmogorovSmirnovTest)))
 
 (import-vars
-  [zero-one.geni.ml.xgb
-   write-native-model!
-   xgboost-classifier
-   xgboost-regressor])
+ [zero-one.geni.ml.xgb
+  write-native-model!
+  xgboost-classifier
+  xgboost-regressor])
 
 (import-vars
-  [zero-one.geni.ml.clustering
-   bisecting-k-means
-   gaussian-mixture
-   gmm
-   k-means
-   lda
-   latent-dirichlet-allocation
-   power-iteration-clustering])
+ [zero-one.geni.ml.clustering
+  bisecting-k-means
+  gaussian-mixture
+  gmm
+  k-means
+  lda
+  latent-dirichlet-allocation
+  power-iteration-clustering])
 
 (import-vars
-  [zero-one.geni.ml.evaluation
-   binary-classification-evaluator
-   clustering-evaluator
-   multiclass-classification-evaluator
-   multilabel-classification-evaluator
-   ranking-evaluator
-   regression-evaluator])
+ [zero-one.geni.ml.evaluation
+  binary-classification-evaluator
+  clustering-evaluator
+  multiclass-classification-evaluator
+  multilabel-classification-evaluator
+  ranking-evaluator
+  regression-evaluator])
 
 (import-vars
-  [zero-one.geni.ml.feature
-   binariser
-   binarizer
-   bucketed-random-projection-lsh
-   bucketiser
-   bucketizer
-   chi-sq-selector
-   count-vectoriser
-   count-vectorizer
-   dct
-   discrete-cosine-transform
-   elementwise-product
-   feature-hasher
-   hashing-tf
-   idf
-   imputer
-   index-to-string
-   interaction
-   max-abs-scaler
-   min-hash-lsh
-   min-max-scaler
-   n-gram
-   normaliser
-   normalizer
-   one-hot-encoder
-   pca
-   polynomial-expansion
-   quantile-discretiser
-   quantile-discretizer
-   regex-tokeniser
-   regex-tokenizer
-   robust-scaler
-   sql-transformer
-   standard-scaler
-   stop-words-remover
-   string-indexer
-   tokeniser
-   tokenizer
-   vector-assembler
-   vector-indexer
-   vector-size-hint
-   word-2-vec
-   word2vec])
+ [zero-one.geni.ml.feature
+  binariser
+  binarizer
+  bucketed-random-projection-lsh
+  bucketiser
+  bucketizer
+  chi-sq-selector
+  count-vectoriser
+  count-vectorizer
+  dct
+  discrete-cosine-transform
+  elementwise-product
+  feature-hasher
+  hashing-tf
+  idf
+  imputer
+  index-to-string
+  interaction
+  max-abs-scaler
+  min-hash-lsh
+  min-max-scaler
+  n-gram
+  normaliser
+  normalizer
+  one-hot-encoder
+  pca
+  polynomial-expansion
+  quantile-discretiser
+  quantile-discretizer
+  regex-tokeniser
+  regex-tokenizer
+  robust-scaler
+  sql-transformer
+  standard-scaler
+  stop-words-remover
+  string-indexer
+  tokeniser
+  tokenizer
+  vector-assembler
+  vector-indexer
+  vector-size-hint
+  word-2-vec
+  word2vec])
 
 (import-vars
-  [zero-one.geni.ml.classification
-   decision-tree-classifier
-   fm-classifier
-   gbt-classifier
-   linear-svc
-   logistic-regression
-   mlp-classifier
-   multilayer-perceptron-classifier
-   naive-bayes
-   one-vs-rest
-   random-forest-classifier])
+ [zero-one.geni.ml.classification
+  decision-tree-classifier
+  fm-classifier
+  gbt-classifier
+  linear-svc
+  logistic-regression
+  mlp-classifier
+  multilayer-perceptron-classifier
+  naive-bayes
+  one-vs-rest
+  random-forest-classifier])
 
 (import-vars
-  [zero-one.geni.ml.fpm
-   fp-growth
-   frequent-pattern-growth
-   prefix-span])
+ [zero-one.geni.ml.fpm
+  fp-growth
+  frequent-pattern-growth
+  prefix-span])
 
 (import-vars
-  [zero-one.geni.ml.regression
-   aft-survival-regression
-   decision-tree-regressor
-   fm-regressor
-   gbt-regressor
-   generalised-linear-regression
-   generalized-linear-regression
-   glm
-   isotonic-regression
-   linear-regression
-   random-forest-regressor])
+ [zero-one.geni.ml.regression
+  aft-survival-regression
+  decision-tree-regressor
+  fm-regressor
+  gbt-regressor
+  generalised-linear-regression
+  generalized-linear-regression
+  glm
+  isotonic-regression
+  linear-regression
+  random-forest-regressor])
 
 (import-vars
-  [zero-one.geni.ml.recommendation
-   als
-   alternating-least-squares
-   item-factors
-   recommend-for-all-items
-   recommend-for-all-users
-   recommend-for-item-subset
-   recommend-for-user-subset
-   recommend-items
-   recommend-users
-   user-factors])
+ [zero-one.geni.ml.recommendation
+  als
+  alternating-least-squares
+  item-factors
+  recommend-for-all-items
+  recommend-for-all-users
+  recommend-for-item-subset
+  recommend-for-user-subset
+  recommend-items
+  recommend-users
+  user-factors])
 
 (import-vars
-  [zero-one.geni.ml.tuning
-   cross-validator
-   param-grid
-   param-grid-builder
-   train-validation-split])
+ [zero-one.geni.ml.tuning
+  cross-validator
+  param-grid
+  param-grid-builder
+  train-validation-split])
 
 (defn vector-to-array
   ([expr] (vector-to-array (column/->column expr) "float64"))
@@ -258,14 +258,14 @@
                                  (cond-> (= (:mode options) "overwrite")
                                    .overwrite))
          configured-writer    (reduce
-                                (fn [w [k v]] (.option w (name k) v))
-                                unconfigured-writer
-                                (dissoc options :mode))]
+                               (fn [w [k v]] (.option w (name k) v))
+                               unconfigured-writer
+                               (dissoc options :mode))]
      (.save configured-writer path))))
 
 (defn- load-method? [^java.lang.reflect.Method method]
   (and ; (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
-       (= "load" (.getName method))))
+   (= "load" (.getName method))))
 
 (defn- load-method [cls]
   (->> cls
@@ -280,28 +280,28 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml
-  (-> docs/spark-docs :methods :ml :models vals))
+ 'zero-one.geni.ml
+ (-> docs/spark-docs :methods :ml :models vals))
 
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml
-  (-> docs/spark-docs :methods :ml :features vals))
+ 'zero-one.geni.ml
+ (-> docs/spark-docs :methods :ml :features vals))
 
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml
-  [(-> docs/spark-docs :classes :ml :stat)])
+ 'zero-one.geni.ml
+ [(-> docs/spark-docs :classes :ml :stat)])
 
 (docs/add-doc!
-  (var idf-vector)
-  (-> docs/spark-docs :methods :ml :features :idf :idf))
+ (var idf-vector)
+ (-> docs/spark-docs :methods :ml :features :idf :idf))
 
 (docs/add-doc!
-  (var pipeline)
-  (-> docs/spark-docs :classes :ml :pipeline :pipeline))
+ (var pipeline)
+ (-> docs/spark-docs :classes :ml :pipeline :pipeline))
 
 (docs/add-doc!
-  (var vector-to-array)
-  (-> docs/spark-docs :methods :ml :functions :vector-to-array))
+ (var vector-to-array)
+ (-> docs/spark-docs :methods :ml :functions :vector-to-array))
 
 ;; Aliases
 (import-fn approx-nearest-neighbors approx-nearest-neighbours)

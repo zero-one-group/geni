@@ -4,7 +4,7 @@
 ; https://stackoverflow.com/questions/51051888/spark-storage-level-none-vs-memory-only
 (ns zero-one.geni.storage
   (:import
-    (org.apache.spark.storage StorageLevel)))
+   (org.apache.spark.storage StorageLevel)))
 
 (def disk-only
   "Flag for controlling the storage of an RDD.

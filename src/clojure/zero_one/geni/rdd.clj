@@ -513,9 +513,9 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.rdd
-  [(-> docs/spark-docs :methods :rdd :rdd)
-   (-> docs/spark-docs :methods :rdd :pair-rdd)])
+ 'zero-one.geni.rdd
+ [(-> docs/spark-docs :methods :rdd :rdd)
+  (-> docs/spark-docs :methods :rdd :pair-rdd)])
 
 (import-fn flat-map mapcat)
 (import-fn flat-map-to-pair mapcat-to-pair)

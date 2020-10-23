@@ -1,19 +1,19 @@
 (ns zero-one.geni.ml.classification
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [coalesce]])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [coalesce]])
   (:import
-    (org.apache.spark.ml.classification DecisionTreeClassifier
-                                        FMClassifier
-                                        GBTClassifier
-                                        LinearSVC
-                                        LogisticRegression
-                                        MultilayerPerceptronClassifier
-                                        NaiveBayes
-                                        OneVsRest
-                                        RandomForestClassifier)))
+   (org.apache.spark.ml.classification DecisionTreeClassifier
+                                       FMClassifier
+                                       GBTClassifier
+                                       LinearSVC
+                                       LogisticRegression
+                                       MultilayerPerceptronClassifier
+                                       NaiveBayes
+                                       OneVsRest
+                                       RandomForestClassifier)))
 
 (defn logistic-regression [params]
   (let [defaults {:max-iter           100,
@@ -182,8 +182,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.classification
-  [(-> docs/spark-docs :classes :ml :classification)])
+ 'zero-one.geni.ml.classification
+ [(-> docs/spark-docs :classes :ml :classification)])
 
 ;; Aliases
 (import-fn multilayer-perceptron-classifier mlp-classifier)

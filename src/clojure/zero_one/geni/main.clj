@@ -1,10 +1,10 @@
 (ns zero-one.geni.main
   (:require
-    [clojure.java.io]
-    [clojure.pprint]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.defaults]
-    [zero-one.geni.repl :as repl])
+   [clojure.java.io]
+   [clojure.pprint]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.defaults]
+   [zero-one.geni.repl :as repl])
   (:gen-class))
 
 ;; Removes the pesky ns warning that takes up the first line of the REPL.

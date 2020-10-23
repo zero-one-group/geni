@@ -5,10 +5,8 @@
            (org.apache.spark.storage StorageLevel)
            (clojure.lang Keyword)))
 
-
 (defn table-identifier
   [database name] (str database "." name))
-
 
 (defn catalog ^Catalog
   ([]
@@ -16,11 +14,9 @@
   ([^SparkSession spark]
    (. spark catalog)))
 
-
 (defn- catalog-dispatch
   [& args]
   (mapv class args))
-
 
 (defmulti cache-table catalog-dispatch)
 (defmethod cache-table [String]
@@ -42,7 +38,6 @@
   [^Catalog catalog ^String table-name ^StorageLevel storage-level]
   (. catalog cacheTable table-name storage-level))
 
-
 (defmulti clear-cache catalog-dispatch)
 (defmethod clear-cache []
   []
@@ -53,7 +48,6 @@
 (defmethod clear-cache [Catalog]
   [^Catalog catalog]
   (. catalog clearCache))
-
 
 (defmulti current-database ^String catalog-dispatch)
 (defmethod current-database []
@@ -66,7 +60,6 @@
   [^Catalog catalog]
   (. catalog currentDatabase))
 
-
 (defmulti database-exists? ^Boolean catalog-dispatch)
 (defmethod database-exists? [String]
   [^String db-name]
@@ -77,7 +70,6 @@
 (defmethod database-exists? [Catalog String]
   [^Catalog catalog ^String db-name]
   (. catalog databaseExists db-name))
-
 
 (defmulti drop-temp-view ^Boolean catalog-dispatch)
 (defmethod drop-temp-view [String]
@@ -90,7 +82,6 @@
   [^Catalog catalog ^String view-name]
   (. catalog dropTempView view-name))
 
-
 (defmulti drop-global-temp-view ^Boolean catalog-dispatch)
 (defmethod drop-global-temp-view [String]
   [^String view-name]
@@ -102,7 +93,6 @@
   [^Catalog catalog ^String view-name]
   (. catalog dropGlobalTempView view-name))
 
-
 (defmulti cached? ^Boolean catalog-dispatch)
 (defmethod cached? [String]
   [^String table-name]
@@ -113,7 +103,6 @@
 (defmethod cached? [Catalog String]
   [^Catalog catalog ^String table-name]
   (. catalog isCached table-name))
-
 
 (defmulti list-columns ^Dataset catalog-dispatch)
 (defmethod list-columns [String]
@@ -135,7 +124,6 @@
   [^Catalog catalog ^String db-name ^String table-name]
   (. catalog listColumns db-name table-name))
 
-
 (defmulti list-databases ^Dataset catalog-dispatch)
 (defmethod list-databases []
   []
@@ -146,7 +134,6 @@
 (defmethod list-databases [Catalog]
   [^Catalog catalog]
   (. catalog listDatabases))
-
 
 (defmulti list-tables ^Dataset catalog-dispatch)
 (defmethod list-tables []
@@ -168,7 +155,6 @@
   [^Catalog catalog ^String db-name]
   (. catalog listTables db-name))
 
-
 (defmulti recover-partitions catalog-dispatch)
 (defmethod recover-partitions [String]
   [^String table-name]
@@ -179,7 +165,6 @@
 (defmethod recover-partitions [Catalog String]
   [^Catalog catalog ^String table-name]
   (. catalog recoverPartitions table-name))
-
 
 (defmulti refresh-by-path catalog-dispatch)
 (defmethod refresh-by-path [String]
@@ -192,7 +177,6 @@
   [^Catalog catalog ^String path]
   (. catalog refreshByPath path))
 
-
 (defmulti refresh-table catalog-dispatch)
 (defmethod refresh-table [String]
   [^String table-name]
@@ -204,7 +188,6 @@
   [^Catalog catalog ^String table-name]
   (. catalog refreshTable table-name))
 
-
 (defmulti set-current-database catalog-dispatch)
 (defmethod set-current-database [String]
   [^String db-name]
@@ -215,7 +198,6 @@
 (defmethod set-current-database [Catalog String]
   [^Catalog catalog ^String db-name]
   (. catalog setCurrentDatabase db-name))
-
 
 (defmulti table-exists? ^Boolean catalog-dispatch)
 (defmethod table-exists? [String]
@@ -237,7 +219,6 @@
   [^Catalog catalog ^String db-name ^String table-name]
   (. catalog tableExists db-name table-name))
 
-
 (defmulti uncache-table catalog-dispatch)
 (defmethod uncache-table [String]
   [^String table-name]
@@ -248,7 +229,6 @@
 (defmethod uncache-table [Catalog String]
   [^Catalog catalog ^String table-name]
   (. catalog uncacheTable table-name))
-
 
 (defmulti drop-relation catalog-dispatch)
 (defmethod drop-relation [Keyword String]
@@ -280,7 +260,6 @@
   [^SparkSession spark ^Keyword relation-type ^String db-name ^String table-name ^Boolean if-exists]
   (drop-relation spark relation-type (table-identifier db-name table-name) if-exists))
 
-
 (defmulti drop-table catalog-dispatch)
 (defmethod drop-table [String]
   [^String table-name]
@@ -306,7 +285,6 @@
 (defmethod drop-table [SparkSession String String Boolean]
   [^SparkSession spark ^String db-name ^String table-name ^Boolean if-exists]
   (drop-relation spark :TABLE db-name table-name if-exists))
-
 
 (defmulti drop-view catalog-dispatch)
 (defmethod drop-view [String]

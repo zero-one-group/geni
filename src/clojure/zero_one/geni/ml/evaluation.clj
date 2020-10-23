@@ -1,14 +1,14 @@
 (ns zero-one.geni.ml.evaluation
   (:require
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
-                                    ClusteringEvaluator
-                                    MulticlassClassificationEvaluator
-                                    MultilabelClassificationEvaluator
-                                    RankingEvaluator
-                                    RegressionEvaluator)))
+   (org.apache.spark.ml.evaluation BinaryClassificationEvaluator
+                                   ClusteringEvaluator
+                                   MulticlassClassificationEvaluator
+                                   MultilabelClassificationEvaluator
+                                   RankingEvaluator
+                                   RegressionEvaluator)))
 
 (defn binary-classification-evaluator [params]
   (interop/instantiate BinaryClassificationEvaluator params))
@@ -30,6 +30,6 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.ml.evaluation
-  [(-> docs/spark-docs :classes :ml :evaluation)])
+ 'zero-one.geni.ml.evaluation
+ [(-> docs/spark-docs :classes :ml :evaluation)])
 

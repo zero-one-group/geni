@@ -1,9 +1,9 @@
 (ns zero-one.geni.docs
   (:require
-    [clojure.java.io :as io]
-    [taoensso.nippy :as nippy])
+   [clojure.java.io :as io]
+   [taoensso.nippy :as nippy])
   (:import
-    (org.apache.commons.io IOUtils)))
+   (org.apache.commons.io IOUtils)))
 
 (def spark-docs
   (-> "spark-docs.nippy"
@@ -27,9 +27,9 @@
 (defn alter-docs-in-ns! [ns-sym doc-maps]
   (let [public-vars (ns-publics ns-sym)]
     (mapv
-      (fn [[fn-name fn-var]]
-        (alter-doc! fn-name fn-var doc-maps))
-      public-vars)
+     (fn [[fn-name fn-var]]
+       (alter-doc! fn-name fn-var doc-maps))
+     public-vars)
     :succeeded))
 
 (defn docless-vars [ns-sym]
