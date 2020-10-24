@@ -5,7 +5,6 @@
     [clojure.string :as string]
     [midje.sweet :refer [facts fact throws =>]]
     [zero-one.geni.aot-functions :as aot]
-    ;[zero-one.geni.defaults :as defaults]
     [zero-one.geni.rdd :as rdd]
     [zero-one.geni.streaming :as streaming]
     [zero-one.geni.test-resources :as tr])
@@ -41,14 +40,15 @@
         input-stream   (streaming/text-file-stream
                          context
                          (-> read-file .getParent .toString))
-        dstream        ((:fn opts identity) input-stream)]
+        dstream        ((:fn opts identity) input-stream)
+        sleep-ms       (:sleep-ms opts 50)]
     (spit read-file "")
     (streaming/save-as-text-files! dstream (.toString write-file))
     @(streaming/start! context)
-    (Thread/sleep (:sleep-ms opts 50))
+    (Thread/sleep sleep-ms)
     (spit read-file (str (:content opts "Hello World!")))
     ((:action-fn opts identity) dstream)
-    (Thread/sleep (:sleep-ms opts 50))
+    (Thread/sleep sleep-ms)
     ((:terminate-fn opts streaming/await-termination!) context)
     @(streaming/stop! context)
     (let [result      (written-content write-file)
@@ -61,7 +61,8 @@
                (< n-retries max-retries))
         (do
           (println "Retrying stream-results ...")
-          (stream-results (assoc opts :n-retries (inc n-retries))))
+          (stream-results (assoc opts :n-retries (inc n-retries)
+                                      :sleep-ms (int (* 1.1 sleep-ms)))))
         (finish-fn result)))))
 
 (def dummy-text

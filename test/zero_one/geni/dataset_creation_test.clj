@@ -14,7 +14,7 @@
 
 (facts "On creation of empty dataset" :empty-dataset
   (fact "correct creation"
-    (g/create-dataframe @tr/spark [] {}) => g/empty?
+    (g/create-dataframe [] {}) => g/empty?
     (g/table->dataset @tr/spark [] []) => g/empty?
     (g/map->dataset @tr/spark {}) => g/empty?
     (g/records->dataset @tr/spark {}) => g/empty?)
@@ -64,7 +64,6 @@
     (let [expected-dtypes {:number "LongType" :word "StringType"}]
       (g/dtypes
         (g/to-df
-          @tr/spark
           [[8 "bat"] [64 "mouse"] [-27 "horse"]]
           [:number :word])) => expected-dtypes
       (g/dtypes
@@ -78,7 +77,6 @@
             (g/struct-field :word :string true)))) => expected-dtypes
       (g/dtypes
         (g/table->dataset
-          @tr/spark
           [[8 "bat"] [64 "mouse"] [-27 "horse"]]
           [:number :word])) => expected-dtypes
       (g/dtypes
