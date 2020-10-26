@@ -28,7 +28,7 @@
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.0.0"]
-                 [nrepl "0.8.2"]
+                 [nrepl "0.8.3"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
