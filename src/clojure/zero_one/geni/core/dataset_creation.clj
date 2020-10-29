@@ -3,15 +3,15 @@
 (ns zero-one.geni.core.dataset-creation
   (:refer-clojure :exclude [range])
   (:require
-    [zero-one.geni.defaults :as defaults]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [zero-one.geni.defaults :as defaults]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql.types ArrayType DataType DataTypes)
-    (org.apache.spark.ml.linalg VectorUDT
-                                DenseVector
-                                SparseVector)
-    (org.apache.spark.sql SparkSession)))
+   (org.apache.spark.sql.types ArrayType DataType DataTypes)
+   (org.apache.spark.ml.linalg VectorUDT
+                               DenseVector
+                               SparseVector)
+   (org.apache.spark.sql SparkSession)))
 
 (def data-type->spark-type
   "A mapping from type keywords to Spark types."
@@ -50,16 +50,16 @@
    whether the array contains null values `nullable`."
   [val-type nullable]
   (DataTypes/createArrayType
-    (data-type->spark-type val-type)
-    nullable))
+   (data-type->spark-type val-type)
+   nullable))
 
 (defn map-type
   "Creates a MapType by specifying the data type of keys `key-type`, the data type
    of values `val-type`, and whether values contain any null value `nullable`."
   [key-type val-type]
   (DataTypes/createMapType
-    (data-type->spark-type key-type)
-    (data-type->spark-type val-type)))
+   (data-type->spark-type key-type)
+   (data-type->spark-type val-type)))
 
 (defn ->schema
   "Coerces plain Clojure data structures to a Spark schema.
@@ -138,7 +138,7 @@
 
 (defn- infer-schema [col-names values]
   (DataTypes/createStructType
-    (mapv infer-struct-field col-names values)))
+   (mapv infer-struct-field col-names values)))
 
 (defn- first-non-nil [values]
   (first (filter identity values)))
@@ -191,10 +191,10 @@
 (defn- conj-record [map-of-values record]
   (let [col-names (keys map-of-values)]
     (reduce
-      (fn [acc-map col-name]
-        (update acc-map col-name #(conj % (get record col-name))))
-      map-of-values
-      col-names)))
+     (fn [acc-map col-name]
+       (update acc-map col-name #(conj % (get record col-name))))
+     map-of-values
+     col-names)))
 
 (defn records->dataset
   "Construct a Dataset from a collection of maps.
@@ -212,9 +212,9 @@
   ([spark records]
    (let [col-names     (-> (map keys records) flatten distinct)
          map-of-values (reduce
-                         conj-record
-                         (zipmap col-names (repeat []))
-                         records)]
+                        conj-record
+                        (zipmap col-names (repeat []))
+                        records)]
      (map->dataset spark map-of-values))))
 
 (defmulti range
@@ -253,5 +253,5 @@
 
 ;; Docs
 (docs/add-doc!
-  (var create-dataframe)
-  (-> docs/spark-docs :methods :spark :session :create-data-frame))
+ (var create-dataframe)
+ (-> docs/spark-docs :methods :spark :session :create-data-frame))

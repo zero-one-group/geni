@@ -3,17 +3,17 @@
 ;; https://pandas.pydata.org/docs/
 (ns zero-one.geni.core.foreign-idioms
   (:require
-    [clojure.string :as string]
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.core.column :as column]
-    [zero-one.geni.core.data-sources :as data-sources]
-    [zero-one.geni.core.dataset :as dataset]
-    [zero-one.geni.core.dataset-creation :as dataset-creation]
-    [zero-one.geni.core.polymorphic :as polymorphic]
-    [zero-one.geni.core.functions :as sql]
-    [zero-one.geni.core.window :as window])
+   [clojure.string :as string]
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.core.column :as column]
+   [zero-one.geni.core.data-sources :as data-sources]
+   [zero-one.geni.core.dataset :as dataset]
+   [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.polymorphic :as polymorphic]
+   [zero-one.geni.core.functions :as sql]
+   [zero-one.geni.core.window :as window])
   (:import
-    (org.apache.spark.sql Column functions)))
+   (org.apache.spark.sql Column functions)))
 
 ;; NumPy
 (defn clip
@@ -21,9 +21,9 @@
   [expr low high]
   (let [col (column/->column expr)]
     (-> (polymorphic/coalesce
-          (sql/when (column/<= col low) low)
-          (sql/when (column/<= high col) high)
-          col)
+         (sql/when (column/<= col low) low)
+         (sql/when (column/<= high col) high)
+         col)
         (polymorphic/as (format "clip(%s, %s, %s)"
                                 (.toString col)
                                 (str low)
@@ -125,8 +125,8 @@
   "Count distinct observations over all columns in the Dataset."
   [dataframe]
   (dataset/agg-all dataframe #(functions/countDistinct
-                                (column/->column %)
-                                (into-array Column []))))
+                               (column/->column %)
+                               (into-array Column []))))
 
 (defn- resolve-probs [num-buckets-or-probs]
   (if (coll? num-buckets-or-probs)

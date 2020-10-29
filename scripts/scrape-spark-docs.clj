@@ -1,10 +1,10 @@
 (ns scripts.scrape-spark-docs
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case]]
-    [clojure.string :as string]
-    [net.cgrand.enlive-html :as html]
-    [taoensso.nippy :as nippy]
-    [zero-one.geni.core :as g]))
+   [camel-snake-kebab.core :refer [->kebab-case]]
+   [clojure.string :as string]
+   [net.cgrand.enlive-html :as html]
+   [taoensso.nippy :as nippy]
+   [zero-one.geni.core :as g]))
 
 (def spark-version (g/version))
 
@@ -220,13 +220,13 @@
     (->> package-map
          (map (fn [[path-key url-node]]
                 (vector
-                  path-key
-                  (cond
-                    (map? url-node)  (walk-doc-map url->map url-node)
-                    (coll? url-node) (->> url-node
-                                          (map (comp url->map prefix-url))
-                                          (apply merge))
-                    :else            (url->map (prefix-url url-node))))))
+                 path-key
+                 (cond
+                   (map? url-node)  (walk-doc-map url->map url-node)
+                   (coll? url-node) (->> url-node
+                                         (map (comp url->map prefix-url))
+                                         (apply merge))
+                   :else            (url->map (prefix-url url-node))))))
          (into {}))))
 
 (defn scrape-spark-docs! []
@@ -234,9 +234,9 @@
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
         complete-docs {:methods method-docs :classes class-docs}]
     (nippy/freeze-to-file
-      "resources/spark-docs.nippy"
-      complete-docs
-      {:compressor nippy/lz4hc-compressor})))
+     "resources/spark-docs.nippy"
+     complete-docs
+     {:compressor nippy/lz4hc-compressor})))
 
 (comment
 

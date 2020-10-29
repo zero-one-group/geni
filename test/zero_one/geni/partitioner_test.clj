@@ -1,7 +1,7 @@
 (ns zero-one.geni.partitioner-test
   (:require
-    [midje.sweet :refer [facts =>]]
-    [zero-one.geni.partitioner :as partitioner]))
+   [midje.sweet :refer [facts =>]]
+   [zero-one.geni.partitioner :as partitioner]))
 
 (facts "On partitioner fields" :rdd
   (let [partitioner (partitioner/hash-partitioner 12)]

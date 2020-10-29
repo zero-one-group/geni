@@ -1,16 +1,16 @@
 (ns zero-one.geni.dataset-test
   (:require
-    [clojure.set]
-    [clojure.string]
-    [midje.sweet :refer [facts fact =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
+   [clojure.set]
+   [clojure.string]
+   [midje.sweet :refer [facts fact =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
   (:import
-    (org.apache.spark.rdd RDD)
-    (org.apache.spark.sql Dataset
-                          SparkSession
-                          SQLContext)))
+   (org.apache.spark.rdd RDD)
+   (org.apache.spark.sql Dataset
+                         SparkSession
+                         SQLContext)))
 
 (fact "On to-df"
   (let [dataframe (g/select (df-1) :Suburb :Price)]
@@ -36,16 +36,16 @@
         n-listings (-> (df-50) (g/group-by :SellerG) g/count)]
     (-> base
         (g/join-with
-          n-listings
-          (g/=== (g/col n-listings :SellerG)
-                 (g/col-regex base :SellerG)))
+         n-listings
+         (g/=== (g/col n-listings :SellerG)
+                (g/col-regex base :SellerG)))
         g/columns) => [:_1 :_2]
     (-> base
         (g/join-with
-          n-listings
-          (g/=== (g/col n-listings :SellerG)
-                 (g/col base :SellerG))
-          "left")
+         n-listings
+         (g/=== (g/col n-listings :SellerG)
+                (g/col base :SellerG))
+         "left")
         g/columns) => [:_1 :_2]))
 
 (facts "On non-group-by aggregations"
@@ -292,10 +292,10 @@
   (fact "correct collection of lits"
     (-> (df-1)
         (g/select
-          (g/lit 1)
-          (g/lit "a")
-          (g/lit [2.0])
-          (g/lit ["b"]))
+         (g/lit 1)
+         (g/lit "a")
+         (g/lit [2.0])
+         (g/lit ["b"]))
         g/first-vals) => [1 "a" [2.0] ["b"]])
   (fact "action functions work"
     (g/head (df-20)) => map?
@@ -473,8 +473,8 @@
           (g/join right
                   (g/= (g/col right :Suburb)
                        (g/col left :Suburb))
-                 "inner")
-        g/count) => 38))
+                  "inner")
+          g/count) => 38))
   (fact "normal join works as expected"
     (let [grouped (-> (df-50)
                       (g/group-by :SellerG :Regionname)
@@ -513,8 +513,8 @@
     (let [agged (-> (df-50)
                     (g/group-by :Type)
                     (g/agg
-                      (-> (g/count "*") (g/as "n_rows"))
-                      (-> (g/max :Price) (g/as "max_price"))))]
+                     (-> (g/count "*") (g/as "n_rows"))
+                     (-> (g/max :Price) (g/as "max_price"))))]
       (g/count agged) => (-> (df-50) (g/select :Type) g/distinct g/count)
       (g/column-names agged) => ["Type" "n_rows" "max_price"]))
   (fact "agg-all should apply to all columns"
@@ -528,8 +528,8 @@
     (let [agged    (-> (df-20)
                        (g/group-by :SellerG)
                        (g/agg
-                         (-> (g/collect-list :Suburb) (g/as "suburbs_list"))
-                         (-> (g/collect-set :Suburb) (g/as "suburbs_set"))))
+                        (-> (g/collect-list :Suburb) (g/as "suburbs_list"))
+                        (-> (g/collect-set :Suburb) (g/as "suburbs_set"))))
           exploded (g/with-column agged "exploded" (g/explode "suburbs_list"))]
       (g/count agged) => #(< % 20)
       (g/count exploded) => 20)))

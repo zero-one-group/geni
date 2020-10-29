@@ -26,13 +26,13 @@
                             str
                             zero?])
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop])
   (:import
-    (org.apache.spark.sql Column
-                          Dataset
-                          functions)))
+   (org.apache.spark.sql Column
+                         Dataset
+                         functions)))
 
 ;;;; Coercions
 (defn lit [arg]
@@ -92,10 +92,10 @@
 (defn- compare-columns [compare-fn expr-0 & exprs]
   (let [exprs (-> exprs (conj expr-0))]
     (reduce
-      (fn [acc-col [l-expr r-expr]]
-        (&& acc-col (compare-fn (col l-expr) (col r-expr))))
-      (lit true)
-      (map vector exprs (rest exprs)))))
+     (fn [acc-col [l-expr r-expr]]
+       (&& acc-col (compare-fn (col l-expr) (col r-expr))))
+     (lit true)
+     (map vector exprs (rest exprs)))))
 
 (def === (partial compare-columns #(.equalTo %1 %2)))
 (def equal-to ===)
@@ -199,16 +199,16 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.core.column
-  [(-> docs/spark-docs :methods :core :column)])
+ 'zero-one.geni.core.column
+ [(-> docs/spark-docs :methods :core :column)])
 
 (docs/add-doc!
-  (var col)
-  (-> docs/spark-docs :methods :core :functions :col))
+ (var col)
+ (-> docs/spark-docs :methods :core :functions :col))
 
 (docs/add-doc!
-  (var lit)
-  (-> docs/spark-docs :methods :core :functions :lit))
+ (var lit)
+ (-> docs/spark-docs :methods :core :functions :lit))
 
 ;; Aliases
 (import-fn bitwise-and &)

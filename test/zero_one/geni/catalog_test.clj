@@ -8,10 +8,8 @@
            (org.apache.spark.sql.catalog Catalog)
            (java.nio.file Paths)))
 
-
 (defn create-test-db []
   (g/sql @tr/spark "CREATE DATABASE IF NOT EXISTS test_db"))
-
 
 (facts "On getting the default catalog"
   (instance? Catalog (c/catalog)) => true)
@@ -37,7 +35,6 @@
       (c/clear-cache)
       (c/cached? "tbl") => false
       (c/cached? "test_db.tbl") => false)))
-
 
 (facts "On database management"
   (with-state-changes [(before :facts (tr/reset-session!))
@@ -68,14 +65,12 @@
           {:name        "test_db"
            :description ""}])))
 
-
 (facts "On table management"
   (with-state-changes [(before :facts (tr/reset-session!))
                        (after :facts (tr/delete-warehouse!))]
     (fact "Should know what tables exist")
     (fact "Should know what columns exist")
     (fact "")))
-
 
 (facts "On table management"
   (with-state-changes [(before :facts (tr/reset-session!))
@@ -110,7 +105,6 @@
           (c/cached? "tbl1") => true
           (c/clear-cache)
           (c/cached? "tbl1") => false)))))
-
 
 (facts "On view management"
   (with-state-changes [(before :facts (tr/reset-session!))
@@ -147,7 +141,6 @@
         (g/count (g/read-table! "view1")) => 2
         (g/count (g/read-table! "global_temp.view2")) => 2))))
 
-
 (facts "On exploring columns"
   (with-state-changes [(before :facts (tr/reset-session!))
                        (after :facts (tr/delete-warehouse!))])
@@ -176,7 +169,6 @@
                             :nullable    true
                             :isPartition false
                             :isBucket    false})))))
-
 
 (facts "On drop"
   (with-state-changes [(before :facts (tr/reset-session!))
@@ -269,7 +261,6 @@
         (c/drop-relation :VIEW "v") => (throws AnalysisException)
         (c/drop-relation :TABLE "tbl") => (throws AnalysisException)))))
 
-
 (defn table-partition-path
   [spark table partition-col partition-val]
   (Paths/get (-> spark
@@ -277,7 +268,6 @@
                  (.get "spark.sql.warehouse.dir")
                  (string/replace "file:" ""))
              (into-array String [table (str (name partition-col) "=" partition-val)])))
-
 
 (facts "On refresh"
   (with-state-changes [(before :facts (tr/reset-session!))

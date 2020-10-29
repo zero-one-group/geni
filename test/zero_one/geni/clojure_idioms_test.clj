@@ -1,8 +1,8 @@
 (ns zero-one.geni.clojure-idioms-test
   (:require
-    [midje.sweet :refer [fact =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [spark df-20]]))
+   [midje.sweet :refer [fact =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (fact "On update"
   (-> (g/table->dataset @spark (mapv vector (range 5)) [:i])

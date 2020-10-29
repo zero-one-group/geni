@@ -1,6 +1,6 @@
 (ns zero-one.geni.aot-functions
   (:require
-    [clojure.string]))
+   [clojure.string]))
 
 (defn to-pair [x] [x 1])
 

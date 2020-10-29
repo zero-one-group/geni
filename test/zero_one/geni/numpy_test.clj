@@ -1,8 +1,8 @@
 (ns zero-one.geni.numpy-test
   (:require
-    [midje.sweet :refer [throws fact =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [spark df-20]]))
+   [midje.sweet :refer [throws fact =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.test-resources :refer [spark df-20]]))
 
 (defn descriptive-stats [col]
   (-> (g/table->dataset @spark (mapv vector (range 200)) [:idx])

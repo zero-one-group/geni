@@ -11,13 +11,13 @@
                             struct
                             when])
   (:require
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.core.column :refer [->col-array ->column]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [->string-map]])
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [->string-map]])
   (:import
-    (org.apache.spark.sql Column functions)))
+   (org.apache.spark.sql Column functions)))
 
 ;;;; Agg Functions
 (defn approx-count-distinct
@@ -299,9 +299,9 @@
   (functions/regexp_extract (->column expr) regex idx))
 (defn regexp-replace [expr pattern-expr replacement-expr]
   (functions/regexp_replace
-    (->column expr)
-    (->column pattern-expr)
-    (->column replacement-expr)))
+   (->column expr)
+   (->column pattern-expr)
+   (->column replacement-expr)))
 (defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
 (defn rtrim [expr] (functions/rtrim (->column expr)))
 (defn soundex [expr] (functions/soundex (->column expr)))
@@ -343,8 +343,8 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.core.functions
-  [(-> docs/spark-docs :methods :core :functions)])
+ 'zero-one.geni.core.functions
+ [(-> docs/spark-docs :methods :core :functions)])
 
 ;; Aliases
 (import-fn atan-2 atan2)

@@ -1,12 +1,12 @@
 (ns zero-one.geni.docs-test
   (:require
-    [midje.sweet :refer [fact =>]]
-    [zero-one.geni.core]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.main]
-    [zero-one.geni.ml]
-    [zero-one.geni.rdd]
-    [zero-one.geni.repl]))
+   [midje.sweet :refer [fact =>]]
+   [zero-one.geni.core]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.main]
+   [zero-one.geni.ml]
+   [zero-one.geni.rdd]
+   [zero-one.geni.repl]))
 
 (defn some-docless-fn [])
 
@@ -17,8 +17,8 @@
 (defn some-fn-with-invalid-doc
   [])
 (docs/add-doc!
-  (var some-fn-with-invalid-doc)
-  ["This doc is not a string."])
+ (var some-fn-with-invalid-doc)
+ ["This doc is not a string."])
 
 (fact "Correct docless vars identification" :docs
   (docs/docless-vars 'zero-one.geni.docs-test) => [(var some-docless-fn)]
