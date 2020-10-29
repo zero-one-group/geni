@@ -38,11 +38,14 @@
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[enlive "1.1.6"]
-                        [midje "1.9.9"]]
+                        [midje "1.9.9"]
+                        [techascent/tech.ml.dataset "5.00-alpha-19"]
+                        [criterium "0.4.6"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
+         :resource-paths ["test-resources"]
          :cljfmt {:split-keypairs-over-multiple-lines?   false
                   :remove-multiple-non-indenting-spaces? false
                   ;; Note: we add custom rules to handle code from midje test library

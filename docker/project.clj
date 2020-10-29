@@ -1,8 +1,8 @@
 (def spark-deps
-  '[;; Spark
-    ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
-    ; Frozen until issue is resolved.
-    ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+  '[ ;; Spark
+                                        ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
+                                        ; Frozen until issue is resolved.
+                                        ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
     [org.apache.spark/spark-avro_2.12 "3.0.1"]
     [org.apache.spark/spark-core_2.12 "3.0.1"]
     [org.apache.spark/spark-hive_2.12 "3.0.1"]
@@ -15,7 +15,13 @@
     [org.xerial/sqlite-jdbc "3.32.3.2"]
     ;; Optional: Spark XGBoost
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
-    [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
+    [ml.dmlc/xgboost4j_2.12 "1.2.0"]
+    [org.apache.arrow/arrow-memory-netty "2.0.0"]
+    [org.apache.arrow/arrow-memory-core "2.0.0"]
+    [org.apache.arrow/arrow-vector "2.0.0" :exclusions [commons-codec]]
+    ]
+
+  )
 
 (defproject zero.one/geni "0.0.34"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
@@ -38,11 +44,14 @@
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[enlive "1.1.6"]
-                        [midje "1.9.9"]]
+                        [midje "1.9.9"]
+                        [techascent/tech.ml.dataset "5.00-alpha-19"]
+                        [criterium "0.4.6"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
+         :resource-paths ["test-resources"]
          :cljfmt {:split-keypairs-over-multiple-lines?   false
                   :remove-multiple-non-indenting-spaces? false
                   ;; Note: we add custom rules to handle code from midje test library
