@@ -6,14 +6,14 @@
                             sort
                             take])
   (:require
-    [clojure.walk :refer [keywordize-keys]]
-    [potemkin :refer [import-fn]]
-    [zero-one.geni.core.column :refer [->col-array ->column]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.utils :refer [ensure-coll]])
+   [clojure.walk :refer [keywordize-keys]]
+   [potemkin :refer [import-fn]]
+   [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-    (org.apache.spark.sql Column)))
+   (org.apache.spark.sql Column)))
 
 ;;;; Actions
 (defn- collected->maps [collected]
@@ -354,36 +354,36 @@
   "Returns a new Dataset with a column renamed according to the rename-map."
   [dataframe rename-map]
   (reduce
-    (fn [acc-df [old-name new-name]]
-      (.withColumnRenamed acc-df (name old-name) (name new-name)))
-    dataframe
-    rename-map))
+   (fn [acc-df [old-name new-name]]
+     (.withColumnRenamed acc-df (name old-name) (name new-name)))
+   dataframe
+   rename-map))
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.core.dataset
-  [(-> docs/spark-docs :methods :core :dataset)
-   (-> docs/spark-docs :methods :core :grouped)
-   (-> docs/spark-docs :methods :core :na-fns)
-   (-> docs/spark-docs :methods :core :stat-fns)
-   (-> docs/spark-docs :methods :util :bloom)
-   (-> docs/spark-docs :methods :util :cms)])
+ 'zero-one.geni.core.dataset
+ [(-> docs/spark-docs :methods :core :dataset)
+  (-> docs/spark-docs :methods :core :grouped)
+  (-> docs/spark-docs :methods :core :na-fns)
+  (-> docs/spark-docs :methods :core :stat-fns)
+  (-> docs/spark-docs :methods :util :bloom)
+  (-> docs/spark-docs :methods :util :cms)])
 
 (docs/add-doc!
-  (var partitions)
-  (-> docs/spark-docs :methods :rdd :rdd :partitions))
+ (var partitions)
+ (-> docs/spark-docs :methods :rdd :rdd :partitions))
 
 (docs/add-doc!
-  (var drop-na)
-  (-> docs/spark-docs :methods :core :na-fns :drop))
+ (var drop-na)
+ (-> docs/spark-docs :methods :core :na-fns :drop))
 
 (docs/add-doc!
-  (var fill-na)
-  (-> docs/spark-docs :methods :core :na-fns :fill))
+ (var fill-na)
+ (-> docs/spark-docs :methods :core :na-fns :fill))
 
 (docs/add-doc!
-  (var replace-na)
-  (-> docs/spark-docs :methods :core :na-fns :replace))
+ (var replace-na)
+ (-> docs/spark-docs :methods :core :na-fns :replace))
 
 ;; Aliases
 (import-fn is-local local?)

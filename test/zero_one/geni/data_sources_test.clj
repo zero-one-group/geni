@@ -1,17 +1,17 @@
 (ns zero-one.geni.data-sources-test
   (:require
-    [clojure.edn :as edn]
-    [midje.sweet :refer [facts fact => throws with-state-changes before after]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.catalog :as c]
-    [zero-one.geni.test-resources :refer [create-temp-file!
-                                          melbourne-df
-                                          libsvm-df
-                                          spark
-                                          reset-session!
-                                          delete-warehouse!]])
+   [clojure.edn :as edn]
+   [midje.sweet :refer [facts fact => throws with-state-changes before after]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.catalog :as c]
+   [zero-one.geni.test-resources :refer [create-temp-file!
+                                         melbourne-df
+                                         libsvm-df
+                                         spark
+                                         reset-session!
+                                         delete-warehouse!]])
   (:import
-    (org.apache.spark.sql AnalysisException)))
+   (org.apache.spark.sql AnalysisException)))
 
 (def write-df
   (-> (melbourne-df) (g/select :Method :Type) (g/limit 5)))
@@ -34,15 +34,15 @@
                                           "StructField(bathroom,DoubleType,true))")})
     (fact "correct direct schema option"
       (-> (g/read-parquet!
-            temp-file
-            {:schema (g/struct-type
-                       (g/struct-field :rooms
-                                       (g/struct-type
-                                         (g/struct-field :rooms :int true)
-                                         (g/struct-field :bathroom :float true))
-                         true)
-                       (g/struct-field :coord (g/array-type :long true) true)
-                       (g/struct-field :prop (g/map-type :string :string) true))})
+           temp-file
+           {:schema (g/struct-type
+                     (g/struct-field :rooms
+                                     (g/struct-type
+                                      (g/struct-field :rooms :int true)
+                                      (g/struct-field :bathroom :float true))
+                                     true)
+                     (g/struct-field :coord (g/array-type :long true) true)
+                     (g/struct-field :prop (g/map-type :string :string) true))})
           g/dtypes) => {:coord "ArrayType(LongType,true)"
                         :prop  "MapType(StringType,StringType,true)"
                         :rooms (str "StructType("
@@ -50,10 +50,10 @@
                                     "StructField(bathroom,FloatType,true))")})
     (fact "correct data-oriented schema option"
       (-> (g/read-parquet!
-            temp-file
-            {:schema {:coord [:short]
-                      :prop  [:string :string]
-                      :rooms {:rooms :float :bathroom :long}}})
+           temp-file
+           {:schema {:coord [:short]
+                     :prop  [:string :string]
+                     :rooms {:rooms :float :bathroom :long}}})
           g/dtypes) => {:coord "ArrayType(ShortType,true)"
                         :prop  "MapType(StringType,StringType,true)"
                         :rooms (str "StructType("
@@ -69,8 +69,8 @@
           g/dtypes) => {:InvoiceDate "StringType" :Price "DoubleType"})
     (fact "correct direct schema option"
       (-> (g/read-csv! csv-path {:schema (g/struct-type
-                                           (g/struct-field :InvoiceDate :date true)
-                                           (g/struct-field :Price :int true))})
+                                          (g/struct-field :InvoiceDate :date true)
+                                          (g/struct-field :Price :int true))})
           (g/select selected)
           g/dtypes) => {:InvoiceDate "DateType" :Price "IntegerType"})
     (fact "correct data-oriented schema option"
@@ -117,11 +117,11 @@
       (g/dtypes read-df)) => {:Price "StringType" :Rooms "StringType"})
   (fact "kebab-columns option works"
     (let [dataframe (g/table->dataset
-                      [[1 2 3 4]]
-                      ["Brébeuf (données non disponibles)"
-                       "X Coordinate (State Plane)"
-                       "col_with_underscore"
-                       "already-kebab-case"])
+                     [[1 2 3 4]]
+                     ["Brébeuf (données non disponibles)"
+                      "X Coordinate (State Plane)"
+                      "col_with_underscore"
+                      "already-kebab-case"])
           temp-file (.toString (create-temp-file! ""))]
       (g/write-csv! dataframe temp-file {:mode "overwrite"})
       (g/column-names (g/read-csv! temp-file {:kebab-columns true})))
@@ -154,15 +154,15 @@
 
 (fact "Writer defaults to error" :slow
   (doall
-    (for [write-fn! [g/write-avro!
-                     g/write-csv!
-                     g/write-json!
-                     g/write-parquet!
-                     g/write-text!]]
-      (let [write-df  (g/select write-df :Method)
-            temp-file (.toString (create-temp-file! ""))]
-        (write-fn! write-df temp-file {:mode "overwrite"})
-        (write-fn! write-df temp-file) => (throws AnalysisException))))
+   (for [write-fn! [g/write-avro!
+                    g/write-csv!
+                    g/write-json!
+                    g/write-parquet!
+                    g/write-text!]]
+     (let [write-df  (g/select write-df :Method)
+           temp-file (.toString (create-temp-file! ""))]
+       (write-fn! write-df temp-file {:mode "overwrite"})
+       (write-fn! write-df temp-file) => (throws AnalysisException))))
   (let [temp-file (.toString (create-temp-file! ""))]
     (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
     (g/write-libsvm! (libsvm-df) temp-file) => (throws AnalysisException))
@@ -176,8 +176,8 @@
 
 (fact "Can read with options" :slow
   (let [read-df (g/read-parquet!
-                  "test/resources/melbourne_housing_snapshot.parquet"
-                  {"mergeSchema" "true"})]
+                 "test/resources/melbourne_housing_snapshot.parquet"
+                 {"mergeSchema" "true"})]
     (g/count read-df) => 13580)
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
@@ -263,9 +263,9 @@
 (fact "Can write parquet with :partition-by option" :slow
   (let [temp-file (.toString (create-temp-file! ".parquet"))
         read-df  (do (g/write-parquet!
-                       write-df
-                       temp-file
-                       {:mode "overwrite" :partition-by [:Method]})
+                      write-df
+                      temp-file
+                      {:mode "overwrite" :partition-by [:Method]})
                      (g/read-parquet! temp-file))]
     (set (g/collect write-df)) => (set (g/collect read-df))))
 

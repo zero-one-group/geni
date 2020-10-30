@@ -1,10 +1,10 @@
 (ns zero-one.geni.core.window
   (:require
-    [zero-one.geni.core.column :refer [->col-array]]
-    [zero-one.geni.docs :as docs]
-    [zero-one.geni.utils :refer [ensure-coll]])
+   [zero-one.geni.core.column :refer [->col-array]]
+   [zero-one.geni.docs :as docs]
+   [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-    (org.apache.spark.sql.expressions Window)))
+   (org.apache.spark.sql.expressions Window)))
 
 (defn- new-window []
   (Window/partitionBy (->col-array [])))
@@ -49,10 +49,10 @@
 
 ;; Docs
 (docs/alter-docs-in-ns!
-  'zero-one.geni.core.window
-  [(-> docs/spark-docs :methods :core :window)
-   (-> docs/spark-docs :classes :core :window)])
+ 'zero-one.geni.core.window
+ [(-> docs/spark-docs :methods :core :window)
+  (-> docs/spark-docs :classes :core :window)])
 
 (docs/add-doc!
-  (var over)
-  (-> docs/spark-docs :methods :core :column :over))
+ (var over)
+ (-> docs/spark-docs :methods :core :column :over))

@@ -1,8 +1,8 @@
 (ns zero-one.geni.tech-ml-test
   (:require
-    [midje.sweet :refer [facts fact throws =>]]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.test-resources :refer [create-temp-file! melbourne-df]]))
+   [midje.sweet :refer [facts fact throws =>]]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.test-resources :refer [create-temp-file! melbourne-df]]))
 
 (def dummy-df
   (-> (melbourne-df) (g/select :Method) (g/limit 5)))
@@ -40,13 +40,13 @@
 
   (fact "->dataset with viable file paths"
     (doall
-      (for [[ext write-fn!] {:avro    g/write-avro!
-                             :csv     g/write-csv!
-                             :json    g/write-json!
-                             :parquet g/write-parquet!}]
-        (let [temp-file (.toString (create-temp-file! (str "." (name ext))))]
-          (write-fn! dummy-df temp-file {:mode "overwrite"})
-          (g/collect (g/->dataset temp-file)) => (g/collect dummy-df)))))
+     (for [[ext write-fn!] {:avro    g/write-avro!
+                            :csv     g/write-csv!
+                            :json    g/write-json!
+                            :parquet g/write-parquet!}]
+       (let [temp-file (.toString (create-temp-file! (str "." (name ext))))]
+         (write-fn! dummy-df temp-file {:mode "overwrite"})
+         (g/collect (g/->dataset temp-file)) => (g/collect dummy-df)))))
 
   (fact "->dataset with unviable file path"
     (g/->dataset "test/resources/sample_kmeans_data.txt") => (throws Exception))

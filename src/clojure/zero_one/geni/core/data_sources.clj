@@ -1,26 +1,26 @@
 (ns zero-one.geni.core.data-sources
   (:refer-clojure :exclude [partition-by])
   (:require
-    [camel-snake-kebab.core :refer [->camelCase]]
-    [clojure.edn :as edn]
-    [clojure.string :as string]
-    [clojure.java.io :as io]
-    [jsonista.core :as jsonista]
-    [zero-one.fxl.core :as fxl]
-    [zero-one.geni.defaults :as defaults]
-    [zero-one.geni.interop :as interop]
-    [zero-one.geni.core.dataset-creation :as dataset-creation]
-    [zero-one.geni.core.dataset :as dataset]
-    [zero-one.geni.utils :refer [ensure-coll]])
+   [camel-snake-kebab.core :refer [->camelCase]]
+   [clojure.edn :as edn]
+   [clojure.string :as string]
+   [clojure.java.io :as io]
+   [jsonista.core :as jsonista]
+   [zero-one.fxl.core :as fxl]
+   [zero-one.geni.defaults :as defaults]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.dataset :as dataset]
+   [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-    (java.text Normalizer Normalizer$Form)
-    (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
+   (java.text Normalizer Normalizer$Form)
+   (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
 
 (defn- configure-reader-or-writer [unconfigured options]
   (reduce
-    (fn [r [k v]] (.option r (->camelCase (name  k)) v))
-    unconfigured
-    options))
+   (fn [r [k v]] (.option r (->camelCase (name  k)) v))
+   unconfigured
+   options))
 
 (def default-options
   "Default DataFrameReader options."
@@ -154,7 +154,6 @@
 (defn- partition-by-arg [partition-id]
   (into-array java.lang.String (map name (ensure-coll partition-id))))
 
-
 (defn- configure-base-writer ^DataFrameWriter
   [writer options]
   (let [mode                (:mode options)
@@ -162,12 +161,12 @@
         writer (-> writer
                    (cond-> mode (.mode mode))
                    (cond-> partition-id (.partitionBy (partition-by-arg partition-id))))]
-        (configure-reader-or-writer writer (dissoc options :mode :partition-by))))
+    (configure-reader-or-writer writer (dissoc options :mode :partition-by))))
 
 (defn- write-data! [format dataframe path options]
   (let [configured-writer (-> (.write dataframe)
                               (.format format)
-                              (configure-base-writer options)) ]
+                              (configure-base-writer options))]
     (.save configured-writer path)))
 
 (defn write-parquet!
@@ -237,8 +236,8 @@
                                 (.format "jdbc")
                                 (cond-> mode (.mode mode)))
         configured-writer   (configure-reader-or-writer
-                              unconfigured-writer
-                              (dissoc options :mode))]
+                             unconfigured-writer
+                             (dissoc options :mode))]
     (.save configured-writer)))
 
 ;; EDN
@@ -271,9 +270,9 @@
   ([spark path] (read-edn! spark path {}))
   ([spark path options]
    (let [dataset (->> path
-                    slurp
-                    edn/read-string
-                    (dataset-creation/records->dataset spark))]
+                      slurp
+                      edn/read-string
+                      (dataset-creation/records->dataset spark))]
      (-> dataset
          (cond-> (:kebab-columns options) ->kebab-columns)))))
 
@@ -287,10 +286,10 @@
          overwrite (if (= (:mode options) "overwrite") true false)]
      (if (and overwrite (file-exists? path))
        (fxl/write-xlsx!
-         (fxl/concat-below
-           (fxl/row->cells (dataset/column-names dataframe))
-           (fxl/records->cells col-keys records))
-         path)
+        (fxl/concat-below
+         (fxl/row->cells (dataset/column-names dataframe))
+         (fxl/records->cells col-keys records))
+        path)
        (throw (Exception. (format "path file:%s already exists!" path)))))))
 
 (defmulti read-xlsx!

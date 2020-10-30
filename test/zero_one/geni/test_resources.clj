@@ -1,15 +1,14 @@
 (ns zero-one.geni.test-resources
   (:require
-    [clojure.string :refer [split-lines split] :as string]
-    [zero-one.geni.core :as g]
-    [zero-one.geni.defaults]
-    [clojure.java.io :as io])
+   [clojure.string :refer [split-lines split] :as string]
+   [zero-one.geni.core :as g]
+   [zero-one.geni.defaults]
+   [clojure.java.io :as io])
   (:import
-    (java.io File)
-    (java.nio.file.attribute FileAttribute)
-    (java.nio.file Files Paths)
-    (java.util UUID)))
-
+   (java.io File)
+   (java.nio.file.attribute FileAttribute)
+   (java.nio.file Files Paths)
+   (java.util UUID)))
 
 (def spark zero-one.geni.defaults/spark)
 
@@ -77,6 +76,6 @@
   []
   (.close @spark)
   (reset! spark (g/create-spark-session
-                  (assoc-in zero-one.geni.defaults/session-config
-                            [:configs :spark.sql.warehouse.dir]
-                            (rand-wh-path)))))
+                 (assoc-in zero-one.geni.defaults/session-config
+                           [:configs :spark.sql.warehouse.dir]
+                           (rand-wh-path)))))
