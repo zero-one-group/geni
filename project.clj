@@ -33,7 +33,11 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.5"]]
+                 [zero.one/fxl "0.0.5"]
+                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
+                 [org.apache.arrow/arrow-memory-core "2.0.0"]
+                 [org.apache.arrow/arrow-vector "2.0.0" :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind ]]
+                 ]
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}

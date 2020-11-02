@@ -1,8 +1,8 @@
 (def spark-deps
-  '[ ;; Spark
-                                        ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
-                                        ; Frozen until issue is resolved.
-                                        ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+  '[;; Spark
+    ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
+    ; Frozen until issue is resolved.
+    ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
     [org.apache.spark/spark-avro_2.12 "3.0.1"]
     [org.apache.spark/spark-core_2.12 "3.0.1"]
     [org.apache.spark/spark-hive_2.12 "3.0.1"]
@@ -15,13 +15,7 @@
     [org.xerial/sqlite-jdbc "3.32.3.2"]
     ;; Optional: Spark XGBoost
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
-    [ml.dmlc/xgboost4j_2.12 "1.2.0"]
-    [org.apache.arrow/arrow-memory-netty "2.0.0"]
-    [org.apache.arrow/arrow-memory-core "2.0.0"]
-    [org.apache.arrow/arrow-vector "2.0.0" :exclusions [commons-codec]]
-    ]
-
-  )
+    [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
 
 (defproject zero.one/geni "0.0.34"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
@@ -39,7 +33,11 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.5"]]
+                 [zero.one/fxl "0.0.5"]
+                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
+                 [org.apache.arrow/arrow-memory-core "2.0.0"]
+                 [org.apache.arrow/arrow-vector "2.0.0" :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind ]]
+                 ]
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
