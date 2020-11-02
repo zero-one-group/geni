@@ -56,6 +56,8 @@
                   (re-pattern (dep-str project-name current-released-version))
                   (dep-str project-name bumped-released-version)))
 
+;; FIXME: add another subsitution for examples/geni-clj-app/deps.edn
+
 ;; Write the changes
 (spit project-clj-path bumped-project-clj)
 (spit template-project-clj-path bumped-template-project-clj)
