@@ -61,8 +61,9 @@ instead of `(complement :slow)`, and start tagging midje facts with `:streaming`
     - `project.clj`.
     - `lein-template`'s `project.clj`;
     - `lein-template`'s `resources/.../project.clj`;
-    - `resources/GENI_REPL_RELEASED_VERSION`; and
-    - `examples/geni-clj-app/deps.edn`. 
+    - `resources/GENI_REPL_RELEASED_VERSION`;
+    - `docker/deps.edn`; and
+    - `examples/geni-clj-app/deps.edn`.
     <!--- TODO: update version-bump script-->
 - Ensure that the pre-release CI steps pass with `make pre-release`.
 - Deploy the main library with `lein deploy clojars`.
