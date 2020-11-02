@@ -51,11 +51,11 @@ test-geni-cli: build
 	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-geni-cli
 
-test-lein-template: build
+test-templates: build
 	$(eval TMP := $(shell mktemp -d))
 	cp -r . $(TMP)
 	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
-		scripts/test-lein-template
+		/bin/bash -c "scripts/test-lein-template && scripts/test-clj-app-uberjar"
 
 test-install-geni-cli: build
 	$(eval TMP := $(shell mktemp -d))
@@ -63,7 +63,7 @@ test-install-geni-cli: build
 	docker run --rm -v $(TMP):/root/geni -w /root/geni -t $(DOCKERNAME) \
 		scripts/test-install-geni-cli
 
-ci: coverage test-install-geni-cli test-geni-cli test-lein-template lint-ancient
+ci: coverage test-install-geni-cli test-geni-cli test-templates lint-ancient
 	echo "CI steps passed!"
 
 version-bumps: build
@@ -73,5 +73,5 @@ version-bumps: build
 pre-release: coverage test-install-geni-cli test-geni-cli lint-ancient
 	echo "Pre-release steps passed!"
 
-post-release: test-lein-template
+post-release: test-templates
 	echo "Post-release steps passed!"

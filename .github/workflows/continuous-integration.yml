@@ -41,14 +41,15 @@ jobs:
         uses: docker://zeroonetechnology/geni:latest
         with:
           entrypoint: scripts/test-geni-cli
-  test-lein-template:
+  test-templates:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: test-lein-template
         uses: docker://zeroonetechnology/geni:latest
         with:
-          entrypoint: scripts/test-lein-template
+          entrypoint: /bin/bash
+          args: -c "scripts/test-lein-template && scripts/test-clj-app-uberjar"
   test-install-geni-cli:
     runs-on: ubuntu-latest
     steps:

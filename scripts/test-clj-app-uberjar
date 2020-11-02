@@ -4,8 +4,12 @@ set -euo pipefail
 
 cd examples/geni-clj-app
 
-lein uberjar && java -jar target/geni-uberjar-example-0.0.1-SNAPSHOT > target/clj-app-stdout
-
-
+lein uberjar
+java -jar target/geni-uberjar-example-0.0.1-SNAPSHOT-standalone.jar > target/clj-app-stdout
+cat target/clj-app-stdout
+if ! grep -q ":spark.app.name Geni App" target/clj-app-stdout ; then
+    echo "Geni clj app failed to run!"
+    exit 1
+fi
 
 cd -
