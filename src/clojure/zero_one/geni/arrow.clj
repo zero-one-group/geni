@@ -1,20 +1,17 @@
 (ns zero-one.geni.arrow
   (:import [org.apache.arrow.vector VarCharVector
             VectorSchemaRoot BigIntVector Float4Vector Float8Vector IntVector
-            BitVector DateMilliVector ValueVector BaseFixedWidthVector TimeStampMilliVector]
+            BitVector ValueVector BaseFixedWidthVector TimeStampMilliVector]
            [org.apache.arrow.vector.util Text]
            [org.apache.arrow.vector.ipc ArrowStreamWriter]
            [org.apache.arrow.memory RootAllocator]
            [java.nio.channels Channels]
            [org.apache.spark.sql Row]
-           [java.sql Date]
            [org.apache.arrow.vector.types.pojo Schema]
-           [scala.collection Iterator]
            [scala.collection.convert Wrappers$IteratorWrapper]
            )
   (:require
    [clojure.java.io :as io]
-   [zero-one.geni.interop :as interop]
 
    ))
 
@@ -52,7 +49,7 @@
 ;;; this method will be called for evey value transformed, so relection shoudkl be avoided
 (defn typed-action [action type value-info row-info ^String name ^RootAllocator allocator]
   (when (= :set type)
-    (if (nil? (value value-info))
+    (when (nil? (value value-info))
       (throw (Exception. "value cannot be null"))
       ))
   (case type
@@ -131,13 +128,11 @@
 
 
 (defn rows->data [rows schema-maps]
-  (let []
-    (partition
-     (count schema-maps)
-     (for [row rows field-idx (range (count schema-maps))]
-       (let [name (:name  (nth schema-maps field-idx))
-             type (:type (nth schema-maps field-idx))]
-         (typed-get row field-idx type))))))
+  (partition
+   (count schema-maps)
+   (for [row rows field-idx (range (count schema-maps))]
+     (let [type (:type (nth schema-maps field-idx))]
+       (typed-get row field-idx type)))))
 
 
 (defn rows->vectors [rows schema-maps]
@@ -161,10 +156,9 @@
 
   )
 
-(defn export-rows! [row-num rows schema-maps out-dir]
+(defn export-rows! [rows schema-maps out-dir]
   (when (pos? (count rows))
-    (let [
-          vectors (rows->vectors rows schema-maps)
+    (let [vectors (rows->vectors rows schema-maps)
           vector-fields (map #(.getField ^ValueVector %) vectors)
           root (VectorSchemaRoot. vector-fields vectors)
           out-file (java.io.File/createTempFile "geni" ".ipc" (io/file out-dir))]
@@ -181,7 +175,7 @@
 
     ))
 
-(defn collect-to-arrow  [rdd chunk-size out-dir]
+(defn collect-to-arrow
   "Collects the dataframe on driver and exports it as arrow files.
 
  The data gets transfered by partition, and so each partions should be small enough to
@@ -193,22 +187,22 @@
  `out-dir` Output dir of arrow files
 
 "
-
+  [rdd chunk-size out-dir]
   (let [first-row (.first rdd)
         schema (schema->clojure (.schema first-row))
         ^Wrappers$IteratorWrapper row-iterator (.toLocalIterator rdd)]
     (loop [acc [] files [] counter 0 glob-counter 0]
 
       (let [has-next (.hasNext row-iterator)]
-        (cond (not has-next) (conj files (export-rows! glob-counter acc schema out-dir))
+        (cond (not has-next) (conj files (export-rows! acc schema out-dir))
               (= counter chunk-size)
               (recur []
-                     (conj files (export-rows! glob-counter acc schema out-dir))
+                     (conj files (export-rows! acc schema out-dir))
                      0 glob-counter)
-              true (recur  (conj acc (.next row-iterator))
-                           files
-                           (inc counter)
-                           (inc glob-counter)))))))
+              :else (recur  (conj acc (.next row-iterator))
+                            files
+                            (inc counter)
+                            (inc glob-counter)))))))
 
 
 (comment
