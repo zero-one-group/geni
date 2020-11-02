@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd examples/geni-clj-app
+
+lein uberjar && java -jar target/geni-uberjar-example-0.0.1-SNAPSHOT > target/clj-app-stdout
+
+
+
+cd -
