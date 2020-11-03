@@ -76,8 +76,7 @@
      (fn [type name]
        (hash-map :type type :name name))
      types
-     names
-     )))
+     names)))
 
 (defn- set-null-or-value [v ^long idx value type]
   (if (nil? value)
@@ -93,7 +92,6 @@
                 idx-vals )
         _ (.setValueCount ^ValueVector vector (count values))]
 
-
     vector))
 
 
@@ -106,24 +104,17 @@
 
 
 (defn- rows->vectors [rows schema-maps]
-(let [allocator (RootAllocator. Long/MAX_VALUE)
-          data (rows->data rows schema-maps)
-          transposed-data (apply pmap list data)
-          vectors (pmap
-                   #(fill-vector
-                     (typed-make-vector
-                      (:name %1)
-                      allocator
-                      (:type % 1))
-                     %2
-                     (:type %1))
-                   schema-maps
-                   transposed-data)
-          ]
-      vectors
-      )
-
-  )
+  (let [allocator (RootAllocator. Long/MAX_VALUE)
+        data (rows->data rows schema-maps)
+        transposed-data (apply pmap list data)
+        vectors (pmap
+                 #(fill-vector
+                   (typed-make-vector (:name %1) allocator (:type %1))
+                   %2
+                   (:type %1))
+                 schema-maps
+                 transposed-data)]
+      vectors))
 
 (defn- export-rows! [rows schema-maps out-dir]
   (when (pos? (count rows))
@@ -140,9 +131,7 @@
           (.writeBatch)
           (.end)))
 
-      (.getPath out-file))
-
-    ))
+      (.getPath out-file))))
 
 (defn collect-to-arrow
   "Collects the dataframe on driver and exports it as arrow files.
@@ -183,6 +172,5 @@
     (g/cache
      (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet")))
 
-  (g/shape housing)
   (time
    (g/collect-to-arrow housing 3000 "/tmp/arrow-out")))
