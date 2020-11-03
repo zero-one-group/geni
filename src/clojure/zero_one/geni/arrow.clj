@@ -1,19 +1,14 @@
 (ns zero-one.geni.arrow
-  (:import [org.apache.arrow.vector VarCharVector
-            VectorSchemaRoot BigIntVector Float4Vector Float8Vector IntVector
-            BitVector ValueVector BaseFixedWidthVector TimeStampMilliVector]
-           [org.apache.arrow.vector.util Text]
-           [org.apache.arrow.vector.ipc ArrowStreamWriter]
-           [org.apache.arrow.memory RootAllocator]
-           [java.nio.channels Channels]
-           [org.apache.spark.sql Row]
-           [org.apache.arrow.vector.types.pojo Schema]
-           [scala.collection.convert Wrappers$IteratorWrapper]
-           )
-  (:require
-   [clojure.java.io :as io]
-
-   ))
+  (:require [clojure.java.io :as io])
+  (:import java.nio.channels.Channels
+           org.apache.arrow.memory.RootAllocator
+           [org.apache.arrow.vector BaseFixedWidthVector BigIntVector BitVector Float4Vector Float8Vector IntVector
+            TimeStampMilliVector ValueVector VarCharVector VectorSchemaRoot]
+           org.apache.arrow.vector.ipc.ArrowStreamWriter
+           org.apache.arrow.vector.types.pojo.Schema
+           org.apache.arrow.vector.util.Text
+           org.apache.spark.sql.Row
+           scala.collection.convert.Wrappers$IteratorWrapper))
 
 ;; (set! *warn-on-reflection* true)
 
@@ -102,12 +97,15 @@
 
 
 (defn- schema->clojure [^Schema schema]
-  (map
-   #(hash-map
-     :type %1
-     :name %2)
-   (->> schema .fields (map #(keyword (.. % dataType typeName))))
-   (->> schema .fields (map #(.. % name)))))
+  (let [fields (.fields schema)
+        types (map #(keyword (.. % dataType typeName)) fields)
+        names (map #(.name %) fields)]
+    (map
+     (fn [type name]
+       (hash-map :type type :name name))
+     types
+     names
+     )))
 
 (defn- set-null-or-value [v ^long idx value type]
   (if (nil? value)
