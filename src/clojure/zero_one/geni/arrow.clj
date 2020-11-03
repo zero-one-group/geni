@@ -47,7 +47,7 @@
   )
 
 ;;; this method will be called for evey value transformed, so relection shoudkl be avoided
-(defn typed-action [action type value-info row-info ^String name ^RootAllocator allocator]
+(defn- typed-action [action type value-info row-info ^String name ^RootAllocator allocator]
   (when (= :set type)
     (when (nil? (value value-info))
       (throw (Exception. "value cannot be null"))
@@ -91,17 +91,17 @@
   )
 
 
-(defn typed-set [v  idx value type]
+(defn- typed-set [v  idx value type]
   (typed-action :set type (->ValueInfo v idx value) nil nil nil))
 
-(defn typed-make-vector [name allocator type]
+(defn- typed-make-vector [name allocator type]
   (typed-action :make-vector type nil nil name allocator))
 
-(defn typed-get [row idx type]
+(defn- typed-get [row idx type]
   (typed-action :get type nil (->RowInfo row idx) nil nil))
 
 
-(defn schema->clojure [^Schema schema]
+(defn- schema->clojure [^Schema schema]
   (map
    #(hash-map
      :type %1
@@ -109,12 +109,12 @@
    (->> schema .fields (map #(keyword (.. % dataType typeName))))
    (->> schema .fields (map #(.. % name)))))
 
-(defn set-null-or-value [v ^long idx value type]
+(defn- set-null-or-value [v ^long idx value type]
   (if (nil? value)
     (.setNull v idx)
     (typed-set v idx value type)))
 
-(defn fill-vector [vector values type]
+(defn- fill-vector [vector values type]
   (let [_ (.allocateNew vector (count values))
         idx-vals (map #(hash-map :idx %1 :value %2)
                       (range)
@@ -127,7 +127,7 @@
     vector))
 
 
-(defn rows->data [rows schema-maps]
+(defn- rows->data [rows schema-maps]
   (partition
    (count schema-maps)
    (for [row rows field-idx (range (count schema-maps))]
@@ -135,7 +135,7 @@
        (typed-get row field-idx type)))))
 
 
-(defn rows->vectors [rows schema-maps]
+(defn- rows->vectors [rows schema-maps]
 (let [allocator (RootAllocator. Long/MAX_VALUE)
           schema-names (map :name schema-maps)
           data (rows->data rows schema-maps)
@@ -156,7 +156,7 @@
 
   )
 
-(defn export-rows! [rows schema-maps out-dir]
+(defn- export-rows! [rows schema-maps out-dir]
   (when (pos? (count rows))
     (let [vectors (rows->vectors rows schema-maps)
           vector-fields (map #(.getField ^ValueVector %) vectors)
