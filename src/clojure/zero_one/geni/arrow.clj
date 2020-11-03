@@ -18,45 +18,42 @@
         ^BaseFixedWidthVector vector (:vector value-info)
         ^long idx-value (:idx value-info)
         ^Row row (:row row-info)
-        ^long idx-row (:idx row-info)
-        ]
-   (case type
+        ^long idx-row (:idx row-info)]
+    (case type
 
-     :string (case action
-               :set (.setSafe ^VarCharVector vector idx-value (Text. ^String value))
-               :make-vector (VarCharVector. name allocator)
-               :get (.getString row idx-row))
+      :string (case action
+                :set (.setSafe ^VarCharVector vector idx-value (Text. ^String value))
+                :make-vector (VarCharVector. name allocator)
+                :get (.getString row idx-row))
 
-     :double (case action
-               :set (.set ^Float8Vector vector idx-value ^float value)
-               :make-vector (Float8Vector. name allocator)
-               :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
+      :double (case action
+                :set (.set ^Float8Vector vector idx-value ^float value)
+                :make-vector (Float8Vector. name allocator)
+                :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
 
-     :float (case action
-              :set (.set ^Float4Vector vector idx-value  ^double value)
-              :make-vector (Float4Vector. name allocator)
-              :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
-     :long (case action
-             :set (.set ^BigIntVector vector idx-value ^long value)
-             :make-vector (BigIntVector. name allocator)
-             :get (if (.isNullAt row idx-row) nil (.getLong row idx-row)))
+      :float (case action
+               :set (.set ^Float4Vector vector idx-value  ^double value)
+               :make-vector (Float4Vector. name allocator)
+               :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
+      :long (case action
+              :set (.set ^BigIntVector vector idx-value ^long value)
+              :make-vector (BigIntVector. name allocator)
+              :get (if (.isNullAt row idx-row) nil (.getLong row idx-row)))
 
+      :integer (case action
+                 :set (.set ^IntVector vector idx-value ^int value)
+                 :make-vector (IntVector. name allocator)
+                 :get (if (.isNullAt row idx-row) nil (.getInt row idx-row)))
 
-     :integer (case action
-                :set (.set ^IntVector vector idx-value ^int value)
-                :make-vector (IntVector. name allocator)
-                :get (if (.isNullAt row idx-row) nil (.getInt row idx-row)))
+      :boolean (case action
+                 :set (.set ^BitVector vector idx-value 1 (if value 1 0))
+                 :make-vector (BitVector. name allocator)
+                 :get (if (.isNullAt row idx-row) nil (.getBoolean row idx-row)))
 
-     :boolean (case action
-                :set (.set ^BitVector vector idx-value 1 (if value 1 0))
-                :make-vector (BitVector. name allocator)
-                :get (if (.isNullAt row idx-row) nil (.getBoolean row idx-row)))
-
-     :date (case action
-             :set (.set ^TimeStampMilliVector vector idx-value (.getTime ^java.sql.Date value))
-             :make-vector (TimeStampMilliVector. name allocator)
-             :get (if (.isNullAt row idx-row) nil (.getDate row idx-row))))))
-
+      :date (case action
+              :set (.set ^TimeStampMilliVector vector idx-value (.getTime ^java.sql.Date value))
+              :make-vector (TimeStampMilliVector. name allocator)
+              :get (if (.isNullAt row idx-row) nil (.getDate row idx-row))))))
 
 (defn- typed-set [v  idx value type]
   (typed-action :set type {:vector v :idx idx :value value} nil nil nil))
@@ -66,7 +63,6 @@
 
 (defn- typed-get [row idx type]
   (typed-action :get type nil {:row row :idx idx} nil nil))
-
 
 (defn- schema->clojure [^Schema schema]
   (let [fields (.fields schema)
@@ -89,11 +85,10 @@
                       (range)
                       values)
         _ (run! #(set-null-or-value vector (:idx  %) (:value %) type)
-                idx-vals )
+                idx-vals)
         _ (.setValueCount ^ValueVector vector (count values))]
 
     vector))
-
 
 (defn- rows->data [rows schema-maps]
   (partition
@@ -101,7 +96,6 @@
    (for [row rows field-idx (range (count schema-maps))]
      (let [type (:type (nth schema-maps field-idx))]
        (typed-get row field-idx type)))))
-
 
 (defn- rows->vectors [rows schema-maps]
   (let [allocator (RootAllocator. Long/MAX_VALUE)
@@ -114,7 +108,7 @@
                    (:type %1))
                  schema-maps
                  transposed-data)]
-      vectors))
+    vectors))
 
 (defn- export-rows! [rows schema-maps out-dir]
   (when (pos? (count rows))
@@ -124,8 +118,7 @@
           out-file (java.io.File/createTempFile "geni" ".ipc" (io/file out-dir))]
 
       (with-open [out (Channels/newChannel  (clojure.java.io/output-stream out-file))
-                  writer  (ArrowStreamWriter. root nil out)
-                  ]
+                  writer  (ArrowStreamWriter. root nil out)]
         (doto writer
           (.start)
           (.writeBatch)
@@ -161,7 +154,6 @@
                             files
                             (inc counter)
                             (inc glob-counter)))))))
-
 
 (comment
   (require '[zero-one.geni.core :as g])
