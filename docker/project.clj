@@ -34,9 +34,11 @@
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
                  [zero.one/fxl "0.0.5"]
-                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
-                 [org.apache.arrow/arrow-memory-core "2.0.0"]
-                 [org.apache.arrow/arrow-vector "2.0.0" :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind ]]
+                 [org.apache.arrow/arrow-memory-netty "2.0.0" :scope "provided" ]
+                 [org.apache.arrow/arrow-memory-core "2.0.0" :scope "provided"]
+                 [org.apache.arrow/arrow-vector "2.0.0"
+                  :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind ]
+                  :scope "provided"]
                  ]
   :profiles
   {:provided {:dependencies ~spark-deps}
