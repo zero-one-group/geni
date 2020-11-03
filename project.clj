@@ -45,7 +45,7 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[enlive "1.1.6"]
                         [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.00-alpha-19"]
+                        [techascent/tech.ml.dataset "5.00-alpha-19" ]
                         [criterium "0.4.6"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]

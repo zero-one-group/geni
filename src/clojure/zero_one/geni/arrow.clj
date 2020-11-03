@@ -107,7 +107,6 @@
 
 (defn- rows->vectors [rows schema-maps]
 (let [allocator (RootAllocator. Long/MAX_VALUE)
-          schema-names (map :name schema-maps)
           data (rows->data rows schema-maps)
           transposed-data (apply pmap list data)
           vectors (pmap
