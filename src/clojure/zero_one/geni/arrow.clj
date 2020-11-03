@@ -10,90 +10,62 @@
            org.apache.spark.sql.Row
            scala.collection.convert.Wrappers$IteratorWrapper))
 
-;; (set! *warn-on-reflection* true)
+ ;; (set! *warn-on-reflection* true)
 
 
-;;;  these protocolls are just needed to make type hints working for the typed-action function
-(defprotocol IValueInfo
-  (^BaseFixedWidthVector vector [this])
-  (^long idx1 [this])
-  (^Object value [this])
-  )
-
-(defprotocol IRowInfo
-  (^Row row [this])
-  (^long idx2 [this])
-  )
-
-(defrecord ValueInfo [^BaseFixedWidthVector a-v ^long a-idx ^Object a-value]
-  IValueInfo
-  (vector ^BaseFixedWidthVector [this] a-v)
-  (idx1 ^long [this] a-idx)
-  (value ^Object [this] a-value)
-
-  )
-
-
-
-(defrecord RowInfo [^Row row ^long idx]
-  IRowInfo
-  (row ^Row [this] row )
-  (idx2 ^long [this] idx)
-  )
-
-;;; this method will be called for evey value transformed, so relection shoudkl be avoided
 (defn- typed-action [action type value-info row-info ^String name ^RootAllocator allocator]
-  (when (= :set type)
-    (when (nil? (value value-info))
-      (throw (Exception. "value cannot be null"))
-      ))
-  (case type
-    :string (case action
-              :set (.setSafe ^VarCharVector (vector value-info) (idx1 value-info) (Text. ^String (value value-info)))
-              :make-vector (VarCharVector. name allocator)
-              :get (.getString (row row-info) (idx2 row-info)))
+  (let [value (:value value-info)
+        ^BaseFixedWidthVector vector (:vector value-info)
+        ^long idx-value (:idx value-info)
+        ^Row row (:row row-info)
+        ^long idx-row (:idx row-info)
+        ]
+   (case type
 
-    :double (case action
-              :set (.set ^Float8Vector (vector value-info) (idx1 value-info) ^double (value value-info))
-              :make-vector (Float8Vector. name allocator)
-              :get (if (.isNullAt (row row-info) (idx2 row-info)) nil (.getDouble (row row-info) (idx2 row-info))))
+     :string (case action
+               :set (.setSafe ^VarCharVector vector idx-value (Text. ^String value))
+               :make-vector (VarCharVector. name allocator)
+               :get (.getString row idx-row))
 
-    :float (case action
-             :set (.set ^Float4Vector (vector value-info) (idx1 value-info) ^double (value value-info))
-             :make-vector (Float4Vector. name allocator)
-             :get (if (.isNullAt (row row-info) (idx2 row-info)) nil (.getFloat (row row-info) (idx2 row-info))))
-    :long (case action
-            :set (.set ^BigIntVector (vector value-info) (idx1 value-info) ^long (value value-info))
-            :make-vector (BigIntVector. name allocator)
-            :get (.getLong (row row-info) (idx2 row-info)))
+     :double (case action
+               :set (.set ^Float8Vector vector idx-value ^float value)
+               :make-vector (Float8Vector. name allocator)
+               :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
+
+     :float (case action
+              :set (.set ^Float4Vector vector idx-value  ^double value)
+              :make-vector (Float4Vector. name allocator)
+              :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
+     :long (case action
+             :set (.set ^BigIntVector vector idx-value ^long value)
+             :make-vector (BigIntVector. name allocator)
+             :get (if (.isNullAt row idx-row) nil (.getLong row idx-row)))
 
 
-    :integer (case action
-               :set (.set ^IntVector (vector value-info) (idx1 value-info) ^int (value value-info))
-               :make-vector (IntVector. name allocator)
-               :get (if (.isNullAt (row row-info) (idx2 row-info)) nil (.getInt (row row-info) (idx2 row-info))))
+     :integer (case action
+                :set (.set ^IntVector vector idx-value ^int value)
+                :make-vector (IntVector. name allocator)
+                :get (if (.isNullAt row idx-row) nil (.getInt row idx-row)))
 
-    :boolean (case action
-               :set (.set ^BitVector (vector value-info) (idx1 value-info) 1 (if (value value-info) 1 0))
-               :make-vector (BitVector. name allocator)
-               :get (if (.isNullAt (row row-info) (idx2 row-info)) nil (.getBoolean (row row-info) (idx2 row-info))))
+     :boolean (case action
+                :set (.set ^BitVector vector idx-value 1 (if value 1 0))
+                :make-vector (BitVector. name allocator)
+                :get (if (.isNullAt row idx-row) nil (.getBoolean row idx-row)))
 
-    :date
-    (case action
-      :set (.set ^TimeStampMilliVector (vector value-info) (idx1 value-info) (.getTime ^java.sql.Date (value value-info)))
-      :make-vector (TimeStampMilliVector. name allocator)
-      :get (if (.isNullAt (row row-info) (idx2 row-info)) nil (.getDate (row row-info) (idx2 row-info)))))
-  )
+     :date (case action
+             :set (.set ^TimeStampMilliVector vector idx-value (.getTime ^java.sql.Date value))
+             :make-vector (TimeStampMilliVector. name allocator)
+             :get (if (.isNullAt row idx-row) nil (.getDate row idx-row))))))
 
 
 (defn- typed-set [v  idx value type]
-  (typed-action :set type (->ValueInfo v idx value) nil nil nil))
+  (typed-action :set type {:vector v :idx idx :value value} nil nil nil))
 
 (defn- typed-make-vector [name allocator type]
   (typed-action :make-vector type nil nil name allocator))
 
 (defn- typed-get [row idx type]
-  (typed-action :get type nil (->RowInfo row idx) nil nil))
+  (typed-action :get type nil {:row row :idx idx} nil nil))
 
 
 (defn- schema->clojure [^Schema schema]
@@ -214,7 +186,4 @@
 
   (g/shape housing)
   (time
-   (g/collect-to-arrow housing 3000 "/tmp/arrow-out"))
-
-
-  )
+   (g/collect-to-arrow housing 3000 "/tmp/arrow-out")))
