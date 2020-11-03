@@ -76,10 +76,10 @@
 (facts "On sql-date df"
        (fact "does not crash"
              (->
-              (g/read-parquet! "test/resources/withSqlDate.parquet")
+              (g/read-parquet! "test/resources/with_sql_date.parquet")
               (g/collect-to-arrow 10 temp-dir)))
        (fact "dates are corect"
-             (let [with-date  (g/read-parquet! "test/resources/withSqlDate.parquet")
+             (let [with-date  (g/read-parquet! "test/resources/with_sql_date.parquet")
                    ds
                    (-> with-date
                     (g/collect-to-arrow 10 temp-dir)
