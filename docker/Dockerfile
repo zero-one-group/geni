@@ -6,6 +6,12 @@ ENV HOME /root
 # Install other dependencies
 RUN apt-get update && apt-get install -y libgomp1 libatlas3-base libopenblas-base
 
+# Install Clojure CLI
+RUN apt-get install -y rlwrap
+RUN curl -O https://download.clojure.org/install/linux-install-1.10.1.727.sh
+RUN chmod +x linux-install-1.10.1.727.sh
+RUN ./linux-install-1.10.1.727.sh
+
 # Install clj-kondo and babashka
 RUN bash -c "bash <(curl -s https://raw.githubusercontent.com/borkdude/clj-kondo/master/script/install-clj-kondo)"
 RUN  curl -s https://raw.githubusercontent.com/borkdude/babashka/master/install -o install-babashka
@@ -18,7 +24,11 @@ RUN cd /root && lein with-profile +dev deps
 # Install other dependencies and plugins
 ADD project.clj /root/project.clj
 RUN cd /root && lein with-profile +dev deps
-
 RUN cd /root/ && lein cloverage || true
+
+# Install deps.edn dependencies
+ADD deps.edn /root/deps.edn
+ADD deps-project.clj /root/project.clj
+RUN cd /root && lein with-profile +dev deps
 
 ENTRYPOINT []
