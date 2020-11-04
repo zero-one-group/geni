@@ -70,21 +70,21 @@
                             zero?
                             zipmap])
    (:require
-   [potemkin :refer [import-fn import-vars]]
-   [zero-one.geni.core.clojure-idioms]
-   [zero-one.geni.core.column]
-   [zero-one.geni.core.data-sources]
-   [zero-one.geni.core.dataset-creation]
-   [zero-one.geni.core.dataset]
-   [zero-one.geni.core.foreign-idioms]
-   [zero-one.geni.core.functions]
-   [zero-one.geni.core.polymorphic]
-   [zero-one.geni.core.window]
-   [zero-one.geni.interop]
-   [zero-one.geni.spark-context]
-   [zero-one.geni.spark]
-   [zero-one.geni.storage]
-   [zero-one.geni.arrow]))
+    [potemkin :refer [import-fn import-vars]]
+    [zero-one.geni.arrow]
+    [zero-one.geni.core.clojure-idioms]
+    [zero-one.geni.core.column]
+    [zero-one.geni.core.data-sources]
+    [zero-one.geni.core.dataset-creation]
+    [zero-one.geni.core.dataset]
+    [zero-one.geni.core.foreign-idioms]
+    [zero-one.geni.core.functions]
+    [zero-one.geni.core.polymorphic]
+    [zero-one.geni.core.window]
+    [zero-one.geni.interop]
+    [zero-one.geni.spark-context]
+    [zero-one.geni.spark]
+    [zero-one.geni.storage]))
 
 (import-vars
  [zero-one.geni.interop

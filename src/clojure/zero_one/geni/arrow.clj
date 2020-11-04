@@ -31,36 +31,38 @@
                 :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                 :set (.set ^Float8Vector vector idx-value ^float value)
                 :make-vector (Float8Vector. name allocator)
-                :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
+                :get (when-not (.isNullAt row idx-row ) (.getDouble row idx-row))
+                )
 
       :float (case action
                :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                :set (.set ^Float4Vector vector idx-value  ^double value)
                :make-vector (Float4Vector. name allocator)
-               :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
+               :get (when-not (.isNullAt row idx-row ) (.getFloat row idx-row))
+               )
       :long (case action
               :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
               :set (.set ^BigIntVector vector idx-value ^long value)
               :make-vector (BigIntVector. name allocator)
-              :get (if (.isNullAt row idx-row) nil (.getLong row idx-row)))
+              :get (when-not (.isNullAt row idx-row ) (.getLong row idx-row)))
 
       :integer (case action
                  :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                  :set (.set ^IntVector vector idx-value ^int value)
                  :make-vector (IntVector. name allocator)
-                 :get (if (.isNullAt row idx-row) nil (.getInt row idx-row)))
+                 :get (when-not (.isNullAt row idx-row ) (.getInt row idx-row)))
 
       :boolean (case action
                  :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                  :set (.set ^BitVector vector idx-value 1 (if value 1 0))
                  :make-vector (BitVector. name allocator)
-                 :get (if (.isNullAt row idx-row) nil (.getBoolean row idx-row)))
+                 :get (when-not (.isNullAt row idx-row ) (.getBoolean row idx-row)))
 
       :date (case action
               :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
               :set (.set ^TimeStampMilliVector vector idx-value (.getTime ^java.sql.Date value))
               :make-vector (TimeStampMilliVector. name allocator)
-              :get (if (.isNullAt row idx-row) nil (.getDate row idx-row))))))
+              :get (when-not (.isNullAt row idx-row ) (.getDate row idx-row))))))
 
 (defn- typed-set [v  idx value type]
   (typed-action :set type {:vector v :idx idx :value value} nil nil nil))
