@@ -20,12 +20,12 @@
    (org.apache.spark.sql Row)
    (scala.collection.convert Wrappers$IteratorWrapper)))
 
-(defn- typed-action [action
-                     col-type
-                     value-info
-                     row-info
-                     ^String col-name
-                     ^RootAllocator allocator]
+(defn typed-action [action
+                    col-type
+                    value-info
+                    row-info
+                    ^String col-name
+                    ^RootAllocator allocator]
   (let [                      value        (:value  value-info)
         ^BaseFixedWidthVector arrow-vector (:vector value-info)
         ^long                 idx-value    (:idx    value-info)
@@ -44,7 +44,7 @@
                 :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
 
       :float (case action
-               :set (.set ^Float4Vector arrow-vector idx-value  ^double value)
+               :set (.set ^Float4Vector arrow-vector idx-value ^double value)
                :make-vector (Float4Vector. col-name allocator)
                :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
       :long (case action
@@ -95,11 +95,9 @@
     arrow-vector))
 
 (defn- rows->data [rows schema-maps]
-  (partition
-   (count schema-maps)
-   (for [row              rows
-         [col-idx schema] (map vector (range) schema-maps)]
-     (typed-get row col-idx (:type schema)))))
+  (for [row rows]
+    (for [[col-idx schema] (map vector (range) schema-maps)]
+      (typed-get row col-idx (:type schema)))))
 
 (defn- rows->vectors [rows schema-maps]
   (let [allocator  (RootAllocator. Long/MAX_VALUE)
@@ -118,13 +116,12 @@
 
 (defn- export-rows! [rows schema-maps out-dir]
   (when (pos? (count rows))
-    (let [vectors (rows->vectors rows schema-maps)
-          vector-fields (map #(.getField ^ValueVector %) vectors)
-          root (VectorSchemaRoot. vector-fields vectors)
+    (let [vectors  (rows->vectors rows schema-maps)
+          fields   (map #(.getField ^ValueVector %) vectors)
+          root     (VectorSchemaRoot. fields vectors)
           out-file (java.io.File/createTempFile "geni" ".ipc" (io/file out-dir))]
-
-      (with-open [out (Channels/newChannel  (clojure.java.io/output-stream out-file))
-                  writer  (ArrowStreamWriter. root nil out)]
+      (with-open [out    (Channels/newChannel (clojure.java.io/output-stream out-file))
+                  writer (ArrowStreamWriter. root nil out)]
         (doto writer
           (.start)
           (.writeBatch)
@@ -152,12 +149,16 @@
            counter      0
            glob-counter 0]
       (let [has-next (.hasNext row-iterator)]
-        (cond (not has-next) (conj files (export-rows! acc schema out-dir))
+        (cond (not has-next)
+              (conj files (export-rows! acc schema out-dir))
+
               (= counter chunk-size)
               (recur []
                      (conj files (export-rows! acc schema out-dir))
                      0 glob-counter)
-              :else (recur  (conj acc (.next row-iterator))
-                            files
-                            (inc counter)
-                            (inc glob-counter)))))))
+
+              :else
+              (recur (conj acc (.next row-iterator))
+                     files
+                     (inc counter)
+                     (inc glob-counter)))))))
