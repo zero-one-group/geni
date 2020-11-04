@@ -11,21 +11,20 @@
 
 (facts "On melbourne-df"
   (fact "On size of collect arrow files - string only"
-        (->
-         (melbourne-df)
-         (g/select-columns [:Suburb])
-         (g/collect-to-arrow 10000 temp-dir)
-         count
-         )
+    (->
+     (melbourne-df)
+     (g/select-columns [:Suburb])
+     (g/collect-to-arrow 10000 temp-dir)
+     count)
 
-        => 2)
+    => 2)
 
   (fact "On size of collect arrow files"
-        (->
-         (melbourne-df)
-         (g/collect-to-arrow 10000 temp-dir)
-         count)
-        => 2)
+    (->
+     (melbourne-df)
+     (g/collect-to-arrow 10000 temp-dir)
+     count)
+    => 2)
 
   (fact "TMD can read it all"
     (let [arrow-files
@@ -85,41 +84,37 @@
       (first (get ds "date")) =>
       (.getTime (first (-> with-date (g/collect-col "date")))))))
 
-
 (facts "On all-nil data frame"
-       (fact "all nils areet into arrow file"
-             (-> (g/create-dataframe
-                  [(g/row nil nil nil nil nil nil nil)]
-                  (g/struct-type
-                   (g/struct-field :long :long true)
-                   (g/struct-field :int :int true)
-                   (g/struct-field :string :string true)
-                   (g/struct-field :float :float true)
-                   (g/struct-field :double :double true)
-                   (g/struct-field :date :date true)
-                   (g/struct-field :boolean :boolean true)
-                   ))
-                 (g/collect-to-arrow 10 "/tmp")
-                 (first)
-                 (tdm-arrow/read-stream-dataset-copying)
-                 (ds/mapseq-reader)
-                 (first)
-                 vals
-                 ) => [nil nil nil nil nil nil nil]))
+  (fact "all nils areet into arrow file"
+    (-> (g/create-dataframe
+         [(g/row nil nil nil nil nil nil nil)]
+         (g/struct-type
+          (g/struct-field :long :long true)
+          (g/struct-field :int :int true)
+          (g/struct-field :string :string true)
+          (g/struct-field :float :float true)
+          (g/struct-field :double :double true)
+          (g/struct-field :date :date true)
+          (g/struct-field :boolean :boolean true)))
+        (g/collect-to-arrow 10 "/tmp")
+        (first)
+        (tdm-arrow/read-stream-dataset-copying)
+        (ds/mapseq-reader)
+        (first)
+        vals) => [nil nil nil nil nil nil nil]))
 
 (facts "On empty dataframe"
-       (fact "writes arrow file with 0 rows and no schema"
-             (->
-              (g/create-dataframe [] (g/struct-type
-                                      (g/struct-field :long :long true)
-                                      (g/struct-field :int :int true)
-                                      (g/struct-field :string :string true)
-                                      (g/struct-field :float :float true)
-                                      (g/struct-field :double :double true)
-                                      (g/struct-field :date :date true)
-                                      (g/struct-field :boolean :boolean true)
-                                      ))
-              (g/collect-to-arrow 10 "/tmp")
-              (first)
-              (tdm-arrow/read-stream-dataset-inplace)
-              (ds/row-count) ) => 0))
+  (fact "writes arrow file with 0 rows and no schema"
+    (->
+     (g/create-dataframe [] (g/struct-type
+                             (g/struct-field :long :long true)
+                             (g/struct-field :int :int true)
+                             (g/struct-field :string :string true)
+                             (g/struct-field :float :float true)
+                             (g/struct-field :double :double true)
+                             (g/struct-field :date :date true)
+                             (g/struct-field :boolean :boolean true)))
+     (g/collect-to-arrow 10 "/tmp")
+     (first)
+     (tdm-arrow/read-stream-dataset-inplace)
+     (ds/row-count)) => 0))
