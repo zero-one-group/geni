@@ -9,18 +9,34 @@
 
 (def temp-dir (System/getProperty "java.io.tmpdir"))
 
-(facts "On typed-action"
+(facts "On typed-action" :arrow
   (fact "must not allow unknown type"
     (arrow/typed-action :unknown-type nil nil nil nil nil)
     => (throws IllegalArgumentException))
   (fact "must not allow unknown action"
     (mapv
-      (fn [col-type]
-        (arrow/typed-action col-type :unknown-action nil nil nil nil)
-        => (throws IllegalArgumentException))
-      [:string :double :float :long :integer :boolean :date])))
+     (fn [col-type]
+       (arrow/typed-action col-type :unknown-action nil nil nil nil)
+       => (throws IllegalArgumentException))
+     [:string :double :float :long :integer :boolean :date])))
 
-(facts "On melbourne-df"
+(facts "On empty dataframe" :arrow
+  (fact "writes arrow file with 0 rows and no schema"
+    (-> (g/create-dataframe [] (g/struct-type
+                                (g/struct-field :long :long true)
+                                (g/struct-field :int :int true)
+                                (g/struct-field :string :string true)
+                                (g/struct-field :float :float true)
+                                (g/struct-field :double :double true)
+                                (g/struct-field :date :date true)
+                                (g/struct-field :boolean :boolean true)))
+        (g/collect-to-arrow 10 "/tmp")
+        (first)
+        (tmd-arrow/read-stream-dataset-inplace)
+        (ds/row-count))
+    => 0))
+
+(facts "On melbourne-df" :arrow
   (fact "On size of collect arrow files - string only"
     (-> (melbourne-df)
         (g/select-columns [:Suburb])
@@ -47,7 +63,7 @@
       (ds/shape melbourne-ds-1) => [21 10000]
       (ds/shape melbourne-ds-2) => [21 3580])))
 
-(facts "Crashes and failures"
+(facts "Crashes and failures" :arrow
   (fact "does not crash"
     (g/collect-to-arrow (ratings-df) 10000 temp-dir)
     (-> (g/read-csv! "test/resources/boolean_data.csv")
@@ -62,7 +78,7 @@
         (g/collect-to-arrow 10000 temp-dir))
     => (throws IllegalArgumentException "No matching clause: :vector")))
 
-(facts "On dates"
+(facts "On dates" :arrow
   (fact "dates are corect"
     (let [with-date (g/read-parquet! "test/resources/with_sql_date.parquet")
           ds        (-> with-date
@@ -71,3 +87,23 @@
                         (tmd-arrow/read-stream-dataset-copying))
           expected  (.getTime (first (-> with-date (g/collect-col "date"))))]
       (first (get ds "date")) => expected)))
+
+(facts "On all-nil data frame" :arrow
+  (fact "all nils areet into arrow file"
+    (-> (g/create-dataframe
+         [(g/row nil nil nil nil nil nil nil)]
+         (g/struct-type
+          (g/struct-field :long :long true)
+          (g/struct-field :int :int true)
+          (g/struct-field :string :string true)
+          (g/struct-field :float :float true)
+          (g/struct-field :double :double true)
+          (g/struct-field :date :date true)
+          (g/struct-field :boolean :boolean true)))
+        (g/collect-to-arrow 10 "/tmp")
+        (first)
+        (tmd-arrow/read-stream-dataset-copying)
+        (ds/mapseq-reader)
+        (first)
+        vals)
+    => [nil nil nil nil nil nil nil]))

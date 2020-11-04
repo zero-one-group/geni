@@ -69,8 +69,9 @@
                             when
                             zero?
                             zipmap])
-   (:require
+  (:require
    [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.arrow]
    [zero-one.geni.core.clojure-idioms]
    [zero-one.geni.core.column]
    [zero-one.geni.core.data-sources]
@@ -83,8 +84,7 @@
    [zero-one.geni.interop]
    [zero-one.geni.spark-context]
    [zero-one.geni.spark]
-   [zero-one.geni.storage]
-   [zero-one.geni.arrow]))
+   [zero-one.geni.storage]))
 
 (import-vars
  [zero-one.geni.interop
@@ -639,9 +639,7 @@
 
 (import-vars
  [zero-one.geni.arrow
- collect-to-arrow
-  ]
- )
+  collect-to-arrow])
 
 (def to-string
   "Coerce to string."
