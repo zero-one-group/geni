@@ -9,6 +9,12 @@
     [org.apache.spark/spark-mllib_2.12 "3.0.1"]
     [org.apache.spark/spark-sql_2.12 "3.0.1"]
     [org.apache.spark/spark-streaming_2.12 "3.0.1"]
+    ; Arrow
+    ; TODO: add to other parts that require deps
+    [org.apache.arrow/arrow-memory-netty "2.0.0"]
+    [org.apache.arrow/arrow-memory-core "2.0.0"]
+    [org.apache.arrow/arrow-vector "2.0.0"
+     :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
     ; Databases
     [mysql/mysql-connector-java "8.0.22"]
     [org.postgresql/postgresql "42.2.18"]
@@ -33,30 +39,22 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.5"]
-                 [org.apache.arrow/arrow-memory-netty "2.0.0" :scope "provided" ]
-                 [org.apache.arrow/arrow-memory-core "2.0.0" :scope "provided"]
-                 [org.apache.arrow/arrow-vector "2.0.0"
-                  :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind ]
-                  :scope "provided"]
-                 ]
+                 [zero.one/fxl "0.0.5"]]
+
   :profiles
   {:provided {:dependencies ~spark-deps}
    :uberjar {:aot :all :dependencies ~spark-deps}
-   :dev {:dependencies [[enlive "1.1.6"]
+   :dev {:dependencies [[criterium "0.4.6"]
+                        [enlive "1.1.6"]
                         [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.00-alpha-19"]
-                        [criterium "0.4.6"]]
+                        [techascent/tech.ml.dataset "5.00-alpha-22"]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
-         :resource-paths ["test-resources"]
+         :resource-paths ["test/resources"] ; Needed to suppress TMD's debug log
          :cljfmt {:split-keypairs-over-multiple-lines?   false
                   :remove-multiple-non-indenting-spaces? false
-                  ;; Note: we add custom rules to handle code from midje test library
-                  ;; See https://github.com/weavejester/cljfmt/blob/master/cljfmt/resources/cljfmt/indents/clojure.clj
-                  ;; for more control
                   :indents {facts [[:inner 0] [:block 1]]
                             fact  [[:inner 0] [:block 1]]}}
          :aot [zero-one.geni.rdd.function
