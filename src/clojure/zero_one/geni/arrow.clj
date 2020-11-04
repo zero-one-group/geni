@@ -108,10 +108,11 @@
      (let [type (:type (nth schema-maps field-idx))]
        (typed-get row field-idx type)))))
 
+
 (defn- rows->vectors [rows schema-maps]
   (let [allocator (RootAllocator. Long/MAX_VALUE)
         data (rows->data rows schema-maps)
-        transposed-data (apply pmap list data)
+        transposed-data (if (seq data) (apply pmap list data) [])
         vectors (pmap
                  #(fill-vector!
                    (typed-make-vector (:name %1) allocator (:type %1))
@@ -122,7 +123,6 @@
     vectors))
 
 (defn- export-rows! [rows schema-maps out-dir]
-  (when (pos? (count rows))
     (let [vectors (rows->vectors rows schema-maps)
           vector-fields (map #(.getField ^ValueVector %) vectors)
           root (VectorSchemaRoot. vector-fields vectors)
@@ -135,7 +135,7 @@
           (.writeBatch)
           (.end)))
 
-      (.getPath out-file))))
+      (.getPath out-file)))
 
 (defn collect-to-arrow
   "Collects the dataframe on driver and exports it as arrow files.
@@ -150,8 +150,7 @@
 
 "
   [rdd chunk-size out-dir]
-  (let [first-row (.first rdd)
-        schema (schema->clojure (.schema first-row))
+  (let [schema (schema->clojure (.schema rdd))
         ^Wrappers$IteratorWrapper row-iterator (.toLocalIterator rdd)]
     (loop [acc [] files [] counter 0 glob-counter 0]
 
