@@ -1,7 +1,9 @@
 {:deps
  {io.netty/netty-all                    {:mvn/version "4.1.53.Final"}
   ;; Spark
+  org.apache.spark/spark-avro_2.12      {:mvn/version "3.0.1"}
   org.apache.spark/spark-core_2.12      {:mvn/version "3.0.1"}
+  org.apache.spark/spark-hive_2.12      {:mvn/version "3.0.1"}
   org.apache.spark/spark-mllib_2.12     {:mvn/version "3.0.1"}
   org.apache.spark/spark-sql_2.12       {:mvn/version "3.0.1"}
   org.apache.spark/spark-streaming_2.12 {:mvn/version "3.0.1"}
@@ -9,6 +11,12 @@
   mysql/mysql-connector-java            {:mvn/version "8.0.21"}
   org.postgresql/postgresql             {:mvn/version "42.2.16"}
   org.xerial/sqlite-jdbc                {:mvn/version "3.32.3.2"}
+  ;; Arrow
+  org.apache.arrow/arrow-memory-netty   {:mvn/version "2.0.0"}
+  org.apache.arrow/arrow-memory-core    {:mvn/version "2.0.0"}
+  org.apache.arrow/arrow-vector         {:mvn/version "2.0.0"
+                                         :exclusions [commons-codec
+                                                      com.fasterxml.jackson.core/jackson-databind]}
   ;; Optional: Spark XGBoost
   ml.dmlc/xgboost4j-spark_2.12          {:mvn/version "1.0.0"}
   ml.dmlc/xgboost4j_2.12                {:mvn/version "1.0.0"}

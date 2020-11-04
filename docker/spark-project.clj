@@ -8,11 +8,15 @@
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
                  [zero.one/fxl "0.0.5"]
                  ;; Dev
+                 [criterium "0.4.6"]
+                 [enlive "1.1.6"]
                  [expound "0.8.6"]
                  [lein-ancient "0.6.15"]
+                 [lein-cljfmt "0.7.0"]
                  [lein-cloverage "1.2.1"]
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
+                 [techascent/tech.ml.dataset "5.00-alpha-22"]
                  ;; Spark
                  [org.apache.spark/spark-avro_2.12 "3.0.1"]
                  [org.apache.spark/spark-core_2.12 "3.0.1"]
@@ -21,6 +25,11 @@
                  [org.apache.spark/spark-sql_2.12 "3.0.1"]
                  [org.apache.spark/spark-streaming_2.12 "3.0.1"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+                 ; Arrow
+                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
+                 [org.apache.arrow/arrow-memory-core "2.0.0"]
+                 [org.apache.arrow/arrow-vector "2.0.0"
+                  :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                  ; Databases
                  [mysql/mysql-connector-java "8.0.22"]
                  [org.postgresql/postgresql "42.2.18"]

@@ -59,7 +59,7 @@
   (-> dataframe g/print-schema)
 
   (require '[midje.repl :refer [autotest]])
-  (autotest :filter (every-pred :docs (complement :slow)))
+  (autotest :filter (every-pred :arrow))
 
   (require '[zero-one.geni.core])
   (require '[zero-one.geni.docs :as docs])
