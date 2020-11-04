@@ -299,6 +299,11 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 [org.apache.spark/spark-sql_2.12 "3.0.0"]
                 [org.apache.spark/spark-streaming_2.12 "3.0.0"]
                 [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
+                ; Arrow
+                [org.apache.arrow/arrow-memory-netty "2.0.0"]
+                [org.apache.arrow/arrow-memory-core "2.0.0"]
+                [org.apache.arrow/arrow-vector "2.0.0"
+                :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                 ;; Databases
                 [mysql/mysql-connector-java "8.0.22"]
                 [org.postgresql/postgresql "42.2.18"]
