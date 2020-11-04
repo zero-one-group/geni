@@ -10,47 +10,54 @@
            org.apache.spark.sql.Row
            scala.collection.convert.Wrappers$IteratorWrapper))
 
- ;; (set! *warn-on-reflection* true)
+;; (set! *warn-on-reflection* true)
 
 
 (defn- typed-action [action type value-info row-info ^String name ^RootAllocator allocator]
   (let [value (:value value-info)
         ^BaseFixedWidthVector vector (:vector value-info)
-        ^long idx-value (:idx value-info)
+        ^int idx-value (:idx value-info)
         ^Row row (:row row-info)
         ^long idx-row (:idx row-info)]
     (case type
 
       :string (case action
+                :set-null (.setNull ^VarCharVector vector idx-value)
                 :set (.setSafe ^VarCharVector vector idx-value (Text. ^String value))
                 :make-vector (VarCharVector. name allocator)
                 :get (.getString row idx-row))
 
       :double (case action
+                :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                 :set (.set ^Float8Vector vector idx-value ^float value)
                 :make-vector (Float8Vector. name allocator)
                 :get (if (.isNullAt row idx-row) nil (.getDouble row idx-row)))
 
       :float (case action
+               :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                :set (.set ^Float4Vector vector idx-value  ^double value)
                :make-vector (Float4Vector. name allocator)
                :get (if (.isNullAt row idx-row) nil (.getFloat row idx-row)))
       :long (case action
+              :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
               :set (.set ^BigIntVector vector idx-value ^long value)
               :make-vector (BigIntVector. name allocator)
               :get (if (.isNullAt row idx-row) nil (.getLong row idx-row)))
 
       :integer (case action
+                 :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                  :set (.set ^IntVector vector idx-value ^int value)
                  :make-vector (IntVector. name allocator)
                  :get (if (.isNullAt row idx-row) nil (.getInt row idx-row)))
 
       :boolean (case action
+                 :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
                  :set (.set ^BitVector vector idx-value 1 (if value 1 0))
                  :make-vector (BitVector. name allocator)
                  :get (if (.isNullAt row idx-row) nil (.getBoolean row idx-row)))
 
       :date (case action
+              :set-null (.setNull ^BaseFixedWidthVector vector idx-value)
               :set (.set ^TimeStampMilliVector vector idx-value (.getTime ^java.sql.Date value))
               :make-vector (TimeStampMilliVector. name allocator)
               :get (if (.isNullAt row idx-row) nil (.getDate row idx-row))))))
@@ -76,16 +83,18 @@
 
 (defn- set-null-or-value [v ^long idx value type]
   (if (nil? value)
-    (.setNull v idx)
+    (typed-action :set-null type {:vector v :idx 0 :value nil} nil nil nil)
     (typed-set v idx value type)))
 
-(defn- fill-vector [vector values type]
-  (let [_ (.allocateNew vector (count values))
-        idx-vals (map #(hash-map :idx %1 :value %2)
-                      (range)
-                      values)
-        _ (run! #(set-null-or-value vector (:idx  %) (:value %) type)
-                idx-vals)
+
+(defn- fill-vector! [vector values type]
+
+  (let [num (count values)
+        _ (.allocateNew vector num)
+        idxs (long-array (range num))
+        vals (to-array values)
+        _ (run! #(set-null-or-value vector ^long % (aget vals ^long %) type)
+                idxs)
         _ (.setValueCount ^ValueVector vector (count values))]
 
     vector))
@@ -102,7 +111,7 @@
         data (rows->data rows schema-maps)
         transposed-data (apply pmap list data)
         vectors (pmap
-                 #(fill-vector
+                 #(fill-vector!
                    (typed-make-vector (:name %1) allocator (:type %1))
                    %2
                    (:type %1))
