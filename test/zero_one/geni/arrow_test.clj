@@ -1,28 +1,31 @@
 (ns zero-one.geni.arrow-test
-  (:require
-   [zero-one.geni.core :as g]
-   [midje.sweet :refer [facts fact => throws]])
-  (:require [zero-one.geni.test-resources :refer [melbourne-df ratings-df k-means-df libsvm-df]]
+  (:require [midje.sweet :refer [=> fact facts throws]]
+            [tech.v3.dataset :as ds]
             [tech.v3.libs.arrow :as tdm-arrow]
-            [tech.v3.dataset :as ds]))
+            [zero-one.geni.core :as g]
+            [zero-one.geni.test-resources
+             :refer
+             [k-means-df libsvm-df melbourne-df ratings-df]]))
 
 (def temp-dir (System/getProperty "java.io.tmpdir"))
 
 (facts "On melbourne-df"
   (fact "On size of collect arrow files - string only"
-    (count
-     (->
-      (melbourne-df)
-      (g/select-columns [:Suburb])
-      (g/collect-to-arrow 10000 temp-dir)))
-    => 2)
+        (->
+         (melbourne-df)
+         (g/select-columns [:Suburb])
+         (g/collect-to-arrow 10000 temp-dir)
+         count
+         )
+
+        => 2)
 
   (fact "On size of collect arrow files"
-    (count
-     (->
-      (melbourne-df)
-      (g/collect-to-arrow 10000 temp-dir)))
-    => 2)
+        (->
+         (melbourne-df)
+         (g/collect-to-arrow 10000 temp-dir)
+         count)
+        => 2)
 
   (fact "TMD can read it all"
     (let [arrow-files
