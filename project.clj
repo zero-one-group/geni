@@ -10,7 +10,6 @@
     [org.apache.spark/spark-sql_2.12 "3.0.1"]
     [org.apache.spark/spark-streaming_2.12 "3.0.1"]
     ; Arrow
-    ; TODO: add to other parts that require deps
     [org.apache.arrow/arrow-memory-netty "2.0.0"]
     [org.apache.arrow/arrow-memory-core "2.0.0"]
     [org.apache.arrow/arrow-vector "2.0.0"
