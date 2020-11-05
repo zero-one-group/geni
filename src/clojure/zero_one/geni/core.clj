@@ -71,6 +71,7 @@
                             zipmap])
   (:require
    [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.arrow]
    [zero-one.geni.core.clojure-idioms]
    [zero-one.geni.core.column]
    [zero-one.geni.core.data-sources]
@@ -635,6 +636,10 @@
   select-columns
   shape
   value-counts])
+
+(import-vars
+ [zero-one.geni.arrow
+  collect-to-arrow])
 
 (def to-string
   "Coerce to string."
