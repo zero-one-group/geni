@@ -38,31 +38,31 @@
     => 0))
 
 (facts "On melbourne-df" :arrow
-       (fact "On size of collect arrow files - string only")
-    (-> (melbourne-df)
-        (g/select-columns [:Suburb])
-        (g/collect-to-arrow 10000 temp-dir)
-        count) => 2)
+  (fact "On size of collect arrow files - string only")
+  (-> (melbourne-df)
+      (g/select-columns [:Suburb])
+      (g/collect-to-arrow 10000 temp-dir)
+      count) => 2)
 
-  (fact "On size of collect arrow files"
-    (-> (melbourne-df)
-        (g/collect-to-arrow 10000 temp-dir)
-        count) => 2)
+(fact "On size of collect arrow files"
+  (-> (melbourne-df)
+      (g/collect-to-arrow 10000 temp-dir)
+      count) => 2)
 
-  (fact "TMD can read it all"
-    (let [arrow-files  (g/collect-to-arrow (melbourne-df) 20000 temp-dir)
-          melbourne-ds (tmd-arrow/read-stream-dataset-inplace (first arrow-files))]
-      (ds/shape melbourne-ds)  => [21 13580]
-      (ds/column-names melbourne-ds) => (g/column-names (melbourne-df))
-      (str (first (get melbourne-ds "Address"))) => "85 Turner St"
-      (first (get melbourne-ds "Price")) => 1480000.0))
+(fact "TMD can read it all"
+  (let [arrow-files  (g/collect-to-arrow (melbourne-df) 20000 temp-dir)
+        melbourne-ds (tmd-arrow/read-stream-dataset-inplace (first arrow-files))]
+    (ds/shape melbourne-ds)  => [21 13580]
+    (ds/column-names melbourne-ds) => (g/column-names (melbourne-df))
+    (str (first (get melbourne-ds "Address"))) => "85 Turner St"
+    (first (get melbourne-ds "Price")) => 1480000.0))
 
-  (fact "split in rows works ok"
-    (let [arrow-files    (g/collect-to-arrow (melbourne-df) 10000 temp-dir)
-          melbourne-ds-1 (tmd-arrow/read-stream-dataset-copying (first arrow-files))
-          melbourne-ds-2 (tmd-arrow/read-stream-dataset-copying (second arrow-files))]
-      (ds/shape melbourne-ds-1) => [21 10000]
-      (ds/shape melbourne-ds-2) => [21 3580]))
+(fact "split in rows works ok"
+  (let [arrow-files    (g/collect-to-arrow (melbourne-df) 10000 temp-dir)
+        melbourne-ds-1 (tmd-arrow/read-stream-dataset-copying (first arrow-files))
+        melbourne-ds-2 (tmd-arrow/read-stream-dataset-copying (second arrow-files))]
+    (ds/shape melbourne-ds-1) => [21 10000]
+    (ds/shape melbourne-ds-2) => [21 3580]))
 
 (facts "Crashes and failures" :arrow
   (fact "does not crash"

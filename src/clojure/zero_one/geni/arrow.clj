@@ -149,7 +149,7 @@
     (.getPath out-file)))
 
 (defn collect-to-arrow
- "Collects the dataframe on driver and exports it as arrow files.
+  "Collects the dataframe on driver and exports it as arrow files.
   The data gets transfered by partition, and so each partions should be small
    enough to fit in heap space of the driver. Then the data is saved in chunks
    of `chunk-size` rows to disk as arrow files.
