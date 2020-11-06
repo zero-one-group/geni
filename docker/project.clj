@@ -46,12 +46,12 @@
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
                         [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.00-alpha-22"]]
+                        [techascent/tech.ml.dataset "5.00-alpha-22"
+                         :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.6.15"]
                    [lein-cloverage "1.2.1"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
-         :resource-paths ["test/resources"] ; Needed to suppress TMD's debug log
          :cljfmt {:split-keypairs-over-multiple-lines?   false
                   :remove-multiple-non-indenting-spaces? false
                   :indents {facts [[:inner 0] [:block 1]]
