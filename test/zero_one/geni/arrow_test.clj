@@ -12,25 +12,24 @@
 
 (facts "On typed-action" :arrow
   (fact "must not allow unknown type"
-    (arrow/typed-action :unknown-type nil nil nil nil nil)
+    (arrow/typed-action :get :unknown-type nil nil nil nil)
     => (throws IllegalArgumentException))
   (fact "must not allow unknown action"
     (mapv
      (fn [col-type]
-       (arrow/typed-action col-type :unknown-action nil nil nil nil)
+       (arrow/typed-action :unknown-action col-type nil nil nil nil)
        => (throws IllegalArgumentException))
      [:string :double :float :long :integer :boolean :date])))
 
 (facts "On empty dataframe" :arrow
   (fact "writes arrow file with 0 rows and no schema"
-    (-> (g/create-dataframe [] (g/struct-type
-                                (g/struct-field :long :long true)
-                                (g/struct-field :int :int true)
-                                (g/struct-field :string :string true)
-                                (g/struct-field :float :float true)
-                                (g/struct-field :double :double true)
-                                (g/struct-field :date :date true)
-                                (g/struct-field :boolean :boolean true)))
+    (-> (g/create-dataframe [] {:long    :long
+                                :int     :int
+                                :string  :string
+                                :float   :float
+                                :double  :double
+                                :date    :date
+                                :boolean :boolean})
         (g/collect-to-arrow 10 "/tmp")
         (first)
         (tmd-arrow/read-stream-dataset-inplace)
@@ -95,14 +94,13 @@
   (fact "all nils areet into arrow file"
     (-> (g/create-dataframe
          [(g/row nil nil nil nil nil nil nil)]
-         (g/struct-type
-          (g/struct-field :long :long true)
-          (g/struct-field :int :int true)
-          (g/struct-field :string :string true)
-          (g/struct-field :float :float true)
-          (g/struct-field :double :double true)
-          (g/struct-field :date :date true)
-          (g/struct-field :boolean :boolean true)))
+         {:long    :long
+          :int     :int
+          :string  :string
+          :float   :float
+          :double  :double
+          :date    :date
+          :boolean :boolean})
         (g/collect-to-arrow 10 "/tmp")
         (first)
         (tmd-arrow/read-stream-dataset-copying)
@@ -113,14 +111,13 @@
 (facts "On empty dataframe"
   (fact "writes arrow file with 0 rows and no schema"
     (->
-     (g/create-dataframe [] (g/struct-type
-                             (g/struct-field :long :long true)
-                             (g/struct-field :int :int true)
-                             (g/struct-field :string :string true)
-                             (g/struct-field :float :float true)
-                             (g/struct-field :double :double true)
-                             (g/struct-field :date :date true)
-                             (g/struct-field :boolean :boolean true)))
+     (g/create-dataframe [] {:long    :long
+                             :int     :int
+                             :string  :string
+                             :float   :float
+                             :double  :double
+                             :date    :date
+                             :boolean :boolean})
      (g/collect-to-arrow 10 "/tmp")
      (first)
      (tmd-arrow/read-stream-dataset-inplace)
