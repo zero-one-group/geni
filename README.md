@@ -31,6 +31,7 @@ Geni provides an idiomatic Spark interface for Clojure without the hassle of Jav
             <li><a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a></li>
             <li><a href="CODE_OF_CONDUCT.md">Code of Conduct</a></li>
             <li><a href="CONTRIBUTING.md">Contributing Guide</a></li>
+            <li><a href="docs/creating_spark_schemas.md">Creating Spark Schemas</a></li>
             <li><a href="docs/examples.md">Examples</a></li>
             <li><a href="docs/design_goals.md">Design Goals</a></li>
             <li><a href="docs/semantics.md">Geni Semantics</a></li>
@@ -42,7 +43,7 @@ Geni provides an idiomatic Spark interface for Clojure without the hassle of Jav
             <li><a href="docs/spark_session.md">Where's The Spark Session</a></li>
             <li><a href="docs/why.md">Why?</a></li>
             <li><a href="docs/sql_maps.md">Working with SQL Maps</a></li>
-            <li><a href="docs/collect.md">Collect data into Clojure Repl</a></li>
+            <li><a href="docs/collect.md">Collecting Data from Spark Datasets</a></li>
         </ul>
       </td>
       <td>
