@@ -25,10 +25,10 @@ gets translated into:
 
 ```clojure
 (g/struct-type
- (g/struct-field :a :integer true)
- (g/struct-field :b :string true)
+ (g/struct-field :a :int true)
+ (g/struct-field :b :str true)
  (g/struct-field :c (g/array-type :short true) true)
- (g/struct-field :d (g/map-type :string :integer) true)
+ (g/struct-field :d (g/map-type :str :int) true)
  (g/struct-field :e 
                  (g/struct-type 
                   (g/struct-field :x :float true) 
@@ -39,10 +39,10 @@ gets translated into:
 whilst the Clojure version may look cleaner than the original Scala version, Geni offers an even more concise way to specify complex schemas such as the example above and cut through the boilerplates. In particular, we can use Geni's **data-oriented schemas**:
 
 ```clojure
-{:a :long
- :b :string
+{:a :int
+ :b :str
  :c [:short]
- :d [:string :int]
+ :d [:str :int]
  :z {:a :float :b :double}}
 ```
 
