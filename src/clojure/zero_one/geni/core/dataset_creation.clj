@@ -26,6 +26,7 @@
    :long      DataTypes/LongType
    :nil       DataTypes/NullType
    :short     DataTypes/ShortType
+   :str       DataTypes/StringType
    :string    DataTypes/StringType
    :timestamp DataTypes/TimestampType
    :vector    (VectorUDT.)

@@ -31,7 +31,7 @@
     [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
      (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
     {:number :int
-     :word :string
+     :word :str
      :dense :vector
      :sparse :vector}))
   => #(and (= (:number %) "IntegerType")
