@@ -19,6 +19,4 @@
                                                       com.fasterxml.jackson.core/jackson-databind]}
   ;; Optional: Spark XGBoost
   ml.dmlc/xgboost4j-spark_2.12          {:mvn/version "1.0.0"}
-  ml.dmlc/xgboost4j_2.12                {:mvn/version "1.0.0"}
-  ;; Geni
-  zero.one/geni                         {:mvn/version "0.0.34"}}}
+  ml.dmlc/xgboost4j_2.12                {:mvn/version "1.0.0"}}}
