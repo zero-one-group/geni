@@ -3,7 +3,6 @@ VERSION=`cat resources/GENI_REPL_RELEASED_VERSION`
 
 build:
 	cp project.clj docker/project.clj
-	cp examples/geni-clj-app/deps.edn docker/deps.edn
 	docker build -f docker/Dockerfile \
 		-t $(DOCKERNAME):latest \
 		docker
