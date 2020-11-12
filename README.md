@@ -294,12 +294,12 @@ You would also need to add Spark as provided dependencies. For instance, have th
 ```clojure
 :provided
 {:dependencies [;; Spark
-                [org.apache.spark/spark-avro_2.12 "3.0.0"]
-                [org.apache.spark/spark-core_2.12 "3.0.0"]
-                [org.apache.spark/spark-hive_2.12 "3.0.0"]
-                [org.apache.spark/spark-mllib_2.12 "3.0.0"]
-                [org.apache.spark/spark-sql_2.12 "3.0.0"]
-                [org.apache.spark/spark-streaming_2.12 "3.0.0"]
+                [org.apache.spark/spark-avro_2.12 "3.0.1"]
+                [org.apache.spark/spark-core_2.12 "3.0.1"]
+                [org.apache.spark/spark-hive_2.12 "3.0.1"]
+                [org.apache.spark/spark-mllib_2.12 "3.0.1"]
+                [org.apache.spark/spark-sql_2.12 "3.0.1"]
+                [org.apache.spark/spark-streaming_2.12 "3.0.1"]
                 [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                 ; Arrow
                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
@@ -309,10 +309,10 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 ;; Databases
                 [mysql/mysql-connector-java "8.0.22"]
                 [org.postgresql/postgresql "42.2.18"]
-                [org.xerial/sqlite-jdbc "3.32.3.1"]
+                [org.xerial/sqlite-jdbc "3.32.3.2"]
                 ;; Optional: Spark XGBoost
-                [ml.dmlc/xgboost4j-spark_2.12 "1.0.0"]
-                [ml.dmlc/xgboost4j_2.12 "1.0.0"]]}
+                [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
+                [ml.dmlc/xgboost4j_2.12 "1.2.0"]]}
 ```
 
 You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4J models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
