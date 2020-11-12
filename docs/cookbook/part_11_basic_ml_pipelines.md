@@ -101,7 +101,7 @@ When we call `ml/fit` on any pipeline stage (or more precisely any Spark estimat
 ; +------------------+------------------+-----------------+
 ```
 
-See the Spark ML [pipeline guide](https://spark.apache.org/docs/3.0.0/ml-pipeline.html) for a more detailed treatment.
+See the Spark ML [pipeline guide](https://spark.apache.org/docs/latest/ml-pipeline.html) for a more detailed treatment.
 
 Finally, to evaluate the predictions, we can use a regression evaluator:
 

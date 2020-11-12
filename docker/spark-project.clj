@@ -16,7 +16,7 @@
                  [lein-cloverage "1.2.1"]
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
-                 [techascent/tech.ml.dataset "5.00-alpha-22"
+                 [techascent/tech.ml.dataset "5.00-alpha-25"
                   :exclusions [ch.qos.logback/logback-classic]]
                  ;; Spark
                  [org.apache.spark/spark-avro_2.12 "3.0.1"]

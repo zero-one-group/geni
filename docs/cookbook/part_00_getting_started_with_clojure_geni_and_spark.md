@@ -8,7 +8,7 @@ In the following sections, we shall assume a starting point of a clean install o
 
 ### Installation
 
-Clojure requires Java. The latest LTS JDK version that Spark 3.0.0 is JDK 11. For that reason, we recommend using JDK 11. The following command should do the trick:
+Clojure requires Java. The latest LTS JDK version that Spark 3 supports is JDK 11. For that reason, we recommend using JDK 11. The following command should do the trick:
 
 ```bash
 wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
