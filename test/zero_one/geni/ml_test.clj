@@ -259,7 +259,7 @@
   (let [estimator   (ml/random-forest-classifier {})
         model       (ml/fit (libsvm-df) estimator)]
     (fact "Attributes are callable"
-      (ml/feature-importances model) => #(every? double? %)
+      (:values  (ml/feature-importances model)) => #(every? double? %)
       (ml/total-num-nodes model) => int?
       (ml/trees model) => seq?)))
 
@@ -267,7 +267,7 @@
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
     (fact "Attributes are callable"
-      (ml/feature-importances model) => #(every? double? %)
+      (:values (ml/feature-importances model)) => #(every? double? %)
       (ml/total-num-nodes model) => int?
       (ml/trees model) => seq?
       (ml/get-num-trees model) => int?
@@ -718,7 +718,7 @@
           transformed (-> dataset
                           (ml/transform transformer)
                           (g/select "features"))]
-      (->> transformed g/collect-vals flatten) => #(every? double? %)
+      (->> transformed g/collect-vals flatten :values) => #(every? double? %)
       (-> transformer ml/stages last ml/idf-vector) => #(every? double? %)))
   (fact "should be able to fit the word2vec example" :slow
     (let [dataset     (g/table->dataset
