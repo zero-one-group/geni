@@ -229,21 +229,20 @@
     (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write libsvm"
-      (let [temp-file (.toString (create-temp-file! ".libsvm"))
-            read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
-                         (g/read-libsvm! temp-file))]
-        (map  #(get-in % [:features :indices]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :indices]) (g/collect read-df))
-        (map  #(get-in % [:features :values]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :values]) (g/collect read-df))
+  (let [temp-file (.toString (create-temp-file! ".libsvm"))
+        read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
+                     (g/read-libsvm! temp-file))]
+    (map  #(get-in % [:features :indices]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :indices]) (g/collect read-df))
+    (map  #(get-in % [:features :values]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :values]) (g/collect read-df))
 
         ;; (map :indices (g/collect (libsvm-df))) =>  (map :indices (g/collect read-df))
-        )
-      )
+    ))
 
 (fact "Can read and write json"
-      (let [temp-file (.toString (create-temp-file! ".json"))
-            read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
-                         (g/read-json! temp-file))]
-        (g/collect write-df) => (g/collect read-df)))
+  (let [temp-file (.toString (create-temp-file! ".json"))
+        read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
+                     (g/read-json! temp-file))]
+    (g/collect write-df) => (g/collect read-df)))
 
 (fact "Can read and write text"
   (let [write-df  (g/select write-df :Type)

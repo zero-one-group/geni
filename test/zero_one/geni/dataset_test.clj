@@ -534,11 +534,10 @@
       (g/count agged) => #(< % 20)
       (g/count exploded) => 20)))
 
-
 (facts "On sparse vector"
-       (fact "collects sparse data"
-             (let [sparse-df
-                   (g/create-dataframe
-                    [(g/row (g/sparse 4 [1 3] [3.0 4.0]))]
-                    {:test :vector})]
-               (g/collect-col sparse-df :test)   => [{:size 4 :indices [1 3] :values [3.0 4.0]}])))
+  (fact "collects sparse data"
+    (let [sparse-df
+          (g/create-dataframe
+           [(g/row (g/sparse 4 [1 3] [3.0 4.0]))]
+           {:test :vector})]
+      (g/collect-col sparse-df :test)   => [{:size 4 :indices [1 3] :values [3.0 4.0]}])))
