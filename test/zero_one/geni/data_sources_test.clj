@@ -232,7 +232,11 @@
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
         read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
                      (g/read-libsvm! temp-file))]
-    (g/collect (libsvm-df)) => (g/collect read-df)))
+    (map  #(get-in % [:features :indices]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :indices]) (g/collect read-df))
+    (map  #(get-in % [:features :values]) (g/collect (libsvm-df))) => (map  #(get-in % [:features :values]) (g/collect read-df))
+
+        ;; (map :indices (g/collect (libsvm-df))) =>  (map :indices (g/collect read-df))
+    ))
 
 (fact "Can read and write json"
   (let [temp-file (.toString (create-temp-file! ".json"))
