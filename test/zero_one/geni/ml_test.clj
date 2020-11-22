@@ -259,7 +259,7 @@
   (let [estimator   (ml/random-forest-classifier {})
         model       (ml/fit (libsvm-df) estimator)]
     (fact "Attributes are callable"
-      (:values  (ml/feature-importances model)) => #(every? double? %)
+      (:values (ml/feature-importances model)) => #(every? double? %)
       (ml/total-num-nodes model) => int?
       (ml/trees model) => seq?)))
 
