@@ -235,7 +235,6 @@
     (map #(get-in % [:features :indices]) (g/collect (libsvm-df))) => (map #(get-in % [:features :indices]) (g/collect read-df))
     (map #(get-in % [:features :values]) (g/collect (libsvm-df))) => (map #(get-in % [:features :values]) (g/collect read-df))))
 
-
 (fact "Can read and write json"
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
