@@ -22,7 +22,7 @@
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
     [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
 
-(defproject zero.one/geni "0.0.35"
+(defproject zero.one/geni "0.0.37"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
