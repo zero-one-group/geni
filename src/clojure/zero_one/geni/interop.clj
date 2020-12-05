@@ -118,6 +118,11 @@
 (defn vector->seq [spark-vector]
   (-> spark-vector .values seq))
 
+(defn sparse-vector->seq [spark-sparse-vector]
+  {:size (.size spark-sparse-vector)
+   :indices (-> spark-sparse-vector .indices seq)
+   :values (-> spark-sparse-vector .values seq)})
+
 (defn matrix->seqs [matrix]
   (->> matrix .rowIter .toSeq scala-seq->vec (map vector->seq)))
 
@@ -139,7 +144,7 @@
     (scala-map? value)      (scala-map->map value)
     (spark-row? value)      (spark-row->map value)
     (dense-vector? value)   (vector->seq value)
-    (sparse-vector? value)  (vector->seq value)
+    (sparse-vector? value)  (sparse-vector->seq value)
     (dense-matrix? value)   (matrix->seqs value)
     (scala-tuple2? value)   [(->clojure (._1 value)) (->clojure (._2 value))]
     (scala-tuple3? value)   [(->clojure (._1 value))
