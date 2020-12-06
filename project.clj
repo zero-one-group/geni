@@ -29,7 +29,7 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.2"]
-                 [expound "0.8.6"]
+                 [expound "0.8.7"]
                  [metosin/jsonista "0.2.7"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.1.1"]
