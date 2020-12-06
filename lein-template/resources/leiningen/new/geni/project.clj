@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [zero.one/geni "0.0.37"]
                  [metosin/jsonista "0.2.7"]
-                 [expound "0.8.6"]
+                 [expound "0.8.7"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.0.1"]
                  [org.apache.spark/spark-hive_2.12 "3.0.1"]

@@ -11,7 +11,7 @@
                  ;; Dev
                  [criterium "0.4.6"]
                  [enlive "1.1.6"]
-                 [expound "0.8.6"]
+                 [expound "0.8.7"]
                  [lein-ancient "0.6.15"]
                  [lein-cljfmt "0.7.0"]
                  [lein-cloverage "1.2.1"]
