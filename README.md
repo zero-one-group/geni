@@ -309,7 +309,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 ;; Databases
                 [mysql/mysql-connector-java "8.0.22"]
                 [org.postgresql/postgresql "42.2.18"]
-                [org.xerial/sqlite-jdbc "3.32.3.2"]
+                [org.xerial/sqlite-jdbc "3.34.0"]
                 ;; Optional: Spark XGBoost
                 [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
                 [ml.dmlc/xgboost4j_2.12 "1.2.0"]]}

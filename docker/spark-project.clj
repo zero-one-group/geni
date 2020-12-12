@@ -35,7 +35,7 @@
                  ; Databases
                  [mysql/mysql-connector-java "8.0.22"]
                  [org.postgresql/postgresql "42.2.18"]
-                 [org.xerial/sqlite-jdbc "3.32.3.2"]
+                 [org.xerial/sqlite-jdbc "3.34.0"]
                  ; EDN
                  [metosin/jsonista "0.2.7"]
                  ;; Optional: Dataproc
