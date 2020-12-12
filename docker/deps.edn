@@ -10,7 +10,7 @@
   ;; Databases
   mysql/mysql-connector-java            {:mvn/version "8.0.21"}
   org.postgresql/postgresql             {:mvn/version "42.2.16"}
-  org.xerial/sqlite-jdbc                {:mvn/version "3.32.3.2"}
+  org.xerial/sqlite-jdbc                {:mvn/version "3.34.0"}
   ;; Arrow
   org.apache.arrow/arrow-memory-netty   {:mvn/version "2.0.0"}
   org.apache.arrow/arrow-memory-core    {:mvn/version "2.0.0"}

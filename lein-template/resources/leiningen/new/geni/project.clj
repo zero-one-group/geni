@@ -23,7 +23,7 @@
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.22"]
                  [org.postgresql/postgresql "42.2.18"]
-                 [org.xerial/sqlite-jdbc "3.32.3.2"]{{#dataproc?}}
+                 [org.xerial/sqlite-jdbc "3.34.0"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]
                  [com.google.guava/guava "27.0-jre"]{{/dataproc?}}{{#xgboost?}}
