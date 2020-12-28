@@ -37,7 +37,7 @@
                  [org.postgresql/postgresql "42.2.18"]
                  [org.xerial/sqlite-jdbc "3.34.0"]
                  ; EDN
-                 [metosin/jsonista "0.2.7"]
+                 [metosin/jsonista "0.3.0"]
                  ;; Optional: Dataproc
                  [org.apache.spark/spark-yarn_2.12 "3.0.1"]
                  ;; Optional: Spark XGBoost
