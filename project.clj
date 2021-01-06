@@ -3,12 +3,12 @@
     ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
     ; Frozen until issue is resolved.
     ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
-    [org.apache.spark/spark-avro_2.12 "3.0.1"]
-    [org.apache.spark/spark-core_2.12 "3.0.1"]
-    [org.apache.spark/spark-hive_2.12 "3.0.1"]
-    [org.apache.spark/spark-mllib_2.12 "3.0.1"]
-    [org.apache.spark/spark-sql_2.12 "3.0.1"]
-    [org.apache.spark/spark-streaming_2.12 "3.0.1"]
+    [org.apache.spark/spark-avro_2.12 "3.1.0"]
+    [org.apache.spark/spark-core_2.12 "3.1.0"]
+    [org.apache.spark/spark-hive_2.12 "3.1.0"]
+    [org.apache.spark/spark-mllib_2.12 "3.1.0"]
+    [org.apache.spark/spark-sql_2.12 "3.1.0"]
+    [org.apache.spark/spark-streaming_2.12 "3.1.0"]
     ; Arrow
     [org.apache.arrow/arrow-memory-netty "2.0.0"]
     [org.apache.arrow/arrow-memory-core "2.0.0"]
@@ -22,7 +22,7 @@
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
     [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
 
-(defproject zero.one/geni "0.0.37"
+(defproject zero.one/geni "0.0.38"
   :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"

@@ -36,4 +36,5 @@
     (g/column-names (ml/association-rules model)) => ["antecedent"
                                                       "consequent"
                                                       "confidence"
-                                                      "lift"]))
+                                                      "lift"
+                                                      "support"]))
