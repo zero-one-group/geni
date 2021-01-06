@@ -1,5 +1,6 @@
 {:deps
- {io.netty/netty-all                    {:mvn/version "4.1.53.Final"}
+ {org.clojure/clojure                   {:mvn/version "1.10.1"}
+  io.netty/netty-all                    {:mvn/version "4.1.53.Final"}
   ;; Spark
   org.apache.spark/spark-avro_2.12      {:mvn/version "3.1.0"}
   org.apache.spark/spark-core_2.12      {:mvn/version "3.1.0"}
