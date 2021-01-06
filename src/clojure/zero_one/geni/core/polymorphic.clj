@@ -221,18 +221,18 @@
 (defmethod dissoc Dataset [dataframe & col-names]
   (apply dataset/drop dataframe col-names))
 
-(defmulti update
+(defmulti update'
   "Column: `transform-values` with Clojure's `assoc` signature.
 
    Dataset: `with-column` with Clojure's `assoc` signature."
   (fn [head & _] (class head)))
-(defmethod update :default [expr k f & args]
+(defmethod update' :default [expr k f & args]
   (sql/transform-values
    expr
    (fn [k' v] (sql/when (.equalTo (->column k') (->column k))
                 (apply f v args)
                 v))))
-(defmethod update Dataset [dataframe k f & args]
+(defmethod update' Dataset [dataframe k f & args]
   (dataset/with-column dataframe k (apply f k args)))
 
 ;; Pandas
@@ -281,6 +281,7 @@
 (import-fn filter where)
 (import-fn iqr interquartile-range)
 (import-fn mean avg)
+(import-fn update' update)
 
 (comment
   (require '[zero-one.geni.docs :as docs])

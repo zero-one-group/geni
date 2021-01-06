@@ -440,7 +440,7 @@
     (-> (df-20)
         (g/repartition-by-range :Suburb :SellerG)
         g/partitions
-        count) => 7)
+        count) => 6)
   (fact "able to repartition by range by number and columns"
     (-> (df-20)
         (g/repartition-by-range 3 :Suburb :SellerG)

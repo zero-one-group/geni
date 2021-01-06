@@ -8,12 +8,12 @@
                  [metosin/jsonista "0.3.0"]
                  [expound "0.8.7"]
                  ;; Spark
-                 [org.apache.spark/spark-core_2.12 "3.0.1"]
-                 [org.apache.spark/spark-hive_2.12 "3.0.1"]
-                 [org.apache.spark/spark-mllib_2.12 "3.0.1"]
-                 [org.apache.spark/spark-sql_2.12 "3.0.1"]
-                 [org.apache.spark/spark-streaming_2.12 "3.0.1"]
-                 [org.apache.spark/spark-yarn_2.12 "3.0.1"]
+                 [org.apache.spark/spark-core_2.12 "3.1.0"]
+                 [org.apache.spark/spark-hive_2.12 "3.1.0"]
+                 [org.apache.spark/spark-mllib_2.12 "3.1.0"]
+                 [org.apache.spark/spark-sql_2.12 "3.1.0"]
+                 [org.apache.spark/spark-streaming_2.12 "3.1.0"]
+                 [org.apache.spark/spark-yarn_2.12 "3.1.0"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ; Arrow
                  [org.apache.arrow/arrow-memory-netty "2.0.0"]

@@ -1,12 +1,12 @@
 {:deps
  {io.netty/netty-all                    {:mvn/version "4.1.53.Final"}
   ;; Spark
-  org.apache.spark/spark-avro_2.12      {:mvn/version "3.0.1"}
-  org.apache.spark/spark-core_2.12      {:mvn/version "3.0.1"}
-  org.apache.spark/spark-hive_2.12      {:mvn/version "3.0.1"}
-  org.apache.spark/spark-mllib_2.12     {:mvn/version "3.0.1"}
-  org.apache.spark/spark-sql_2.12       {:mvn/version "3.0.1"}
-  org.apache.spark/spark-streaming_2.12 {:mvn/version "3.0.1"}
+  org.apache.spark/spark-avro_2.12      {:mvn/version "3.1.0"}
+  org.apache.spark/spark-core_2.12      {:mvn/version "3.1.0"}
+  org.apache.spark/spark-hive_2.12      {:mvn/version "3.1.0"}
+  org.apache.spark/spark-mllib_2.12     {:mvn/version "3.1.0"}
+  org.apache.spark/spark-sql_2.12       {:mvn/version "3.1.0"}
+  org.apache.spark/spark-streaming_2.12 {:mvn/version "3.1.0"}
   ;; Databases
   mysql/mysql-connector-java            {:mvn/version "8.0.21"}
   org.postgresql/postgresql             {:mvn/version "42.2.16"}

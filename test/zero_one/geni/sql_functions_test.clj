@@ -24,8 +24,8 @@
         :to-2     (g/to-json (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
                              {:timestampFormat "dd/MM/yyyy"})})
       g/collect
-      first) => {:schema-1 "array<struct<col:bigint>>"
-                 :schema-2 "array<struct<col:bigint>>"
+      first) => {:schema-1 "ARRAY<STRUCT<`col`: BIGINT>>"
+                 :schema-2 "ARRAY<STRUCT<`col`: BIGINT>>"
                  :from-1   {:a 1 :b 0.8}
                  :from-2   {:time (Timestamp. 1440547200000)}
                  :to-1 "{\"a\":1,\"b\":2}"
@@ -44,8 +44,8 @@
         :to-2     (g/to-csv (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
                             {:timestampFormat "dd/MM/yyyy"})})
       g/collect
-      first) => {:schema-1 "struct<_c0:int,_c1:string>"
-                 :schema-2 "struct<_c0:int,_c1:string>"
+      first) => {:schema-1 "STRUCT<`_c0`: INT, `_c1`: STRING>"
+                 :schema-2 "STRUCT<`_c0`: INT, `_c1`: STRING>"
                  :from-1   {:a 1 :b 0.8}
                  :from-2   {:time (Timestamp. 1440547200000)}
                  :to-1     "1,2"
@@ -214,7 +214,7 @@
   (-> (df-20)
       (g/cube :SellerG :Regionname)
       (g/agg (g/grouping-id :SellerG :Regionname))
-      g/first-vals) => ["Biggin" "Northern Metropolitan" 0]
+      g/first-vals) => ["Nelson" nil 1]
   (-> (df-20)
       (g/group-by :SellerG)
       (g/agg (-> (g/collect-list :Regionname) (g/as :regions)))
