@@ -14,7 +14,7 @@
                  [expound "0.8.7"]
                  [lein-ancient "0.6.15"]
                  [lein-cljfmt "0.7.0"]
-                 [lein-cloverage "1.2.1"]
+                 [lein-cloverage "1.2.2"]
                  [lein-midje "3.2.1"]
                  [midje "1.9.9"]
                  [techascent/tech.ml.dataset "5.00-alpha-25"

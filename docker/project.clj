@@ -49,7 +49,7 @@
                         [techascent/tech.ml.dataset "5.00-alpha-25"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.6.15"]
-                   [lein-cloverage "1.2.1"]
+                   [lein-cloverage "1.2.2"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
          :cljfmt {:split-keypairs-over-multiple-lines?   false
