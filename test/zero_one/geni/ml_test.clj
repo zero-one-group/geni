@@ -801,6 +801,7 @@
                                               :threshold 0.5,
                                               :fit-intercept true,
                                               :label-col "label",
+                                              :max-block-size-in-mb 0.0
                                               :standardization true,
                                               :probability-col "probability",
                                               :prediction-col "prediction",

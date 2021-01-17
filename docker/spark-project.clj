@@ -20,12 +20,12 @@
                  [techascent/tech.ml.dataset "5.00-alpha-25"
                   :exclusions [ch.qos.logback/logback-classic]]
                  ;; Spark
-                 [org.apache.spark/spark-avro_2.12 "3.0.1"]
-                 [org.apache.spark/spark-core_2.12 "3.0.1"]
-                 [org.apache.spark/spark-hive_2.12 "3.0.1"]
-                 [org.apache.spark/spark-mllib_2.12 "3.0.1"]
-                 [org.apache.spark/spark-sql_2.12 "3.0.1"]
-                 [org.apache.spark/spark-streaming_2.12 "3.0.1"]
+                 [org.apache.spark/spark-avro_2.12 "3.1.0"]
+                 [org.apache.spark/spark-core_2.12 "3.1.0"]
+                 [org.apache.spark/spark-hive_2.12 "3.1.0"]
+                 [org.apache.spark/spark-mllib_2.12 "3.1.0"]
+                 [org.apache.spark/spark-sql_2.12 "3.1.0"]
+                 [org.apache.spark/spark-streaming_2.12 "3.1.0"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ; Arrow
                  [org.apache.arrow/arrow-memory-netty "2.0.0"]
@@ -37,9 +37,9 @@
                  [org.postgresql/postgresql "42.2.18"]
                  [org.xerial/sqlite-jdbc "3.34.0"]
                  ; EDN
-                 [metosin/jsonista "0.2.7"]
+                 [metosin/jsonista "0.3.0"]
                  ;; Optional: Dataproc
-                 [org.apache.spark/spark-yarn_2.12 "3.0.1"]
+                 [org.apache.spark/spark-yarn_2.12 "3.1.0"]
                  ;; Optional: Spark XGBoost
                  [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
                  [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
