@@ -21,7 +21,7 @@
                  [org.apache.arrow/arrow-vector "2.0.0"
                   :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                  ;; Databases
-                 [mysql/mysql-connector-java "8.0.22"]
+                 [mysql/mysql-connector-java "8.0.23"]
                  [org.postgresql/postgresql "42.2.18"]
                  [org.xerial/sqlite-jdbc "3.34.0"]{{#dataproc?}}
                  ;; Dataproc
