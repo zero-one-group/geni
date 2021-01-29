@@ -10,9 +10,9 @@
     [org.apache.spark/spark-sql_2.12 "3.1.0"]
     [org.apache.spark/spark-streaming_2.12 "3.1.0"]
     ; Arrow
-    [org.apache.arrow/arrow-memory-netty "2.0.0"]
-    [org.apache.arrow/arrow-memory-core "2.0.0"]
-    [org.apache.arrow/arrow-vector "2.0.0"
+    [org.apache.arrow/arrow-memory-netty "3.0.0"]
+    [org.apache.arrow/arrow-memory-core "3.0.0"]
+    [org.apache.arrow/arrow-vector "3.0.0"
      :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
     ; Databases
     [mysql/mysql-connector-java "8.0.23"]
@@ -30,11 +30,11 @@
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.2"]
                  [expound "0.8.7"]
-                 [metosin/jsonista "0.3.0"
+                 [metosin/jsonista "0.3.1"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.1.1"]
                  [nrepl "0.8.3"]
-                 [org.clojure/clojure "1.10.1"]
+                 [org.clojure/clojure "1.10.2"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
@@ -48,7 +48,7 @@
                         [midje "1.9.9"]
                         [techascent/tech.ml.dataset "5.00-alpha-25"
                          :exclusions [ch.qos.logback/logback-classic]]]
-         :plugins [[lein-ancient "0.6.15"]
+         :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
                    [lein-midje "3.2.2"]
                    [lein-cljfmt "0.7.0"]]
