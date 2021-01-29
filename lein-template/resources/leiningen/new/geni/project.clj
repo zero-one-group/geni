@@ -3,9 +3,9 @@
   :url "http://example.com/FIXME"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
-  :dependencies [[org.clojure/clojure "1.10.1"]
+  :dependencies [[org.clojure/clojure "1.10.2"]
                  [zero.one/geni "0.0.38"]
-                 [metosin/jsonista "0.3.0"]
+                 [metosin/jsonista "0.3.1"]
                  [expound "0.8.7"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.1.0"]
@@ -16,9 +16,9 @@
                  [org.apache.spark/spark-yarn_2.12 "3.1.0"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ; Arrow
-                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
-                 [org.apache.arrow/arrow-memory-core "2.0.0"]
-                 [org.apache.arrow/arrow-vector "2.0.0"
+                 [org.apache.arrow/arrow-memory-netty "3.0.0"]
+                 [org.apache.arrow/arrow-memory-core "3.0.0"]
+                 [org.apache.arrow/arrow-vector "3.0.0"
                   :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                  ;; Databases
                  [mysql/mysql-connector-java "8.0.23"]
