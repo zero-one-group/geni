@@ -9,6 +9,7 @@ cd "$template_dir"
 lein new geni "$app_name" --force +xgboost
 cd "$app_name"
 lein test
+exit | lein run
 
 mkdir -p target
 lein ancient
