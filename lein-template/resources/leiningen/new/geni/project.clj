@@ -5,7 +5,8 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.2"]
                  [zero.one/geni "0.0.38"]
-                 [metosin/jsonista "0.3.1"]
+                 [metosin/jsonista "0.3.1"
+                  :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [expound "0.8.7"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.1.0"]
