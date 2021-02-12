@@ -7,7 +7,7 @@
                  [zero.one/geni "0.0.38"]
                  [metosin/jsonista "0.3.1"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
-                 [expound "0.8.7"]
+                 [expound "0.8.9"]
                  ;; Spark
                  [org.apache.spark/spark-core_2.12 "3.1.0"]
                  [org.apache.spark/spark-hive_2.12 "3.1.0"]
@@ -41,6 +41,6 @@
                              "{{namespace}}.core"
                              "target/uberjar/{{raw-name}}-standalone.jar"]]}{{/dataproc?}}
   :profiles {:uberjar {:aot :all}
-             :dev {:plugins [[lein-ancient "0.6.15"]]}}
+             :dev {:plugins [[lein-ancient "0.7.0"]]}}
   :main ^:skip-aot {{namespace}}.core
   :target-path "target/%s")
