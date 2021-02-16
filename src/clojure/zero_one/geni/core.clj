@@ -519,6 +519,7 @@
   create-global-temp-view!
   create-or-replace-global-temp-view!
   read-avro!
+  read-binary!
   read-csv!
   read-edn!
   read-jdbc!
