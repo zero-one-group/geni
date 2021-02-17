@@ -74,7 +74,7 @@
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
-   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+   See: https://spark.apache.org/docs/latest/sql-data-sources-parquet.html"
   (fn [head & _] (class head)))
 (defmethod read-parquet! :default
   ([path] (read-parquet! @defaults/spark path))
@@ -82,6 +82,20 @@
 (defmethod read-parquet! SparkSession
   ([spark path] (read-parquet! spark path {}))
   ([spark path options] (read-data! "parquet" spark path options)))
+
+(defmulti read-binary!
+  "Loads a binary file and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources-binaryFile.html"
+  (fn [head & _] (class head)))
+(defmethod read-binary! :default
+  ([path] (read-binary! @defaults/spark path))
+  ([path options] (read-binary! @defaults/spark path options)))
+(defmethod read-binary! SparkSession
+  ([spark path] (read-binary! spark path {}))
+  ([spark path options] (read-data! "binaryFile" spark path options)))
 
 (defmulti read-csv!
   "Loads a CSV file and returns the results as a DataFrame.
@@ -174,7 +188,7 @@
 
    Spark's DataFrameWriter options may be passed in as a map of options.
 
-   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+   See: https://spark.apache.org/docs/latest/sql-data-sources-parquet.html"
   ([dataframe path] (write-parquet! dataframe path {}))
   ([dataframe path options] (write-data! "parquet" dataframe path options)))
 
@@ -201,7 +215,7 @@
 
    Spark's DataFrameWriter options may be passed in as a map of options.
 
-   See: https://spark.apache.org/docs/latest/sql-data-sources.html"
+   See: https://spark.apache.org/docs/latest/sql-data-sources-json.html"
   ([dataframe path] (write-json! dataframe path {}))
   ([dataframe path options] (write-data! "json" dataframe path options)))
 

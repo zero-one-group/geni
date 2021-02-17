@@ -60,6 +60,22 @@
                                     "StructField(rooms,FloatType,true), "
                                     "StructField(bathroom,LongType,true))")})))
 
+(facts "On binary data" :binary
+  (let [binary-file "test/resources/geni.png"
+        selected [:path :length :modificationTime :content]
+        result (-> (g/read-binary! binary-file)
+                   (g/select selected))]
+    (fact "Read binary data"
+      (-> result g/dtypes) => {:path "StringType",
+                               :length "LongType",
+                               :modificationTime "TimestampType",
+                               :content "BinaryType"})
+    (fact "Read binary data - check for size"
+      (-> result
+          g/collect
+          first
+          :length) => 52053)))
+
 (facts "On schema option" :schema
   (let [csv-path "test/resources/sample_csv_data.csv"
         selected [:InvoiceDate :Price]]

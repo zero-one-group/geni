@@ -38,7 +38,7 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.5"]]
+                 [zero.one/fxl "0.0.6"]]
 
   :profiles
   {:provided {:dependencies ~spark-deps}
@@ -46,7 +46,7 @@
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
                         [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.00-alpha-25"
+                        [techascent/tech.ml.dataset "5.00-beta-29"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
