@@ -308,7 +308,7 @@ You would also need to add Spark as provided dependencies. For instance, have th
                 :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                 ;; Databases
                 [mysql/mysql-connector-java "8.0.23"]
-                [org.postgresql/postgresql "42.2.18"]
+                [org.postgresql/postgresql "42.2.19"]
                 [org.xerial/sqlite-jdbc "3.34.0"]
                 ;; Optional: Spark XGBoost
                 [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]

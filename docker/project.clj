@@ -16,7 +16,7 @@
      :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
     ; Databases
     [mysql/mysql-connector-java "8.0.23"]
-    [org.postgresql/postgresql "42.2.18"]
+    [org.postgresql/postgresql "42.2.19"]
     [org.xerial/sqlite-jdbc "3.34.0"]
     ;; Optional: Spark XGBoost
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
@@ -29,7 +29,7 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.2"]
-                 [expound "0.8.7"]
+                 [expound "0.8.9"]
                  [metosin/jsonista "0.3.1"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.1.1"]
@@ -38,7 +38,7 @@
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
-                 [zero.one/fxl "0.0.5"]]
+                 [zero.one/fxl "0.0.6"]]
 
   :profiles
   {:provided {:dependencies ~spark-deps}
@@ -46,7 +46,7 @@
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
                         [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.00-alpha-25"
+                        [techascent/tech.ml.dataset "5.00-beta-29"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
