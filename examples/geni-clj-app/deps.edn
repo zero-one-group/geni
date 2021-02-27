@@ -10,7 +10,7 @@
   org.apache.spark/spark-streaming_2.12 {:mvn/version "3.1.0"}
   ;; Databases
   mysql/mysql-connector-java            {:mvn/version "8.0.23"}
-  org.postgresql/postgresql             {:mvn/version "42.2.16"}
+  org.postgresql/postgresql             {:mvn/version "42.2.19"}
   org.xerial/sqlite-jdbc                {:mvn/version "3.34.0"}
   ;; Arrow
   org.apache.arrow/arrow-memory-netty   {:mvn/version "2.0.0"}

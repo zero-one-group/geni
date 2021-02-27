@@ -34,7 +34,7 @@
                   :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                  ; Databases
                  [mysql/mysql-connector-java "8.0.23"]
-                 [org.postgresql/postgresql "42.2.18"]
+                 [org.postgresql/postgresql "42.2.19"]
                  [org.xerial/sqlite-jdbc "3.34.0"]
                  ; EDN
                  [metosin/jsonista "0.3.0"]
