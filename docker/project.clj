@@ -3,12 +3,12 @@
     ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
     ; Frozen until issue is resolved.
     ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
-    [org.apache.spark/spark-avro_2.12 "3.1.0"]
-    [org.apache.spark/spark-core_2.12 "3.1.0"]
-    [org.apache.spark/spark-hive_2.12 "3.1.0"]
-    [org.apache.spark/spark-mllib_2.12 "3.1.0"]
-    [org.apache.spark/spark-sql_2.12 "3.1.0"]
-    [org.apache.spark/spark-streaming_2.12 "3.1.0"]
+    [org.apache.spark/spark-avro_2.12 "3.1.1"]
+    [org.apache.spark/spark-core_2.12 "3.1.1"]
+    [org.apache.spark/spark-hive_2.12 "3.1.1"]
+    [org.apache.spark/spark-mllib_2.12 "3.1.1"]
+    [org.apache.spark/spark-sql_2.12 "3.1.1"]
+    [org.apache.spark/spark-streaming_2.12 "3.1.1"]
     ; Arrow
     [org.apache.arrow/arrow-memory-netty "3.0.0"]
     [org.apache.arrow/arrow-memory-core "3.0.0"]

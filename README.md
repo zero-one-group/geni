@@ -294,12 +294,12 @@ You would also need to add Spark as provided dependencies. For instance, have th
 ```clojure
 :provided
 {:dependencies [;; Spark
-                [org.apache.spark/spark-avro_2.12 "3.0.1"]
-                [org.apache.spark/spark-core_2.12 "3.0.1"]
-                [org.apache.spark/spark-hive_2.12 "3.0.1"]
-                [org.apache.spark/spark-mllib_2.12 "3.0.1"]
-                [org.apache.spark/spark-sql_2.12 "3.0.1"]
-                [org.apache.spark/spark-streaming_2.12 "3.0.1"]
+                [org.apache.spark/spark-avro_2.12 "3.1.1"]
+                [org.apache.spark/spark-core_2.12 "3.1.1"]
+                [org.apache.spark/spark-hive_2.12 "3.1.1"]
+                [org.apache.spark/spark-mllib_2.12 "3.1.1"]
+                [org.apache.spark/spark-sql_2.12 "3.1.1"]
+                [org.apache.spark/spark-streaming_2.12 "3.1.1"]
                 [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                 ; Arrow
                 [org.apache.arrow/arrow-memory-netty "2.0.0"]
