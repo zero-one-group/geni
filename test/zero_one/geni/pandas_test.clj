@@ -13,10 +13,11 @@
       (set)) => #{"ABC" "Jellis" "Greg" "LITTLE" "Collins"}
   (-> (df-20)
       (g/select :SellerG)
-      (g/with-column :SellerG (g/replace :SellerG {"Biggin" "XYZ" "Nelson" "XYZ"}))
+      (g/with-column :SellerG (g/replace :SellerG {"Biggin" "XYZ"
+                                                   ["Nelson" "LITTLE"] "DEF"}))
       (g/distinct)
       (g/collect-col :SellerG)
-      (set)) => #{"XYZ" "Jellis" "Greg" "LITTLE" "Collins"})
+      (set)) => #{"XYZ" "Jellis" "Greg" "DEF" "Collins"})
 
 (fact "On cut" :slow
   (-> (df-20)
