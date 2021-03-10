@@ -2,6 +2,7 @@
 ;; https://numpy.org/doc/
 ;; https://pandas.pydata.org/docs/
 (ns zero-one.geni.core.foreign-idioms
+  (:refer-clojure :exclude [replace])
   (:require
    [clojure.string :as string]
    [potemkin :refer [import-fn]]
@@ -9,9 +10,10 @@
    [zero-one.geni.core.data-sources :as data-sources]
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
-   [zero-one.geni.core.polymorphic :as polymorphic]
    [zero-one.geni.core.functions :as sql]
-   [zero-one.geni.core.window :as window])
+   [zero-one.geni.core.polymorphic :as polymorphic]
+   [zero-one.geni.core.window :as window]
+   [zero-one.geni.utils :as utils])
   (:import
    (org.apache.spark.sql Column functions)))
 
@@ -170,6 +172,17 @@
                       (concat bins [Double/POSITIVE_INFINITY]))]
     (.as (apply polymorphic/coalesce cut-cols)
          (format "cut(%s, %s)" (.toString col) (str bins)))))
+
+(defn replace
+  "Returns a new Column where `from-value-or-values` is replaced with `to-value`."
+  ([expr lookup-map]
+   (reduce-kv (fn [column from to] (replace column from to)) expr lookup-map))
+  ([expr from-value-or-values to-value]
+   (let [from-values (utils/ensure-coll from-value-or-values)]
+     (sql/when
+      (column/isin expr from-values)
+       (column/lit to-value)
+       expr))))
 
 ;; Tech ML
 (defn- apply-options [dataset options]
