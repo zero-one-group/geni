@@ -6,7 +6,6 @@
   (:require
    [clojure.string :as string]
    [potemkin :refer [import-fn]]
-   [zero-one.geni.core.clojure-idioms :as clojure-idioms]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.data-sources :as data-sources]
    [zero-one.geni.core.dataset :as dataset]
@@ -177,8 +176,7 @@
 (defn replace
   "Returns a new Column where `from-value-or-values` is replaced with `to-value`."
   ([expr lookup-map]
-   (let [case-clauses (->> lookup-map seq flatten (map column/lit))]
-     (apply clojure-idioms/case expr (concat case-clauses [expr]))))
+   (reduce-kv (fn [column from to] (replace column from to)) expr lookup-map))
   ([expr from-value-or-values to-value]
    (let [from-values (utils/ensure-coll from-value-or-values)]
      (sql/when
