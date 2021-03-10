@@ -514,7 +514,7 @@
   (ml/params (ml/stop-words-remover {:case-sensitive true}))
   => #(= (:case-sensitive %) true)
   (ml/stop-words-remover {})
-  => #(and (instance? StopWordsRemover %))
+  => #(instance? StopWordsRemover %)
   (-> (ml/stop-words-remover {}) ml/params :stop-words count)
   => 181
 
