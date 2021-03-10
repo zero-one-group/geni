@@ -4,13 +4,19 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.test-resources :refer [df-20]]))
 
-(fact "On replace" :testing
+(fact "On replace"
   (-> (df-20)
       (g/select :SellerG)
       (g/with-column :SellerG (g/replace :SellerG ["Biggin" "Nelson"] "ABC"))
       (g/distinct)
       (g/collect-col :SellerG)
-      (set)) => #{"ABC" "Jellis" "Greg" "LITTLE" "Collins"})
+      (set)) => #{"ABC" "Jellis" "Greg" "LITTLE" "Collins"}
+  (-> (df-20)
+      (g/select :SellerG)
+      (g/with-column :SellerG (g/replace :SellerG {"Biggin" "XYZ" "Nelson" "XYZ"}))
+      (g/distinct)
+      (g/collect-col :SellerG)
+      (set)) => #{"XYZ" "Jellis" "Greg" "LITTLE" "Collins"})
 
 (fact "On cut" :slow
   (-> (df-20)
