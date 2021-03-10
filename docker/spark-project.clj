@@ -3,7 +3,7 @@
                  [camel-snake-kebab "0.4.2"]
                  [com.taoensso/nippy "3.1.1"]
                  [nrepl "0.8.3"]
-                 [org.clojure/clojure "1.10.1"]
+                 [org.clojure/clojure "1.10.3"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
@@ -16,8 +16,8 @@
                  [lein-cljfmt "0.7.0"]
                  [lein-cloverage "1.2.2"]
                  [lein-midje "3.2.1"]
-                 [midje "1.9.9"]
-                 [techascent/tech.ml.dataset "5.01"
+                 [midje "1.9.10"]
+                 [techascent/tech.ml.dataset "5.04"
                   :exclusions [ch.qos.logback/logback-classic]]
                  ;; Spark
                  [org.apache.spark/spark-avro_2.12 "3.1.1"]

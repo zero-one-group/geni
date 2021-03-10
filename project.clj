@@ -34,7 +34,7 @@
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.1.1"]
                  [nrepl "0.8.3"]
-                 [org.clojure/clojure "1.10.2"]
+                 [org.clojure/clojure "1.10.3"]
                  [org.clojure/java.data "1.0.86"]
                  [potemkin "0.4.5"]
                  [reply "0.4.4" :exclusions [javax.servlet/servlet-api]]
@@ -45,8 +45,8 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
-                        [midje "1.9.9"]
-                        [techascent/tech.ml.dataset "5.01"
+                        [midje "1.9.10"]
+                        [techascent/tech.ml.dataset "5.04"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
