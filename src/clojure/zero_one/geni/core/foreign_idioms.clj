@@ -180,7 +180,7 @@
   ([expr from-value-or-values to-value]
    (let [from-values (utils/ensure-coll from-value-or-values)]
      (sql/when
-       (column/isin expr from-values)
+      (column/isin expr from-values)
        (column/lit to-value)
        expr))))
 
