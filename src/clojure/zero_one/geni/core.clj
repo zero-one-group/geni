@@ -54,6 +54,7 @@
                             range
                             remove
                             rename-keys
+                            replace
                             reverse
                             second
                             select-keys
@@ -630,6 +631,7 @@
   random-norm
   random-uniform
   rchoice
+  replace
   rexp
   rnorm
   runif
