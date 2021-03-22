@@ -54,7 +54,8 @@
 (comment
 
   (require '[zero-one.geni.test-resources :refer [melbourne-df]])
-  (def dataframe melbourne-df)
+
+  (def dataframe (melbourne-df))
   (-> dataframe g/count)
   (-> dataframe g/print-schema)
 
@@ -68,10 +69,10 @@
   (require '[clojure.pprint])
   (require '[clojure.reflect :as r])
   (->> (r/reflect Long)
-       ;:members
-       ;(filter #(= (:name %) 'socketTextStream))
-       ;(mapv :name)
-       ;sort
+       ;;:members
+       ;;(filter #(= (:name %) 'socketTextStream))
+       ;;(mapv :name)
+       ;;sort
        clojure.pprint/pprint)
 
   0)

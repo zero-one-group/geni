@@ -6,7 +6,7 @@
    [zero-one.geni.test-resources :refer [melbourne-df]]))
 
 (def dataframe
-  (-> melbourne-df
+  (-> (melbourne-df)
       (g/limit 3)
       (g/select
        {:location (g/map (g/lit "suburb") :Suburb

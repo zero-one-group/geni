@@ -2,13 +2,23 @@
 
 Spark makes available a number of [functions](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/functions$.html) that operate on SQL maps. Geni makes all these functions available in the core namespace. On top of that, Geni also adds a number of synonyms from Clojure core's map functions.
 
+The examples assume the following required namespaces:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+(require '[zero-one.geni.ml :as ml])
+(require '[zero-one.geni.test-resources :refer [melbourne-df]])
+```
+
 ## Creating Map Columns
 
 We can create map types using `map`, `map-from-entries` and `map-from-arrays` as follows:
 
+Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
+
 ```clojure
 (def dataframe
-  (-> melbourne-df
+  (-> (melbourne-df)
       (g/limit 2)
       (g/select
         {:location (g/map (g/lit "suburb") :Suburb
