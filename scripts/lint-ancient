@@ -16,8 +16,9 @@ fi
 lein cljfmt check src test docs
 
 # Ancient
-mkdir -p target
-lein ancient
-
-mkdir -p target
-lein ancient :plugins
+# NOTE: temporarily disabled until active development period
+# mkdir -p target
+# lein ancient
+# 
+# mkdir -p target
+# lein ancient :plugins
