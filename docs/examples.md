@@ -195,20 +195,31 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> sentence-data
     (ml/transform pipeline-model)
     (g/collect-col :features))
-; => ((0.6931471805599453
-;      0.6931471805599453
-;      0.28768207245178085
-;      1.3862943611198906)
-;     (0.6931471805599453
-;      0.6931471805599453
-;      0.8630462173553426
-;      0.28768207245178085
-;      0.28768207245178085)
-;     (0.6931471805599453
-;      0.6931471805599453
-;      0.28768207245178085
-;      0.28768207245178085
-;      0.6931471805599453))
+    
+;; => ({:size 20,
+;;      :indices (6 8 13 16),
+;;      :values
+;;      (0.28768207245178085
+;;       0.6931471805599453
+;;       0.28768207245178085
+;;       0.5753641449035617)}
+;;     {:size 20,
+;;      :indices (0 2 7 13 15 16),
+;;      :values
+;;      (0.6931471805599453
+;;       0.6931471805599453
+;;       1.3862943611198906
+;;       0.28768207245178085
+;;       0.6931471805599453
+;;       0.28768207245178085)}
+;;     {:size 20,
+;;      :indices (3 4 6 11 19),
+;;      :values
+;;      (0.6931471805599453
+;;       0.6931471805599453
+;;       0.28768207245178085
+;;       0.6931471805599453
+;;       0.6931471805599453)})
 ```
 
 #### PCA
@@ -229,6 +240,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> dataframe
     (ml/transform pca)
     (g/collect-col :pca-features))
+
 ;; => ((1.6485728230883807 -4.013282700516296 -5.524543751369388)
 ;;     (-4.645104331781534 -1.1167972663619026 -5.524543751369387)
 ;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
@@ -243,12 +255,13 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                        :with-std true
                        :with-mean false}))
 
-(def scaler-model (ml/fit libsvm-df scaler))
+(def scaler-model (ml/fit (libsvm-df) scaler))
 
-(-> libsvm-df
+(-> (libsvm-df)
     (ml/transform scaler-model)
     (g/limit 1)
     (g/collect-col :scaled-features))
+
 ;; => ((0.5468234998110156
 ;;      1.5923262059067456
 ;;      2.435399721310935
