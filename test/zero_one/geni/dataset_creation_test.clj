@@ -139,7 +139,17 @@
                    [{:a 1 :c "a"}
                     {:a 4 :b 5.0}])]
       (g/column-names dataset) => ["a" "c" "b"]
-      (g/collect-vals dataset) => [[1 "a" nil] [4 nil 5.0]])))
+      (g/collect-vals dataset) => [[1 "a" nil] [4 nil 5.0]]))
+  (fact "should work for bool columns"
+      (let [dataset (g/records->dataset
+                      @tr/spark
+                      [{:i 0 :s "A" :b false}
+                       {:i 1 :s "B" :b false}
+                       {:i 2 :s "C" :b false}])]
+        (instance? Dataset dataset) => true
+        (g/collect-vals dataset) => [[0 "A" false]
+                                     [1 "B" false]
+                                     [2 "C" false]])))
 
 (facts "On table->dataset"
   (fact "should create the right dataset"
