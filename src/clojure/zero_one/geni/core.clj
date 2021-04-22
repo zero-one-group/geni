@@ -480,6 +480,7 @@
   rollup
   sample
   sample-by
+  schema
   select
   select-expr
   show

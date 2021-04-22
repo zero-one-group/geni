@@ -13,7 +13,8 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
-   (org.apache.spark.sql Column)))
+    (org.apache.spark.sql Column Dataset)
+    (org.apache.spark.sql.types StructType)))
 
 ;;;; Actions
 (defn- collected->maps [collected]
@@ -37,6 +38,10 @@
 
 (defn take [dataframe n-rows]
   (-> dataframe (.take n-rows) collected->maps))
+
+(defn schema ^StructType
+  [^Dataset dataframe]
+  (.schema dataframe))
 
 (defn show
   ([dataframe] (show dataframe {}))
