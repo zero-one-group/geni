@@ -384,3 +384,31 @@
   view, e.g. `SELECT * FROM global_temp.view1`."
   [^Dataset dataframe ^String view-name]
   (.createOrReplaceGlobalTempView dataframe view-name))
+
+
+;; Delta
+(defmulti read-delta!
+  "Loads a delta table from a directory and returns the results as a DataFrame.
+
+   Spark's DataFrameReader options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html
+   See: https://docs.delta.io/latest/quick-start.html#read-data"
+  (fn [head & _] (class head)))
+(defmethod read-delta! :default
+  ([path] (read-delta! @defaults/spark path))
+  ([path options] (read-delta! @defaults/spark path options)))
+(defmethod read-delta! SparkSession
+  ([spark path] (read-delta! spark path {}))
+  ([spark path options] (read-data! "delta" spark path options)))
+
+
+(defn write-delta!
+  "Writes a delta table at the specified path.
+
+   Spark's DataFrameWriter options may be passed in as a map of options.
+
+   See: https://spark.apache.org/docs/latest/sql-data-sources.html
+   See: https://docs.delta.io/latest/quick-start.html#create-a-table"
+  ([dataframe path] (write-delta! dataframe path {}))
+  ([dataframe path options] (write-data! "delta" dataframe path options)))
