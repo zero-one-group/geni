@@ -41,6 +41,10 @@
                :timestamp (long (Integer/parseInt (nth row 3)))}))
        (g/records->dataset @spark)))
 
+(defn join-paths ^String
+  [root & path-parts]
+  (.toString (Paths/get root (into-array String path-parts))))
+
 (def -tmp-dir-attr
   (into-array FileAttribute '()))
 
@@ -66,11 +70,11 @@
       (recursive-delete-dir wh-dir))))
 
 (def test-warehouses-root
-  (str (Paths/get (.getAbsolutePath (io/file "")) (into-array String ["spark-warehouses"]))))
+  (join-paths (System/getProperty "user.dir") "spark-warehouses"))
 
 (defn rand-wh-path
   []
-  (str "file:" (Paths/get test-warehouses-root (into-array String [(str (UUID/randomUUID))]))))
+  (str "file:" (join-paths test-warehouses-root (str (UUID/randomUUID)))))
 
 (defn reset-session!
   []
