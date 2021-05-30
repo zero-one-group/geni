@@ -5,25 +5,25 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [zero.one/geni "0.0.38"]
-                 [metosin/jsonista "0.3.1"
+                 [metosin/jsonista "0.3.3"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [expound "0.8.9"]
                  ;; Spark
-                 [org.apache.spark/spark-core_2.12 "3.1.1"]
-                 [org.apache.spark/spark-hive_2.12 "3.1.1"]
-                 [org.apache.spark/spark-mllib_2.12 "3.1.1"]
-                 [org.apache.spark/spark-sql_2.12 "3.1.1"]
-                 [org.apache.spark/spark-streaming_2.12 "3.1.1"]
-                 [org.apache.spark/spark-yarn_2.12 "3.1.1"]
+                 [org.apache.spark/spark-core_2.12 "3.1.2"]
+                 [org.apache.spark/spark-hive_2.12 "3.1.2"]
+                 [org.apache.spark/spark-mllib_2.12 "3.1.2"]
+                 [org.apache.spark/spark-sql_2.12 "3.1.2"]
+                 [org.apache.spark/spark-streaming_2.12 "3.1.2"]
+                 [org.apache.spark/spark-yarn_2.12 "3.1.2"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ; Arrow
-                 [org.apache.arrow/arrow-memory-netty "3.0.0"]
-                 [org.apache.arrow/arrow-memory-core "3.0.0"]
-                 [org.apache.arrow/arrow-vector "3.0.0"
+                 [org.apache.arrow/arrow-memory-netty "4.0.0"]
+                 [org.apache.arrow/arrow-memory-core "4.0.0"]
+                 [org.apache.arrow/arrow-vector "4.0.0"
                   :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
                  ;; Databases
-                 [mysql/mysql-connector-java "8.0.23"]
-                 [org.postgresql/postgresql "42.2.19"]
+                 [mysql/mysql-connector-java "8.0.25"]
+                 [org.postgresql/postgresql "42.2.20"]
                  [org.xerial/sqlite-jdbc "3.34.0"]{{#dataproc?}}
                  ;; Dataproc
                  [org.apache.hadoop/hadoop-client "3.2.1"]

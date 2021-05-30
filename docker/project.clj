@@ -30,7 +30,7 @@
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.2"]
                  [expound "0.8.9"]
-                 [metosin/jsonista "0.3.1"
+                 [metosin/jsonista "0.3.3"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.taoensso/nippy "3.1.1"]
                  [nrepl "0.8.3"]
@@ -45,8 +45,8 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
-                        [midje "1.9.10"]
-                        [techascent/tech.ml.dataset "5.11"
+                        [midje "1.10.3"]
+                        [techascent/tech.ml.dataset "5.21"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
