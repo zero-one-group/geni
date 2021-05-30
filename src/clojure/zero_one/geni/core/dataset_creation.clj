@@ -142,7 +142,7 @@
    (mapv infer-struct-field col-names values)))
 
 (defn- first-non-nil [values]
-  (first (filter identity values)))
+  (first (filter (complement nil?) values)))
 
 (defn- transpose [xs]
   (apply map list xs))
