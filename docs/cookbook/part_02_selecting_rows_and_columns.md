@@ -63,6 +63,7 @@ By default, Spark only shows the top 20 rows. We can see that there are 111069 r
 As before, we can check out the schema:
 
 ```clojure
+(g/print-schema raw-complaints)
 ; root
 ;  |-- Unique Key: string (nullable = true)
 ;  |-- Created Date: string (nullable = true)
