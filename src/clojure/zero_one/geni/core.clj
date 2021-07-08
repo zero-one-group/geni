@@ -97,6 +97,8 @@
  [zero-one.geni.spark
   create-spark-session
   spark-conf
+  set-settings
+  with-settings
   sql])
 
 (import-vars
@@ -480,6 +482,7 @@
   rollup
   sample
   sample-by
+  schema
   select
   select-expr
   show
@@ -522,6 +525,7 @@
   read-avro!
   read-binary!
   read-csv!
+  read-delta!
   read-edn!
   read-jdbc!
   read-json!
@@ -532,6 +536,7 @@
   read-xlsx!
   write-avro!
   write-csv!
+  write-delta!
   write-edn!
   write-jdbc!
   write-json!

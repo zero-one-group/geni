@@ -4,6 +4,7 @@
    [clojure.java.data :as j]
    [clojure.string :refer [replace-first]]
    [clojure.walk :as walk]
+   [clojure.reflect :refer [resolve-class]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.utils :refer [ensure-coll]])
   (:import
@@ -20,8 +21,9 @@
           Function3
           Tuple2
           Tuple3)
-   (scala.collection JavaConversions Map Seq)
-   (scala.collection.convert Wrappers$IterableWrapper)))
+   (scala.collection Map Seq)
+   (scala.collection.convert Wrappers$IterableWrapper)
+   (scala.collection JavaConverters)))
 
 (declare ->clojure)
 
@@ -44,15 +46,15 @@
   (instance? Tuple3 value))
 
 (defn scala-seq->vec [scala-seq]
-  (vec (JavaConversions/seqAsJavaList scala-seq)))
+  (-> scala-seq (JavaConverters/seqAsJavaList) vec))
 
 (defn scala-map->map [^Map m]
   (into {}
-        (for [[k v] (JavaConversions/mapAsJavaMap m)]
+        (for [[k v] (JavaConverters/mapAsJavaMap m)]
           [k (->clojure v)])))
 
 (defn ->scala-seq [coll]
-  (JavaConversions/asScalaBuffer (seq coll)))
+  (JavaConverters/asScalaBuffer (seq coll)))
 
 (defn ->scala-tuple2 [coll]
   (Tuple2. (first coll) (second coll)))
@@ -74,6 +76,13 @@
 
 (defn ->scala-function3 [f]
   (reify Function3 (apply [_ x y z] (f x y z))))
+
+(defn ->scala-map
+  [m]
+  (JavaConverters/mapAsScalaMap m))
+
+(defn class-exists? [c]
+  (resolve-class (.getContextClassLoader (Thread/currentThread)) c))
 
 (defn optional->nillable [value]
   (when (.isPresent value)

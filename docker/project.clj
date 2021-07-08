@@ -9,6 +9,7 @@
     [org.apache.spark/spark-mllib_2.12 "3.1.1"]
     [org.apache.spark/spark-sql_2.12 "3.1.1"]
     [org.apache.spark/spark-streaming_2.12 "3.1.1"]
+    [io.delta/delta-core_2.12 "0.8.0"]
     ; Arrow
     [org.apache.arrow/arrow-memory-netty "3.0.0"]
     [org.apache.arrow/arrow-memory-core "3.0.0"]

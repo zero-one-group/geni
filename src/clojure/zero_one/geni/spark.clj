@@ -43,6 +43,32 @@
        .getConf
        interop/spark-conf->map))
 
+(defn set-settings
+  "Set the given spark session settings. Return the spark-session.
+
+  The spark-session configuration is mutable, and thus these settings are applied in-place.
+  "
+  [spark-session settings]
+  (reduce-kv (fn [sess k v] (-> sess .conf (.set (name k) v)))
+             spark-session
+             settings))
+
+(defn with-settings
+  "Temporarily sets the given spark session `settings`, runs the function `f`,
+  and then reverts the spark session settings to their original values.
+
+  `The function `f` should take 1 argument, the spark session with the temporary
+  settings set.
+
+  This is an unsafe operation when sharing a single spark session across multiple
+  threads."
+  [spark-session settings f]
+  (let [current-settings (select-keys (spark-conf spark-session) (keys settings))
+        session-with-settings (set-settings spark-session settings)
+        result (f session-with-settings)]
+    (set-settings session-with-settings current-settings)
+    result))
+
 (defn sql
   "Executes a SQL query using Spark, returning the result as a `DataFrame`.
 

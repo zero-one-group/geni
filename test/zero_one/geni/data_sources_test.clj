@@ -5,13 +5,16 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.catalog :as c]
    [zero-one.geni.test-resources :refer [create-temp-file!
+                                         create-temp-dir!
+                                         join-paths
                                          melbourne-df
                                          libsvm-df
                                          spark
                                          reset-session!
                                          delete-warehouse!]])
   (:import
-   (org.apache.spark.sql AnalysisException)))
+    (org.apache.spark.sql AnalysisException)
+    (java.nio.file Paths Path FileSystem)))
 
 (def write-df
   (-> (melbourne-df) (g/select :Method :Type) (g/limit 5)))
@@ -298,3 +301,9 @@
         (g/write-table! dataset table-name)
         (c/table-exists? (c/catalog @spark) "tbl") => true
         (g/collect (g/order-by (g/read-table! table-name) :id)) => (g/collect (g/order-by (g/to-df dataset) :id))))))
+
+(fact "Can read and write Delta tables"
+  (let [temp-dir (.toString (join-paths (.toString (create-temp-dir!)) "delta_test"))
+        read-df (do (g/write-delta! write-df temp-dir {:mode "overwrite"})
+                    (g/read-delta! temp-dir))]
+      (g/collect write-df) => (g/collect read-df)))
