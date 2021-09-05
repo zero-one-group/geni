@@ -25,20 +25,41 @@
     => {:j "FloatType"}))
 
 (fact "can instantiate dataframe with data-oriented schema" :schema
-  (g/dtypes
-   (g/create-dataframe
-    @tr/spark
-    [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
-     (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
-    {:number :int
-     :word :str
-     :dense :vector
-     :sparse :vector}))
-  => #(and (= (:number %) "IntegerType")
-           (= (:word %) "StringType")
-           (includes? (:dense %) "VectorUDT")
-           (includes? (:sparse %) "VectorUDT")
-           (= (set (keys %)) #{:dense :number :sparse :word})))
+  (fact "of simple data type fields"
+    (g/dtypes
+     (g/create-dataframe
+      @tr/spark
+      [(g/row 32 "horse")
+       (g/row 64 "mouse")]
+      {:number :int :word :str}))
+    => {:number "IntegerType"
+        :word "StringType"})
+  (fact "of vector fields"
+    (g/dtypes
+     (g/create-dataframe
+      @tr/spark
+      [(g/row (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
+       (g/row (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
+      {:dense :vector :sparse :vector}))
+    => #(and (includes? (:dense %) "VectorUDT")
+             (includes? (:sparse %) "VectorUDT")
+             (= (set (keys %)) #{:dense :sparse})))
+  (fact "of struct fields"
+    (g/dtypes
+     (g/create-dataframe
+      @tr/spark
+      [(g/row (g/row 27 42))
+       (g/row (g/row 57 18))]
+      {:coord {:x :int :y :int}}))
+    => {:coord "StructType(StructField(x,IntegerType,true), StructField(y,IntegerType,true))"})
+  (fact "of struct array fields"
+    (g/dtypes
+     (g/create-dataframe
+      @tr/spark
+      [(g/row [(g/row 27 42)])
+       (g/row [(g/row 57 18)])]
+      {:coords [{:x :int :y :int}]}))
+    => {:coords "ArrayType(StructType(StructField(x,IntegerType,true), StructField(y,IntegerType,true)),true)"}))
 
 (facts "On building blocks"
   (fact "can instantiate vectors"

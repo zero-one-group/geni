@@ -50,9 +50,10 @@
   "Creates an ArrayType by specifying the data type of elements `val-type` and
    whether the array contains null values `nullable`."
   [val-type nullable]
-  (DataTypes/createArrayType
-   (data-type->spark-type val-type)
-   nullable))
+  (let [spark-type (if (instance? DataType val-type)
+                     val-type
+                     (data-type->spark-type val-type))]
+    (DataTypes/createArrayType spark-type nullable)))
 
 (defn map-type
   "Creates a MapType by specifying the data type of keys `key-type`, the data type
