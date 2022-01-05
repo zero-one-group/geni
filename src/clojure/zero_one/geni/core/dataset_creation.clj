@@ -129,8 +129,11 @@
    SparseVector       (VectorUDT.)
    nil                DataTypes/NullType})
 
+(declare infer-schema infer-spark-type)
+
 (defn- infer-spark-type [value]
   (cond
+    (map? value) (infer-schema (map name (keys value)) (vals value))
     (coll? value) (ArrayType. (infer-spark-type (first value)) true)
     :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
 
@@ -147,6 +150,13 @@
 
 (defn- transpose [xs]
   (apply map list xs))
+
+(defn- transform-maps
+  [value]
+  (cond
+    (map? value) (interop/->spark-row (transform-maps (vals value)))
+    (coll? value) (map transform-maps value)
+    :else value))
 
 (defn table->dataset
   "Construct a Dataset from a collection of collections.
@@ -166,7 +176,7 @@
      (.emptyDataFrame spark)
      (let [col-names (map name col-names)
            values    (map first-non-nil (transpose table))
-           rows      (interop/->java-list (map interop/->spark-row table))
+           rows      (interop/->java-list (map interop/->spark-row (transform-maps table)))
            schema    (infer-schema col-names values)]
        (.createDataFrame spark rows schema)))))
 

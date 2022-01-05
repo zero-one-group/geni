@@ -170,7 +170,23 @@
       (instance? Dataset dataset) => true
       (g/collect-vals dataset) => [[0 "A" false]
                                    [1 "B" false]
-                                   [2 "C" false]])))
+                                   [2 "C" false]]))
+  (fact "should work for map columns"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b {:z ["a" "b"]}}
+                    {:i 1 :s "B" :b {:z ["c" "d"]}}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" {:z ["a" "b"]}]
+                                   [1 "B" {:z ["c" "d"]}]]))
+  (fact "should work for list of map columns"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b [{:z 1} {:z 2}]}
+                    {:i 1 :s "B" :b [{:z 3}]}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" [{:z 1} {:z 2}]]
+                                   [1 "B" [{:z 3}]]])))
 
 (facts "On table->dataset"
   (fact "should create the right dataset"
@@ -181,7 +197,28 @@
                    [:a :b :c])]
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b" "c"]
-      (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]])))
+      (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]]))
+  (fact "should create the right schema for maps"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[1 {:z ["a"]}]
+                    [4 {:z ["b" "c"]}]]
+                   [:a :b])]
+      (instance? Dataset dataset) => true
+      (g/column-names dataset) => ["a" "b"]
+      (g/dtypes dataset) => {:a "LongType"
+                             :b "StructType(StructField(z,ArrayType(StringType,true),true))"}))
+  (fact "should create the right schema for list of maps"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[1 [{:z 1} {:z 2}]]
+                    [4 [{:z 3} {:z 4}]]]
+                   [:a :b])]
+      (instance? Dataset dataset) => true
+      (g/column-names dataset) => ["a" "b"]
+      (println (g/dtypes dataset))
+      (g/dtypes dataset) => {:a "LongType"
+                             :b "ArrayType(StructType(StructField(z,LongType,true)),true)"})))
 
 (facts "On spark range"
   (fact "should create simple datasets"
