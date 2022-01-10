@@ -170,7 +170,64 @@
       (instance? Dataset dataset) => true
       (g/collect-vals dataset) => [[0 "A" false]
                                    [1 "B" false]
-                                   [2 "C" false]])))
+                                   [2 "C" false]]))
+  (fact "should work for map columns"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b {:z ["a" "b"]}}
+                    {:i 1 :s "B" :b {:z ["c" "d"]}}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" {:z ["a" "b"]}]
+                                   [1 "B" {:z ["c" "d"]}]]))
+  (fact "should work for map columns with missing keys"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b {:z ["a" "b"]}}
+                    {:i 1 :s "B" :b {:z ["c" "d"] :y true}}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" {:z ["a" "b"] :y nil}]
+                                   [1 "B" {:z ["c" "d"] :y true}]]))
+  (fact "should work for map columns with list of maps inside"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b {:z [{:g 3}]}}
+                    {:i 1 :s "B" :b {:z [{:g 5} {:h true}]}}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" {:z [{:g 3 :h nil}]}]
+                                   [1 "B" {:z [{:g 5 :h nil} {:g nil :h true}]}]]))
+  (fact "should work for list of map columns"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b [{:z 1} {:z 2}]}
+                    {:i 1 :s "B" :b [{:z 3}]}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" [{:z 1} {:z 2}]]
+                                   [1 "B" [{:z 3}]]]))
+  (fact "should work for list of map columns with missing keys in latter entries"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b [{:z 1 :y true} {:z 2}]}
+                    {:i 1 :s "B" :b [{:z 3}]}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" [{:z 1 :y true} {:z 2 :y nil}]]
+                                   [1 "B" [{:z 3 :y nil}]]]))
+  (fact "should work for list of map columns with missing keys in prior entries"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :s "A" :b [{:z 1} {:z 2 :y true}]}
+                    {:i 1 :s "B" :b [{:z 3}]}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 "A" [{:z 1 :y nil} {:z 2 :y true}]]
+                                   [1 "B" [{:z 3 :y nil}]]]))
+  (fact "should work for list of list of maps with missing keys"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i 0 :b [[{:z 1} {:z 2}] [{:h true}]]}
+                    {:i 1 :b [[{:g 3.0}]]}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[0 [[{:z 1 :h nil :g nil} {:z 2 :h nil :g nil}]
+                                       [{:z nil :h true :g nil}]]]
+                                   [1 [[{:z nil :h nil :g 3.0}]]]])))
 
 (facts "On table->dataset"
   (fact "should create the right dataset"
@@ -181,7 +238,37 @@
                    [:a :b :c])]
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b" "c"]
-      (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]])))
+      (g/collect-vals dataset) => [[1 2.0 "a"] [4 5.0 "b"]]))
+  (fact "should create the right schema for maps"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[1 {:z ["a"]}]
+                    [4 {:z ["b" "c"] :y true}]]
+                   [:a :b])]
+      (instance? Dataset dataset) => true
+      (g/column-names dataset) => ["a" "b"]
+      (g/dtypes dataset) => {:a "LongType"
+                             :b "StructType(StructField(z,ArrayType(StringType,true),true), StructField(y,BooleanType,true))"}))
+  (fact "should create the right schema for list of maps"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[1 [{:z 1}]]
+                    [4 [{:z 3} {:y 3.0}]]]
+                   [:a :b])]
+      (instance? Dataset dataset) => true
+      (g/column-names dataset) => ["a" "b"]
+      (g/dtypes dataset) => {:a "LongType"
+                             :b "ArrayType(StructType(StructField(z,LongType,true), StructField(y,DoubleType,true)),true)"}))
+  (fact "should create the right schema for list of list of maps"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[1 [[{:z 1}] [{:z 3}]]]
+                    [4 [[{:y true}]]]]
+                   [:a :b])]
+      (instance? Dataset dataset) => true
+      (g/column-names dataset) => ["a" "b"]
+      (g/dtypes dataset) => {:a "LongType"
+                             :b "ArrayType(ArrayType(StructType(StructField(z,LongType,true), StructField(y,BooleanType,true)),true),true)"})))
 
 (facts "On spark range"
   (fact "should create simple datasets"

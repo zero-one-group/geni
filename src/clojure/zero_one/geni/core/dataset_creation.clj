@@ -129,8 +129,11 @@
    SparseVector       (VectorUDT.)
    nil                DataTypes/NullType})
 
+(declare infer-schema infer-spark-type)
+
 (defn- infer-spark-type [value]
   (cond
+    (map? value) (infer-schema (map name (keys value)) (vals value))
     (coll? value) (ArrayType. (infer-spark-type (first value)) true)
     :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
 
@@ -142,11 +145,76 @@
   (DataTypes/createStructType
    (mapv infer-struct-field col-names values)))
 
-(defn- first-non-nil [values]
-  (first (filter (complement nil?) values)))
+(defn- update-val-in
+  "Works similar to update-in but accepts value instead of function.
+   If old and new values are collections, merges/concatenates them.
+   If the associative structure is nil, initialises it to provided value."
+  [m path val]
+  (if-not m val
+          (update-in m path (fn [old new]
+                              (cond
+                                (nil? old) new
+                                (and (map? old) (map? new)) (merge old new)
+                                (and (coll? new) (= (type old) (type new))) (into old new)
+                                :else new)) val)))
+
+(defn- first-non-nil
+  "Looks through values and recursively finds the first non-nil value.
+   For maps, it returns a first non-nil value for each nested key.
+   For list of maps, it returns a list of one map with first non-nil value for each nested key.
+     
+     Examples:
+     [1 2 3]                                     => [1]
+     [nil [1 2]]                                 => [[1]]
+     [{:a 1} {:a 3 :b true}]                     => [{:a 1 :b true}]
+     [{:a 1} {:b [{:a 4} {:c 3}]}]               => [{:a 1 :b [{:a 4 :c 3}]}]
+     [{:a 1} {:b [[{:a 4} {:c 3}] [{:h true}]]}] => [{:a 1 :b [[{:a 4 :c 3 :h true}]]}]"
+  ([v]
+   (first-non-nil v nil []))
+  ([v non-nil path]
+   (cond (map? v) (reduce #(first-non-nil (get v %2) %1 (conj path %2)) (update-val-in non-nil path {}) (keys v))
+         (coll? v) (reduce (fn [non-nil v]
+                             (let [path (conj path 0)
+                                   non-nil (first-non-nil v non-nil path)]
+                               (if (coll? (get-in non-nil path)) non-nil (reduced non-nil))))
+                           (update-val-in non-nil path []) (filter (complement nil?) v))
+         (or (nil? v) (some? (get-in non-nil path))) non-nil
+         :else (update-val-in non-nil path v))))
+
+(defn- fill-missing-nested-keys
+  "Recursively fills in any missing keys. Takes as input the records and a sample non-nil value.
+   The sample non-nil value can be generated using first-non-nil function above.
+   
+     Examples:
+     [1 2 3] | [1]
+      => [1 2 3]
+     [nil [1 2]] | [[1]]
+      => [nil [1 2]]
+     [{:a 1} {:a 3 :b true}] | [{:a 1 :b true}]
+      => [{:a 1 :b nil} {:a 3 :b true}]
+     [{:a 1} {:b [{:a 4} {:c 3}]}] | [{:a 1 :b [{:a 4 :c 3}]}])
+      => [{:a 1 :b nil} {:a nil :b [{:a 4 :c nil} {:a nil :c 3}]}]
+     [{:a 1} {:b [[{:a 4} {:c 3}] [{:h true}]]}] | [{:a 1 :b [[{:a 4 :c 3 :h true}]]}]
+      => [{:a 1 :b nil} {:a nil :b [[{:a 4 :c nil :h nil} {:a nil :c 3 :h nil}] [{:a nil :c nil :h true}]]}]"
+  ([v non-nil]
+   (fill-missing-nested-keys v non-nil []))
+  ([v non-nil path]
+   (cond
+     (map? v) (reduce #(assoc %1 %2 (fill-missing-nested-keys (get v %2) non-nil (conj path %2)))
+                      {} (keys (get-in non-nil path)))
+     (and (coll? v)
+          (coll? (get-in non-nil (conj path 0)))) (map #(fill-missing-nested-keys % non-nil (conj path 0)) v)
+     :else v)))
 
 (defn- transpose [xs]
   (apply map list xs))
+
+(defn- transform-maps
+  [value]
+  (cond
+    (map? value) (interop/->spark-row (transform-maps (vals value)))
+    (coll? value) (map transform-maps value)
+    :else value))
 
 (defn table->dataset
   "Construct a Dataset from a collection of collections.
@@ -164,10 +232,12 @@
   ([spark table col-names]
    (if (empty? table)
      (.emptyDataFrame spark)
-     (let [col-names (map name col-names)
-           values    (map first-non-nil (transpose table))
-           rows      (interop/->java-list (map interop/->spark-row table))
-           schema    (infer-schema col-names values)]
+     (let [col-names  (map name col-names)
+           transposed (transpose table)
+           values     (map first-non-nil transposed)
+           table      (transpose (map (partial apply fill-missing-nested-keys) (zipmap transposed values)))
+           rows       (interop/->java-list (map interop/->spark-row (transform-maps table)))
+           schema     (infer-schema col-names (map first values))]
        (.createDataFrame spark rows schema)))))
 
 (defn map->dataset
