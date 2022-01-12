@@ -227,7 +227,25 @@
       (instance? Dataset dataset) => true
       (g/collect-vals dataset) => [[0 [[{:z 1 :h nil :g nil} {:z 2 :h nil :g nil}]
                                        [{:z nil :h true :g nil}]]]
-                                   [1 [[{:z nil :h nil :g 3.0}]]]])))
+                                   [1 [[{:z nil :h nil :g 3.0}]]]]))
+  (fact "should work for several number of columns"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:a 1  :b 2  :c 3  :d 4  :e 5  :f 6  :g 7  :h 8  :i 9}
+                    {:a 10 :b 11 :c 12 :d 13 :e 14 :f 15 :g 16 :h 17 :i 18}])]
+      (instance? Dataset dataset) => true
+      (g/collect dataset) => [{:a 1  :b 2  :c 3  :d 4  :e 5  :f 6  :g 7  :h 8  :i 9}
+                              {:a 10 :b 11 :c 12 :d 13 :e 14 :f 15 :g 16 :h 17 :i 18}]))
+  (fact "should work for nil and empty values"
+    (let [dataset (g/records->dataset
+                   @tr/spark
+                   [{:i nil :s []        :b []}
+                    {:i nil :s [nil nil] :b []}
+                    {:i nil :s nil       :b []}])]
+      (instance? Dataset dataset) => true
+      (g/collect-vals dataset) => [[nil []        []]
+                                   [nil [nil nil] []]
+                                   [nil nil       []]])))
 
 (facts "On table->dataset"
   (fact "should create the right dataset"

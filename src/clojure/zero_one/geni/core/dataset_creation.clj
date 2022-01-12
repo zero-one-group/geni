@@ -164,6 +164,8 @@
    For list of maps, it returns a list of one map with first non-nil value for each nested key.
      
      Examples:
+     []                                          => []
+     [nil nil]                                   => []
      [1 2 3]                                     => [1]
      [nil [1 2]]                                 => [[1]]
      [{:a 1} {:a 3 :b true}]                     => [{:a 1 :b true}]
@@ -186,6 +188,10 @@
    The sample non-nil value can be generated using first-non-nil function above.
    
      Examples:
+     [] | []
+      => []
+     [nil nil] | []
+      => [nil nil]
      [1 2 3] | [1]
       => [1 2 3]
      [nil [1 2]] | [[1]]
@@ -235,7 +241,7 @@
      (let [col-names  (map name col-names)
            transposed (transpose table)
            values     (map first-non-nil transposed)
-           table      (transpose (map (partial apply fill-missing-nested-keys) (zipmap transposed values)))
+           table      (transpose (map (partial apply fill-missing-nested-keys) (map vector transposed values)))
            rows       (interop/->java-list (map interop/->spark-row (transform-maps table)))
            schema     (infer-schema col-names (map first values))]
        (.createDataFrame spark rows schema)))))
