@@ -8,6 +8,7 @@
                             =
                             >
                             >=
+                            abs
                             alias
                             assoc
                             boolean
