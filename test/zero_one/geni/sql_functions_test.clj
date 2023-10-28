@@ -24,8 +24,8 @@
         :to-2     (g/to-json (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
                              {:timestampFormat "dd/MM/yyyy"})})
       g/collect
-      first) => {:schema-1 "ARRAY<STRUCT<`col`: BIGINT>>"
-                 :schema-2 "ARRAY<STRUCT<`col`: BIGINT>>"
+      first) => {:schema-1 "ARRAY<STRUCT<col: BIGINT>>"
+                 :schema-2 "ARRAY<STRUCT<col: BIGINT>>"
                  :from-1   {:a 1 :b 0.8}
                  :from-2   {:time (Timestamp. 1440547200000)}
                  :to-1 "{\"a\":1,\"b\":2}"
@@ -44,8 +44,8 @@
         :to-2     (g/to-csv (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
                             {:timestampFormat "dd/MM/yyyy"})})
       g/collect
-      first) => {:schema-1 "STRUCT<`_c0`: INT, `_c1`: STRING>"
-                 :schema-2 "STRUCT<`_c0`: INT, `_c1`: STRING>"
+      first) => {:schema-1 "STRUCT<_c0: INT, _c1: STRING>"
+                 :schema-2 "STRUCT<_c0: INT, _c1: STRING>"
                  :from-1   {:a 1 :b 0.8}
                  :from-2   {:time (Timestamp. 1440547200000)}
                  :to-1     "1,2"
