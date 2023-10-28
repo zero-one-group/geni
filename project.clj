@@ -1,29 +1,38 @@
 (def spark-deps
-  '[;; Spark
+  '[[io.netty/netty-all "4.1.74.Final"]
+    [com.fasterxml.jackson.core/jackson-core "2.15.3"]
+    [com.fasterxml.jackson.core/jackson-annotations "2.15.3"]
+    ;; Spark
     ; This breaks cljcdoc: https://github.com/cljdoc/cljdoc/issues/407
     ; Frozen until issue is resolved.
     ;[com.github.fommil.netlib/all "1.1.2" :extension "pom"]
-    [org.apache.spark/spark-avro_2.12 "3.1.1"]
-    [org.apache.spark/spark-core_2.12 "3.1.1"]
-    [org.apache.spark/spark-hive_2.12 "3.1.1"]
-    [org.apache.spark/spark-mllib_2.12 "3.1.1"]
-    [org.apache.spark/spark-sql_2.12 "3.1.1"]
-    [org.apache.spark/spark-streaming_2.12 "3.1.1"]
+    [org.apache.spark/spark-avro_2.12 "3.3.3"]
+    [org.apache.spark/spark-core_2.12 "3.3.3"]
+    [org.apache.spark/spark-hive_2.12 "3.3.3"]
+    [org.apache.spark/spark-mllib_2.12 "3.3.3"]
+    [org.apache.spark/spark-sql_2.12 "3.3.3"]
+    [org.apache.spark/spark-streaming_2.12 "3.3.3"]
     ; Arrow
-    [org.apache.arrow/arrow-memory-netty "3.0.0"]
-    [org.apache.arrow/arrow-memory-core "3.0.0"]
-    [org.apache.arrow/arrow-vector "3.0.0"
+    [org.apache.arrow/arrow-memory-netty "4.0.0"]
+    [org.apache.arrow/arrow-memory-core "4.0.0"]
+    [org.apache.arrow/arrow-vector "4.0.0"
      :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
     ; Databases
-    [mysql/mysql-connector-java "8.0.23"]
-    [org.postgresql/postgresql "42.2.19"]
+    [mysql/mysql-connector-java "8.0.25"]
+    [org.postgresql/postgresql "42.2.20"]
     [org.xerial/sqlite-jdbc "3.34.0"]
     ;; Optional: Spark XGBoost
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
     [ml.dmlc/xgboost4j_2.12 "1.2.0"]])
 
 (defproject zero.one/geni "0.0.40"
-  :jvm-opts ["-Duser.country=US" "-Duser.language=en"]
+  :jvm-opts ["-Duser.country=US" "-Duser.language=en"
+             "--add-opens=java.base/java.io=ALL-UNNAMED"
+             "--add-opens=java.base/java.nio=ALL-UNNAMED"
+             "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+             "--add-opens=java.base/java.util=ALL-UNNAMED"
+             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+             "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"]
   :description "A Clojure dataframe library that runs on Spark"
   :url "https://github.com/zero-one-group/geni"
   :license {:name "Apache License"

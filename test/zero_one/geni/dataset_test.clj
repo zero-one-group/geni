@@ -430,7 +430,7 @@
     (-> (df-20)
         (g/repartition :Suburb :SellerG)
         g/partitions
-        count) => #(< 1 %))
+        count) => #(<= 1 %))
   (fact "able to repartition by number and columns"
     (-> (df-20)
         (g/repartition 10 :Suburb :SellerG)

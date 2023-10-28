@@ -55,7 +55,7 @@
     (rdd/resources) => {}
     (rdd/spark-home) => (System/getenv "SPARK_HOME")
     (rdd/sc) => (partial instance? SparkContext)
-    (rdd/version) => "3.1.1"))
+    (rdd/version) => "3.3.3"))
 
 (facts "On repartitioning" :rdd
   (fact "partition-by works"
