@@ -214,7 +214,7 @@
   (-> (df-20)
       (g/cube :SellerG :Regionname)
       (g/agg (g/grouping-id :SellerG :Regionname))
-      g/first-vals) => ["Nelson" nil 1]
+      g/first-vals) => ["Biggin" "Northern Metropolitan" 0]
   (-> (df-20)
       (g/group-by :SellerG)
       (g/agg (-> (g/collect-list :Regionname) (g/as :regions)))
@@ -503,7 +503,7 @@
           (g/agg
            (g/count-distinct {:seller :SellerG
                               :suburb :Suburb}))
-          g/column-names) => ["count(SellerG AS `seller`, Suburb AS `suburb`)"])))
+          g/column-names) => ["count(SellerG AS seller, Suburb AS suburb)"])))
 
 (facts "On window functions" :slow
   (let [window  (g/window {:partition-by :SellerG :order-by :Price})]
