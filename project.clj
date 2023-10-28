@@ -13,13 +13,13 @@
     [org.apache.spark/spark-sql_2.12 "3.3.3"]
     [org.apache.spark/spark-streaming_2.12 "3.3.3"]
     ; Arrow
-    [org.apache.arrow/arrow-memory-netty "3.0.0"]
-    [org.apache.arrow/arrow-memory-core "3.0.0"]
-    [org.apache.arrow/arrow-vector "3.0.0"
+    [org.apache.arrow/arrow-memory-netty "4.0.0"]
+    [org.apache.arrow/arrow-memory-core "4.0.0"]
+    [org.apache.arrow/arrow-vector "4.0.0"
      :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
     ; Databases
-    [mysql/mysql-connector-java "8.0.23"]
-    [org.postgresql/postgresql "42.2.19"]
+    [mysql/mysql-connector-java "8.0.25"]
+    [org.postgresql/postgresql "42.2.20"]
     [org.xerial/sqlite-jdbc "3.34.0"]
     ;; Optional: Spark XGBoost
     [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
