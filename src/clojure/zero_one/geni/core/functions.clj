@@ -1,5 +1,6 @@
 (ns zero-one.geni.core.functions
-  (:refer-clojure :exclude [concat
+  (:refer-clojure :exclude [abs
+                            concat
                             flatten
                             hash
                             map
