@@ -4,7 +4,7 @@
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) dataframe library that runs on [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
-[![CI](https://github.com/zero-one-group/geni/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
+[![CI](https://github.com/zero-one-group/geni/actions/workflows/continuous-integration.yml/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
 [![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
 [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
