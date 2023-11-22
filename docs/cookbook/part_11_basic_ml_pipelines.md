@@ -126,5 +126,5 @@ Different models have different attributes. In our case, the random forest model
 ; {"housing-median-age" 0.060262475752573055,
 ;  "median-income" 0.7847621702619059,
 ;  "bedrooms-per-house" 0.010547166447551434,
-;  "population-per-house" 0.14442818753796965
+;  "population-per-house" 0.14442818753796965}
 ```
