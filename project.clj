@@ -55,7 +55,7 @@
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
                         [midje "1.10.9"]
-                        [techascent/tech.ml.dataset "5.21"
+                        [techascent/tech.ml.dataset "6.024"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
