@@ -38,10 +38,11 @@
   :license {:name "Apache License"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[camel-snake-kebab "0.4.2"]
+                 [com.taoensso/nippy "3.3.0"]
                  [expound "0.8.9"]
                  [metosin/jsonista "0.3.3"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
-                 [com.taoensso/nippy "3.1.1"]
+                 [net.cgrand/parsley "0.9.3" :exclusions [org.clojure/clojure]]
                  [nrepl "0.8.3"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/java.data "1.0.86"]
@@ -54,8 +55,8 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
-                        [midje "1.10.3"]
-                        [techascent/tech.ml.dataset "5.21"
+                        [midje "1.10.9"]
+                        [techascent/tech.ml.dataset "6.024"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
                    [lein-cloverage "1.2.2"]
