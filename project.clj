@@ -41,7 +41,7 @@
                  [expound "0.8.9"]
                  [metosin/jsonista "0.3.3"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
-                 [com.taoensso/nippy "3.1.1"]
+                 [com.taoensso/nippy "3.3.0"]
                  [nrepl "0.8.3"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/java.data "1.0.86"]
