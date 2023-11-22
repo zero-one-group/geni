@@ -4,17 +4,20 @@
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [zero.one/geni "0.0.40"]
+                 [zero.one/geni "0.0.41"]
                  [metosin/jsonista "0.3.3"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [expound "0.8.9"]
+                 [io.netty/netty-all "4.1.74.Final"]
+                 [com.fasterxml.jackson.core/jackson-core "2.15.3"]
+                 [com.fasterxml.jackson.core/jackson-annotations "2.15.3"]
                  ;; Spark
-                 [org.apache.spark/spark-core_2.12 "3.1.2"]
-                 [org.apache.spark/spark-hive_2.12 "3.1.2"]
-                 [org.apache.spark/spark-mllib_2.12 "3.1.2"]
-                 [org.apache.spark/spark-sql_2.12 "3.1.2"]
-                 [org.apache.spark/spark-streaming_2.12 "3.1.2"]
-                 [org.apache.spark/spark-yarn_2.12 "3.1.2"]
+                 [org.apache.spark/spark-core_2.12 "3.3.3"]
+                 [org.apache.spark/spark-hive_2.12 "3.3.3"]
+                 [org.apache.spark/spark-mllib_2.12 "3.3.3"]
+                 [org.apache.spark/spark-sql_2.12 "3.3.3"]
+                 [org.apache.spark/spark-streaming_2.12 "3.3.3"]
+                 [org.apache.spark/spark-yarn_2.12 "3.3.3"]
                  [com.github.fommil.netlib/all "1.1.2" :extension "pom"]
                  ; Arrow
                  [org.apache.arrow/arrow-memory-netty "4.0.0"]
@@ -40,6 +43,12 @@
                              "--class"
                              "{{namespace}}.core"
                              "target/uberjar/{{raw-name}}-standalone.jar"]]}{{/dataproc?}}
+  :jvm-opts ["--add-opens=java.base/java.io=ALL-UNNAMED"
+             "--add-opens=java.base/java.nio=ALL-UNNAMED"
+             "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+             "--add-opens=java.base/java.util=ALL-UNNAMED"
+             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+             "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"]
   :profiles {:uberjar {:aot :all}
              :dev {:plugins [[lein-ancient "0.7.0"]]}}
   :main ^:skip-aot {{namespace}}.core

@@ -30,7 +30,7 @@
       (g/dtypes dummy-df) => {:coord "ArrayType(DoubleType,true)"
                               :prop  "MapType(StringType,StringType,true)"
                               :rooms (str "StructType("
-                                          "StructField(rooms,LongType,true), "
+                                          "StructField(rooms,LongType,true),"
                                           "StructField(bathroom,DoubleType,true))")})
     (fact "correct direct schema option"
       (-> (g/read-parquet!
@@ -46,7 +46,7 @@
           g/dtypes) => {:coord "ArrayType(LongType,true)"
                         :prop  "MapType(StringType,StringType,true)"
                         :rooms (str "StructType("
-                                    "StructField(rooms,IntegerType,true), "
+                                    "StructField(rooms,IntegerType,true),"
                                     "StructField(bathroom,FloatType,true))")})
     (fact "correct data-oriented schema option"
       (-> (g/read-parquet!
@@ -57,7 +57,7 @@
           g/dtypes) => {:coord "ArrayType(ShortType,true)"
                         :prop  "MapType(StringType,StringType,true)"
                         :rooms (str "StructType("
-                                    "StructField(rooms,FloatType,true), "
+                                    "StructField(rooms,FloatType,true),"
                                     "StructField(bathroom,LongType,true))")})))
 
 (facts "On binary data" :binary

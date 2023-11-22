@@ -51,7 +51,7 @@
       [(g/row (g/row 27 42))
        (g/row (g/row 57 18))]
       {:coord {:x :int :y :int}}))
-    => {:coord "StructType(StructField(x,IntegerType,true), StructField(y,IntegerType,true))"})
+    => {:coord "StructType(StructField(x,IntegerType,true),StructField(y,IntegerType,true))"})
   (fact "of struct array fields"
     (g/dtypes
      (g/create-dataframe
@@ -59,7 +59,7 @@
       [(g/row [(g/row 27 42)])
        (g/row [(g/row 57 18)])]
       {:coords [{:x :int :y :int}]}))
-    => {:coords "ArrayType(StructType(StructField(x,IntegerType,true), StructField(y,IntegerType,true)),true)"}))
+    => {:coords "ArrayType(StructType(StructField(x,IntegerType,true),StructField(y,IntegerType,true)),true)"}))
 
 (facts "On building blocks"
   (fact "can instantiate vectors"
@@ -266,7 +266,7 @@
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b"]
       (g/dtypes dataset) => {:a "LongType"
-                             :b "StructType(StructField(z,ArrayType(StringType,true),true), StructField(y,BooleanType,true))"}))
+                             :b "StructType(StructField(z,ArrayType(StringType,true),true),StructField(y,BooleanType,true))"}))
   (fact "should create the right schema for list of maps"
     (let [dataset (g/table->dataset
                    @tr/spark
@@ -276,7 +276,7 @@
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b"]
       (g/dtypes dataset) => {:a "LongType"
-                             :b "ArrayType(StructType(StructField(z,LongType,true), StructField(y,DoubleType,true)),true)"}))
+                             :b "ArrayType(StructType(StructField(z,LongType,true),StructField(y,DoubleType,true)),true)"}))
   (fact "should create the right schema for list of list of maps"
     (let [dataset (g/table->dataset
                    @tr/spark
@@ -286,7 +286,7 @@
       (instance? Dataset dataset) => true
       (g/column-names dataset) => ["a" "b"]
       (g/dtypes dataset) => {:a "LongType"
-                             :b "ArrayType(ArrayType(StructType(StructField(z,LongType,true), StructField(y,BooleanType,true)),true),true)"})))
+                             :b "ArrayType(ArrayType(StructType(StructField(z,LongType,true),StructField(y,BooleanType,true)),true),true)"})))
 
 (facts "On spark range"
   (fact "should create simple datasets"
