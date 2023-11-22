@@ -54,7 +54,7 @@
    :uberjar {:aot :all :dependencies ~spark-deps}
    :dev {:dependencies [[criterium "0.4.6"]
                         [enlive "1.1.6"]
-                        [midje "1.10.3"]
+                        [midje "1.10.9"]
                         [techascent/tech.ml.dataset "5.21"
                          :exclusions [ch.qos.logback/logback-classic]]]
          :plugins [[lein-ancient "0.7.0"]
