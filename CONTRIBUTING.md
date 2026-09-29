@@ -70,6 +70,6 @@ git tag v0.1.0-alpha.1
 git push origin v0.1.0-alpha.1
 ```
 
-The Release workflow deploys `zero.one/geni` and then `zero.one/geni-cli` to Clojars, builds the CLI uberjar and attaches it to a GitHub release, marked as a pre-release when the version has a suffix. It skips a deploy that Clojars already has, so a failed run can be rerun. After a final release, bump `resources/GENI_REPL_RELEASED_VERSION` on `develop`, so that installed `geni` scripts pick the new uberjar up.
+The Release workflow deploys `zero.one/geni` to Clojars, builds the CLI uberjar and attaches it to a GitHub release, marked as a pre-release when the version has a suffix. It skips the deploy when Clojars already has that version, so a failed run can be rerun, or the tag moved to a fixed commit and pushed again. After a final release, bump `resources/GENI_REPL_RELEASED_VERSION` on `develop`, so that installed `geni` scripts pick the new uberjar up.
 
-The same build tasks run locally, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set: `clojure -T:build deploy`, then `clojure -T:build cli-deploy`, and `clojure -T:build cli-uber` for the uberjar.
+The same build tasks run locally: `clojure -T:build deploy`, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set, and `clojure -T:build cli-uber` for the uberjar.

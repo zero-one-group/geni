@@ -123,7 +123,7 @@
               "-Dspark.sql.codegen.factoryMode=FALLBACK"]}
 
   ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests. build.clj
-  ;; publishes cli/src as zero.one/geni-cli, with these deps and :spark's.
+  ;; builds the uberjar from cli/src, with these deps and :spark's.
   :cli
   {:extra-paths ["cli/src" "cli/test"]
    :extra-deps  {net.cgrand/parsley {:mvn/version "0.9.3"}
