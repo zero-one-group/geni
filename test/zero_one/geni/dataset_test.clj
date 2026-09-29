@@ -2,7 +2,7 @@
   (:require
    [clojure.set]
    [clojure.string]
-   [midje.sweet :refer [facts fact =>]]
+   [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
@@ -12,446 +12,474 @@
                          SparkSession
                          SQLContext)))
 
-(fact "On to-df"
+(deftest to-df-test
   (let [dataframe (g/select (df-1) :Suburb :Price)]
-    (g/collect (g/to-df dataframe)) => (g/collect dataframe)
-    (g/columns (g/to-df dataframe [:suburb :price])) => [:suburb :price]))
+    (is (= (g/collect dataframe) (g/collect (g/to-df dataframe))))
+    (is (= [:suburb :price] (g/columns (g/to-df dataframe [:suburb :price]))))))
 
-(fact "On Dataset hints" :slow
-  (-> (df-1)
-      (g/hint "myHint" 100 true)
-      .queryExecution
-      .logical
-      .toString) => #(clojure.string/includes? % "myHint, [100, true]"))
+(deftest ^:slow dataset-hints-test
+  (is (clojure.string/includes? (-> (df-1)
+                                    (g/hint "myHint" 100 true)
+                                    .queryExecution
+                                    .logical
+                                    .toString) "myHint, [100, true]")))
 
-(fact "On clojure idioms"
+(deftest clojure-idioms-test
   (let [r-50      (range 50)
         dataframe (g/records->dataset @spark (map (fn [i] {:x i}) r-50))]
-    (-> dataframe (g/collect-col :x)) => r-50
-    (-> dataframe g/shuffle (g/collect-col :x)) => #(and (not= % r-50)
-                                                         (= (set %) (set r-50)))))
+    (is (= r-50 (-> dataframe (g/collect-col :x))))
+    (let [actual (-> dataframe g/shuffle (g/collect-col :x))]
+      (is (and (not= actual r-50)
+               (= (set actual) (set r-50)))))))
 
-(fact "On join-with"
+(deftest join-with-test
   (let [base (df-50)
         n-listings (-> (df-50) (g/group-by :SellerG) g/count)]
-    (-> base
-        (g/join-with
-         n-listings
-         (g/=== (g/col n-listings :SellerG)
-                (g/col-regex base :SellerG)))
-        g/columns) => [:_1 :_2]
-    (-> base
-        (g/join-with
-         n-listings
-         (g/=== (g/col n-listings :SellerG)
-                (g/col base :SellerG))
-         "left")
-        g/columns) => [:_1 :_2]))
+    (is (= [:_1 :_2]
+           (-> base
+               (g/join-with
+                n-listings
+                (g/=== (g/col n-listings :SellerG)
+                       (g/col-regex base :SellerG)))
+               g/columns)))
+    (is (= [:_1 :_2]
+           (-> base
+               (g/join-with
+                n-listings
+                (g/=== (g/col n-listings :SellerG)
+                       (g/col base :SellerG))
+                "left")
+               g/columns)))))
 
-(facts "On non-group-by aggregations"
-  (fact "On cube"
-    (-> (df-20) (g/cube :SellerG :Suburb) g/count g/count) => 14
-    (-> (df-20) (g/rollup :SellerG :Suburb) g/count g/count) => 13)
-  (fact "On grouping"
-    (-> (df-20)
-        (g/cube :SellerG :Suburb)
-        (g/agg (g/grouping :SellerG))
-        g/collect-vals
-        first
-        last) => 0))
+(deftest non-group-by-aggregations-test
+  (testing "On cube"
+    (is (= 14 (-> (df-20) (g/cube :SellerG :Suburb) g/count g/count)))
+    (is (= 13 (-> (df-20) (g/rollup :SellerG :Suburb) g/count g/count))))
+  (testing "On grouping"
+    (is (= 0
+           (-> (df-20)
+               (g/cube :SellerG :Suburb)
+               (g/agg (g/grouping :SellerG))
+               g/collect-vals
+               first
+               last)))))
 
-(fact "On alias"
-  (-> (df-50) (g/alias :abc)) => (partial instance? Dataset))
+(deftest alias-test
+  (is (instance? Dataset (-> (df-50) (g/alias :abc)))))
 
-(facts "On NA methods"
-  (fact "On drop-na"
-    (-> (df-50) g/drop-na g/count) => 34
-    (-> (df-50) (g/drop-na 20) g/count) => 39
-    (-> (df-50) (g/drop-na [:BuildingArea]) g/count) => 38
-    (-> (df-50) (g/drop-na 1 [:BuildingArea]) g/count) => 38)
-  (fact "On fill-na"
-    (-> (df-50) (g/fill-na -999.0) (g/collect-col :BuildingArea) set)
-    => #(% -999.0)
-    (-> (df-50) (g/fill-na -999.0 [:Regionname]) (g/collect-col :BuildingArea) set)
-    => #(nil? (% -999.0)))
-  (fact "On replace"
-    (-> (df-50) (g/replace-na :Rooms {1 -999}) (g/collect-col :Rooms) set)
-    => #(% -999)))
+(deftest na-methods-test
+  (testing "On drop-na"
+    (is (= 34 (-> (df-50) g/drop-na g/count)))
+    (is (= 39 (-> (df-50) (g/drop-na 20) g/count)))
+    (is (= 38 (-> (df-50) (g/drop-na [:BuildingArea]) g/count)))
+    (is (= 38 (-> (df-50) (g/drop-na 1 [:BuildingArea]) g/count))))
+  (testing "On fill-na"
+    (is ((-> (df-50) (g/fill-na -999.0) (g/collect-col :BuildingArea) set) -999.0))
+    (is (nil? ((-> (df-50) (g/fill-na -999.0 [:Regionname]) (g/collect-col :BuildingArea) set) -999.0))))
+  (testing "On replace"
+    (is ((-> (df-50) (g/replace-na :Rooms {1 -999}) (g/collect-col :Rooms) set) -999))))
 
-(fact "On agg methods" :slow
+(deftest ^:slow agg-methods-test
   (let [grouped (-> (df-50) (g/group-by :SellerG))]
-    (-> grouped (g/mean :Price :Rooms) g/column-names)
-    => ["SellerG" "avg(Price)" "avg(Rooms)"]
-    (-> grouped (g/min :Price :Rooms) g/column-names)
-    => ["SellerG" "min(Price)" "min(Rooms)"]
-    (-> grouped (g/max :Price :Rooms) g/column-names)
-    => ["SellerG" "max(Price)" "max(Rooms)"]
-    (-> grouped (g/sum :Price :Rooms) g/column-names)
-    => ["SellerG" "sum(Price)" "sum(Rooms)"]
-    (-> grouped g/count g/column-names) => ["SellerG" "count"]))
+    (is (= ["SellerG" "avg(Price)" "avg(Rooms)"] (-> grouped (g/mean :Price :Rooms) g/column-names)))
+    (is (= ["SellerG" "min(Price)" "min(Rooms)"] (-> grouped (g/min :Price :Rooms) g/column-names)))
+    (is (= ["SellerG" "max(Price)" "max(Rooms)"] (-> grouped (g/max :Price :Rooms) g/column-names)))
+    (is (= ["SellerG" "sum(Price)" "sum(Rooms)"] (-> grouped (g/sum :Price :Rooms) g/column-names)))
+    (is (= ["SellerG" "count"] (-> grouped g/count g/column-names)))))
 
-(facts "On stats functions" :slow
-  (-> (df-20)
-      (g/select {:seller :SellerG :rooms :Rooms})
-      g/distinct
-      (g/limit 5)
-      (g/sample-by (g/struct :seller :rooms)
-                   {["Biggin" 2] 1.0 ["Jellis" 2] 1.0}
-                   36)
-      g/collect) => [{:rooms 2 :seller "Biggin"} {:rooms 2 :seller "Jellis"}]
-  (fact "On count-min-sketch"
+(deftest ^:slow stats-functions-test
+  (is (= [{:rooms 2 :seller "Biggin"} {:rooms 2 :seller "Jellis"}]
+         (-> (df-20)
+             (g/select {:seller :SellerG :rooms :Rooms})
+             g/distinct
+             (g/limit 5)
+             (g/sample-by (g/struct :seller :rooms)
+                          {["Biggin" 2] 1.0 ["Jellis" 2] 1.0}
+                          36)
+             g/collect)))
+  (testing "On count-min-sketch"
     (let [count-min (g/count-min-sketch (melbourne-df) :Suburb 10 10 10)]
-      (g/add count-min "abc") => nil?
-      (g/add count-min "abc" 10) => nil?
-      (g/confidence count-min) => #(< 0.9 %)
-      (g/depth count-min) => 10
-      (g/estimate-count count-min "Abbotsford") => #(< 700 % 775)
-      (g/relative-error count-min) => #(< % 0.3)
-      (g/to-byte-array count-min) => interop/array?
-      (g/total-count count-min) => #(< 10000 %)
-      (g/width count-min) => 10))
-  (fact "On cov"
-    (g/cov (melbourne-df) :Price :Rooms) => #(< 290000 % 310000))
-  (fact "On corr"
-    (g/corr (melbourne-df) :Price :Rooms) => #(< 0.45 % 0.55)
-    (g/corr (melbourne-df) :Price :Rooms "pearson") => #(< 0.45 % 0.55))
-  (fact "On cross-tab"
-    (-> (df-20)
-        (g/crosstab :Suburb :SellerG)
-        g/collect) => [{:Biggin 9
-                        :Collins 1
-                        :Greg 1
-                        :Jellis 4
-                        :LITTLE 1
-                        :Nelson 4
-                        :Suburb_SellerG "Abbotsford"}])
-  (fact "On freq-items"
+      (is (nil? (g/add count-min "abc")))
+      (is (nil? (g/add count-min "abc" 10)))
+      (is (< 0.9 (g/confidence count-min)))
+      (is (= 10 (g/depth count-min)))
+      (is (< 700 (g/estimate-count count-min "Abbotsford") 775))
+      (is (< (g/relative-error count-min) 0.3))
+      (is (interop/array? (g/to-byte-array count-min)))
+      (is (< 10000 (g/total-count count-min)))
+      (is (= 10 (g/width count-min)))))
+  (testing "On cov"
+    (is (< 290000 (g/cov (melbourne-df) :Price :Rooms) 310000)))
+  (testing "On corr"
+    (is (< 0.45 (g/corr (melbourne-df) :Price :Rooms) 0.55))
+    (is (< 0.45 (g/corr (melbourne-df) :Price :Rooms "pearson") 0.55)))
+  (testing "On cross-tab"
+    (is (= [{:Biggin 9
+             :Collins 1
+             :Greg 1
+             :Jellis 4
+             :LITTLE 1
+             :Nelson 4
+             :Suburb_SellerG "Abbotsford"}]
+           (-> (df-20)
+               (g/crosstab :Suburb :SellerG)
+               g/collect))))
+  (testing "On freq-items"
     ;; Spark doesn't guarantee the order of the frequent items.
-    (-> (df-20)
-        (g/freq-items [:Suburb :SellerG])
-        g/collect
-        first
-        (update-vals set)) => {:SellerG_freqItems #{"LITTLE"
-                                                    "Biggin"
-                                                    "Nelson"
-                                                    "Collins"
-                                                    "Greg"
-                                                    "Jellis"}
-                               :Suburb_freqItems #{"Abbotsford"}}
-    (-> (df-20)
-        (g/freq-items [:Suburb :SellerG] 0.5)
-        g/collect
-        first
-        (update-vals set)) => {:SellerG_freqItems #{"Biggin" "Collins"}
-                               :Suburb_freqItems #{"Abbotsford"}})
-  (fact "On bloom-filter"
+    (is (= {:SellerG_freqItems #{"LITTLE"
+                                 "Biggin"
+                                 "Nelson"
+                                 "Collins"
+                                 "Greg"
+                                 "Jellis"}
+            :Suburb_freqItems #{"Abbotsford"}}
+           (-> (df-20)
+               (g/freq-items [:Suburb :SellerG])
+               g/collect
+               first
+               (update-vals set))))
+    (is (= {:SellerG_freqItems #{"Biggin" "Collins"}
+            :Suburb_freqItems #{"Abbotsford"}}
+           (-> (df-20)
+               (g/freq-items [:Suburb :SellerG] 0.5)
+               g/collect
+               first
+               (update-vals set)))))
+  (testing "On bloom-filter"
     (let [bloom (-> (melbourne-df) (g/bloom-filter :Suburb 10 0.01))]
-      (g/bit-size bloom) => 128
-      (g/compatible? bloom bloom) => true
-      (g/expected-fpp bloom) => 1.0
-      (g/merge-in-place bloom bloom) => #(instance? (class bloom) %)
-      (g/might-contain bloom "Reservoir") => boolean?
-      (g/put bloom "xyz") => boolean?))
-  (fact "On approx-quantile"
-    (-> (melbourne-df)
-        (g/approx-quantile :Price [0.1 0.9] 0.2)) => #(< (first %) (second %))
-    (-> (melbourne-df)
-        (g/approx-quantile [:Price] [0.1 0.9] 0.2))
-    => #(< (ffirst %) (second (first %)))))
+      (is (= 128 (g/bit-size bloom)))
+      (is (g/compatible? bloom bloom))
+      (is (= 1.0 (g/expected-fpp bloom)))
+      (is (instance? (class bloom) (g/merge-in-place bloom bloom)))
+      (is (boolean? (g/might-contain bloom "Reservoir")))
+      (is (boolean? (g/put bloom "xyz")))))
+  (testing "On approx-quantile"
+    (let [actual (-> (melbourne-df)
+                     (g/approx-quantile :Price [0.1 0.9] 0.2))]
+      (is (< (first actual) (second actual))))
+    (let [actual (-> (melbourne-df)
+                     (g/approx-quantile [:Price] [0.1 0.9] 0.2))]
+      (is (< (ffirst actual) (second (first actual)))))))
 
-(fact "On random-split" :slow
+(deftest ^:slow random-split-test
   (let [[train-df val-df] (-> (df-50) (g/random-split [90 10]))]
-    (< (g/count val-df)
-       (g/count train-df)) => true)
+    (is (true? (< (g/count val-df)
+                  (g/count train-df)))))
   (let [[train-df val-df] (-> (df-50) (g/random-split [90 10] 123))]
-    (< (g/count val-df)
-       (g/count train-df)) => true))
+    (is (true? (< (g/count val-df)
+                  (g/count train-df))))))
 
-(facts "On printing functions"
-  (fact "should return nil"
+(deftest printing-functions-test
+  (testing "should return nil"
     (let [n-lines   #(-> % clojure.string/split-lines count)
           df        (g/select (melbourne-df) :Suburb :Address)
           n-columns (-> df g/column-names count)]
-      (n-lines (with-out-str (g/show (g/limit df 3)))) => 7
-      (n-lines (with-out-str (g/show df {:num-rows 3 :vertical true}))) => 10
-      (n-lines (with-out-str (g/show-vertical (g/limit df 3)))) => 9
-      (n-lines (with-out-str (g/show-vertical df {:num-rows 3}))) => 10
-      (n-lines (with-out-str (g/print-schema df))) => (inc n-columns)
-      (n-lines (interop/with-scala-out-str (g/explain df))) => #(< 1 %)
-      (n-lines (interop/with-scala-out-str (g/explain df true))) => #(< 10 %))))
+      (is (= 7 (n-lines (with-out-str (g/show (g/limit df 3))))))
+      (is (= 10 (n-lines (with-out-str (g/show df {:num-rows 3 :vertical true})))))
+      (is (= 9 (n-lines (with-out-str (g/show-vertical (g/limit df 3))))))
+      (is (= 10 (n-lines (with-out-str (g/show-vertical df {:num-rows 3})))))
+      (is (= (inc n-columns) (n-lines (with-out-str (g/print-schema df)))))
+      (is (< 1 (n-lines (interop/with-scala-out-str (g/explain df)))))
+      (is (< 10 (n-lines (interop/with-scala-out-str (g/explain df true))))))))
 
-(fact "On dtypes"
-  (-> (melbourne-df) g/dtypes :Suburb) => "StringType")
+(deftest dtypes-test
+  (is (= "StringType" (-> (melbourne-df) g/dtypes :Suburb))))
 
-(fact "On local"
-  (-> (melbourne-df) g/local?) => boolean?)
+(deftest local-test
+  (is (boolean? (-> (melbourne-df) g/local?))))
 
-(fact "On ungrouped methods"
-  (-> (melbourne-df) g/streaming?) => false
-  (-> (melbourne-df) g/spark-session) => (partial instance? SparkSession)
-  (-> (melbourne-df) g/sql-context) => (partial instance? SQLContext)
-  (-> (df-1) g/to-json g/collect) => (every-pred seq? #(every? string? %))
-  (-> (df-1) g/to-string) => string?
-  (-> (df-20)
-      (g/limit 2)
-      (g/select :Date :CouncilArea)
-      g/to-json
-      g/collect) => ["{\"Date\":\"3/12/2016\",\"CouncilArea\":\"Yarra\"}"
-                     "{\"Date\":\"4/02/2016\",\"CouncilArea\":\"Yarra\"}"]
-  (-> (df-1) g/to-json g/collect) => (-> (df-1) g/to-json g/collect))
+(deftest ungrouped-methods-test
+  (is (false? (-> (melbourne-df) g/streaming?)))
+  (is (instance? SparkSession (-> (melbourne-df) g/spark-session)))
+  (is (instance? SQLContext (-> (melbourne-df) g/sql-context)))
+  (is ((every-pred seq? #(every? string? %)) (-> (df-1) g/to-json g/collect)))
+  (is (string? (-> (df-1) g/to-string)))
+  (is (= ["{\"Date\":\"3/12/2016\",\"CouncilArea\":\"Yarra\"}"
+          "{\"Date\":\"4/02/2016\",\"CouncilArea\":\"Yarra\"}"]
+         (-> (df-20)
+             (g/limit 2)
+             (g/select :Date :CouncilArea)
+             g/to-json
+             g/collect)))
+  (is (= (-> (df-1) g/to-json g/collect) (-> (df-1) g/to-json g/collect))))
 
-(facts "On pivot" :slow
-  (fact "pivot should return the expected cols"
+(deftest ^:slow pivot-test
+  (testing "pivot should return the expected cols"
     (let [pivotted (-> (df-20)
                        (g/group-by :SellerG)
                        (g/pivot :Method)
                        (g/agg (-> (g/count "*") (g/as "n"))))]
-      (-> pivotted g/column-names set) => #{"SellerG" "PI" "S" "SP" "VB"}))
-  (fact "pivot should be able to specify pivot columns"
+      (is (= #{"SellerG" "PI" "S" "SP" "VB"} (-> pivotted g/column-names set)))))
+  (testing "pivot should be able to specify pivot columns"
     (let [pivotted (-> (df-20)
                        (g/group-by :SellerG)
                        (g/pivot :Method ["SP" "VB" "XYZ"])
                        (g/agg (-> (g/count "*") (g/as "n"))))]
-      (-> pivotted g/column-names set) => #{"SellerG" "SP" "VB" "XYZ"})))
+      (is (= #{"SellerG" "SP" "VB" "XYZ"} (-> pivotted g/column-names set))))))
 
-(facts "On when"
-  (fact "when null and coalesce should be equivalent"
-    (-> (df-20)
-        (g/with-column "x"
-          (g/when (g/null? :BuildingArea) -999 :BuildingArea))
-        (g/with-column "y"
-          (g/coalesce :BuildingArea -999))
-        (g/select (g/=== "x" "y"))
-        g/collect-vals
-        flatten) => #(every? identity %)))
+(deftest when-test
+  (testing "when null and coalesce should be equivalent"
+    (is (every? identity (-> (df-20)
+                             (g/with-column "x"
+                               (g/when (g/null? :BuildingArea) -999 :BuildingArea))
+                             (g/with-column "y"
+                               (g/coalesce :BuildingArea -999))
+                             (g/select (g/=== "x" "y"))
+                             g/collect-vals
+                             flatten)))))
 
-(facts "On select"
-  (fact "should drop unselected columns"
-    (-> (melbourne-df)
-        (g/select :Type (g/col :Price) :Regionname {:a :SellerG :b :BuildingArea})
-        g/column-names) => ["Type" "Price" "Regionname" "a" "b"])
-  (fact "select-expr works as expected"
-    (-> (melbourne-df)
-        (g/select-expr "Price+1" "Rooms-1")
-        g/column-names) => ["(Price + 1)" "(Rooms - 1)"])
-  (fact "column order should be preserved"
-    (-> (melbourne-df)
-        (g/select (range 100))
-        g/collect-vals
-        first) => (range 100)))
+(deftest select-test
+  (testing "should drop unselected columns"
+    (is (= ["Type" "Price" "Regionname" "a" "b"]
+           (-> (melbourne-df)
+               (g/select :Type (g/col :Price) :Regionname {:a :SellerG :b :BuildingArea})
+               g/column-names))))
+  (testing "select-expr works as expected"
+    (is (= ["(Price + 1)" "(Rooms - 1)"]
+           (-> (melbourne-df)
+               (g/select-expr "Price+1" "Rooms-1")
+               g/column-names))))
+  (testing "column order should be preserved"
+    (is (= (range 100)
+           (-> (melbourne-df)
+               (g/select (range 100))
+               g/collect-vals
+               first)))))
 
-(facts "On filter"
+(deftest filter-test
   (let [df (-> (df-20) (g/select :SellerG))]
-    (fact "should implicitly cast to boolean"
-      (-> (df-20)
-          (g/select :Rooms)
-          (g/filter (g/- :Rooms 2))
-          g/distinct
-          (g/collect-col :Rooms)
-          set) => #(not (% 2))
-      (-> (df-20)
-          (g/select :Rooms)
-          (g/remove (g/- :Rooms 2))
-          g/distinct
-          (g/collect-col :Rooms)) => [2])
-    (fact "should correctly filter rows"
-      (-> df
-          (g/filter (g/=== :SellerG (g/lit "Biggin")))
-          g/distinct
-          g/collect) => [{:SellerG "Biggin"}])
-    (fact "should filter correctly with isin"
-      (-> df
-          (g/filter (g/isin :SellerG ["Greg" "Collins" "Biggin"]))
-          g/distinct
-          g/collect-vals
-          flatten
-          set) => #{"Greg" "Collins" "Biggin"}
-      (-> df
-          (g/filter (g/not (g/isin :SellerG ["Greg" "Collins" "Biggin"])))
-          g/distinct
-          g/collect-vals
-          flatten
-          set) => #(empty? (clojure.set/intersection % #{"Greg" "Collins" "Biggin"})))
-    (fact "should correctly remove rows"
-      (-> df
-          (g/remove (g/=== :SellerG (g/lit "Biggin")))
-          (g/collect-col :SellerG)
-          distinct
-          set) => #{"Nelson" "Jellis" "Greg" "LITTLE" "Collins"})))
+    (testing "should implicitly cast to boolean"
+      (is (not ((-> (df-20)
+                    (g/select :Rooms)
+                    (g/filter (g/- :Rooms 2))
+                    g/distinct
+                    (g/collect-col :Rooms)
+                    set) 2)))
+      (is (= [2]
+             (-> (df-20)
+                 (g/select :Rooms)
+                 (g/remove (g/- :Rooms 2))
+                 g/distinct
+                 (g/collect-col :Rooms)))))
+    (testing "should correctly filter rows"
+      (is (= [{:SellerG "Biggin"}]
+             (-> df
+                 (g/filter (g/=== :SellerG (g/lit "Biggin")))
+                 g/distinct
+                 g/collect))))
+    (testing "should filter correctly with isin"
+      (is (= #{"Greg" "Collins" "Biggin"}
+             (-> df
+                 (g/filter (g/isin :SellerG ["Greg" "Collins" "Biggin"]))
+                 g/distinct
+                 g/collect-vals
+                 flatten
+                 set)))
+      (is (empty? (clojure.set/intersection (-> df
+                                                (g/filter (g/not (g/isin :SellerG ["Greg" "Collins" "Biggin"])))
+                                                g/distinct
+                                                g/collect-vals
+                                                flatten
+                                                set) #{"Greg" "Collins" "Biggin"}))))
+    (testing "should correctly remove rows"
+      (is (= #{"Nelson" "Jellis" "Greg" "LITTLE" "Collins"}
+             (-> df
+                 (g/remove (g/=== :SellerG (g/lit "Biggin")))
+                 (g/collect-col :SellerG)
+                 distinct
+                 set))))))
 
-(facts "On rename-columns"
-  (fact "the new name should exist and the old name should not"
+(deftest rename-columns-test
+  (testing "the new name should exist and the old name should not"
     (let [col-names (-> (melbourne-df)
                         (g/rename-columns {:Regionname :region-name})
                         g/columns
                         set)]
-      col-names => #(contains? % :region-name)
-      col-names => #(not (contains? % :Regionname))))
-  (fact "with-column-renamed actually renames column"
-    (-> (df-1)
-        (g/with-column-renamed :SellerG :seller)
-        g/columns
-        set) => #(nil? (% :SellerG))))
+      (is (contains? col-names :region-name))
+      (is (not (contains? col-names :Regionname)))))
+  (testing "with-column-renamed actually renames column"
+    (is (nil? ((-> (df-1)
+                   (g/with-column-renamed :SellerG :seller)
+                   g/columns
+                   set) :SellerG)))))
 
-(facts "On actions" :slow
-  (fact "correct collection of lits"
-    (-> (df-1)
-        (g/select
-         (g/lit 1)
-         (g/lit "a")
-         (g/lit [2.0])
-         (g/lit ["b"]))
-        g/first-vals) => [1 "a" [2.0] ["b"]])
-  (fact "action functions work"
-    (g/head (df-20)) => map?
-    (g/head (df-20) 2) => #(= (count %) 2)
-    (g/head-vals (df-20)) => vector?
-    (g/head-vals (df-20) 3) => #(and (= (count %) 3) (every? vector? %))
-    (g/take (df-20) 5) => #(and (= (count %) 5) (every? map? %))
-    (g/take-vals (df-20) 10) => #(and (= (count %) 10) (every? vector? %))
-    (g/tail (df-20) 5) => #(and (= (count %) 5) (every? map? %))
-    (g/tail-vals (df-20) 10) => #(and (= (count %) 10) (every? vector? %)))
-  (fact "first works"
-    (-> (df-20) (g/select :Address) g/first) => {:Address "85 Turner St"}
-    (-> (df-20) (g/select :Address) g/first-vals) => ["85 Turner St"]
-    (-> (df-20) (g/select :Address) g/last) => {:Address "42 Valiant St"}
-    (-> (df-20) (g/select :Address) g/last-vals) => ["42 Valiant St"]))
+(deftest ^:slow actions-test
+  (testing "correct collection of lits"
+    (is (= [1 "a" [2.0] ["b"]]
+           (-> (df-1)
+               (g/select
+                (g/lit 1)
+                (g/lit "a")
+                (g/lit [2.0])
+                (g/lit ["b"]))
+               g/first-vals))))
+  (testing "action functions work"
+    (is (map? (g/head (df-20))))
+    (is (= (count (g/head (df-20) 2)) 2))
+    (is (vector? (g/head-vals (df-20))))
+    (let [actual (g/head-vals (df-20) 3)]
+      (is (and (= (count actual) 3) (every? vector? actual))))
+    (let [actual (g/take (df-20) 5)]
+      (is (and (= (count actual) 5) (every? map? actual))))
+    (let [actual (g/take-vals (df-20) 10)]
+      (is (and (= (count actual) 10) (every? vector? actual))))
+    (let [actual (g/tail (df-20) 5)]
+      (is (and (= (count actual) 5) (every? map? actual))))
+    (let [actual (g/tail-vals (df-20) 10)]
+      (is (and (= (count actual) 10) (every? vector? actual)))))
+  (testing "first works"
+    (is (= {:Address "85 Turner St"} (-> (df-20) (g/select :Address) g/first)))
+    (is (= ["85 Turner St"] (-> (df-20) (g/select :Address) g/first-vals)))
+    (is (= {:Address "42 Valiant St"} (-> (df-20) (g/select :Address) g/last)))
+    (is (= ["42 Valiant St"] (-> (df-20) (g/select :Address) g/last-vals)))))
 
-(facts "On drop" :slow
-  (fact "dropped columns should no longer exist"
+(deftest ^:slow drop-test
+  (testing "dropped columns should no longer exist"
     (let [original-columns (-> (melbourne-df) g/columns set)
           columns-to-drop  #{:Suburb :Price :YearBuilt}
           dropped-columns  (-> (melbourne-df)
                                (g/drop columns-to-drop)
                                g/columns
                                set)]
-      (clojure.set/subset? columns-to-drop original-columns) => true
-      (clojure.set/intersection columns-to-drop dropped-columns) => empty?))
-  (fact "drop duplicates without arg should not drop everything"
-    (-> (df-20)
-        (g/select :Method :SellerG)
-        g/drop-duplicates
-        g/count) => 10)
-  (fact "drop duplicates can be called with columns"
-    (-> (df-20)
-        (g/select :Method :SellerG)
-        (g/drop-duplicates :SellerG)
-        g/count) => 6))
+      (is (clojure.set/subset? columns-to-drop original-columns))
+      (is (empty? (clojure.set/intersection columns-to-drop dropped-columns)))))
+  (testing "drop duplicates without arg should not drop everything"
+    (is (= 10
+           (-> (df-20)
+               (g/select :Method :SellerG)
+               g/drop-duplicates
+               g/count))))
+  (testing "drop duplicates can be called with columns"
+    (is (= 6
+           (-> (df-20)
+               (g/select :Method :SellerG)
+               (g/drop-duplicates :SellerG)
+               g/count)))))
 
-(facts "On except and intercept" :slow
-  (fact "except should exclude the row"
-    (-> (df-20)
-        (g/union (df-20))
-        (g/except (df-1))
-        g/count) => 19)
-  (fact "except all should leave out the duplicates"
-    (-> (df-20)
-        (g/union (df-20))
-        (g/except-all (df-1))
-        g/count) => 39)
-  (fact "except then intercept should be empty"
-    (-> (df-20)
-        (g/except (df-1))
-        (g/intersect (df-1))
-        g/empty?) => true)
-  (fact "intersect all should preserve duplicates"
-    (-> (df-20)
-        (g/union (df-20))
-        (g/intersect-all (df-1))
-        g/count) => 1)) ; TODO: this should be 2
+(deftest ^:slow except-and-intercept-test
+  (testing "except should exclude the row"
+    (is (= 19
+           (-> (df-20)
+               (g/union (df-20))
+               (g/except (df-1))
+               g/count))))
+  (testing "except all should leave out the duplicates"
+    (is (= 39
+           (-> (df-20)
+               (g/union (df-20))
+               (g/except-all (df-1))
+               g/count))))
+  (testing "except then intercept should be empty"
+    (is (true? (-> (df-20)
+                   (g/except (df-1))
+                   (g/intersect (df-1))
+                   g/empty?))))
+  (testing "intersect all should preserve duplicates"
+    (is (= 1
+           (-> (df-20)
+               (g/union (df-20))
+               (g/intersect-all (df-1))
+               g/count))))) ; TODO: this should be 2
 
-(facts "On union" :slow
-  (fact "Union should double the rows preserve distinctness"
+(deftest ^:slow union-test
+  (testing "Union should double the rows preserve distinctness"
     (let [unioned (g/union (df-20) (df-20) (df-20))]
-      (g/count unioned) => 60
-      (-> unioned g/distinct g/count) => 20))
-  (fact "Union by name should line up the names"
-    (let [left (-> (df-1) (g/select :Suburb :SellerG))
-          right (-> (df-1) (g/select :SellerG :Suburb))]
-      (-> left (g/union-by-name right right) g/distinct g/count)) => 1))
+      (is (= 60 (g/count unioned)))
+      (is (= 20 (-> unioned g/distinct g/count)))))
+  (testing "Union by name should line up the names"
+    (is (= 1
+           (let [left (-> (df-1) (g/select :Suburb :SellerG))
+                 right (-> (df-1) (g/select :SellerG :Suburb))]
+             (-> left (g/union-by-name right right) g/distinct g/count))))))
 
-(facts "On describe" :slow
-  (fact "describe should have the right shape"
+(deftest ^:slow describe-test
+  (testing "describe should have the right shape"
     (let [summary (-> (df-20) (g/describe :Price))]
-      (g/column-names summary) => ["summary" "Price"]
-      (map :summary (g/collect summary)) => ["count" "mean" "stddev" "min" "max"]))
-  (fact "summary should only pick some stats"
-    (-> (df-20)
-        (g/select :Rooms)
-        (g/summary "count" "min")
-        g/collect-vals) => [["count" "20"] ["min" "1"]]))
+      (is (= ["summary" "Price"] (g/column-names summary)))
+      (is (= ["count" "mean" "stddev" "min" "max"] (map :summary (g/collect summary))))))
+  (testing "summary should only pick some stats"
+    (is (= [["count" "20"] ["min" "1"]]
+           (-> (df-20)
+               (g/select :Rooms)
+               (g/summary "count" "min")
+               g/collect-vals)))))
 
-(facts "On sample" :slow
+(deftest ^:slow sample-test
   (let [with-rep    (g/sample (df-50) 0.8 true)
         without-rep (g/sample (df-50) 0.8)]
-    (fact "Sampling without replacement should have all unique rows"
-      (-> without-rep g/distinct g/count) => (g/count without-rep))
-    (fact "Sampling with replacement should have less unique rows"
-      (-> with-rep g/distinct g/count) => #(< % 40))))
+    (testing "Sampling without replacement should have all unique rows"
+      (is (= (g/count without-rep) (-> without-rep g/distinct g/count))))
+    (testing "Sampling with replacement should have less unique rows"
+      (is (< (-> with-rep g/distinct g/count) 40)))))
 
-(facts "On order-by" :slow
+(deftest ^:slow order-by-test
   (let [df (-> (df-20) (g/select (g/as (g/->date-col :Date "d/MM/yyyy") :Date)))]
-    (fact "should correctly order dates - desc"
+    (testing "should correctly order dates - desc"
       (let [records (-> df (g/order-by (g/desc :Date)) g/collect)
             dates   (map #(str (% :Date)) records)]
-        (map compare dates (rest dates)) => #(every? (complement neg?) %)))
-    (fact "should correctly order dates - asc"
+        (is (every? (complement neg?) (map compare dates (rest dates))))))
+    (testing "should correctly order dates - asc"
       (let [records (-> df (g/order-by (g/asc :Date)) g/collect)
             dates   (map #(str (% :Date)) records)]
-        (map compare dates (rest dates)) => #(every? (complement pos?) %)))))
+        (is (every? (complement pos?) (map compare dates (rest dates))))))))
 
-(facts "On caching" :slow
-  (fact "should keeps data in memory")
+(deftest ^:slow caching-test
+
   (let [df (-> (df-1) g/cache)]
-    (.useMemory (g/storage-level df)) => true)
+    (is (true? (.useMemory (g/storage-level df)))))
   (let [df (-> (df-1) g/persist)]
-    (.useMemory (g/storage-level df)) => true)
+    (is (true? (.useMemory (g/storage-level df)))))
   (let [df (-> (df-1) g/persist)]
-    (.useMemory (g/storage-level df)) => true)
+    (is (true? (.useMemory (g/storage-level df)))))
   (let [df (-> (df-1) g/persist g/unpersist)]
-    (.useMemory (g/storage-level df)) => false)
+    (is (false? (.useMemory (g/storage-level df)))))
   (let [df (-> (df-1) g/persist (g/unpersist true))]
-    (.useMemory (g/storage-level df)) => false)
-  (let [df (g/persist (df-1) g/memory-only-ser-2)]
-    (g/storage-level df)) => g/memory-only-ser-2
-  (g/input-files (melbourne-df)) => seq?
-  (g/rdd (melbourne-df)) => #(instance? RDD %)
+    (is (false? (.useMemory (g/storage-level df)))))
+  (is (= g/memory-only-ser-2
+         (let [df (g/persist (df-1) g/memory-only-ser-2)]
+           (g/storage-level df))))
+  (is (seq? (g/input-files (melbourne-df))))
+  (is (instance? RDD (g/rdd (melbourne-df))))
   (let [checkpointed? (fn [df] (-> df
                                    .queryExecution
                                    .toRdd
                                    .toDebugString
                                    (clojure.string/includes? "CheckpointRDD")))]
-    (df-1) => (complement checkpointed?)
-    (g/checkpoint (df-1)) => checkpointed?
-    (g/checkpoint (df-1) true) => checkpointed?))
+    (is (not (checkpointed? (df-1))))
+    (is (checkpointed? (g/checkpoint (df-1))))
+    (is (checkpointed? (g/checkpoint (df-1) true)))))
 
-(facts "On repartition" :slow
-  (fact "able to repartition by a number"
-    (-> (df-20)
-        (g/repartition 2)
-        g/partitions
-        count) => 2)
-  (fact "able to repartition by columns"
-    (-> (df-20)
-        (g/repartition :Suburb :SellerG)
-        g/partitions
-        count) => #(<= 1 %))
-  (fact "able to repartition by number and columns"
-    (-> (df-20)
-        (g/repartition 10 :Suburb :SellerG)
-        g/partitions
-        count) => 10)
-  (fact "able to repartition by range by columns"
-    (-> (df-20)
-        (g/repartition-by-range :Suburb :SellerG)
-        g/partitions
-        count) => pos?)
-  (fact "able to repartition by range by number and columns"
-    (-> (df-20)
-        (g/repartition-by-range 3 :Suburb :SellerG)
-        g/partitions
-        count) => 3)
-  (fact "sort within partitions is differnt to sort"
+(deftest ^:slow repartition-test
+  (testing "able to repartition by a number"
+    (is (= 2
+           (-> (df-20)
+               (g/repartition 2)
+               g/partitions
+               count))))
+  (testing "able to repartition by columns"
+    (is (<= 1 (-> (df-20)
+                  (g/repartition :Suburb :SellerG)
+                  g/partitions
+                  count))))
+  (testing "able to repartition by number and columns"
+    (is (= 10
+           (-> (df-20)
+               (g/repartition 10 :Suburb :SellerG)
+               g/partitions
+               count))))
+  (testing "able to repartition by range by columns"
+    (is (pos?
+         (-> (df-20)
+             (g/repartition-by-range :Suburb :SellerG)
+             g/partitions
+             count))))
+  (testing "able to repartition by range by number and columns"
+    (is (= 3
+           (-> (df-20)
+               (g/repartition-by-range 3 :Suburb :SellerG)
+               g/partitions
+               count))))
+  (testing "sort within partitions is differnt to sort"
     (let [sorted  (-> (df-20)
                       (g/select :Method :SellerG)
                       (g/order-by :Method)
@@ -461,88 +489,90 @@
                             (g/repartition 2 :SellerG)
                             (g/sort-within-partitions :Method)
                             g/collect-vals)]
-      (= sorted sorted-within) => false
-      (set sorted) => (set sorted-within)))
-  (fact "coalesce should reduce the number of partitions"
-    (-> (df-20)
-        (g/repartition 5)
-        (g/coalesce 2)
-        g/partitions
-        count) => 2))
+      (is (false? (= sorted sorted-within)))
+      (is (= (set sorted-within) (set sorted)))))
+  (testing "coalesce should reduce the number of partitions"
+    (is (= 2
+           (-> (df-20)
+               (g/repartition 5)
+               (g/coalesce 2)
+               g/partitions
+               count)))))
 
-(facts "On join" :slow
-  (fact "joining with join exprs"
+(deftest ^:slow join-test
+  (testing "joining with join exprs"
     (let [left (df-1)
           right (df-50)]
-      (-> left
-          (g/join right
-                  (g/= (g/col right :Suburb)
-                       (g/col left :Suburb))
-                  "inner")
-          g/count) => 38))
-  (fact "normal join works as expected"
+      (is (= 38
+             (-> left
+                 (g/join right
+                         (g/= (g/col right :Suburb)
+                              (g/col left :Suburb))
+                         "inner")
+                 g/count)))))
+  (testing "normal join works as expected"
     (let [grouped (-> (df-50)
                       (g/group-by :SellerG :Regionname)
                       (g/agg {:mean-price (g/mean :Price)}))]
-      (-> (df-50) (g/join grouped [:SellerG :Regionname]) g/columns set)
-      => #(contains? % :mean-price)))
-  (fact "normal join works as expected"
+      (is (contains? (-> (df-50) (g/join grouped [:SellerG :Regionname]) g/columns set) :mean-price))))
+  (testing "normal join works as expected"
     (let [n-listings (-> (df-50)
                          (g/group-by :Suburb)
                          (g/agg (g/as (g/count "*") :n-listings)))]
-      (-> (df-50) (g/join n-listings :Suburb) g/columns set)
-      => #(contains? % :n-listings)
-      (-> (df-50) (g/join n-listings :Suburb "inner") g/columns set)
-      => #(contains? % :n-listings)
-      (-> (df-50) (g/join n-listings [:Suburb] "inner") g/columns set)
-      => #(contains? % :n-listings)))
-  (fact "cross-join works as expected"
-    (-> (df-20)
-        (g/select :Suburb)
-        (g/cross-join (-> (df-20) (g/select :Method)))
-        g/count) => 400))
+      (is (contains? (-> (df-50) (g/join n-listings :Suburb) g/columns set) :n-listings))
+      (is (contains? (-> (df-50) (g/join n-listings :Suburb "inner") g/columns set) :n-listings))
+      (is (contains? (-> (df-50) (g/join n-listings [:Suburb] "inner") g/columns set) :n-listings))))
+  (testing "cross-join works as expected"
+    (is (= 400
+           (-> (df-20)
+               (g/select :Suburb)
+               (g/cross-join (-> (df-20) (g/select :Method)))
+               g/count)))))
 
-(facts "On group-by and agg" :slow
-  (fact "group-by with map"
-    (-> (df-20)
-        (g/group-by {:seller :SellerG :rooms :Rooms})
-        (g/agg {:mean-price (g/mean :Price)})
-        g/columns) => [:seller :rooms :mean-price])
-  (fact "group-by with map"
-    (-> (df-20)
-        (g/group-by :SellerG)
-        (g/agg {:n-regions (g/count-distinct :Regionname)
-                :n-null-building-area (g/null-count :BuildingArea)})
-        g/column-names) => ["SellerG" "n-regions" "n-null-building-area"])
-  (fact "should have the right shape"
+(deftest ^:slow group-by-and-agg-test
+  (testing "group-by with map"
+    (is (= [:seller :rooms :mean-price]
+           (-> (df-20)
+               (g/group-by {:seller :SellerG :rooms :Rooms})
+               (g/agg {:mean-price (g/mean :Price)})
+               g/columns))))
+  (testing "group-by with map"
+    (is (= ["SellerG" "n-regions" "n-null-building-area"]
+           (-> (df-20)
+               (g/group-by :SellerG)
+               (g/agg {:n-regions (g/count-distinct :Regionname)
+                       :n-null-building-area (g/null-count :BuildingArea)})
+               g/column-names))))
+  (testing "should have the right shape"
     (let [agged (-> (df-50)
                     (g/group-by :Type)
                     (g/agg
                      (-> (g/count "*") (g/as "n_rows"))
                      (-> (g/max :Price) (g/as "max_price"))))]
-      (g/count agged) => (-> (df-50) (g/select :Type) g/distinct g/count)
-      (g/column-names agged) => ["Type" "n_rows" "max_price"]))
-  (fact "agg-all should apply to all columns"
-    (-> (df-20)
-        (g/select :Price :Regionname :Car)
-        (g/agg-all g/count-distinct)
-        g/collect
-        first
-        count) => 3)
-  (fact "works with nested data structure"
+      (is (= (-> (df-50) (g/select :Type) g/distinct g/count) (g/count agged)))
+      (is (= ["Type" "n_rows" "max_price"] (g/column-names agged)))))
+  (testing "agg-all should apply to all columns"
+    (is (= 3
+           (-> (df-20)
+               (g/select :Price :Regionname :Car)
+               (g/agg-all g/count-distinct)
+               g/collect
+               first
+               count))))
+  (testing "works with nested data structure"
     (let [agged    (-> (df-20)
                        (g/group-by :SellerG)
                        (g/agg
                         (-> (g/collect-list :Suburb) (g/as "suburbs_list"))
                         (-> (g/collect-set :Suburb) (g/as "suburbs_set"))))
           exploded (g/with-column agged "exploded" (g/explode "suburbs_list"))]
-      (g/count agged) => #(< % 20)
-      (g/count exploded) => 20)))
+      (is (< (g/count agged) 20))
+      (is (= 20 (g/count exploded))))))
 
-(facts "On sparse vector"
-  (fact "collects sparse data"
+(deftest sparse-vector-test
+  (testing "collects sparse data"
     (let [sparse-df
           (g/create-dataframe
            [(g/row (g/sparse 4 [1 3] [3.0 4.0]))]
            {:test :vector})]
-      (g/collect-col sparse-df :test)   => [{:size 4 :indices [1 3] :values [3.0 4.0]}])))
+      (is (= [{:size 4 :indices [1 3] :values [3.0 4.0]}] (g/collect-col sparse-df :test))))))

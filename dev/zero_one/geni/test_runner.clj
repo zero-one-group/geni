@@ -1,13 +1,18 @@
 (ns zero-one.geni.test-runner
-  "Runs the Midje suite from the Clojure CLI. See CONTRIBUTING.md."
+  "Runs the clojure.test suite, one namespace at a time, with one line per
+  namespace and one line per failure. Full reports go to target/test.log.
+  See CONTRIBUTING.md."
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [clojure.test]
-   [midje.repl]))
+   [clojure.test :as t]))
 
 (def ^:private compiled-java
   "target/classes/zero_one/geni/rdd/function/Fn1.class")
+
+(def ^:private log-path "target/test.log")
+
+(def ^:private default-report t/report)
 
 (defn- classpath-dirs
   "The project's own directories on the classpath, so that each alias (e.g.
@@ -31,87 +36,155 @@
          (string/replace "_" "-")
          symbol))))
 
-(defn- midje-summary
-  "The last summary line Midje printed, e.g. `All checks (22) succeeded.`"
-  [output]
-  (->> (string/split-lines (string/replace output #"\u001B\[[0-9;]*m" ""))
-       (filter #(re-find #"^(All checks|FAILURE:|No facts were checked)" %))
-       last))
+(defn- shard
+  "Every nth namespace, starting from the ith: [i n], counting from 1."
+  [namespaces [i n]]
+  (if n
+    (keep-indexed #(when (= (mod %1 n) (dec i)) %2) namespaces)
+    namespaces))
 
-(defn- check-count [summary]
-  (let [n #(some-> (re-find % (or summary "")) second parse-long)]
-    (or (n #"All checks \((\d+)\)")
-        (+ (or (n #"FAILURE: (\d+) checks? failed") 0)
-           (or (n #"But (\d+) succeeded") 0)))))
+(defn- one-line [x limit]
+  (let [s (string/replace (str x) #"\s+" " ")]
+    (if (> (count s) limit) (str (subs s 0 limit) "...") s)))
 
-(defn- load-namespace
-  "Loads one namespace's facts, keeping Midje's output to itself unless
-  something fails. A namespace that fails to load doesn't stop the rest."
-  [ns-sym filters]
-  (let [out    (java.io.StringWriter.)
-        start  (System/nanoTime)
-        result (binding [*out*                   out
-                         clojure.test/*test-out* out]
-                 (try
-                   (let [{:keys [failures]} (apply midje.repl/load-facts ns-sym filters)]
-                     (cond
-                       (nil? (find-ns ns-sym)) {:load-failure? true}
-                       (number? failures)      {:failures failures}
-                       :else                   {:failures 1}))
-                   (catch Throwable e
-                     (println (str e))
-                     {:load-failure? true})))
-        output (str out)
-        summary (midje-summary output)]
-    (assoc result
-           :ns      ns-sym
-           :seconds (/ (- (System/nanoTime) start) 1e9)
-           :output  output
-           :summary summary
-           :checks  (check-count summary))))
+(defn- test-frame
+  "Where in a test file an exception came from, if anywhere."
+  [^Throwable e]
+  (some (fn [^StackTraceElement el]
+          (when (some-> (.getFileName el) (string/ends-with? "_test.clj"))
+            [(.getFileName el) (.getLineNumber el)]))
+        (.getStackTrace e)))
 
-(defn- passed? [{:keys [load-failure? failures]}]
-  (and (not load-failure?) (zero? (or failures 0))))
+(defn- failure-line [{:keys [type var contexts expected actual] :as m}]
+  (let [[file line] (or (when (instance? Throwable actual) (test-frame actual))
+                        [(:file m) (:line m)])
+        where (str file ":" line " " (some-> var meta :name)
+                   (when (seq contexts) (str " > " (string/join " > " contexts))))]
+    (if (= type :error)
+      (str "ERROR " where "\n        " (one-line (if (instance? Throwable actual)
+                                                   (str (.getName (class actual)) ": " (ex-message actual))
+                                                   (pr-str actual))
+                                                 200))
+      (str "FAIL  " where "\n        " (one-line (pr-str actual) 200)
+           (when-not (and (seq? actual) (= 'not (first actual)))
+             (str " (expected " (one-line (pr-str expected) 100) ")"))))))
 
-(defn- report! [{:keys [ns seconds summary load-failure? output] :as result}]
-  (let [status (cond load-failure?     "LOAD"
-                     (passed? result) "ok"
-                     :else            "FAIL")
-        detail (cond load-failure?                          "did not load"
-                     (string/starts-with? (str summary) "No facts") "no facts selected"
-                     :else                                  summary)]
-    (when-not (passed? result)
-      (print output))
+(defn- run-namespace
+  "Loads one namespace and runs its tests, keeping their output for the log."
+  [ns-sym {:keys [include exclude reload]} ^java.io.Writer log]
+  (let [out      (java.io.StringWriter.)
+        failures (atom [])
+        timings  (atom {})
+        started  (atom {})
+        counters (ref t/*initial-report-counters*)
+        start    (System/nanoTime)
+        load-err (binding [*out* out]
+                   (try
+                     (if reload (require ns-sym :reload) (require ns-sym))
+                     nil
+                     (catch Throwable e e)))
+        report   (fn [m]
+                   (binding [t/*test-out* out] (default-report m))
+                   (case (:type m)
+                     (:fail :error) (swap! failures conj
+                                           (assoc m
+                                                  :var (first t/*testing-vars*)
+                                                  :contexts (reverse t/*testing-contexts*)))
+                     :begin-test-var (swap! started assoc (:var m) (System/nanoTime))
+                     :end-test-var (swap! timings assoc (:var m)
+                                          (/ (- (System/nanoTime) (@started (:var m))) 1e9))
+                     nil))
+        vars     (when-not load-err
+                   (->> (vals (ns-interns ns-sym))
+                        (filter (comp :test meta))
+                        (filter #(or (nil? include) (include (meta %))))
+                        (remove #(and exclude (exclude (meta %))))
+                        (sort-by (comp :line meta))))]
+    (when-not load-err
+      (binding [*out*                out
+                t/*test-out*         out
+                t/*report-counters*  counters
+                t/report             report]
+        (t/test-vars vars)))
+    (when load-err
+      (binding [*out* out]
+        (println "Failed to load" ns-sym)
+        ((requiring-resolve 'clojure.stacktrace/print-cause-trace) load-err)))
+    (doto log
+      (.write (str "\n==== " ns-sym "\n" out))
+      (.flush))
+    (let [{:keys [pass fail error]} @counters]
+      {:ns        ns-sym
+       :seconds   (/ (- (System/nanoTime) start) 1e9)
+       :load-err  load-err
+       :tests     (count vars)
+       :checks    (+ pass fail error)
+       :failures  @failures
+       :timings   @timings})))
+
+(defn- report! [{:keys [ns seconds load-err tests checks failures]}]
+  (let [status (cond load-err "LOAD" (seq failures) "FAIL" :else "ok")
+        detail (cond
+                 load-err      (str "did not load: " (one-line (ex-message (or (ex-cause load-err) load-err)) 120))
+                 (zero? tests) "no tests selected"
+                 :else         (format "%d tests, %d checks%s" tests checks
+                                       (if (seq failures) (str ", " (count failures) " failed") "")))]
     (println (format "%-4s  %-42s %6.1fs  %s" status ns seconds detail))
+    (doseq [f failures]
+      (println (str "      " (failure-line f))))
     (flush)))
 
+(defn- passed? [{:keys [load-err failures]}]
+  (and (nil? load-err) (empty? failures)))
+
+(defn run-tests
+  "Runs the tests and returns the results. See `run` for the options."
+  [{:keys [dirs only shard-spec slowest] :or {slowest 5} :as opts}]
+  (io/make-parents log-path)
+  (with-open [log (io/writer log-path)]
+    (let [start      (System/nanoTime)
+          namespaces (or (seq only) (shard (test-namespaces (or dirs (classpath-dirs))) shard-spec))
+          results    (mapv #(doto (run-namespace % opts log) report!) namespaces)
+          failed     (remove passed? results)
+          seconds    (/ (- (System/nanoTime) start) 1e9)
+          checks     (reduce + (map :checks results))]
+      (println)
+      (if (empty? failed)
+        (println (format "All %d test namespaces passed: %d checks in %.1fs."
+                         (count results) checks seconds))
+        (println (format "%d of %d test namespaces failed (%.1fs). Full reports are in %s."
+                         (count failed) (count results) seconds log-path)))
+      (when (pos? slowest)
+        (println "Slowest tests:"
+                 (->> (mapcat :timings results)
+                      (sort-by val >)
+                      (take slowest)
+                      (map (fn [[v s]] (format "%s %.1fs" (-> v meta :name) s)))
+                      (string/join ", "))))
+      {:passed? (empty? failed) :results results})))
+
+(defn test!
+  "Reloads and runs test namespaces from the REPL, e.g.
+  (test! 'zero-one.geni.dataset-test). With no args, runs them all."
+  [& namespaces]
+  (-> (run-tests {:only (seq namespaces) :reload true :slowest 0})
+      :passed?))
+
 (defn run
-  "Runs the tests, and exits with a non-zero status if anything fails.
+  "Runs the tests from `clojure -X:spark:test`, and exits with a non-zero
+  status if anything fails.
 
   Options:
     :dirs     the directories to scan (default: the project's classpath dirs)
-    :only     the namespaces to load, e.g. [zero-one.geni.dataset-test]
-    :include  only run facts with this metadata, e.g. :slow
-    :exclude  skip facts with this metadata, e.g. :slow"
-  [{:keys [dirs only include exclude]}]
+    :only     the namespaces to run, e.g. [zero-one.geni.dataset-test]
+    :include  only run tests with this metadata, e.g. :slow
+    :exclude  skip tests with this metadata, e.g. :slow
+    :shard    run every nth namespace from the ith, e.g. [1 3]
+    :slowest  how many of the slowest tests to list (default: 5)"
+  [{:keys [shard] :as opts}]
   (when-not (.exists (io/file compiled-java))
     (println "Compiled Java classes not found. Run `clojure -T:build prep` first.")
     (System/exit 1))
-  (let [filters (concat (when include [include])
-                        (when exclude [(complement exclude)]))
-        start   (System/nanoTime)
-        results (mapv (fn [ns-sym]
-                        (doto (load-namespace ns-sym filters) report!))
-                      (or (seq only) (test-namespaces (or dirs (classpath-dirs)))))
-        failed  (remove passed? results)
-        seconds (/ (- (System/nanoTime) start) 1e9)
-        checks  (reduce + (map :checks results))]
-    (println)
-    (if (empty? failed)
-      (println (format "All %d test namespaces passed: %d checks in %.1fs."
-                       (count results) checks seconds))
-      (println (format "%d of %d test namespaces failed (%.1fs): %s"
-                       (count failed) (count results) seconds
-                       (string/join ", " (map :ns failed)))))
+  (let [{:keys [passed?]} (run-tests (assoc opts :shard-spec shard))]
     (shutdown-agents)
-    (System/exit (if (empty? failed) 0 1))))
+    (System/exit (if passed? 0 1))))

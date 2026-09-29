@@ -1,12 +1,12 @@
 (ns zero-one.geni.partitioner-test
   (:require
-   [midje.sweet :refer [facts =>]]
+   [clojure.test :refer [deftest is]]
    [zero-one.geni.partitioner :as partitioner]))
 
-(facts "On partitioner fields" :rdd
+(deftest ^:rdd partitioner-fields-test
   (let [partitioner (partitioner/hash-partitioner 12)]
-    (partitioner/num-partitions partitioner) => 12
-    (partitioner/get-partition partitioner 123) => int?
-    (partitioner/equals? partitioner partitioner) => true
-    (partitioner/hash-code partitioner) => int?))
+    (is (= 12 (partitioner/num-partitions partitioner)))
+    (is (int? (partitioner/get-partition partitioner 123)))
+    (is (partitioner/equals? partitioner partitioner))
+    (is (int? (partitioner/hash-code partitioner)))))
 

@@ -1,6 +1,6 @@
 (ns zero-one.geni.ml-tuning-test
   (:require
-   [midje.sweet :refer [facts fact =>]]
+   [clojure.test :refer [deftest is testing]]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [libsvm-df]])
@@ -9,27 +9,27 @@
    (org.apache.spark.ml.tuning CrossValidator
                                TrainValidationSplit)))
 
-(facts "On field reflection"
+(deftest field-reflection-test
   (let [stage (ml/hashing-tf {})]
-    (fact "should get the correct fields."
-      (interop/get-field stage :binary) => (.binary stage)
-      (interop/get-field stage :input-col) => (.inputCol stage)
-      (interop/get-field stage :num-features) => (.numFeatures stage)
-      (interop/get-field stage :output-col) => (.outputCol stage))))
+    (testing "should get the correct fields."
+      (is (= (.binary stage) (interop/get-field stage :binary)))
+      (is (= (.inputCol stage) (interop/get-field stage :input-col)))
+      (is (= (.numFeatures stage) (interop/get-field stage :num-features)))
+      (is (= (.outputCol stage) (interop/get-field stage :output-col))))))
 
-(facts "On param grid builder"
-  (fact "should be able to replicate Spark example."
+(deftest param-grid-builder-test
+  (testing "should be able to replicate Spark example."
     (let [hashing-tf (ml/hashing-tf {:input-col "words" :output-col "features"})
           log-reg    (ml/logistic-regression {:max-iter 10})
           param-grid (ml/param-grid
                       {hashing-tf {:num-features [10 100 1000]}
                        log-reg    {:reg-param [0.1 0.01] :max-iter [1 2 3]}})]
-      param-grid => #(-> % class .isArray)
-      (count param-grid) => 18
-      (every? #(= (.size %) 3) param-grid) => true)))
+      (is (-> param-grid class .isArray))
+      (is (= 18 (count param-grid)))
+      (is (every? #(= (.size %) 3) param-grid)))))
 
-(facts "On cross validator fitting" :slow
-  (fact "should be able to replicate Spark example."
+(deftest ^:slow cross-validator-fitting-test
+  (testing "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
           param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
           cv         (ml/cross-validator
@@ -38,12 +38,12 @@
                        :evaluator (ml/binary-classification-evaluator {})
                        :num-folds 2})
           model      (ml/fit (libsvm-df) cv)]
-      (ml/best-model model) => (partial instance? LogisticRegressionModel))))
+      (is (instance? LogisticRegressionModel (ml/best-model model))))))
 
-(facts "On cross validator"
-  (fact "should be instantiatable"
-    (ml/cross-validator {}) => #(instance? CrossValidator %))
-  (fact "should be able to replicate Spark example."
+(deftest cross-validator-test
+  (testing "should be instantiatable"
+    (is (instance? CrossValidator (ml/cross-validator {}))))
+  (testing "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
           param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
           cv         (ml/cross-validator
@@ -54,14 +54,14 @@
                        :seed 112233
                        :parallelism 101})
           cv-params (ml/params cv)]
-      (:seed cv-params) => 112233
-      (:num-folds cv-params) => 222
-      (:parallelism cv-params) => 101)))
+      (is (= 112233 (:seed cv-params)))
+      (is (= 222 (:num-folds cv-params)))
+      (is (= 101 (:parallelism cv-params))))))
 
-(facts "On train-validation split"
-  (fact "should be instantiatable"
-    (ml/train-validation-split {}) => #(instance? TrainValidationSplit %))
-  (fact "should be able to replicate Spark example."
+(deftest train-validation-split-test
+  (testing "should be instantiatable"
+    (is (instance? TrainValidationSplit (ml/train-validation-split {}))))
+  (testing "should be able to replicate Spark example."
     (let [split        (ml/train-validation-split
                         {:estimator (ml/logistic-regression {})
                          :evaluator (ml/binary-classification-evaluator {})
@@ -69,5 +69,5 @@
                          :seed 888
                          :parallelism 777})
           split-params (ml/params split)]
-      (:seed split-params) => 888
-      (:parallelism split-params) => 777)))
+      (is (= 888 (:seed split-params)))
+      (is (= 777 (:parallelism split-params))))))
