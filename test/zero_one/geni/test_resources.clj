@@ -6,12 +6,16 @@
    [clojure.java.io :as io])
   (:import
    (java.io File)
-   (org.apache.spark.sql Dataset)
+   (org.apache.spark.sql Dataset SparkSession)
    (java.nio.file.attribute FileAttribute)
    (java.nio.file Files Paths)
    (java.util UUID)))
 
 (def spark zero-one.geni.defaults/spark)
+
+;; Geni's default session sets Spark's log level to WARN, and the tests only
+;; want errors.
+(.setLogLevel (.sparkContext ^SparkSession @spark) "ERROR")
 
 (def ^:private fixtures (atom {}))
 
@@ -104,9 +108,9 @@
   []
   (.close @spark)
   (reset! spark (g/create-spark-session
-                 (assoc-in zero-one.geni.defaults/session-config
-                           [:configs :spark.sql.warehouse.dir]
-                           (rand-wh-path)))))
+                 (-> zero-one.geni.defaults/session-config
+                     (assoc-in [:configs :spark.sql.warehouse.dir] (rand-wh-path))
+                     (assoc :log-level "ERROR")))))
 
 (defmacro with-fresh-session
   "Runs `body` in a new Spark session with its own warehouse, and deletes the
