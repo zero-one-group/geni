@@ -1,5 +1,4 @@
 (ns zero-one.geni.core.data-sources
-  (:refer-clojure :exclude [partition-by])
   (:require
    [clojure.edn :as edn]
    [clojure.string :as string]

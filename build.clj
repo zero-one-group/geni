@@ -2,6 +2,7 @@
   "Build tasks. Run them with `clojure -T:build <task>`."
   (:require
    [clojure.edn :as edn]
+   [clojure.string :as string]
    [clojure.tools.build.api :as b]
    [deps-deploy.deps-deploy :as dd]))
 
@@ -109,6 +110,36 @@
                     :class-dir  test-class-dir})
     ;; The test runner checks it against the Spark that the tests run on.
     (spit (str test-class-dir "/spark.edn") (pr-str (spark-build basis)))))
+
+(defn- sh!
+  "Runs a command in the repo, and exits with its status if it fails."
+  [& args]
+  (let [{:keys [exit]} (b/process {:command-args (vec args)})]
+    (when-not (zero? exit)
+      (binding [*out* *err*]
+        (println "Failed:" (string/join " " args)))
+      (System/exit exit))))
+
+(def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
+(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "docs" "dev" "build.clj"])
+
+(defn lint
+  "Runs clj-kondo, then cljfmt's check, as the CI does."
+  [_]
+  (apply sh! "clojure" "-M:kondo" "--lint" lint-paths)
+  (apply sh! "clojure" "-M:fmt" "check" fmt-paths))
+
+(defn fmt
+  "Reformats the sources with cljfmt."
+  [_]
+  (apply sh! "clojure" "-M:fmt" "fix" fmt-paths))
+
+(defn check
+  "Lints, then runs the tests on :spark: what the CI runs on a pull request.
+  Run `prep` first."
+  [_]
+  (lint nil)
+  (sh! "clojure" "-X:spark:test:cli:tmd"))
 
 (defn jar
   "Builds the library jar into target/."

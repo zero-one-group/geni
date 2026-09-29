@@ -5,26 +5,10 @@
                             /
                             <
                             <=
-                            =
                             >
                             >=
-                            boolean
-                            byte
                             cast
-                            dec
-                            double
-                            even?
-                            float
-                            inc
-                            int
-                            long
-                            mod
-                            neg?
-                            odd?
-                            pos?
-                            short
-                            str
-                            zero?])
+                            mod])
   (:require
    [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]
