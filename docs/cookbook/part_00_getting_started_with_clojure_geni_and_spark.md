@@ -33,7 +33,7 @@ clojure -T:build prep
 clj -M:spark:test
 ```
 
-Run examples from the repository root so that their relative paths resolve. Each runnable chapter requires its own namespaces. Downloads and generated datasets live under `data/cookbook/`; part 5 reads the weather dataset written by part 4. Parts 10 and 12 need manual dataset preparation and are excluded from the automated tests.
+Run examples from the repository root so that their relative paths resolve. Each chapter requires its own namespaces. Downloads and generated datasets live under `data/cookbook/`; part 5 reads the weather dataset written by part 4.
 
 To run the automated cookbook examples:
 

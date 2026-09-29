@@ -1,5 +1,5 @@
-;; What cljdoc shows in its sidebar, besides the API. The stale pages
-;; (Dataproc, Kubernetes, the benchmark) stay out until they're refreshed.
+;; What cljdoc shows in its sidebar, besides the API. The Kubernetes guide
+;; and the 2020 benchmark stay out: they're labelled as dated, and don't run.
 {:cljdoc.doc/tree
  [["Readme" {:file "README.md"}]
   ["Changelog" {:file "CHANGELOG.md"}]

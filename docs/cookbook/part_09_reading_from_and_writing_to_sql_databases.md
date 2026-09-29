@@ -28,25 +28,25 @@ Reading from databases through JDBC is slightly different to reading from a file
 (g/print-schema chinook-tracks)
 ;; =stdout=>
 ; root
-;  |-- TrackId: integer (nullable = true)
-;  |-- Name: string (nullable = true)
-;  |-- AlbumId: integer (nullable = true)
-;  |-- MediaTypeId: integer (nullable = true)
-;  |-- GenreId: integer (nullable = true)
-;  |-- Composer: string (nullable = true)
-;  |-- Milliseconds: integer (nullable = true)
-;  |-- Bytes: integer (nullable = true)
-;  |-- UnitPrice: decimal(10,2) (nullable = true)
+;  |-- track-id: integer (nullable = true)
+;  |-- name: string (nullable = true)
+;  |-- album-id: integer (nullable = true)
+;  |-- media-type-id: integer (nullable = true)
+;  |-- genre-id: integer (nullable = true)
+;  |-- composer: string (nullable = true)
+;  |-- milliseconds: integer (nullable = true)
+;  |-- bytes: integer (nullable = true)
+;  |-- unit-price: decimal(10,2) (nullable = true)
 
 (g/show chinook-tracks {:num-rows 3})
 ;; =stdout=>
-; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
-; |TrackId|Name                                   |AlbumId|MediaTypeId|GenreId|Composer                                           |Milliseconds|Bytes   |UnitPrice|
-; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
-; |1      |For Those About To Rock (We Salute You)|1      |1          |1      |Angus Young, Malcolm Young, Brian Johnson          |343719      |11170334|0.99     |
-; |2      |Balls to the Wall                      |2      |2          |1      |NULL                                               |342562      |5510424 |0.99     |
-; |3      |Fast As a Shark                        |3      |2          |1      |F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman|230619      |3990994 |0.99     |
-; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
+; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
+; |track-id|name                                   |album-id|media-type-id|genre-id|composer                                           |milliseconds|bytes   |unit-price|
+; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
+; |1       |For Those About To Rock (We Salute You)|1       |1            |1       |Angus Young, Malcolm Young, Brian Johnson          |343719      |11170334|0.99      |
+; |2       |Balls to the Wall                      |2       |2            |1       |NULL                                               |342562      |5510424 |0.99      |
+; |3       |Fast As a Shark                        |3       |2            |1       |F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman|230619      |3990994 |0.99      |
+; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
 ; only showing top 3 rows
 ```
 

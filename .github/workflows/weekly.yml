@@ -90,9 +90,14 @@ jobs:
           key: docs-${{ hashFiles('deps.edn') }}
           restore-keys: deps-spark-
       # The downloads, which the cookbook skips when they're there already.
+      # Part 10's generated data and part 12's checkpoints stay out of it:
+      # they're large, and cheap to recreate.
       - uses: actions/cache@v6
         with:
-          path: data/cookbook
+          path: |
+            data/cookbook
+            !data/cookbook/dummy-retail
+            !data/cookbook/checkpoint
           key: cookbook-data-${{ hashFiles('docs/cookbook/*.md') }}
           restore-keys: cookbook-data-
       - run: clojure -T:build prep

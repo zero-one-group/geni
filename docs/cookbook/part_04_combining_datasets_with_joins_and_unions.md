@@ -94,17 +94,8 @@ This archived dataset has already been cleaned. The same approach can select col
   (filter columns-without-nulls (g/columns raw-weather-mar-2012)))
 
 columns-to-select
-;; => (:date-time
-;;     :temp
-;;     :dew-point-temp
-;;     :rel-hum
-;;     :wind-spd
-;;     :visibility
-;;     :stn-press
-;;     :weather
-;;     :year
-;;     :month
-;;     :day)
+;; => (:date-time :temp :dew-point-temp :rel-hum :wind-spd :visibility
+;;     :stn-press :weather :year :month :day)
 
 (def weather-mar-2012 (g/select raw-weather-mar-2012 columns-to-select))
 

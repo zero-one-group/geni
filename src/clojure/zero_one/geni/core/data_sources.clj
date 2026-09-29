@@ -159,8 +159,10 @@
   ([options] (read-jdbc! @defaults/spark options))
   ([spark options]
    (let [unconfigured-reader (.. spark sqlContext read (format "jdbc"))
-         configured-reader   (configure-reader-or-writer unconfigured-reader options)]
-     (.load configured-reader))))
+         configured-reader   (configure-reader-or-writer unconfigured-reader
+                                                         (dissoc options :kebab-columns))]
+     (cond-> (.load configured-reader)
+       (:kebab-columns options) ->kebab-columns))))
 
 (defn- partition-by-arg [partition-id]
   (into-array java.lang.String (map name (ensure-coll partition-id))))

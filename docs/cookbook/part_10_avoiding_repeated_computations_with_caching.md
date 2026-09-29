@@ -1,22 +1,59 @@
 # CB-10: Avoiding Repeated Computations with Caching
 
-This chapter is a manual benchmark using 24 million generated rows; it is excluded from the automated cookbook tests.
+In this part of the cookbook, we need a more sizeable dataset than in the previous parts: dummy retail transactions, like the ones in Geni's [simple performance benchmark](../simple_performance_benchmark.md#dummy-retail-data), at half the size. As in every part, we start with Geni's core namespace:
 
-<!-- {:test-doc-blocks/skip true :test-doc-blocks/apply :all-next} -->
+```clojure
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
+```
 
-In this part of the cookbook, we will require a more sizeable dataset than previous parts. In particular, we will be using [the dummy retail data](https://github.com/zero-one-group/geni/blob/develop/docs/simple_performance_benchmark.md#dummy-retail-data) used in Geni's simple performance benchmark doc. To generate the data locally, simply copy and paste [the data-generation code](https://github.com/zero-one-group/geni/blob/develop/examples/performance_benchmark_data.clj) to your Geni REPL. We assume that the data is stored in `/data/performance_benchmark_data` directory, but it does not need to be.
+## 10.1 Generating the Data
+
+The data has a million random transactions for each month of 2019, written to Parquet one month at a time. Generating it takes a while, so the code skips it when the data is there already:
+
+```clojure
+(def dummy-data-path "data/cookbook/dummy-retail")
+
+(def max-days {1 31 2 28 3 31 4 30 5 31 6 30 7 31 8 31 9 30 10 31 11 30 12 31})
+
+(defn transaction-id-col []
+  (g/concat (g/str (g/random-int))
+            (g/lit "-")
+            (g/str (g/random-int))
+            (g/lit "-")
+            (g/str (g/random-int))))
+
+(def date-col
+  (g/concat :year (g/lit "-") :month (g/lit "-") :day))
+
+(when-not (.exists (io/file dummy-data-path))
+  (doseq [month (range 1 13)]
+    (-> (g/range 1000000)
+        (g/select
+         {:trx-id    (transaction-id-col)
+          :member-id (g/int (g/rexp 1e-5))
+          :quantity  (g/int (g/inc (g/rexp)))
+          :price     (g/pow 2 (g/random-int 16 20))
+          :style-id  (g/int (g/rexp 1e-2))
+          :brand-id  (g/int (g/rexp 1e-2))
+          :year      2019
+          :month     month
+          :day       (g/random-int 1 (inc (max-days month)))})
+        (g/with-column :date (g/to-date date-col))
+        (g/coalesce 1)
+        (g/write-parquet! dummy-data-path {:mode "append"}))))
+```
 
 We load and have a brief look at the data:
 
 ```clojure
-(def dummy-data-path "/data/performance-benchmark-data")
-
 (def transactions (g/read-parquet! dummy-data-path))
 
 (g/count transactions)
-=> 24000000
+;; => 12000000
 
 (g/print-schema transactions)
+;; =stdout=>
 ; root
 ;  |-- member-id: integer (nullable = true)
 ;  |-- day: long (nullable = true)
@@ -30,15 +67,13 @@ We load and have a brief look at the data:
 ;  |-- date: date (nullable = true)
 ```
 
-The dataset is a table of dummy transactions that record the member/customer, the timing and the purchased goods. There are exactly 24 million transactions (exactly two million per month for every month in a year), and approximately one million members.
+The dataset is a table of dummy transactions that record the member/customer, the timing and the purchased goods: exactly 12 million transactions, a million for each month of the year.
 
-## 10.1 Putting Together A Member Profile
+## 10.2 Putting Together A Member Profile
 
-Suppose that within a larger script, we've put together two different dataframes - one for summarising the members' spending behaviours and the other for sumarising their visit frequencies:
+Suppose that within a larger script, we've put together two different dataframes - one for summarising the members' spending behaviours and the other for summarising their visit frequencies:
 
 ```clojure
-...
-
 (def member-spending
   (-> transactions
       (g/with-column :sales (g/* :price :quantity))
@@ -47,24 +82,21 @@ Suppose that within a larger script, we've put together two different dataframes
               :avg-basket-size (g/mean :sales)
               :avg-price       (g/mean :price)})))
 
-...
-
 (def member-frequency
   (-> transactions
       (g/group-by :member-id)
       (g/agg {:n-transactions (g/count "*")
               :n-visits       (g/count-distinct :date)})))
-
-...
 ```
 
-In another part of the script, we would like to put together a customer profile that puts together their spending behaviours and visit ferquencies:
+In another part of the script, we would like to put together a customer profile that puts together their spending behaviours and visit frequencies:
 
 ```clojure
 (def member-profile
   (g/join member-spending member-frequency :member-id))
 
 (g/print-schema member-profile)
+;; =stdout=>
 ; root
 ;  |-- member-id: integer (nullable = true)
 ;  |-- total-spend: double (nullable = true)
@@ -74,26 +106,26 @@ In another part of the script, we would like to put together a customer profile 
 ;  |-- n-visits: long (nullable = false)
 ```
 
-## 10.2 Caching Intermediate Results
+## 10.3 Caching Intermediate Results
 
 At this point, the dataset `member-profile` is derived from several possibly expensive computational steps. Spark does not save the intermediate results unless specifically asked. So that if we were to use a dataset such as `member-profile` in further computations, Spark will re-do the two group-by operations and the one join operation. This means that we can potentially save time by telling Spark which datasets to cache using `g/cache`.
 
-To illustrate this effect, let's suppose the dataset `member-profile` is used in five other computations, which we replace with a dummy `g/write-parquet!` operation over a loop:
+To illustrate this effect, let's suppose the dataset `member-profile` is used in five other computations, which we replace with a dummy `g/write-parquet!` operation over a loop. The timings below come from one run with two local Spark cores, and yours will differ:
 
 ```clojure
 (defn some-other-computations [member-profile]
-  (g/write-parquet! member-profile "data/temp.parquet" {:mode "overwrite"}))
+  (g/write-parquet! member-profile "data/cookbook/member-profile.parquet" {:mode "overwrite"}))
 
 (doall (for [_ (range 5)]
          (time (some-other-computations member-profile))))
-; "Elapsed time: 10083.047244 msecs"
-; "Elapsed time: 8231.45662 msecs"
-; "Elapsed time: 8525.947692 msecs"
-; "Elapsed time: 8155.982435 msecs"
-; "Elapsed time: 7638.144858 msecs"
+; "Elapsed time: 9285.895963 msecs"
+; "Elapsed time: 8429.818504 msecs"
+; "Elapsed time: 7881.109296 msecs"
+; "Elapsed time: 7884.581796 msecs"
+; "Elapsed time: 7917.635921 msecs"
 ```
 
-Each step took 7-10 seconds, as Spark re-did some of the expensive computations. However, if we had cached the dataset, we would take a hit on the first step, but the next steps would use the saved intermediate computations:
+Each step redid the expensive computations. However, if we had cached the dataset, we would take a hit on the first step, but the next steps would use the saved intermediate computations:
 
 ```clojure
 (def cached-member-profile
@@ -101,16 +133,16 @@ Each step took 7-10 seconds, as Spark re-did some of the expensive computations.
 
 (doall (for [_ (range 5)]
          (time (some-other-computations cached-member-profile))))
-; "Elapsed time: 11996.307581 msecs"
-; "Elapsed time: 988.958567 msecs"
-; "Elapsed time: 1017.365143 msecs"
-; "Elapsed time: 1032.578846 msecs"
-; "Elapsed time: 1087.077004 msecs"
+; "Elapsed time: 9770.506671 msecs"
+; "Elapsed time: 1126.209834 msecs"
+; "Elapsed time: 1135.704625 msecs"
+; "Elapsed time: 1145.360542 msecs"
+; "Elapsed time: 1125.059167 msecs"
 ```
 
-We can see that the first time the computation ran, it took 12 seconds (i.e. around 20-50% slower than before), but the subsequent steps were 10x faster.
+The first run with the cache took a little longer than the runs without it, since it also saved the profile, and the runs after it were about seven times faster.
 
-## 10.3 Further Resources
+## 10.4 Further Resources
 
 To understand when the intermediate computations are triggered and saved, we must first distinguish between Spark actions and transformations. For instance, this [blog article](https://medium.com/@aristo_alex/how-apache-sparks-transformations-and-action-works-ceb0d03b00d0) discusses Spark RDD actions and transformations, which work the same way as Spark datasets.
 

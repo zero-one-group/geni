@@ -2,7 +2,7 @@
 
 <!-- Check with [x] -->
 
-- [ ] I have read through the quick start and installation sections of the [README](../README.md).
+- [ ] I have read through the installation section of the [README](../README.md).
 
 ## Info
 
@@ -14,6 +14,7 @@
 | Geni Version     | ...   |
 | JDK              | ...   |
 | Spark Version    | ...   |
+| Scala Version    | ...   |
 
 ## Problem / Steps to reproduce
 
@@ -21,4 +22,4 @@
 
 <!-- If possible, please consider replicating the issue inside a Docker container. -->
 
-<!-- For instance, use `docker run --rm -it clojure:openjdk-11-lein-2.9.1 /bin/bash` + a list of bash commands -->
+<!-- For instance, use `docker run --rm -it clojure:temurin-21-tools-deps bash`, a deps.edn from the README and a list of bash commands -->
