@@ -265,16 +265,25 @@ Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g
 
 ## The Geni CLI
 
-The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The `geni` script downloads the uberjar of the latest release to `~/.geni` and runs it:
+The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. Until 0.1.0 is out, the revived CLI is the uberjar on the [0.1.0-alpha.1 pre-release](https://github.com/zero-one-group/geni/releases/tag/v0.1.0-alpha.1), which runs on JDK 17 or 21:
 
 ```bash
-wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
+curl -fLO https://github.com/zero-one-group/geni/releases/download/v0.1.0-alpha.1/geni-repl-uberjar-0.1.0-alpha.1.jar
+java -jar geni-repl-uberjar-0.1.0-alpha.1.jar
+```
+
+Its manifest carries the JVM flags that Spark needs. Given a file, as in `java -jar geni-repl-uberjar-0.1.0-alpha.1.jar script.clj`, it runs the file instead of the REPL.
+
+The `geni` script downloads the uberjar of the latest stable release to `~/.geni` and runs it. That's still 0.0.42, from before the revival, on Spark 3.3, and the script moves to 0.1.0 when it's released:
+
+```bash
+curl -fLO https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
 chmod a+x geni
 sudo mv geni /usr/local/bin/
 geni
 ```
 
-The uberjar is also on each [release](https://github.com/zero-one-group/geni/releases), and runs with `java -jar geni-repl-uberjar-<version>.jar` on JDK 17 or 21. Its manifest carries the JVM flags that Spark needs. Given a file, as in `geni --submit script.clj`, it runs the file instead of the REPL.
+A `geni` script installed before 0.1.0 keeps the uberjar it downloaded until it's run once with `geni --force-download`.
 
 ## Docs
 

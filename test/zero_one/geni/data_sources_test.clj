@@ -144,6 +144,11 @@
               {:Price 1465000.0 :Rooms 3}]
              (edn/read-string (slurp temp-file))))
       (is (thrown? Exception (g/write-edn! write-df temp-file))))
+    (testing "write-edn! keeps whole numbers that don't fit in a long"
+      (let [big-file (.toString (create-temp-file! ".edn"))
+            big-df   (g/sql @spark "SELECT CAST(123456789012345678901234567890 AS DECIMAL(38,0)) AS n")]
+        (g/write-edn! big-df big-file {:mode "overwrite"})
+        (is (= [{:n 123456789012345678901234567890N}] (edn/read-string (slurp big-file))))))
     (testing "write-edn! writes to a new path"
       (let [new-file (str (.getParent (create-temp-file! ".edn")) "/new.edn")]
         (g/write-edn! write-df new-file)
@@ -230,7 +235,7 @@
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! temp-file {:header false}))]
-    (is (not= (set (g/column-names read-df)) #{:Method :Type})))
+    (is (= ["_c0" "_c1"] (g/column-names read-df))))
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
         read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
                      (g/read-libsvm! temp-file {:num-features "780"}))]

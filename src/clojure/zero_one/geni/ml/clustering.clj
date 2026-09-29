@@ -17,9 +17,8 @@
                   :k 4,
                   :min-divisible-cluster-size 1.0,
                   :seed 566573821,
-                  :prediction-col "prediction"}
-        props     (merge defaults params)]
-    (interop/instantiate BisectingKMeans props)))
+                  :prediction-col "prediction"}]
+    (interop/instantiate BisectingKMeans defaults params)))
 
 (defn gaussian-mixture [params]
   (let [defaults {:seed 538009335,
@@ -28,9 +27,8 @@
                   :probability-col "probability",
                   :tol 0.01,
                   :features-col "features",
-                  :prediction-col "prediction"}
-        props     (merge defaults params)]
-    (interop/instantiate GaussianMixture props)))
+                  :prediction-col "prediction"}]
+    (interop/instantiate GaussianMixture defaults params)))
 
 (defn k-means [params]
   (let [defaults {:max-iter         20,
@@ -41,9 +39,8 @@
                   :init-steps       2,
                   :distance-measure "euclidean",
                   :prediction-col   "prediction",
-                  :features-col     "features"}
-        props     (merge defaults params)]
-    (interop/instantiate KMeans props)))
+                  :features-col     "features"}]
+    (interop/instantiate KMeans defaults params)))
 
 (defn lda [params]
   (let [defaults {:subsampling-rate 0.05,
@@ -57,18 +54,16 @@
                   :checkpoint-interval 10,
                   :optimizer "online",
                   :learning-decay 0.51,
-                  :features-col "features"}
-        props     (merge defaults params)]
-    (interop/instantiate LDA props)))
+                  :features-col "features"}]
+    (interop/instantiate LDA defaults params)))
 
 (defn power-iteration-clustering [params]
   (let [defaults {:k         2,
                   :dst-col   "dst",
                   :src-col   "src",
                   :init-mode "random",
-                  :max-iter  20}
-        props     (merge defaults params)]
-    (interop/instantiate PowerIterationClustering props)))
+                  :max-iter  20}]
+    (interop/instantiate PowerIterationClustering defaults params)))
 
 ;; Docs
 (docs/alter-docs-in-ns!

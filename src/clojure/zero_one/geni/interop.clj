@@ -1,6 +1,6 @@
 (ns zero-one.geni.interop
   (:require
-   [clojure.string :refer [replace-first]]
+   [clojure.string :as string :refer [replace-first]]
    [clojure.walk :as walk]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.utils :refer [->kebab-case ensure-coll]])
@@ -210,16 +210,50 @@
          (every? keyword? value)) (map name value)
     :else                         value))
 
+(defn- edit-distance
+  "The Levenshtein distance between two strings."
+  [^String a ^String b]
+  (peek
+   (reduce (fn [previous [i x]]
+             (reduce (fn [row [j y]]
+                       (conj row (min (inc (peek row))
+                                      (inc (nth previous (inc j)))
+                                      (+ (nth previous j) (if (= x y) 0 1)))))
+                     [(inc i)]
+                     (map-indexed vector b)))
+           (vec (range (inc (count b))))
+           (map-indexed vector a))))
+
+(defn- unknown-param! [^Class cls setters k]
+  (let [known   (sort (remove #{:default} (keys setters)))
+        closest (first (sort-by #(edit-distance (name k) (name %)) known))
+        close?  (and closest
+                     (<= (edit-distance (name k) (name closest))
+                         (max 2 (quot (count (name k)) 3))))]
+    (throw (ex-info (str (.getSimpleName cls) " has no param " k "."
+                         (when close? (str " Did you mean " closest "?"))
+                         " Its params are " (string/join ", " known) ".")
+                    {:class cls :param k :params known}))))
+
 (defn instantiate
-  ([^Class cls props]
+  "Creates an instance of `cls`, sets `params` through its setters (e.g.
+  `{:input-col \"text\"}` through `setInputCol`), and returns the instance. A
+  key in `params` that has no setter throws, with the class's params in the
+  message. The keys in `defaults`, which are Geni's own, are set when the class
+  has a setter for them and skipped when it doesn't, since a default can be
+  missing from one Spark version."
+  ([cls params] (instantiate cls {} params))
+  ([^Class cls defaults params]
    (let [setters  (setters-map cls)
          instance (.newInstance cls)]
-     (reduce
-      (fn [_ [k v]]
-        (when-let [setter (setters k)]
-          (set-value setter instance (convert-keywords v))))
-      instance
-      props))))
+     (doseq [k (keys params)
+             :when (not (contains? setters k))]
+       (unknown-param! cls setters k))
+     (doseq [[k v] (merge defaults params)
+             :let  [setter (setters k)]
+             :when setter]
+       (set-value setter instance (convert-keywords v)))
+     instance)))
 
 (defn zero-arity? [^java.lang.reflect.Method method]
   (= 0 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method))))

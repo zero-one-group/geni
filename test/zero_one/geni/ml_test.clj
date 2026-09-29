@@ -3,13 +3,15 @@
    [clojure.string :refer [includes?]]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
+   [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [create-temp-file!
                                          df-20
                                          melbourne-df
                                          k-means-df
                                          libsvm-df
-                                         spark]])
+                                         spark
+                                         stop-session!]])
   (:import
    (org.apache.spark.ml.classification DecisionTreeClassifier
                                        FMClassifier
@@ -85,6 +87,33 @@
     (is (thrown? Exception (ml/write-stage! stage temp-file)))
     (is (nil? (ml/write-stage! stage temp-file {:mode "overwrite"
                                                 :persistSubModels "true"})))))
+
+(deftest params-test
+  (testing "an unknown param throws, with the closest one as a suggestion"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Tokenizer has no param :inptu-col\. Did you mean :input-col\?"
+                          (ml/tokenizer {:inptu-col :x})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Tokenizer has no param :typo\. Its params are :input-col, :output-col\."
+                          (ml/tokenizer (array-map :input-col :x :typo true)))))
+  (testing "the instance comes back, whichever param is set last"
+    (is (instance? Tokenizer (ml/tokenizer (array-map :input-col :x :output-col :y))))
+    (is (instance? Tokenizer (ml/tokenizer (array-map :output-col :y :input-col :x)))))
+  (testing "a default that the class has no setter for is skipped"
+    (is (instance? Tokenizer (interop/instantiate Tokenizer {:no-such-param 1} {:input-col "x"}))))
+  (testing "the British spelling of standardisation still works"
+    (is (false? (.getStandardization (ml/logistic-regression {:standardisation false}))))
+    (is (false? (.getStandardization (ml/linear-regression {:standardisation false}))))))
+
+(deftest ^:slow stages-without-a-session-test
+  (testing "write-stage! and read-stage! use Geni's default session, rather than Spark's
+            getOrCreate, which needs a master URL"
+    (let [temp-file (.toString (create-temp-file! ".stage"))
+          stage     (ml/vector-assembler {:input-cols [:a :b] :output-col :v})]
+      (stop-session!)
+      (ml/write-stage! stage temp-file {:mode "overwrite"})
+      (stop-session!)
+      (is (= ["a" "b"] (seq (.getInputCols (ml/read-stage! VectorAssembler temp-file))))))))
 
 (deftest ^:slow feature-extraction-test
   (let [indexer (ml/fit (libsvm-df) (ml/string-indexer {:input-col :label
@@ -578,7 +607,9 @@
           transformed (-> dataset
                           (ml/transform transformer)
                           (g/select "features"))]
-      (is (every? double? (->> transformed g/collect-vals flatten :values)))
+      (let [features (map first (g/collect-vals transformed))]
+        (is (= 3 (count features)))
+        (is (every? #(and (seq (:values %)) (every? double? (:values %))) features)))
       (is (every? double? (-> transformer ml/stages last ml/idf-vector)))))
   (testing "should be able to fit the word2vec example"
     (let [dataset     (g/table->dataset

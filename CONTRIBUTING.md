@@ -46,7 +46,7 @@ From a REPL started with `clj -M:spark:test`, this reloads a test namespace and 
 
 The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. Adding `:canary` after `:test` turns it back on, which is how the weekly canary runs them, on the newest Spark patches.
 
-On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`.
+On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
 
 ## Linting and formatting
 
@@ -106,6 +106,8 @@ git tag v0.1.0-alpha.1
 git push origin v0.1.0-alpha.1
 ```
 
-The Release workflow deploys `zero.one/geni` to Clojars, builds the CLI uberjar and attaches it to a GitHub release, marked as a pre-release when the version has a suffix. It skips the deploy when Clojars already has that version, so a failed run can be rerun, or the tag moved to a fixed commit and pushed again. After a final release, bump `resources/GENI_REPL_RELEASED_VERSION` on `develop`, so that installed `geni` scripts pick the new uberjar up.
+The Release workflow deploys `zero.one/geni` to Clojars, builds the CLI uberjar and attaches it to a GitHub release, marked as a pre-release when the version has a suffix. A failed run can be rerun: it skips the deploy when Clojars already has that version from the same commit. A published tag never moves, though, so that the tag, the Clojars jar and the uberjar always agree. If a release needs a fix, release a new version, such as `0.1.0-alpha.2`. The pom records the commit it was built from, and the workflow fails when Clojars has the version from another commit.
+
+After a final release, bump `resources/GENI_REPL_RELEASED_VERSION` on `develop`, so that installed `geni` scripts pick the new uberjar up. Scripts installed before 0.1.0 keep their downloaded uberjar until they're run once with `geni --force-download`.
 
 The same build tasks run locally: `clojure -T:build deploy`, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set, and `clojure -T:build cli-uber` for the uberjar.

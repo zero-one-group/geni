@@ -3,8 +3,8 @@ name: Release
 # Publishes a tagged version: zero.one/geni to Clojars, and the CLI uberjar to
 # a GitHub release. Tag the commit on develop with v<version>, where <version>
 # is the one in build.clj, and push the tag (see CONTRIBUTING.md). A version
-# with a suffix, like 0.1.0-alpha.1, becomes a pre-release. The deploy is
-# skipped when Clojars already has the version, so a failed run can be rerun.
+# with a suffix, like 0.1.0-alpha.1, becomes a pre-release. A failed run can be
+# rerun, but a published tag never moves: a fix gets a new version.
 on:
   push:
     tags: ['v*']
@@ -50,10 +50,18 @@ jobs:
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
+      # A published version never changes. A rerun on the same commit skips
+      # the deploy, and a tag moved to another commit fails here, before the
+      # uberjar is rebuilt.
       - name: Deploy zero.one/geni to Clojars
         run: |
-          if curl -sfI "https://repo.clojars.org/zero/one/geni/$VERSION/geni-$VERSION.pom" > /dev/null; then
-            echo "zero.one/geni $VERSION is on Clojars already."
+          if pom=$(curl -sf "https://repo.clojars.org/zero/one/geni/$VERSION/geni-$VERSION.pom"); then
+            deployed=$(printf '%s\n' "$pom" | sed -n 's:.*<tag>\(.*\)</tag>.*:\1:p' | head -1)
+            if [ "$deployed" != "$GITHUB_SHA" ]; then
+              echo "Clojars has zero.one/geni $VERSION from $deployed, not $GITHUB_SHA. Release a new version instead."
+              exit 1
+            fi
+            echo "zero.one/geni $VERSION is on Clojars already, from this commit."
           else
             clojure -T:build deploy
           fi

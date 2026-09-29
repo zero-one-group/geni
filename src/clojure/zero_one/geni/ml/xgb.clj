@@ -67,10 +67,10 @@
           max-bin   (coalesce (:max-bin params)
                               (:max-bins params)
                               (:max-bin defaults))
-          props     (-> defaults
-                        (merge params)
+          params    (-> params
+                        (dissoc :max-bin)
                         (assoc :max-bins max-bin))]
-      (interop/instantiate XGBoostClassifier props)))
+      (interop/instantiate XGBoostClassifier defaults params)))
 
   (defn xgboost-regressor
     "Gradient boosting classifier based on xgboost.
@@ -127,10 +127,10 @@
           max-bin   (coalesce (:max-bin params)
                               (:max-bins params)
                               (:max-bin defaults))
-          props     (-> defaults
-                        (merge params)
+          params    (-> params
+                        (dissoc :max-bin)
                         (assoc :max-bins max-bin))]
-      (interop/instantiate XGBoostRegressor props)))
+      (interop/instantiate XGBoostRegressor defaults params)))
 
   (defn write-native-model!
     "Save the native XGBoost's `Booster` to file."
