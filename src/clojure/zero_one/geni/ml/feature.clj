@@ -159,7 +159,7 @@
 
 (defn imputer [params]
   (let [defaults {:missing-value ##NaN
-                                   :strategy      "mean"}
+                  :strategy      "mean"}
         props    (merge defaults params)]
     (interop/instantiate Imputer props)))
 

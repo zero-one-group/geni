@@ -1,0 +1,97 @@
+{:paths ["src/clojure" "resources" "target/classes"]
+
+ :deps
+ {org.clojure/clojure                 {:mvn/version "1.11.4"}
+  camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
+  com.taoensso/nippy                  {:mvn/version "3.3.0"}
+  expound/expound                     {:mvn/version "0.8.9"}
+  metosin/jsonista                    {:mvn/version "0.3.3"
+                                       :exclusions  [com.fasterxml.jackson.core/jackson-databind]}
+  net.cgrand/parsley                  {:mvn/version "0.9.3"}
+  nrepl/nrepl                         {:mvn/version "0.8.3"}
+  org.clojure/java.data               {:mvn/version "1.0.86"}
+  potemkin/potemkin                   {:mvn/version "0.4.5"}
+  reply/reply                         {:mvn/version "0.5.1"
+                                       :exclusions  [javax.servlet/servlet-api]}
+  zero.one/fxl                        {:mvn/version "0.0.6"}}
+
+ ;; Lets git-dep users build the Java sources with `clojure -X:deps prep`.
+ :deps/prep-lib {:alias  :build
+                 :fn     compile-java
+                 :ensure "target/classes"}
+
+ :aliases
+ {;; Spark and the other provided deps. Library users bring their own.
+  :spark
+  {:extra-deps
+   {org.apache.spark/spark-avro_2.12      {:mvn/version "3.5.9"}
+    org.apache.spark/spark-core_2.12      {:mvn/version "3.5.9"}
+    org.apache.spark/spark-hive_2.12      {:mvn/version "3.5.9"}
+    org.apache.spark/spark-mllib_2.12     {:mvn/version "3.5.9"}
+    org.apache.spark/spark-sql_2.12       {:mvn/version "3.5.9"}
+    org.apache.spark/spark-streaming_2.12 {:mvn/version "3.5.9"}
+    ;; Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21+.
+    org.apache.arrow/arrow-vector         {:mvn/version "13.0.0"}
+    org.apache.arrow/arrow-memory-netty   {:mvn/version "13.0.0"}
+    mysql/mysql-connector-java            {:mvn/version "8.0.25"}
+    org.postgresql/postgresql             {:mvn/version "42.2.20"}
+    org.xerial/sqlite-jdbc                {:mvn/version "3.53.2.0"}}
+   ;; The JDK module flags Spark itself uses (org.apache.spark.launcher.JavaModuleOptions).
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Djdk.reflect.useDirectMethodHandle=false"]}
+
+  ;; clojure -X:spark:test (see CONTRIBUTING.md)
+  :test
+  {:extra-paths   ["test" "dev" "target/test-classes"]
+   :extra-deps    {midje/midje                {:mvn/version "1.10.10"}
+                   techascent/tech.ml.dataset {:mvn/version "6.101"
+                                               :exclusions  [ch.qos.logback/logback-classic]}}
+   :override-deps {org.clojure/clojure {:mvn/version "1.12.6"}}
+   :jvm-opts      ["-Duser.country=US"
+                   "-Duser.language=en"
+                   "-Dspark.driver.bindAddress=127.0.0.1"
+                   "-Dspark.driver.host=127.0.0.1"]
+   :exec-fn       zero-one.geni.test-runner/run}
+
+  ;; clojure -X:spark:test:xgb adds the XGBoost tests. XGBoost 1.2 fails to
+  ;; train on Apple Silicon, which also stops the SparkContext.
+  :xgb
+  {:extra-paths ["test-xgb"]
+   :extra-deps  {ml.dmlc/xgboost4j-spark_2.12 {:mvn/version "1.2.0"}
+                 ml.dmlc/xgboost4j_2.12       {:mvn/version "1.2.0"}}
+   :exec-args   {:dirs ["test" "test-xgb"]}}
+
+  :dev
+  {:extra-deps {criterium/criterium {:mvn/version "0.4.6"}
+                enlive/enlive       {:mvn/version "1.1.6"}}}
+
+  ;; clojure -T:build prep | jar | install | deploy
+  :build
+  {:deps       {io.github.clojure/tools.build {:mvn/version "0.10.14"}
+                slipset/deps-deploy           {:mvn/version "0.2.5"}}
+   :jvm-opts   ["-Dslf4j.internal.verbosity=WARN"]
+   :ns-default build}
+
+  :kondo
+  {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2026.08.04"}}
+   :main-opts    ["-m" "clj-kondo.main"]}
+
+  :fmt
+  {:replace-deps {dev.weavejester/cljfmt {:mvn/version "0.16.6"}}
+   :main-opts    ["-m" "cljfmt.main"]}}}

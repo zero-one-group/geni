@@ -1,5 +1,8 @@
 {:skip-comments true
  :lint-as {serializable.fn/fn clojure.core/fn}
+ ;; Midje's `actual => expected` checks read as unused values.
+ :ns-groups [{:pattern "zero-one\\.geni\\..*-test" :name midje-tests}]
+ :config-in-ns {midje-tests {:linters {:unused-value {:level :off}}}}
  :linters
   {:unresolved-symbol
    {:exclude [(potemkin/import-fn)

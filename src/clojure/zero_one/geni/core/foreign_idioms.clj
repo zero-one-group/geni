@@ -124,11 +124,13 @@
       (dataset/limit n-rows)))
 
 (defn nunique
-  "Count distinct observations over all columns in the Dataset."
+  "Count distinct observations over all columns in the Dataset, keyed by the
+  column names."
   [dataframe]
-  (dataset/agg-all dataframe #(functions/countDistinct
-                               (column/->column %)
-                               (into-array Column []))))
+  (dataset/agg-all dataframe #(-> (functions/countDistinct
+                                   (column/->column %)
+                                   (into-array Column []))
+                                  (.as ^String %))))
 
 (defn- resolve-probs [num-buckets-or-probs]
   (if (coll? num-buckets-or-probs)

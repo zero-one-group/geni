@@ -32,7 +32,7 @@
                                 :boolean :boolean})
         (g/collect-to-arrow 10 "/tmp")
         (first)
-        (tmd-arrow/read-stream-dataset-inplace)
+        (tmd-arrow/read-stream-dataset-copying)
         (ds/row-count))
     => 0))
 
@@ -50,7 +50,7 @@
 
 (fact "TMD can read it all"
   (let [arrow-files  (g/collect-to-arrow (melbourne-df) 20000 temp-dir)
-        melbourne-ds (tmd-arrow/read-stream-dataset-inplace (first arrow-files))]
+        melbourne-ds (tmd-arrow/read-stream-dataset-copying (first arrow-files))]
     (ds/shape melbourne-ds)  => [21 13580]
     (ds/column-names melbourne-ds) => (g/column-names (melbourne-df))
     (str (first (get melbourne-ds "Address"))) => "85 Turner St"
@@ -120,6 +120,6 @@
                              :boolean :boolean})
      (g/collect-to-arrow 10 "/tmp")
      (first)
-     (tmd-arrow/read-stream-dataset-inplace)
+     (tmd-arrow/read-stream-dataset-copying)
      (ds/row-count)) => 0))
 

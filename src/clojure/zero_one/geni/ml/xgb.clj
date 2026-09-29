@@ -136,3 +136,19 @@
     "Save the native XGBoost's `Booster` to file."
     [model path]
     (-> model .nativeBooster (.saveModel path))))
+
+;; Without XGBoost on the classpath, the vars above stay unbound. Give them a
+;; clear error and a docstring instead.
+(defn- xgboost-missing [& _]
+  (throw (ex-info (str "XGBoost isn't on the classpath. Add ml.dmlc/xgboost4j-spark "
+                       "to your dependencies to use it.")
+                  {})))
+
+(doseq [[v arglists] [[#'xgboost-classifier '([params])]
+                      [#'xgboost-regressor '([params])]
+                      [#'write-native-model! '([model path])]]
+        :when (not (bound? v))]
+  (alter-var-root v (constantly xgboost-missing))
+  (alter-meta! v assoc
+               :arglists arglists
+               :doc "Needs the optional XGBoost dependency (ml.dmlc/xgboost4j-spark)."))

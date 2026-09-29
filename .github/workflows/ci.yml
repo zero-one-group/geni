@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: lint-${{ hashFiles('deps.edn') }}
+      - run: clojure -M:kondo --lint src test/zero_one test-xgb dev build.clj
+      - run: clojure -M:fmt check src test test-xgb docs dev build.clj
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: deps-${{ hashFiles('deps.edn') }}
+          restore-keys: deps-
+      - run: clojure -P -T:build
+      - run: clojure -P -X:spark:test
+      - run: clojure -T:build prep
+      - run: clojure -X:spark:test
