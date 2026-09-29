@@ -23,9 +23,8 @@
                   :alpha 1.0,
                   :rating-col "rating",
                   :prediction-col "prediction",
-                  :num-user-blocks 10}
-        props    (merge defaults params)]
-    (interop/instantiate ALS props)))
+                  :num-user-blocks 10}]
+    (interop/instantiate ALS defaults params)))
 
 (defn recommend-for-all-users [model num-items]
   (.recommendForAllUsers model num-items))

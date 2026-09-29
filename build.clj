@@ -57,6 +57,12 @@
     (assoc root :libs (merge (:libs root)
                              (update-vals (alias-deps :spark) #(assoc % :optional true))))))
 
+(defn- commit
+  "The commit being built. The pom records it as its SCM tag, so that
+  release.yml can tell whether Clojars has this version from another commit."
+  []
+  (b/git-process {:git-args ["rev-parse" "HEAD"]}))
+
 (defn- write-pom! [{:keys [lib class-dir basis src-dirs description]}]
   (b/write-pom {:class-dir class-dir
                 :lib       lib
@@ -68,7 +74,7 @@
                 :scm       {:url                 "https://github.com/zero-one-group/geni"
                             :connection          "scm:git:git://github.com/zero-one-group/geni.git"
                             :developerConnection "scm:git:ssh://git@github.com/zero-one-group/geni.git"
-                            :tag                 (str "v" version)}
+                            :tag                 (commit)}
                 :pom-data  [[:description description]
                             [:url "https://github.com/zero-one-group/geni"]
                             [:licenses

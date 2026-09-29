@@ -104,11 +104,75 @@ jobs:
           name: test-log-docs
           path: target/test.log
 
+  # The library jar as users get it: installed into ~/.m2, then used from the
+  # README's deps.edn on Clojure 1.11.4 and JDK 17, the oldest that Geni
+  # supports. The tests run on Clojure 1.12, from the source tree.
+  jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            !~/.m2/repository/zero/one/geni
+          key: jar-${{ hashFiles('deps.edn') }}
+          restore-keys: deps-spark-
+      - run: clojure -T:build install
+      - name: Check what the jar holds
+        run: |
+          version=$(sed -n 's/^(def version "\(.*\)")$/\1/p' build.clj)
+          contents=$(unzip -l "target/geni-$version.jar")
+          grep -q ' spark-docs.edn$' <<< "$contents"
+          grep -q ' zero_one/geni/rdd/function/Fn1.class$' <<< "$contents"
+          # The version file is for scripts/geni, and the CLI is the uberjar's.
+          if grep -q 'GENI_REPL_RELEASED_VERSION\|zero_one/geni/main' <<< "$contents"; then
+            echo "The jar holds files that it shouldn't."
+            exit 1
+          fi
+          # The pom lists Spark for cljdoc, as an optional dep.
+          unzip -p "target/geni-$version.jar" META-INF/maven/zero.one/geni/pom.xml | grep -q spark-sql_2.12
+      - name: Use the jar from the README, on Clojure 1.11.4
+        run: |
+          mkdir smoke
+          cd smoke
+          # The README's first deps.edn, with zero.one/geni and the :spark alias.
+          awk '/^```edn$/ && !n++ {f=1; next} f && /^```$/ {exit} f' ../README.md > deps.edn
+          clojure_1_11='{:deps {org.clojure/clojure {:mvn/version "1.11.4"}}}'
+          # Without :spark, no Spark comes through the pom.
+          classpath=$(clojure -Sdeps "$clojure_1_11" -Spath)
+          if grep -q /org/apache/spark/ <<< "$classpath"; then
+            echo "Spark came through the pom: $classpath"
+            exit 1
+          fi
+          cat > smoke.clj <<'CLJ'
+          (require '[zero-one.geni.core :as g]
+                   '[zero-one.geni.ml :as ml]
+                   '[zero-one.geni.rdd :as rdd])
+
+          (assert (= "1.11.4" (clojure-version)) (clojure-version))
+          (let [df     (g/table->dataset [["a b"] ["c"]] [:text])
+                tokens (ml/transform df (ml/tokenizer {:input-col :text :output-col :words}))]
+            (assert (= [["a" "b"] ["c"]] (map first (g/collect-vals (g/select tokens :words))))))
+          (assert (= 3 (rdd/count (rdd/parallelise [1 2 3]))))
+          (println "The jar works on Clojure" (clojure-version))
+          (System/exit 0)
+          CLJ
+          clojure -Sdeps "$clojure_1_11" -M:spark smoke.clj
+
   # The only required check, so that the matrix can change without touching
   # the branch rule.
   ci:
     if: always()
-    needs: [lint, test, test-more, docs]
+    needs: [lint, test, test-more, docs, jar]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

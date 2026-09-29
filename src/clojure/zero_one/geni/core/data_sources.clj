@@ -9,7 +9,7 @@
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll]])
   (:import
-   (com.fasterxml.jackson.databind DeserializationFeature ObjectMapper)
+   (com.fasterxml.jackson.databind ObjectMapper)
    (java.text Normalizer Normalizer$Form)
    (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
 
@@ -262,8 +262,9 @@
     (throw (Exception. (format "path file:%s already exists!" path)))))
 
 ;; Spark already brings Jackson, so JSON parsing needs no extra dependency.
-(def ^:private ^ObjectMapper object-mapper
-  (doto (ObjectMapper.) (.enable DeserializationFeature/USE_LONG_FOR_INTS)))
+;; Whole numbers come back as Integer, Long or BigInteger, whichever fits, so
+;; that a DECIMAL(38,0) survives.
+(def ^:private ^ObjectMapper object-mapper (ObjectMapper.))
 
 (defn- json->clojure [x]
   (cond

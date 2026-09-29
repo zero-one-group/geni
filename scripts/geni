@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
-# download the latest version of Geni REPL
-# install script inspired by borkdude's clj-kondo
-# link: https://github.com/borkdude/clj-kondo
+# Downloads the Geni REPL uberjar of the latest stable release, and runs it.
+# The install script is inspired by borkdude's clj-kondo:
+# https://github.com/borkdude/clj-kondo
 
 set -euo pipefail
 
 print_help() {
-    echo "Runs the Geni REPL + starts an nREPL server with an .nrepl-port file."
+    echo "Runs the Geni REPL and starts an nREPL server with an .nrepl-port file."
     echo -e
-    echo "Downloads the uberjar to ~/.geni/geni-repl-uberjar.jar if it is not found."
+    echo "Downloads the uberjar of the latest stable release to"
+    echo "~/.geni/geni-repl-uberjar-<version>.jar the first time it's needed."
     echo -e
     echo "Usage:"
-    echo "install [--force-download]"
+    echo "geni [--force-download] [--submit script.clj]"
     exit 1
 }
 
@@ -43,13 +44,14 @@ do
     esac
 done
 
-version=$(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
+version=$(curl -fsSL https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
 
 original_dir="$PWD"
 download_dir="$HOME/.geni/downloads"
 download_url="https://github.com/zero-one-group/geni/releases/download/v$version/geni-repl-uberjar-$version.jar"
 uberjar_dir="$HOME/.geni"
-uberjar_name="geni-repl-uberjar.jar"
+# One file per version, so that a new release gets downloaded.
+uberjar_name="geni-repl-uberjar-$version.jar"
 
 mkdir -p "$uberjar_dir"
 cd "$uberjar_dir"
@@ -57,10 +59,13 @@ if [[ ! -f "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
     mkdir -p "$download_dir"
     cd "$download_dir"
     echo -e "Downloading $download_url to $download_dir ..."
-    wget -O "$uberjar_name" "$download_url"
+    curl -fL -o "$uberjar_name" "$download_url"
     echo "Moving $download_dir/$uberjar_name to $uberjar_dir/$uberjar_name"
     mv -f "$uberjar_name" "$uberjar_dir/$uberjar_name"
     echo "Successfully downloaded Geni REPL uberjar in $uberjar_dir/$uberjar_name"
+    # The uberjars of older versions, including the unversioned one that
+    # scripts before 0.1.0 downloaded.
+    find "$uberjar_dir" -maxdepth 1 -name 'geni-repl-uberjar*.jar' ! -name "$uberjar_name" -delete
 fi
 
 fail_message() {
@@ -70,7 +75,7 @@ fail_message() {
 
 cd "$original_dir"
 if [[ "$script_path" = false ]]; then
-    java -jar $uberjar_dir/$uberjar_name || fail_message
+    java -jar "$uberjar_dir/$uberjar_name" || fail_message
 else
-    java -jar $uberjar_dir/$uberjar_name $script_path || fail_message
+    java -jar "$uberjar_dir/$uberjar_name" "$script_path" || fail_message
 fi

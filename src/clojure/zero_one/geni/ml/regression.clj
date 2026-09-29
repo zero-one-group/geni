@@ -30,10 +30,10 @@
         std       (coalesce (:standardisation params)
                             (:standardization params)
                             (:standardization defaults))
-        props     (-> defaults
-                      (merge params)
+        params    (-> params
+                      (dissoc :standardisation)
                       (assoc :standardization std))]
-    (interop/instantiate LinearRegression props)))
+    (interop/instantiate LinearRegression defaults params)))
 
 (defn generalized-linear-regression [params]
   (let [defaults {:max-iter       25,
@@ -45,9 +45,8 @@
                   :label-col      "label",
                   :prediction-col "prediction",
                   :features-col   "features",
-                  :solver         "irls"}
-        props     (merge defaults params)]
-    (interop/instantiate GeneralizedLinearRegression props)))
+                  :solver         "irls"}]
+    (interop/instantiate GeneralizedLinearRegression defaults params)))
 
 (defn decision-tree-regressor [params]
   (let [defaults {:max-bins                     32,
@@ -63,9 +62,8 @@
                   :max-memory-in-mb             256,
                   :prediction-col               "prediction",
                   :features-col                 "features",
-                  :min-instances-per-node       1}
-        props     (merge defaults params)]
-    (interop/instantiate DecisionTreeRegressor props)))
+                  :min-instances-per-node       1}]
+    (interop/instantiate DecisionTreeRegressor defaults params)))
 
 (defn random-forest-regressor [params]
   (let [defaults {:max-bins                     32,
@@ -84,9 +82,8 @@
                   :prediction-col               "prediction",
                   :features-col                 "features",
                   :min-instances-per-node       1,
-                  :num-trees                    20}
-        props     (merge defaults params)]
-    (interop/instantiate RandomForestRegressor props)))
+                  :num-trees                    20}]
+    (interop/instantiate RandomForestRegressor defaults params)))
 
 (defn gbt-regressor [params]
   (let [defaults {:max-bins                     32,
@@ -106,9 +103,8 @@
                   :max-memory-in-mb             256,
                   :prediction-col               "prediction",
                   :features-col                 "features",
-                  :min-instances-per-node       1}
-        props     (merge defaults params)]
-    (interop/instantiate GBTRegressor props)))
+                  :min-instances-per-node       1}]
+    (interop/instantiate GBTRegressor defaults params)))
 
 (defn aft-survival-regression [params]
   (let [q-probs  [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
@@ -120,18 +116,16 @@
                   :label-col              "label",
                   :censor-col             "censor",
                   :prediction-col         "prediction",
-                  :features-col           "features"}
-        props     (-> (merge defaults params))]
-    (interop/instantiate AFTSurvivalRegression props)))
+                  :features-col           "features"}]
+    (interop/instantiate AFTSurvivalRegression defaults params)))
 
 (defn isotonic-regression [params]
   (let [defaults {:prediction-col "prediction",
                   :features-col   "features",
                   :isotonic       true,
                   :label-col      "label",
-                  :feature-index  0}
-        props     (-> (merge defaults params))]
-    (interop/instantiate IsotonicRegression props)))
+                  :feature-index  0}]
+    (interop/instantiate IsotonicRegression defaults params)))
 
 (defn fm-regressor [params]
   (let [defaults {:max-iter            100,
@@ -147,9 +141,8 @@
                   :prediction-col      "prediction",
                   :init-std            0.01,
                   :features-col        "features",
-                  :solver              "adamW"}
-        props     (-> (merge defaults params))]
-    (interop/instantiate FMRegressor props)))
+                  :solver              "adamW"}]
+    (interop/instantiate FMRegressor defaults params)))
 
 ;; Docs
 (docs/alter-docs-in-ns!

@@ -4,6 +4,7 @@
    [zero-one.geni.utils :refer [->kebab-case import-fn import-vars]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.polymorphic :as polymorphic]
+   [zero-one.geni.defaults :as defaults]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml.classification]
@@ -248,11 +249,12 @@
 (defn weights [model] (seq (.weights model)))
 
 (defn write-stage!
-  "Save a PipelineStage to the specified path."
+  "Save a PipelineStage to the specified path, with Geni's default session."
   ([stage path] (write-stage! stage path {}))
   ([stage path options]
    (let [unconfigured-writer (-> stage
                                  .write
+                                 (.session @defaults/spark)
                                  (cond-> (= (:mode options) "overwrite")
                                    .overwrite))
          configured-writer    (reduce
@@ -261,19 +263,18 @@
                                (dissoc options :mode))]
      (.save configured-writer path))))
 
-(defn- load-method? [^java.lang.reflect.Method method]
-  (= "load" (.getName method)))
-
-(defn- load-method [cls]
-  (->> cls
-       .getMethods
-       (filter load-method?)
+(defn- read-method [^Class cls]
+  (->> (.getMethods cls)
+       (filter #(and (= "read" (.getName ^java.lang.reflect.Method %))
+                     (zero? (.getParameterCount ^java.lang.reflect.Method %))))
        first))
 
 (defn read-stage!
-  "Load a saved PipelineStage."
+  "Load a saved PipelineStage, with Geni's default session."
   [model-cls path]
-  (.invoke (load-method model-cls) model-cls (into-array [path])))
+  (-> (.invoke ^java.lang.reflect.Method (read-method model-cls) model-cls (object-array 0))
+      (.session @defaults/spark)
+      (.load path)))
 
 ;; Docs
 (docs/alter-docs-in-ns!

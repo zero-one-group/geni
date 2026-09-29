@@ -32,10 +32,10 @@
         std       (coalesce (:standardisation params)
                             (:standardization params)
                             (:standardization defaults))
-        props     (-> defaults
-                      (merge params)
+        params    (-> params
+                      (dissoc :standardisation)
                       (assoc :standardization std))]
-    (interop/instantiate LogisticRegression props)))
+    (interop/instantiate LogisticRegression defaults params)))
 
 (defn decision-tree-classifier [params]
   (let [defaults {:max-bins                     32,
@@ -53,9 +53,8 @@
                   :max-memory-in-mb             256,
                   :prediction-col               "prediction",
                   :features-col                 "features",
-                  :min-instances-per-node       1}
-        props     (merge defaults params)]
-    (interop/instantiate DecisionTreeClassifier props)))
+                  :min-instances-per-node       1}]
+    (interop/instantiate DecisionTreeClassifier defaults params)))
 
 (defn random-forest-classifier [params]
   (let [defaults {:max-bins                     32,
@@ -76,9 +75,8 @@
                   :prediction-col               "prediction",
                   :features-col                 "features",
                   :min-instances-per-node       1,
-                  :num-trees                    20}
-        props     (merge defaults params)]
-    (interop/instantiate RandomForestClassifier props)))
+                  :num-trees                    20}]
+    (interop/instantiate RandomForestClassifier defaults params)))
 
 (defn gbt-classifier [params]
   (let [defaults {:max-bins                     32,
@@ -100,9 +98,8 @@
                   :max-memory-in-mb             256,
                   :prediction-col               "prediction",
                   :features-col                 "features",
-                  :min-instances-per-node       1}
-        props     (merge defaults params)]
-    (interop/instantiate GBTClassifier props)))
+                  :min-instances-per-node       1}]
+    (interop/instantiate GBTClassifier defaults params)))
 
 (defn multilayer-perceptron-classifier [params]
   (let [defaults {:block-size         128,
@@ -115,9 +112,8 @@
                   :probability-col    "probability",
                   :prediction-col     "prediction",
                   :features-col       "features",
-                  :solver             "l-bfgs"}
-        props    (merge defaults params)]
-    (interop/instantiate MultilayerPerceptronClassifier props)))
+                  :solver             "l-bfgs"}]
+    (interop/instantiate MultilayerPerceptronClassifier defaults params)))
 
 (defn linear-svc [params]
   (let [defaults {:max-iter           100,
@@ -134,19 +130,18 @@
         std       (coalesce (:standardisation params)
                             (:standardization params)
                             (:standardization defaults))
-        props     (-> defaults
-                      (merge params)
+        params    (-> params
+                      (dissoc :standardisation)
                       (assoc :standardization std))]
-    (interop/instantiate LinearSVC props)))
+    (interop/instantiate LinearSVC defaults params)))
 
 (defn one-vs-rest [params]
   (let [defaults {:label-col          "label",
                   :features-col       "features",
                   :parallelism        1,
                   :raw-prediction-col "rawPrediction",
-                  :prediction-col     "prediction"}
-        props    (merge defaults params)]
-    (interop/instantiate OneVsRest props)))
+                  :prediction-col     "prediction"}]
+    (interop/instantiate OneVsRest defaults params)))
 
 (defn naive-bayes [params]
   (let [defaults {:smoothing          1.0,
@@ -155,9 +150,8 @@
                   :raw-prediction-col "rawPrediction",
                   :probability-col    "probability",
                   :label-col          "label",
-                  :model-type         "multinomial"}
-        props    (merge defaults params)]
-    (interop/instantiate NaiveBayes props)))
+                  :model-type         "multinomial"}]
+    (interop/instantiate NaiveBayes defaults params)))
 
 (defn fm-classifier [params]
   (let [defaults {:max-iter            100,
@@ -175,9 +169,8 @@
                   :prediction-col      "prediction",
                   :init-std            0.01,
                   :features-col        "features",
-                  :solver              "adamW"}
-        props     (-> (merge defaults params))]
-    (interop/instantiate FMClassifier props)))
+                  :solver              "adamW"}]
+    (interop/instantiate FMClassifier defaults params)))
 
 ;; Docs
 (docs/alter-docs-in-ns!

@@ -13,6 +13,7 @@ Breaking changes:
 - Requiring Geni no longer starts Spark. `zero-one.geni.defaults/spark` can still be dereffed, but it's no longer an atom: use `g/set-default-session!` rather than `reset!`.
 - Geni's default session has no checkpoint directory, and no AQE configs (AQE has been on by default since Spark 3.2). Pass `:checkpoint-dir` to `g/create-spark-session` before using `g/checkpoint`, or before training ALS for many iterations, which overflows the stack without one.
 - `g/create-spark-session` only sets the log level it's given with `:log-level`. Without one, it sets `WARN` only when it starts Spark and there's no log4j2 config on the classpath, as `spark-shell` does.
+- ML functions such as `ml/tokenizer` throw when given a param that the Spark class has no setter for, and name the closest one, as in "Tokenizer has no param :inptu-col. Did you mean :input-col?". They used to ignore it, and some returned nil instead of the stage.
 
 New:
 
@@ -27,3 +28,9 @@ Fixes:
 - Without XGBoost on the classpath, `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/write-native-model!` now throw a clear error instead of being unbound.
 - `g/read-jdbc!` honours `:kebab-columns`, which it used to pass on to the JDBC source as an option, and so ignored.
 - `collect-to-arrow` works on JDK 21 with Spark 3.5, as long as Arrow 13 or newer is on the classpath. Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21.
+- The `geni` script downloads the uberjar again when a new version is released, and uses curl rather than wget. It used to keep the first uberjar it downloaded, so a script installed before 0.1.0 needs `geni --force-download` once.
+
+Fixes to 0.1.0-alpha.1:
+
+- `g/write-edn!` keeps whole numbers that don't fit in a long, such as a `DECIMAL(38,0)`, rather than failing on them.
+- `ml/write-stage!` and `ml/read-stage!` use Geni's default session. Without a running session, they failed with "A master URL must be set".

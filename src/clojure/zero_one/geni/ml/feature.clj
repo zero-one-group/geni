@@ -42,9 +42,8 @@
 (defn stop-words-remover [params]
   (let [defaults {:locale         "en_US",
                   :stop-words     default-stop-words
-                  :case-sensitive false}
-        props    (merge defaults params)]
-    (interop/instantiate StopWordsRemover props)))
+                  :case-sensitive false}]
+    (interop/instantiate StopWordsRemover defaults params)))
 
 (defn chi-sq-selector [params]
   (let [defaults {:fdr              0.05,
@@ -54,87 +53,73 @@
                   :selector-type    "numTopFeatures",
                   :num-top-features 50,
                   :fwe              0.05,
-                  :features-col     "features"}
-        props    (merge defaults params)]
-    (interop/instantiate ChiSqSelector props)))
+                  :features-col     "features"}]
+    (interop/instantiate ChiSqSelector defaults params)))
 
 (defn vector-assembler [params]
-  (let [defaults {:handle-invalid "error"}
-        props    (merge defaults params)]
-    (interop/instantiate VectorAssembler props)))
+  (let [defaults {:handle-invalid "error"}]
+    (interop/instantiate VectorAssembler defaults params)))
 
 (defn feature-hasher [params]
-  (let [defaults {:num-features 262144}
-        props    (merge defaults params)]
-    (interop/instantiate FeatureHasher props)))
+  (let [defaults {:num-features 262144}]
+    (interop/instantiate FeatureHasher defaults params)))
 
 (defn n-gram [params]
-  (let [defaults {:n 2}
-        props    (merge defaults params)]
-    (interop/instantiate NGram props)))
+  (let [defaults {:n 2}]
+    (interop/instantiate NGram defaults params)))
 
 (defn binarizer [params]
-  (let [defaults {:threshold 0.5}
-        props    (merge defaults params)]
-    (interop/instantiate Binarizer props)))
+  (let [defaults {:threshold 0.5}]
+    (interop/instantiate Binarizer defaults params)))
 
 (defn pca [params]
   (interop/instantiate PCA params))
 
 (defn polynomial-expansion [params]
-  (let [defaults {:degree 2}
-        props    (merge defaults params)]
-    (interop/instantiate PolynomialExpansion props)))
+  (let [defaults {:degree 2}]
+    (interop/instantiate PolynomialExpansion defaults params)))
 
 (defn dct [params]
-  (let [defaults {:inverse false}
-        props    (merge defaults params)]
-    (interop/instantiate DCT props)))
+  (let [defaults {:inverse false}]
+    (interop/instantiate DCT defaults params)))
 
 (defn string-indexer [params]
   (let [defaults {:handle-invalid "error"
-                  :string-order-type "frequencyDesc"}
-        props    (merge defaults params)]
-    (interop/instantiate StringIndexer props)))
+                  :string-order-type "frequencyDesc"}]
+    (interop/instantiate StringIndexer defaults params)))
 
 (defn index-to-string [params]
   (interop/instantiate IndexToString params))
 
 (defn one-hot-encoder [params]
-  (let [defaults {:drop-last true :handle-invalid "error"}
-        props    (merge defaults params)]
-    (interop/instantiate OneHotEncoder props)))
+  (let [defaults {:drop-last true :handle-invalid "error"}]
+    (interop/instantiate OneHotEncoder defaults params)))
 
 (defn vector-indexer [params]
-  (let [defaults {:max-categories 20 :handle-invalid "error"}
-        props    (merge defaults params)]
-    (interop/instantiate VectorIndexer props)))
+  (let [defaults {:max-categories 20 :handle-invalid "error"}]
+    (interop/instantiate VectorIndexer defaults params)))
 
 (defn interaction [params]
   (interop/instantiate Interaction params))
 
 (defn normalizer [params]
-  (let [defaults {:p 2.0}
-        props    (merge defaults params)]
-    (interop/instantiate Normalizer props)))
+  (let [defaults {:p 2.0}]
+    (interop/instantiate Normalizer defaults params)))
 
 (defn standard-scaler [params]
-  (let [defaults {:with-std true :with-mean false}
-        props    (merge defaults params)]
-    (interop/instantiate StandardScaler props)))
+  (let [defaults {:with-std true :with-mean false}]
+    (interop/instantiate StandardScaler defaults params)))
 
 (defn min-max-scaler [params]
-  (let [defaults {:min 0.0 :max 1.0}
-        props    (merge defaults params)]
-    (interop/instantiate MinMaxScaler props)))
+  (let [defaults {:min 0.0 :max 1.0}]
+    (interop/instantiate MinMaxScaler defaults params)))
 
 (defn max-abs-scaler [params]
   (interop/instantiate MaxAbsScaler params))
 
 (defn bucketizer [params]
-  (let [defaults {:handle-invalid "error"}
-        props    (merge defaults params)]
-    (interop/instantiate Bucketizer props)))
+  (let [defaults {:handle-invalid "error"}]
+    (interop/instantiate Bucketizer defaults params)))
 
 (defn elementwise-product [params]
   (let [params (if (:scaling-vec params)
@@ -146,57 +131,49 @@
   (interop/instantiate SQLTransformer params))
 
 (defn vector-size-hint [params]
-  (let [defaults {:handle-invalid "error"}
-        props    (merge defaults params)]
-    (interop/instantiate VectorSizeHint props)))
+  (let [defaults {:handle-invalid "error"}]
+    (interop/instantiate VectorSizeHint defaults params)))
 
 (defn quantile-discretizer [params]
   (let [defaults {:handle-invalid "error"
                   :num-buckets    2
-                  :relative-error 0.001}
-        props    (merge defaults params)]
-    (interop/instantiate QuantileDiscretizer props)))
+                  :relative-error 0.001}]
+    (interop/instantiate QuantileDiscretizer defaults params)))
 
 (defn imputer [params]
   (let [defaults {:missing-value ##NaN
-                  :strategy      "mean"}
-        props    (merge defaults params)]
-    (interop/instantiate Imputer props)))
+                  :strategy      "mean"}]
+    (interop/instantiate Imputer defaults params)))
 
 (defn bucketed-random-projection-lsh [params]
   (let [defaults {:num-hash-tables 1
-                  :seed            772209414}
-        props    (merge defaults params)]
-    (interop/instantiate BucketedRandomProjectionLSH props)))
+                  :seed            772209414}]
+    (interop/instantiate BucketedRandomProjectionLSH defaults params)))
 
 (defn min-hash-lsh [params]
   (let [defaults {:num-hash-tables 1
-                  :seed            772209414}
-        props    (merge defaults params)]
-    (interop/instantiate MinHashLSH props)))
+                  :seed            772209414}]
+    (interop/instantiate MinHashLSH defaults params)))
 
 (defn count-vectorizer [params]
   (let [defaults {:vocab-size 262144,
                   :min-df     1.0,
                   :min-tf     1.0,
                   :binary     false,
-                  :max-df     9.223372036854776E18}
-        props    (merge defaults params)]
-    (interop/instantiate CountVectorizer props)))
+                  :max-df     9.223372036854776E18}]
+    (interop/instantiate CountVectorizer defaults params)))
 
 (defn idf [params]
-  (let [defaults {:min-doc-freq 0}
-        props    (merge defaults params)]
-    (interop/instantiate IDF props)))
+  (let [defaults {:min-doc-freq 0}]
+    (interop/instantiate IDF defaults params)))
 
 (defn tokenizer [params]
   (interop/instantiate Tokenizer params))
 
 (defn hashing-tf [params]
   (let [defaults {:binary       false
-                  :num-features 262144}
-        props    (merge defaults params)]
-    (interop/instantiate HashingTF props)))
+                  :num-features 262144}]
+    (interop/instantiate HashingTF defaults params)))
 
 (defn word-2-vec [params]
   (let [defaults {:max-iter            1,
@@ -206,26 +183,23 @@
                   :num-partitions      1,
                   :seed                -1961189076,
                   :vector-size         100,
-                  :min-count           5}
-        props    (merge defaults params)]
-    (interop/instantiate Word2Vec props)))
+                  :min-count           5}]
+    (interop/instantiate Word2Vec defaults params)))
 
 (defn regex-tokenizer [params]
   (let [defaults {:to-lowercase true,
                   :pattern "\\s+",
                   :min-token-length 1,
-                  :gaps true}
-        props    (merge defaults params)]
-    (interop/instantiate RegexTokenizer props)))
+                  :gaps true}]
+    (interop/instantiate RegexTokenizer defaults params)))
 
 (defn robust-scaler [params]
   (let [defaults {:upper          0.75,
                   :relative-error 0.001,
                   :with-centering false,
                   :lower          0.25,
-                  :with-scaling   true}
-        props    (merge defaults params)]
-    (interop/instantiate RobustScaler props)))
+                  :with-scaling   true}]
+    (interop/instantiate RobustScaler defaults params)))
 
 ;; Docs
 (docs/alter-docs-in-ns!
