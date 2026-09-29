@@ -7,7 +7,7 @@
    [zero-one.geni.defaults]
    [zero-one.geni.partitioner :as partitioner]
    [zero-one.geni.rdd :as rdd]
-   [zero-one.geni.test-resources :refer [create-temp-file!]])
+   [zero-one.geni.test-resources :refer [create-temp-file! checkpoint-dir!]])
   (:import
    (org.apache.spark SparkContext)
    (org.apache.spark.api.java JavaRDD JavaSparkContext)))
@@ -43,7 +43,7 @@
   (testing "expected static fields"
     (is (= "Geni App" (rdd/app-name)))
     (is (= [1 2 3] (rdd/value (rdd/broadcast [1 2 3]))))
-    (is (string? (rdd/checkpoint-dir)))
+    (is (string/includes? (do (checkpoint-dir!) (rdd/checkpoint-dir)) "target/checkpoint"))
     (is (map? (rdd/conf)))
     (is (integer? (rdd/default-min-partitions)))
     (is (integer? (rdd/default-parallelism)))

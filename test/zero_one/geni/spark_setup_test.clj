@@ -12,15 +12,11 @@
   (is (instance? SparkSession @spark))
   (is (instance? Dataset (melbourne-df)))
   (is (= ((-> @spark .conf .getAll interop/scala-map->map) "spark.master") "local[*]"))
-  (is (clojure.string/includes? (-> @spark .sparkContext .getCheckpointDir .get) "target/checkpoint/"))
   (is (clojure.string/includes? (-> @spark .sparkContext .getConf g/to-debug-string) "spark.app.id"))
-  (is (= {:spark.master                                  "local[*]",
-          :spark.app.name                                "Geni App",
-          :spark.sql.adaptive.enabled                    "true",
-          :spark.sql.adaptive.coalescePartitions.enabled "true"}
+  (is (= {:spark.master   "local[*]",
+          :spark.app.name "Geni App"}
          (select-keys (g/spark-conf @spark) [:spark.master
                                              :spark.app.name
-                                             :spark.testing.memory
                                              :spark.sql.adaptive.enabled
                                              :spark.sql.adaptive.coalescePartitions.enabled]))))
 

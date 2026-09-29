@@ -9,10 +9,19 @@ Breaking changes:
 - The Leiningen template is retired. Geni itself now builds with the Clojure CLI, but you can still depend on it from Leiningen.
 - Clojure is now Geni's only runtime dependency. It no longer pulls in nREPL, REPL-y, Nippy, jsonista, Potemkin, camel-snake-kebab, java.data or expound, so if your project got any of these through Geni, please add them to your own deps.
 - `g/read-xlsx!` and `g/write-xlsx!` need `zero.one/fxl` on the classpath. Without it, they throw an error that says so.
-- The Geni CLI (`zero-one.geni.main` and `zero-one.geni.repl`) is no longer in the library jar. It's moving to its own artifact.
+- The Geni CLI (`zero-one.geni.main` and `zero-one.geni.repl`) is no longer in the library jar. It's now its own artifact, `zero.one/geni-cli`, and the uberjar is built from it.
+- Requiring Geni no longer starts Spark. `zero-one.geni.defaults/spark` can still be dereffed, but it's no longer an atom: use `g/set-default-session!` rather than `reset!`.
+- Geni's default session has no checkpoint directory, and no AQE configs (AQE has been on by default since Spark 3.2). Pass `:checkpoint-dir` to `g/create-spark-session` before using `g/checkpoint`.
+- `g/create-spark-session` only sets the log level it's given with `:log-level`. Without one, it sets `WARN` only when it starts Spark and there's no log4j2 config on the classpath, as `spark-shell` does.
+
+New:
+
+- `g/set-default-session!` sets the session that Geni functions use when they aren't given one.
 
 Fixes:
 
+- Geni uses a session it didn't create, such as the one on Databricks, as it is. Requiring Geni used to start a session of its own (#332), and set a checkpoint directory that Databricks rejects (#356).
+- `g/create-spark-session` no longer overrides `spark.master` or `spark.app.name` when they're set already, for instance by spark-submit.
 - `g/write-edn!` can write to a new path. It used to throw "already exists" unless the file existed and `:mode "overwrite"` was set.
 - Without XGBoost on the classpath, `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/write-native-model!` now throw a clear error instead of being unbound.
 - `collect-to-arrow` works on JDK 21 with Spark 3.5, as long as Arrow 13 or newer is on the classpath. Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21.

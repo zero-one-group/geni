@@ -52,4 +52,4 @@ Please fork the repo, branch off `develop` and open a pull request against `deve
 
 ## Releasing
 
-Bump `version` in `build.clj`, then run `clojure -T:build deploy` with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set.
+Bump `version` in `build.clj`. Then, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set, run `clojure -T:build deploy` for the library, and then `clojure -T:build cli-deploy` for the CLI, which depends on it. `clojure -T:build cli-uber` builds the CLI uberjar for the GitHub release.

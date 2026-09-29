@@ -10,7 +10,7 @@
                  :ensure "target/classes"}
 
  :aliases
- {;; Spark, which library users bring themselves.
+ {;; Spark, which library users bring themselves. The CLI depends on it.
   :spark
   {:extra-deps
    {org.apache.spark/spark-avro_2.12  {:mvn/version "3.5.9"}
@@ -56,7 +56,8 @@
                    "-Dspark.ui.enabled=false"]
    :exec-fn       zero-one.geni.test-runner/run}
 
-  ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests.
+  ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests. build.clj
+  ;; publishes cli/src as zero.one/geni-cli, with these deps and :spark's.
   :cli
   {:extra-paths ["cli/src" "cli/test"]
    :extra-deps  {net.cgrand/parsley {:mvn/version "0.9.3"}

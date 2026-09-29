@@ -1,0 +1,45 @@
+name: CLI
+
+# Builds the Geni CLI uberjar and runs a script through it. It only runs when
+# the CLI or the build changes, and isn't a required check.
+on:
+  push:
+    branches: [develop]
+    paths: [cli/**, build.clj, deps.edn, .github/workflows/cli.yml]
+  pull_request:
+    paths: [cli/**, build.clj, deps.edn, .github/workflows/cli.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: cli-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  uberjar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: cli-${{ hashFiles('deps.edn') }}
+          restore-keys: deps-
+      - run: clojure -T:build cli-uber
+      - name: Run a script through the uberjar
+        run: |
+          cat > smoke.clj <<'CLJ'
+          (println "dataframe:" (g/count (g/range 3)))
+          (println "rdd:" (rdd/count (rdd/parallelise [1 2 3])))
+          CLJ
+          java -jar target/geni-repl-uberjar-*.jar smoke.clj | tee smoke.out
+          grep -q "dataframe: 3" smoke.out
+          grep -q "rdd: 3" smoke.out

@@ -106,7 +106,7 @@ Note that you will have to **change the `:spark.master` address** according to `
 (def spark-session
   (g/create-spark-session
    {:app-name "my-app"
-    :log-level "INFO" ;; default is WARN
+    :log-level "INFO"
     :configs
     {:spark.master "k8s://https://172.17.0.3:8443" ;;  might differ for you, its the output of kubecl cluster-info
      :spark.kubernetes.container.image "spark:v3.0.1" ;; this is for local docker images, works for minikube

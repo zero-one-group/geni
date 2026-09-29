@@ -83,6 +83,7 @@
    [zero-one.geni.core.functions]
    [zero-one.geni.core.polymorphic]
    [zero-one.geni.core.window]
+   [zero-one.geni.defaults]
    [zero-one.geni.interop]
    [zero-one.geni.spark-context]
    [zero-one.geni.spark]
@@ -93,6 +94,10 @@
   dense
   row
   sparse])
+
+(import-vars
+ [zero-one.geni.defaults
+  set-default-session!])
 
 (import-vars
  [zero-one.geni.spark

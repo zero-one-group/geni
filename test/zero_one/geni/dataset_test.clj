@@ -5,7 +5,7 @@
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50]])
+   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50 checkpoint-dir!]])
   (:import
    (org.apache.spark.rdd RDD)
    (org.apache.spark.sql Dataset
@@ -445,6 +445,7 @@
                                    .toRdd
                                    .toDebugString
                                    (clojure.string/includes? "CheckpointRDD")))]
+    (checkpoint-dir!)
     (is (not (checkpointed? (df-1))))
     (is (checkpointed? (g/checkpoint (df-1))))
     (is (checkpointed? (g/checkpoint (df-1) true)))))

@@ -11,8 +11,8 @@
 (require '[net.cgrand.parsley.fold])
 
 (def spark
-  "The default SparkSession as a Future object."
-  (future @zero-one.geni.defaults/spark))
+  "Geni's default SparkSession. Deref it with `@spark`."
+  zero-one.geni.defaults/spark)
 
 (def init-eval
   "The initial form evaluated when the REPL starts up."
