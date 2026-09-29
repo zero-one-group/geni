@@ -1,5 +1,9 @@
 # CB-12: Customer Segmentation with NMF
 
+This chapter requires a manually downloaded dataset behind a sign-up wall; it is excluded from the automated cookbook tests.
+
+<!-- {:test-doc-blocks/skip true :test-doc-blocks/apply :all-next} -->
+
 In this part, we look into the use of [non-negative matrix factorisation](https://www.nature.com/articles/44565) for customer segmentation. See [this blog post](https://medium.com/@zeroonegroup/customer-segmentation-taking-a-page-out-of-the-computer-vision-book-af02155ccf53) for context.
 
 We will be using the Online Retail II dataset, which is [available for free on Kaggle](https://www.kaggle.com/hikne707/online-retail?select=online_retail_II.xlsx). Since the dataset is behind a sign-up wall, we assume that the two CSV files are already downloaded and placed in the `data/online_retail_ii` directory. We load the dataset as follows:

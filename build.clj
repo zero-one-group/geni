@@ -134,12 +134,30 @@
   [_]
   (apply sh! "clojure" "-M:fmt" "fix" fmt-paths))
 
+(defn docs
+  "Runs the Clojure blocks in the README and docs/ as tests, on :spark. Run
+  `prep` first."
+  [_]
+  (sh! "clojure" "-X:gen-doc-tests")
+  (sh! "clojure" "-X:spark:test:doc-tests"))
+
+(defn cookbook
+  "Runs the cookbook's Clojure blocks as tests, on :spark, as the weekly
+  workflow does. The first run downloads the datasets into data/cookbook. Run
+  `prep` first."
+  [_]
+  (sh! "clojure" "-X:gen-doc-tests"
+       ":docs" "[\"docs/cookbook/*.md\"]"
+       ":target-root" "\"target/cookbook\"")
+  (sh! "clojure" "-X:spark:test:cookbook"))
+
 (defn check
-  "Lints, then runs the tests on :spark: what the CI runs on a pull request.
-  Run `prep` first."
+  "Lints, then runs the tests and the doc tests on :spark: what the CI runs on
+  a pull request. Run `prep` first."
   [_]
   (lint nil)
-  (sh! "clojure" "-X:spark:test:cli:tmd"))
+  (sh! "clojure" "-X:spark:test:cli:tmd")
+  (docs nil))
 
 (defn jar
   "Builds the library jar into target/."

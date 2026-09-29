@@ -177,22 +177,29 @@
           namespaces (or (seq only) (shard (test-namespaces (or dirs (classpath-dirs))) shard-spec))
           results    (mapv #(doto (run-namespace % opts log) report!) namespaces)
           failed     (remove passed? results)
+          none?      (empty? results)
           seconds    (/ (- (System/nanoTime) start) 1e9)
           checks     (reduce + (map :checks results))]
       (println)
-      (if (empty? failed)
+      (cond
+        none?
+        (println "No test namespaces found in" (pr-str (or dirs (classpath-dirs))))
+
+        (empty? failed)
         (println (format "All %d test namespaces passed: %d checks in %.1fs."
                          (count results) checks seconds))
+
+        :else
         (println (format "%d of %d test namespaces failed (%.1fs). Full reports are in %s."
                          (count failed) (count results) seconds log-path)))
-      (when (pos? slowest)
+      (when (and (pos? slowest) (not none?))
         (println "Slowest tests:"
                  (->> (mapcat :timings results)
                       (sort-by val >)
                       (take slowest)
                       (map (fn [[v s]] (format "%s %.1fs" (-> v meta :name) s)))
                       (string/join ", "))))
-      {:passed? (empty? failed) :results results})))
+      {:passed? (and (not none?) (empty? failed)) :results results})))
 
 (defn test!
   "Reloads and runs test namespaces from the REPL, e.g.
@@ -206,7 +213,8 @@
   status if anything fails.
 
   Options:
-    :dirs     the directories to scan (default: the project's classpath dirs)
+    :dirs     the directories to scan (default: the project's classpath dirs),
+              e.g. [\"target/test-doc-blocks/test\"] for the doc tests
     :only     the namespaces to run, e.g. [zero-one.geni.dataset-test]
     :include  only run tests with this metadata, e.g. :slow
     :exclude  skip tests with this metadata, e.g. :slow

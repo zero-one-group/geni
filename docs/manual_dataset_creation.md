@@ -1,6 +1,6 @@
 # Manual Dataset Creation
 
-In order to manually create a instance of a Dataset, we must first create a Spark session. Typically, we can just do:
+The examples below only need Geni's core namespace. Geni starts a Spark session the first time a function needs one (see [Where's the Spark session?](spark_session.md)):
 
 ```clojure
 (require '[zero-one.geni.core :as g])
@@ -43,8 +43,17 @@ val someDF = spark.createDataFrame(
 In Geni, the above Scala codes would translate to the following respectively:
 
 ```clojure
-(g/to-df [[8 "bat"] [64 "mouse"] [-27 "horse"]]
-         [:number :word])
+(-> (g/to-df [[8 "bat"] [64 "mouse"] [-27 "horse"]]
+             [:number :word])
+    g/show)
+;; =stdout=>
+; +------+-----+
+; |number|word |
+; +------+-----+
+; |8     |bat  |
+; |64    |mouse|
+; |-27   |horse|
+; +------+-----+
 
 (g/create-dataframe [(g/row 8 "bat")
                      (g/row 64 "mouse")

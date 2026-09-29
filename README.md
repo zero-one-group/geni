@@ -6,104 +6,20 @@ Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) 
 
 [![CI](https://github.com/zero-one-group/geni/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions/workflows/ci.yml)
 [![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](https://clojars.org/zero.one/geni)
+[![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
 [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
 
-> **Geni is being revived.** Pre-releases of 0.1.0 are on Clojars: the [changelog](CHANGELOG.md) lists what changed, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan and a call for testers. The docs below are being refreshed, and still describe 0.0.42 in places.
+> **Geni is being revived.** Pre-releases of 0.1.0 are on Clojars: the [changelog](CHANGELOG.md) lists what changed, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan and a call for testers.
 
 ## Overview
 
-Geni provides an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. Geni uses Clojure's `->` threading macro as the main way to compose Spark's `Dataset` and `Column` operations in place of the usual method chaining in Scala. It also provides a greater degree of dynamism by allowing args of mixed types such as columns, strings and keywords in a single function invocation. See the docs section on [Geni semantics](docs/semantics.md) for more details.
+Geni provides an idiomatic Spark interface for Clojure without the hassle of Java or Scala interop. It uses Clojure's `->` threading macro to compose Spark's `Dataset` and `Column` operations in place of Scala's method chaining, and it takes columns, strings and keywords alike wherever Spark expects a column. [Geni semantics](docs/semantics.md) has the details.
 
-## Resources
+## Basic examples
 
-<table>
-  <tbody>
-    <tr>
-      <th align="center" width="441">
-        Docs
-      </th>
-      <th align="center" width="441">
-        Cookbook
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <ul>
-            <li><a href="docs/simple_performance_benchmark.md">A Simple Performance Benchmark</a></li>
-            <li><a href="CODE_OF_CONDUCT.md">Code of Conduct</a></li>
-            <li><a href="CONTRIBUTING.md">Contributing Guide</a></li>
-            <li><a href="docs/creating_spark_schemas.md">Creating Spark Schemas</a></li>
-            <li><a href="docs/examples.md">Examples</a></li>
-            <li><a href="docs/design_goals.md">Design Goals</a></li>
-            <li><a href="docs/semantics.md">Geni Semantics</a></li>
-            <li><a href="docs/manual_dataset_creation.md">Manual Dataset Creation</a></li>
-            <li><a href="docs/xgboost.md">Optional XGBoost Support</a></li>
-            <li><a href="docs/pandas_numpy_and_other_idioms.md">Pandas, NumPy and Other Idioms</a></li>
-            <li><a href="docs/dataproc.md">Using Dataproc</a></li>
-            <li><a href="docs/kubernetes_basic.md">Using Kubernetes</a></li>
-            <li><a href="docs/spark_session.md">Where's The Spark Session</a></li>
-            <li><a href="docs/why.md">Why?</a></li>
-            <li><a href="docs/sql_maps.md">Working with SQL Maps</a></li>
-            <li><a href="docs/collect.md">Collecting Data from Spark Datasets</a></li>
-        </ul>
-      </td>
-      <td>
-        <ol start="0">
-            <li><a href="docs/cookbook/part_00_getting_started_with_clojure_geni_and_spark.md">
-                Getting Started with Clojure, Geni and Spark
-            </a></li>
-            <li><a href="docs/cookbook/part_01_reading_and_writing_datasets.md">
-                Reading and Writing Datasets
-            </a></li>
-            <li><a href="docs/cookbook/part_02_selecting_rows_and_columns.md">
-                Selecting Rows and Columns
-            </a></li>
-            <li><a href="docs/cookbook/part_03_grouping_and_aggregating.md">
-                Grouping and Aggregating
-            </a></li>
-            <li><a href="docs/cookbook/part_04_combining_datasets_with_joins_and_unions.md">
-                Combining Datasets with Joins and Unions
-            </a></li>
-            <li><a href="docs/cookbook/part_05_string_operations.md">
-                String Operations
-            </a></li>
-            <li><a href="docs/cookbook/part_06_cleaning_up_messy_data.md">
-                Cleaning up Messy Data
-            </a></li>
-            <li><a href="docs/cookbook/part_07_timestamps_and_dates.md">
-                Timestamps and Dates
-            </a></li>
-            <li><a href="docs/cookbook/part_08_window_functions.md">
-                Window Functions
-            </a></li>
-            <li><a href="docs/cookbook/part_09_reading_from_and_writing_to_sql_databases.md">
-                Reading from and Writing to SQL Databases
-            </a></li>
-            <li><a href="docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md">
-                Avoiding Repeated Computations with Caching
-            </a></li>
-            <li><a href="docs/cookbook/part_11_basic_ml_pipelines.md">
-                Basic ML Pipelines
-            </a></li>
-            <li><a href="docs/cookbook/part_12_customer_segmentation_with_nmf.md">
-                Customer Segmentation with NMF
-            </a></li>
-        </ol>
-      </td>
-    </tr>
-  </tbody>
-</table>
+The examples below use a 5,000-row sample of the California housing prices data from [Kaggle](https://www.kaggle.com/camnugent/california-housing-prices), which Geni's repo has under `test/resources`.
 
-
-[![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
-[![slack](https://badgen.net/badge/-/clojurians%2Fgeni?icon=slack&label)](https://clojurians.slack.com/messages/geni/)
-[![zulip](https://img.shields.io/badge/zulip-clojurians%2Fgeni-brightgreen.svg)](https://clojurians.zulipchat.com/#narrow/stream/256615-geni)
-
-## Basic Examples
-
-All examples below use the Statlib California housing prices data available for free on [Kaggle](https://www.kaggle.com/camnugent/california-housing-prices).
-
-Spark SQL API for data wrangling:
+Spark SQL for data wrangling:
 
 ```clojure
 (require '[zero-one.geni.core :as g])
@@ -111,9 +27,10 @@ Spark SQL API for data wrangling:
 (def dataframe (g/read-parquet! "test/resources/housing.parquet"))
 
 (g/count dataframe)
-=> 5000
+;; => 5000
 
 (g/print-schema dataframe)
+;; =stdout=>
 ; root
 ;  |-- longitude: double (nullable = true)
 ;  |-- latitude: double (nullable = true)
@@ -127,6 +44,7 @@ Spark SQL API for data wrangling:
 ;  |-- ocean_proximity: string (nullable = true)
 
 (-> dataframe (g/limit 5) g/show)
+;; =stdout=>
 ; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
 ; |longitude|latitude|housing_median_age|total_rooms|total_bedrooms|population|households|median_income|median_house_value|ocean_proximity|
 ; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
@@ -138,6 +56,7 @@ Spark SQL API for data wrangling:
 ; +---------+--------+------------------+-----------+--------------+----------+----------+-------------+------------------+---------------+
 
 (-> dataframe (g/describe :housing_median_age :total_rooms :population) g/show)
+;; =stdout=>
 ; +-------+------------------+------------------+-----------------+
 ; |summary|housing_median_age|total_rooms       |population       |
 ; +-------+------------------+------------------+-----------------+
@@ -155,6 +74,7 @@ Spark SQL API for data wrangling:
             :distinct-lat (g/count-distinct (g/int :latitude))})
     (g/order-by (g/desc :count))
     g/show)
+;; =stdout=>
 ; +---------------+-----+------------------+------------+
 ; |ocean_proximity|count|mean-rooms        |distinct-lat|
 ; +---------------+-----+------------------+------------+
@@ -171,21 +91,18 @@ Spark SQL API for data wrangling:
                :coord (g/struct {:lat :latitude :long :longitude})})
     (g/limit 3)
     g/collect)
-=> ({:ocean "NEAR BAY",
-     :house {:rooms {:total_rooms 880.0, :total_bedrooms 129.0}, 
-             :age 41.0},
-     :coord {:lat 37.88, :long -122.23}}
-    {:ocean "NEAR BAY",
-     :house {:rooms {:total_rooms 7099.0, :total_bedrooms 1106.0}, 
-             :age 21.0},
-     :coord {:lat 37.86, :long -122.22}}
-    {:ocean "NEAR BAY",
-     :house {:rooms {:total_rooms 1467.0, :total_bedrooms 190.0}, 
-             :age 52.0},
-     :coord {:lat 37.85, :long -122.24}})
+;; => ({:ocean "NEAR BAY",
+;;      :house {:rooms {:total_rooms 880.0, :total_bedrooms 129.0}, :age 41.0},
+;;      :coord {:lat 37.88, :long -122.23}}
+;;     {:ocean "NEAR BAY",
+;;      :house {:rooms {:total_rooms 7099.0, :total_bedrooms 1106.0}, :age 21.0},
+;;      :coord {:lat 37.86, :long -122.22}}
+;;     {:ocean "NEAR BAY",
+;;      :house {:rooms {:total_rooms 1467.0, :total_bedrooms 190.0}, :age 52.0},
+;;      :coord {:lat 37.85, :long -122.24}})
 ```
 
-Spark ML example translated from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
+Spark ML, with an example from [Spark's programming guide](https://spark.apache.org/docs/latest/ml-pipeline.html):
 
 ```clojure
 (require '[zero-one.geni.core :as g])
@@ -223,70 +140,37 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
     (ml/transform model)
     (g/select :id :text :probability :prediction)
     g/show)
-;; +---+------------------+----------------------------------------+----------+
-;; |id |text              |probability                             |prediction|
-;; +---+------------------+----------------------------------------+----------+
-;; |4  |spark i j k       |[0.6292098489668484,0.3707901510331516] |0.0       |
-;; |5  |l m n             |[0.984770006762304,0.015229993237696027]|0.0       |
-;; |6  |spark hadoop spark|[0.13412348342566116,0.8658765165743388]|1.0       |
-;; |7  |apache hadoop     |[0.9955732114398529,0.00442678856014711]|0.0       |
-;; +---+------------------+----------------------------------------+----------+
+;; =stdout=>
+; +---+------------------+----------------------------------------+----------+
+; |id |text              |probability                             |prediction|
+; +---+------------------+----------------------------------------+----------+
+; |4  |spark i j k       |[0.6292098489668484,0.3707901510331516] |0.0       |
+; |5  |l m n             |[0.984770006762304,0.015229993237696027]|0.0       |
+; |6  |spark hadoop spark|[0.13412348342566116,0.8658765165743388]|1.0       |
+; |7  |apache hadoop     |[0.9955732114398529,0.00442678856014711]|0.0       |
+; +---+------------------+----------------------------------------+----------+
 ```
 
-More detailed examples can be found in [`examples/`](examples).
-
-## Quick Start
-
-### Install Geni
-
-Install the `geni` script to `/usr/local/bin` with:
-
-```bash
-wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
-chmod a+x geni
-sudo mv geni /usr/local/bin/
-```
-
-The command `geni` downloads the latest Geni uberjar and places it in `~/.geni/geni-repl-uberjar.jar`, and runs it with `java -jar`.
-
-### Uberjar
-
-Download the latest Geni REPL uberjar from the [release](https://github.com/zero-one-group/geni/releases) page. Run the uberjar as follows:
-
-```bash
-java -jar <uberjar-name>
-```
-
-The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
-
-### Screencast Demos
-
-<table>
-    <tr>
-        <th>Install</th>
-        <th>Uberjar</th>
-    </tr>
-    <tr>
-        <td> <a href="https://asciinema.org/a/352552?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352552.svg"/></a> </td>
-        <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
-    </tr>
-</table>
+More examples are in the [guides](docs/examples.md), the [cookbook](#cookbook) and [`examples/`](examples).
 
 ## Installation
 
-[![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](https://clojars.org/zero.one/geni)
+Geni is `zero.one/geni` on Clojars. Clojure 1.11 or newer is its only dependency, so Spark comes from your own project. The same jar works with three Spark builds, on JDK 17 or 21:
 
-Geni's only dependency is Clojure, so you bring your own Spark: 3.5 on Scala 2.12 or 2.13, or 4 on Scala 2.13, on JDK 17 or 21. Spark also needs a set of JVM flags on these JDKs, the ones its own launcher sets. This `deps.edn` runs Geni on Spark 3.5 with `clj -M:spark`:
+- Spark 3.5 on Scala 2.12;
+- Spark 3.5 on Scala 2.13;
+- Spark 4 on Scala 2.13.
 
-```clojure
+On these JDKs, Spark needs the JVM flags that its own launcher sets. Each setup below is a `deps.edn` alias with Spark's deps and those flags, the same as the alias that Geni's tests run with. This `deps.edn` starts a REPL on Spark 3.5 with `clj -M:spark`:
+
+```edn
 {:deps {zero.one/geni {:mvn/version "0.1.0-alpha.1"}}
 
  :aliases
  {:spark
-  {:extra-deps {org.apache.spark/spark-sql_2.12   {:mvn/version "3.5.9"}
-                org.apache.spark/spark-mllib_2.12 {:mvn/version "3.5.9"}
-                org.apache.spark/spark-avro_2.12  {:mvn/version "3.5.9"}
-                ;; Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21+.
+  {:extra-deps {org.apache.spark/spark-sql_2.12       {:mvn/version "3.5.9"}
+                org.apache.spark/spark-mllib_2.12     {:mvn/version "3.5.9"}
+                org.apache.spark/spark-avro_2.12      {:mvn/version "3.5.9"}
                 org.apache.arrow/arrow-vector       {:mvn/version "13.0.0"}
                 org.apache.arrow/arrow-memory-netty {:mvn/version "13.0.0"}}
    :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
@@ -308,9 +192,137 @@ Geni's only dependency is Clojure, so you bring your own Spark: 3.5 on Scala 2.1
                 "-Djdk.reflect.useDirectMethodHandle=false"]}}}
 ```
 
-For Spark 3.5 on Scala 2.13, or Spark 4, take the deps and JVM flags from the `:spark-3.5-2.13` or `:spark-4` alias in Geni's own [`deps.edn`](deps.edn). Spark 4 has its own set of flags. From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:provided` profile) and the flags in `:jvm-opts`.
+For Spark 3.5 on Scala 2.13, the alias takes the Scala 2.13 builds and the same flags:
 
-Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J, the functions throw an error that says what to add. Spark ML can use a native BLAS such as OpenBLAS if one is installed, and XGBoost4J needs `libgomp1`.
+```edn
+{:aliases
+ {:spark-3.5-2.13
+  {:extra-deps {org.apache.spark/spark-sql_2.13       {:mvn/version "3.5.9"}
+                org.apache.spark/spark-mllib_2.13     {:mvn/version "3.5.9"}
+                org.apache.spark/spark-avro_2.13      {:mvn/version "3.5.9"}
+                org.apache.arrow/arrow-vector       {:mvn/version "13.0.0"}
+                org.apache.arrow/arrow-memory-netty {:mvn/version "13.0.0"}}
+   :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
+                "--add-opens=java.base/java.lang=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+                "--add-opens=java.base/java.io=ALL-UNNAMED"
+                "--add-opens=java.base/java.net=ALL-UNNAMED"
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
+                "--add-opens=java.base/java.util=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+                "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+                "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+                "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                "-Djdk.reflect.useDirectMethodHandle=false"]}}}
+```
+
+Spark 4 has flags of its own:
+
+```edn
+{:aliases
+ {:spark-4
+  {:extra-deps {org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}
+                org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
+                org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}}
+   :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
+                "--add-modules=jdk.incubator.vector"
+                "--add-opens=java.base/java.lang=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+                "--add-opens=java.base/java.io=ALL-UNNAMED"
+                "--add-opens=java.base/java.net=ALL-UNNAMED"
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
+                "--add-opens=java.base/java.util=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+                "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+                "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+                "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                "-Dio.netty.tryReflectionSetAccessible=true"
+                "-Dio.netty.allocator.type=pooled"
+                "-Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE"
+                "--sun-misc-unsafe-memory-access=allow"
+                "--enable-native-access=ALL-UNNAMED"]}}}
+```
+
+A few differences between the setups show up in practice:
+
+- Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21 or newer, so `g/collect-to-arrow` fails there. The Arrow 13 deps in the Spark 3.5 aliases fix that, and do no harm on JDK 17.
+- Spark 4 turns ANSI mode on by default, so an invalid cast or an overflow throws instead of returning null.
+- On Spark 4, a JDBC write fails when the table doesn't exist yet and Spark has no dialect for the database, as with SQLite. Creating the table first works.
+
+From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:provided` profile) and the flags in `:jvm-opts`.
+
+Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J, those functions throw an error that says what to add. Spark ML uses a native BLAS such as OpenBLAS when one is installed.
+
+## The Geni CLI
+
+The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The `geni` script downloads the uberjar of the latest release to `~/.geni` and runs it:
+
+```bash
+wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
+chmod a+x geni
+sudo mv geni /usr/local/bin/
+geni
+```
+
+The uberjar is also on each [release](https://github.com/zero-one-group/geni/releases), and runs with `java -jar geni-repl-uberjar-<version>.jar` on JDK 17 or 21. Its manifest carries the JVM flags that Spark needs. Given a file, as in `geni --submit script.clj`, it runs the file instead of the REPL.
+
+## Docs
+
+The guides:
+
+- [Why?](docs/why.md)
+- [Design goals](docs/design_goals.md)
+- [Geni semantics](docs/semantics.md)
+- [Where's the Spark session?](docs/spark_session.md)
+- [Examples](docs/examples.md)
+- [Creating Spark schemas](docs/creating_spark_schemas.md)
+- [Manual dataset creation](docs/manual_dataset_creation.md)
+- [Working with SQL maps](docs/sql_maps.md)
+- [Collecting data from Spark datasets](docs/collect.md)
+- [Pandas, NumPy and other idioms](docs/pandas_numpy_and_other_idioms.md)
+- [Optional XGBoost support](docs/xgboost.md)
+- [Using Kubernetes](docs/kubernetes_basic.md), written for Spark 3.0
+- [A simple performance benchmark](docs/simple_performance_benchmark.md), from 2020
+
+The code in the README and the guides runs as tests on every pull request, and the cookbook runs every week. The API reference is on [cljdoc](https://cljdoc.org/d/zero.one/geni/CURRENT). Questions are welcome in [#geni](https://clojurians.slack.com/messages/geni/) on the Clojurians Slack, and on [Zulip](https://clojurians.zulipchat.com/#narrow/stream/256615-geni).
+
+### Cookbook
+
+The cookbook follows the syllabus of Julia Evans' [Pandas Cookbook](https://github.com/jvns/pandas-cookbook):
+
+0. [Getting started with Clojure, Geni and Spark](docs/cookbook/part_00_getting_started_with_clojure_geni_and_spark.md)
+1. [Reading and writing datasets](docs/cookbook/part_01_reading_and_writing_datasets.md)
+2. [Selecting rows and columns](docs/cookbook/part_02_selecting_rows_and_columns.md)
+3. [Grouping and aggregating](docs/cookbook/part_03_grouping_and_aggregating.md)
+4. [Combining datasets with joins and unions](docs/cookbook/part_04_combining_datasets_with_joins_and_unions.md)
+5. [String operations](docs/cookbook/part_05_string_operations.md)
+6. [Cleaning up messy data](docs/cookbook/part_06_cleaning_up_messy_data.md)
+7. [Timestamps and dates](docs/cookbook/part_07_timestamps_and_dates.md)
+8. [Window functions](docs/cookbook/part_08_window_functions.md)
+9. [Reading from and writing to SQL databases](docs/cookbook/part_09_reading_from_and_writing_to_sql_databases.md)
+10. [Avoiding repeated computations with caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)
+11. [Basic ML pipelines](docs/cookbook/part_11_basic_ml_pipelines.md)
+12. [Customer segmentation with NMF](docs/cookbook/part_12_customer_segmentation_with_nmf.md)
+
+## Contributing
+
+Bug reports, docs and code are all welcome: see the [contributing guide](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+
+## How the revival was built
+
+**Claude (Anthropic) wrote most of the code, tests and docs of the 2026 revival**, from the move to the Clojure CLI onwards. The maintainer set the scope, made the design calls, ran every check and reviewed the result. Geni up to 0.0.42 was written without it.
+
+What holds the work up is the checking: the test suite runs on every supported Spark and JDK, and every example in the README and the guides runs as a test.
 
 ## License
 

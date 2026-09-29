@@ -153,7 +153,7 @@ $ geni
     </tr>
 </table>
 
-In this case, we see around 3.7x performance for a very simple query. However, for more substantial queries, the speedups are typical greater - even up to 73x. See [the simple performance benchmark post](simple_performance_benchmark.md) for a more detailed treatment.
+On that machine, in 2020, Geni ran this simple query about 3.7 times as fast as Pandas. [A simple performance benchmark](simple_performance_benchmark.md) compares a bigger group-by, with its caveats: there, Pandas with its built-in aggregations kept up with Geni.
 
 ## Seamless Parasitism
 
@@ -179,8 +179,17 @@ Similar to Clojure's JVM parasitism, Geni aims to leverage the mature runtime an
     </a>
 </blockquote>
 
-Typically, this means translating Scala and Spark concepts into idiomatic Clojure whilst still leaving the door open for direct Scala interop. For instance, the `.groupBy` method on a Spark `Dataset` takes in an array of `Column`s to type check. The following snippet is valid Spark in Clojure:
+Typically, this means translating Scala and Spark concepts into idiomatic Clojure whilst still leaving the door open for direct Scala interop. The snippets below use the Melbourne housing data in Geni's repo:
 
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(def dataframe (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
+```
+
+For instance, the `.groupBy` method on a Spark `Dataset` takes in an array of `Column`s to type check. The following snippet is valid Spark in Clojure:
+
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (import '(org.apache.spark.sql functions Column))
 
@@ -222,31 +231,31 @@ Furthermore, to make it easier to compose with other Clojure libraries, function
           :location (g/struct :Address {:coord (g/struct :Lattitude :Longtitude)})})})
     (g/limit 1)
     g/collect)
-=> ({:property
-     {:market {:SellerG "Biggin", :Price 1480000.0, :Date "3/12/2016"},
-      :house {:Landsize 202.0, :Rooms 2},
-      :location
-      {:Suburb "Abbotsford",
-       :Address "85 Turner St",
-       :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
+;; => ({:property
+;;      {:market {:SellerG "Biggin", :Price 1480000.0, :Date "3/12/2016"},
+;;       :house {:Landsize 202.0, :Rooms 2},
+;;       :location
+;;       {:Address "85 Turner St",
+;;        :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
 ```
 
 This also works the other way. For example, the RDD `.mapToPair` method requires a function that spits out a `scala.Tuple2` to type check. Geni's `rdd/map-to-pair` expects a function that returns a vector of length two instead, does the coercion to `scala.Tuple2` in the background, and throws an error should the coercion fail.
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 ;; We can write the following:
 (rdd/map-to-pair rdd (fn [x] [x 1]))
 
 ;; instead of the direct interop as follows:
 (import '(scala Tuple2))
-(.mapToPair rdd (fn [x] (Tuple2. x 1))
+(.mapToPair rdd (fn [x] (Tuple2. x 1)))
 ```
 
 ## Easy Getting-Started Experience
 
 Getting started with Geni should be easy not only for seasoned Clojure developers, but also for someone new to the language, who is perhaps just trying out the library. Speaking from personal experience, as a beginner to Clojure, having to install [Leiningen](https://leiningen.org/) or [Clojure CLI](https://clojure.org/guides/deps_and_cli) can be a turn off and an unnecessary barrier to entry - not to mention the [Emacs-Cider](https://www.braveclojure.com/basic-emacs/) combo that appears in many Clojure tutorials.
 
-Geni's getting-started journey draws a lot from [borkdude](https://github.com/borkdude)'s work. In particular, [clj-kondo](https://github.com/borkdude/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux) can be installed as a standalone application with three lines of Bash or a simple `brew install`. We can also install and run a [babashka](https://github.com/borkdude/babashka#quickstart) script in three lines of Bash. To achieve a similar effect, Geni is released not only as a Clojure library, but also as a command-line app that auto-downloads the latest Geni uberjar and defaults to a REPL (with an nREPL server) with all of the Geni namespaces required. However, instead of a standalone executable, it still requires `java`. Concretely, after running the [three-liner](https://github.com/zero-one-group/geni#install-geni) to install the Geni CLI, we can run a minimal application that prints the Spark session as follows:
+Geni's getting-started journey draws a lot from [borkdude](https://github.com/borkdude)'s work. In particular, [clj-kondo](https://github.com/borkdude/clj-kondo/blob/master/doc/install.md#installation-script-macos-and-linux) can be installed as a standalone application with three lines of Bash or a simple `brew install`. We can also install and run a [babashka](https://github.com/borkdude/babashka#quickstart) script in three lines of Bash. To achieve a similar effect, Geni is released not only as a Clojure library, but also as a command-line app that auto-downloads the latest Geni uberjar and defaults to a REPL (with an nREPL server) with all of the Geni namespaces required. However, instead of a standalone executable, it still requires `java`. Concretely, after [installing the Geni CLI](../README.md#the-geni-cli), we can run a minimal application that prints the Spark session as follows:
 
 ```bash
 $ echo "(clojure.pprint/pprint (g/spark-conf @spark))\n exit" | geni
@@ -255,11 +264,3 @@ $ echo "(clojure.pprint/pprint (g/spark-conf @spark))\n exit" | geni
 <p align="center">
     <img src="https://media.giphy.com/media/lTAufFljfjXQgctqzI/giphy.gif" width="705">
 </p>
-
-For Leiningen users, there is also a lein template that creates a Geni application that runs a Spark ML example. For example:
-
-```bash
-$ lein new geni geni-app && cd geni-app && lein run
-```
-
-The template comes with `core.clj` that contains an example of a very simple application that uses the library and `core_test.clj` that unit-tests the Spark machinery running underneath.

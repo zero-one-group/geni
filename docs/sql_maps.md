@@ -2,23 +2,21 @@
 
 Spark makes available a number of [functions](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/functions$.html) that operate on SQL maps. Geni makes all these functions available in the core namespace. On top of that, Geni also adds a number of synonyms from Clojure core's map functions.
 
-The examples assume the following required namespaces:
+The examples use the Melbourne housing data in Geni's repo:
 
 ```clojure
 (require '[zero-one.geni.core :as g])
-(require '[zero-one.geni.ml :as ml])
-(require '[zero-one.geni.test-resources :refer [melbourne-df]])
+
+(def melbourne-df (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
 ```
 
 ## Creating Map Columns
 
 We can create map types using `map`, `map-from-entries` and `map-from-arrays` as follows:
 
-Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
-
 ```clojure
 (def dataframe
-  (-> (melbourne-df)
+  (-> melbourne-df
       (g/limit 2)
       (g/select
         {:location (g/map (g/lit "suburb") :Suburb
@@ -26,28 +24,27 @@ Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
                           (g/lit "council") :CouncilArea
                           (g/lit "address") :Address)
          :market   (g/map-from-entries
-                     (g/array (g/struct (g/lit "size") (g/double :Price))
+                     (g/array (g/struct (g/lit "size") (g/double :Landsize))
                               (g/struct (g/lit "price") (g/double :Price))))
          :coord    (g/map-from-arrays
                      (g/array (g/lit "lat") (g/lit "long"))
                      (g/array :Lattitude :Longtitude))})))
 
 (g/collect dataframe)
-; =>
-({:location
-  {"suburb" "Abbotsford",
-   "region" "Northern Metropolitan",
-   "council" "Yarra",
-   "address" "85 Turner St"},
-  :market {"size" 1480000.0, "price" 1480000.0},
-  :coord {"lat" -37.7996, "long" 144.9984}}
- {:location
-  {"suburb" "Abbotsford",
-   "region" "Northern Metropolitan",
-   "council" "Yarra",
-   "address" "25 Bloomburg St"},
-  :market {"size" 1035000.0, "price" 1035000.0},
-  :coord {"lat" -37.8079, "long" 144.9934}}]
+;; => ({:location
+;;      {"suburb" "Abbotsford",
+;;       "region" "Northern Metropolitan",
+;;       "council" "Yarra",
+;;       "address" "85 Turner St"},
+;;      :market {"size" 202.0, "price" 1480000.0},
+;;      :coord {"lat" -37.7996, "long" 144.9984}}
+;;     {:location
+;;      {"suburb" "Abbotsford",
+;;       "region" "Northern Metropolitan",
+;;       "council" "Yarra",
+;;       "address" "25 Bloomburg St"},
+;;      :market {"size" 156.0, "price" 1035000.0},
+;;      :coord {"lat" -37.8079, "long" 144.9934}})
 ```
 
 ## SQL Map Functions and Synonyms

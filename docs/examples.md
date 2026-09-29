@@ -1,25 +1,24 @@
 # Geni Examples
 
-The examples assume the following required namespaces:
+The examples use the datasets in Geni's repo, under `test/resources`:
 
 ```clojure
 (require '[zero-one.geni.core :as g])
 (require '[zero-one.geni.ml :as ml])
-(require '[zero-one.geni.test-resources :refer [melbourne-df]])
-```
 
-Example datasets can be found in the `test/resources` directory.
+(def melbourne-df (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
+
+(def libsvm-df (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
+```
 
 ## Dataframe API
 
 The following examples are taken from [Apache Spark's example page](https://spark.apache.org/examples.html) and [Databricks' examples](https://docs.databricks.com/spark/latest/dataframes-datasets/introduction-to-dataframes-scala.html).
 
-Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
-
 ### Text Search
 
 ```clojure
-(-> (melbourne-df)
+(-> melbourne-df
     (g/filter (g/like :Suburb "%South%"))
     (g/select "Suburb"
               (g/lower "SellerG")
@@ -28,23 +27,25 @@ Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
     g/distinct
     (g/limit 5)
     g/show)
-; +---------------|--------------|--------------------------|-----------+
+;; =stdout=>
+; +---------------+--------------+--------------------------+-----------+
 ; |Suburb         |lower(SellerG)|Regionname                |upper(Type)|
-; +---------------|--------------|--------------------------|-----------+
+; +---------------+--------------+--------------------------+-----------+
 ; |Wantirna South |llc           |Eastern Metropolitan      |H          |
 ; |South Melbourne|conquest      |Southern Metropolitan     |H          |
 ; |Frankston South|ray           |South-Eastern Metropolitan|H          |
 ; |South Melbourne|cayzer        |Southern Metropolitan     |U          |
 ; |South Melbourne|williams      |Southern Metropolitan     |H          |
-; +---------------|--------------|--------------------------|-----------+
+; +---------------+--------------+--------------------------+-----------+
 ```
 
 ### Printing Schema
 
-``` clojure
-(-> (melbourne-df)
+```clojure
+(-> melbourne-df
     (g/select :Suburb :Rooms :Price)
     g/print-schema)
+;; =stdout=>
 ; root
 ;  |-- Suburb: string (nullable = true)
 ;  |-- Rooms: long (nullable = true)
@@ -54,29 +55,30 @@ Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
 ### Descriptive Statistics
 
 ```clojure
-(-> (melbourne-df)
+(-> melbourne-df
     (g/describe :Price)
     g/show)
-; +-------|-----------------+
+;; =stdout=>
+; +-------+-----------------+
 ; |summary|Price            |
-; +-------|-----------------+
+; +-------+-----------------+
 ; |count  |13580            |
 ; |mean   |1075684.079455081|
 ; |stddev |639310.7242960163|
 ; |min    |85000.0          |
 ; |max    |9000000.0        |
-; +-------|-----------------+
+; +-------+-----------------+
 ```
 
 ### Null Rates
 
 ```clojure
-(-> (melbourne-df)
-    (g/agg (map g/null-rate [:Car :LandSize :BuildingArea]))
-    g/collect))
-; => ({:Car 0.004565537555228277,
-;      :LandSize 0.0,
-;      :BuildingArea 0.47496318114874814})
+(-> melbourne-df
+    (g/agg {:car           (g/null-rate :Car)
+           :land-size     (g/null-rate :LandSize)
+           :building-area (g/null-rate :BuildingArea)})
+    g/collect)
+;; => ({:car 0.004565537555228277, :land-size 0.0, :building-area 0.47496318114874814})
 ```
 
 ### Window Functions
@@ -84,7 +86,7 @@ Note that `melbourne-df` is a function so we need to add `()` to evaluate it.
 Every window spec is used with `over` at some point. Use the `windowed` shortcut:
 
 ```clojure
-(-> (melbourne-df)
+(-> melbourne-df
     (g/select {:seller :SellerG
                :price  :Price
                :ranks  (g/over (g/rank)
@@ -93,17 +95,18 @@ Every window spec is used with `over` at some point. Use the `windowed` shortcut
     (g/filter (g/= :ranks 1))
     (g/limit 5)
     g/show)
-; +--------|---------|-----+
-; |seller  |price    |ranks|
-; +--------|---------|-----+
-; |LITTLE  |1535000.0|1    |
-; |Langwell|1000000.0|1    |
-; |Ristic  |490000.0 |1    |
-; |Ristic  |490000.0 |1    |
-; |S&L     |925000.0 |1    |
-; +--------|---------|-----+
+;; =stdout=>
+; +------------+---------+-----+
+; |seller      |price    |ranks|
+; +------------+---------+-----+
+; |@Realty     |725000.0 |1    |
+; |ASL         |1890000.0|1    |
+; |Abercromby's|7650000.0|1    |
+; |Ace         |860000.0 |1    |
+; |Alexkarbon  |2370000.0|1    |
+; +------------+---------+-----+
 
-(-> (melbourne-df)
+(-> melbourne-df
     (g/select {:seller :SellerG
                :price  :Price
                :ranks  (g/windowed {:window-col (g/rank)
@@ -112,15 +115,16 @@ Every window spec is used with `over` at some point. Use the `windowed` shortcut
     (g/filter (g/= :ranks 1))
     (g/limit 5)
     g/show)
-; +--------|---------|-----+
-; |seller  |price    |ranks|
-; +--------|---------|-----+
-; |LITTLE  |1535000.0|1    |
-; |Langwell|1000000.0|1    |
-; |Ristic  |490000.0 |1    |
-; |Ristic  |490000.0 |1    |
-; |S&L     |925000.0 |1    |
-; +--------|---------|-----+
+;; =stdout=>
+; +------------+---------+-----+
+; |seller      |price    |ranks|
+; +------------+---------+-----+
+; |@Realty     |725000.0 |1    |
+; |ASL         |1890000.0|1    |
+; |Abercromby's|7650000.0|1    |
+; |Ace         |860000.0 |1    |
+; |Alexkarbon  |2370000.0|1    |
+; +------------+---------+-----+
 ```
 
 ## MLlib
@@ -142,10 +146,10 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (let [corr-kw (keyword "pearson(features)")]
   (corr-kw (g/first (ml/corr corr-df :features))))
-; => ((1.0                  0.055641488407465814 0.9442673704375603  0.1311482458941057)
-;     (0.055641488407465814 1.0                  0.22329687826943603 0.9428090415820635)
-;     (0.9442673704375603   0.22329687826943603  1.0                 0.19298245614035084)
-;     (0.1311482458941057   0.9428090415820635   0.19298245614035084 1.0))
+;; => ((1.0 0.05564148840746571 0.9442673704375605 0.13114824589410562)
+;;     (0.05564148840746571 1.0 0.2232968782694361 0.9428090415820634)
+;;     (0.9442673704375605 0.2232968782694361 1.0 0.19298245614035087)
+;;     (0.13114824589410562 0.9428090415820634 0.19298245614035087 1.0))
 ```
 
 #### Hypothesis Testing
@@ -162,9 +166,9 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
      [:label :features]))
 
 (g/first (ml/chi-square-test hypothesis-df :features :label))
-; => {:pValues (0.6872892787909721 0.6822703303362126),
-;     :degreesOfFreedom (2 3),
-;     :statistics (0.75 1.5))
+;; => {:pValues (0.6872892787909721 0.6822703303362126),
+;;     :degreesOfFreedom (2 3),
+;;     :statistics (0.75 1.5)}
 ```
 
 ### Features
@@ -235,15 +239,15 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def pca
   (ml/fit dataframe (ml/pca {:input-col :features
                              :output-col :pca-features
-                             :k 3})))
+                             :k 2})))
 
 (-> dataframe
     (ml/transform pca)
     (g/collect-col :pca-features))
 
-;; => ((1.6485728230883807 -4.013282700516296 -5.524543751369388)
-;;     (-4.645104331781534 -1.1167972663619026 -5.524543751369387)
-;;     (-6.428880535676489 -5.337951427775355 -5.524543751369389))
+;; => ((1.6485728230883814 -4.013282700516299)
+;;     (-4.645104331781533 -1.116797266361906)
+;;     (-6.428880535676489 -5.33795142777536))
 ```
 
 #### Standard Scaler
@@ -255,25 +259,24 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                        :with-std true
                        :with-mean false}))
 
-(def scaler-model (ml/fit (libsvm-df) scaler))
+(def scaler-model (ml/fit libsvm-df scaler))
 
-(-> (libsvm-df)
-    (ml/transform scaler-model)
-    (g/limit 1)
-    (g/collect-col :scaled-features))
+(def scaled-features
+  (-> libsvm-df
+      (ml/transform scaler-model)
+      (g/limit 1)
+      (g/collect-col :scaled-features)
+      first))
 
-;; => ((0.5468234998110156
-;;      1.5923262059067456
-;;      2.435399721310935
-;;      1.7081091742536456
-;;      0.7334796787587756
-;;      0.43457146586677264
-;;      2.0985334204247876
-;;      2.2563158921609334
-;;      2.236765962167892
-;;      2.226905085275203
-;;      2.2554541846497917
-;;      ...
+(:size scaled-features)
+;; => 692
+
+(take 5 (:values scaled-features))
+;; => (0.5468234998110156
+;;     1.5923262059067456
+;;     2.435399721310935
+;;     1.7081091742536456
+;;     0.7334796787587756)
 ```
 
 #### Vector Assembler
@@ -292,11 +295,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform assembler)
     (g/select :features :clicked)
     g/show)
-; +-----------------------|-------+
+;; =stdout=>
+; +-----------------------+-------+
 ; |features               |clicked|
-; +-----------------------|-------+
+; +-----------------------+-------+
 ; |[18.0,1.0,0.0,10.0,0.5]|1.0    |
-; +-----------------------|-------+
+; +-----------------------+-------+
 ```
 
 ### Classification
@@ -317,21 +321,22 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select :label :probability)
     (g/limit 5)
     g/show)
-; +-----|----------------------------------------+
+;; =stdout=>
+; +-----+----------------------------------------+
 ; |label|probability                             |
-; +-----|----------------------------------------+
-; |0.0  |[0.6764827243160599,0.32351727568394006]|
-; |1.0  |[0.22640965216205314,0.7735903478379468]|
-; |1.0  |[0.2210316383828499,0.7789683616171501] |
-; |1.0  |[0.2526490765347194,0.7473509234652805] |
-; |1.0  |[0.22494007343582254,0.7750599265641774]|
-; +-----|----------------------------------------+
+; +-----+----------------------------------------+
+; |0.0  |[0.7151376213452819,0.2848623786547181] |
+; |1.0  |[0.22557925799292566,0.7744207420070743]|
+; |1.0  |[0.21174734149915936,0.7882526585008407]|
+; |1.0  |[0.28335873342117446,0.7166412665788255]|
+; |1.0  |[0.2354815309564311,0.7645184690435689] |
+; +-----+----------------------------------------+
 
 (take 3 (ml/coefficients lr-model))
-; => (-7.353983524188197E-5 -9.102738505589466E-5 -1.9467430546904298E-4)
+;; => (-7.520689871383902E-5 -8.11577314684679E-5 3.814692771846554E-5)
 
 (ml/intercept lr-model)
-; => 0.22456315961250325
+;; => -0.5991460286401467
 ```
 
 #### Gradient Boosted Tree Classifier
@@ -339,7 +344,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ```clojure
 (def data (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
-(def split-data (g/random-split data [0.7 0.3]))
+(def split-data (g/random-split data [0.7 0.3] 1234))
 (def train-data (first split-data))
 (def test-data (second split-data))
 
@@ -374,24 +379,29 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (-> predictions
     (g/select :predicted-label :label)
-    (g/order-by (g/rand))
     (g/limit 5)
     g/show)
-(println "Test error:" (- 1 (ml/evaluate predictions evaluator)))
-; +---------------|-----+
+;; =stdout=>
+; +---------------+-----+
 ; |predicted-label|label|
-; +---------------|-----+
+; +---------------+-----+
 ; |0.0            |0.0  |
-; |1.0            |1.0  |
-; |1.0            |1.0  |
-; |1.0            |1.0  |
-; |1.0            |1.0  |
-; +---------------|-----+
-; Test error: 0.08823529411764708
+; |0.0            |0.0  |
+; |0.0            |0.0  |
+; |0.0            |0.0  |
+; |0.0            |0.0  |
+; +---------------+-----+
+
+(println "Test error:" (- 1 (ml/evaluate predictions evaluator)))
+;; =stdout=>
+; Test error: 0.0
 ```
 
 #### XGBoost Classifier
 
+These need XGBoost4J on the classpath, which the doc tests leave out (see [Optional XGBoost Support](xgboost.md)).
+
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
@@ -405,15 +415,15 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select :label :probability)
     (g/limit 5)
     g/show)
-; +-----|----------------------------------------+
+; +-----+----------------------------------------+
 ; |label|probability                             |
-; +-----|----------------------------------------+
+; +-----+----------------------------------------+
 ; |0.0  |[0.7502040266990662,0.24979597330093384]|
 ; |1.0  |[0.24869805574417114,0.7513019442558289]|
 ; |1.0  |[0.24869805574417114,0.7513019442558289]|
 ; |1.0  |[0.24869805574417114,0.7513019442558289]|
 ; |1.0  |[0.24869805574417114,0.7513019442558289]|
-; +-----|----------------------------------------+
+; +-----+----------------------------------------+
 ```
 
 ### Regression
@@ -434,21 +444,22 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select :label :prediction)
     (g/limit 5)
     g/show)
-; +-----|----------+
+;; =stdout=>
+; +-----+----------+
 ; |label|prediction|
-; +-----|----------+
+; +-----+----------+
 ; |0.0  |0.57      |
 ; |1.0  |0.57      |
 ; |1.0  |0.57      |
 ; |1.0  |0.57      |
 ; |1.0  |0.57      |
-; +-----|----------+
+; +-----+----------+
 
 (take 3 (ml/coefficients lr-model))
-; => (0.0 0.0 0.0)
+;; => (0.0 0.0 0.0)
 
 (ml/intercept lr-model)
-; => 0.57
+;; => 0.57
 ```
 
 #### Random Forest Regression
@@ -461,7 +472,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                                    :output-col :indexed-features
                                    :max-categories 4})))
 
-(def split-data (g/random-split data [0.7 0.3]))
+(def split-data (g/random-split data [0.7 0.3] 1234))
 (def train-data (first split-data))
 (def test-data (second split-data))
 
@@ -481,17 +492,21 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (-> predictions
     (g/select :prediction :label)
     (g/show {:num-rows 5}))
-(println "RMSE:" (ml/evaluate predictions evaluator))
-; +----------|-----+
+;; =stdout=>
+; +----------+-----+
 ; |prediction|label|
-; +----------|-----+
-; |0.15      |0.0  |
-; |0.05      |0.0  |
-; |0.05      |0.0  |
+; +----------+-----+
 ; |0.0       |0.0  |
-; |0.15      |0.0  |
-; +----------|-----+
-; RMSE: 0.1436762233038478
+; |0.0       |0.0  |
+; |0.0       |0.0  |
+; |0.0       |0.0  |
+; |0.0       |0.0  |
+; +----------+-----+
+; only showing top 5 rows
+
+(println "RMSE:" (ml/evaluate predictions evaluator))
+;; =stdout=>
+; RMSE: 0.04767312946227961
 ```
 
 #### Survival Regression
@@ -516,19 +531,23 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def aft-model (ml/fit train aft))
 
 (-> train (ml/transform aft-model) g/show)
-; +-----|------|--------------|------------------|---------------------------------------+
+;; =stdout=>
+; +-----+------+--------------+------------------+---------------------------------------+
 ; |label|censor|features      |prediction        |quantiles                              |
-; +-----|------|--------------|------------------|---------------------------------------+
-; |1.218|1.0   |[1.56,-0.605] |5.718979487634987 |[1.1603238947151624,4.9954560102747525]|
-; |2.949|0.0   |[0.346,2.158] |18.076521181495465|[3.6675458454717664,15.789611866277742]|
-; |3.627|0.0   |[1.38,0.231]  |7.381861804239099 |[1.4977061305190835,6.447962612338963] |
-; |0.273|1.0   |[0.52,1.151]  |13.57761250142532 |[2.7547621481506925,11.859872224069731]|
-; |4.199|0.0   |[0.795,-0.226]|9.013097744073866 |[1.8286676321297761,7.872826505878401] |
-; +-----|------|--------------|------------------|---------------------------------------+
+; +-----+------+--------------+------------------+---------------------------------------+
+; |1.218|1.0   |[1.56,-0.605] |5.7189965530299   |[1.1603295951029091,4.995471733719646] |
+; |2.949|0.0   |[0.346,2.158] |18.076458028588927|[3.6675401061563924,15.78955928549122] |
+; |3.627|0.0   |[1.38,0.231]  |7.381875365763504 |[1.4977117707333796,6.447975512763028] |
+; |0.273|1.0   |[0.52,1.151]  |13.577581299077902|[2.7547611307597735,11.859846908963423]|
+; |4.199|0.0   |[0.795,-0.226]|9.013093216625728 |[1.8286702406091537,7.872823838856878] |
+; +-----+------+--------------+------------------+---------------------------------------+
 ```
 
 #### XGBoost Regressor
 
+These need XGBoost4J on the classpath, which the doc tests leave out (see [Optional XGBoost Support](xgboost.md)).
+
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
 
@@ -542,15 +561,15 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (g/select :label :prediction)
     (g/limit 5)
     g/show)
-; +-----|-------------------+
+; +-----+-------------------+
 ; |label|prediction         |
-; +-----|-------------------+
+; +-----+-------------------+
 ; |0.0  |0.24979597330093384|
 ; |1.0  |0.7513019442558289 |
 ; |1.0  |0.7513019442558289 |
 ; |1.0  |0.7513019442558289 |
 ; |1.0  |0.7513019442558289 |
-; +-----|-------------------+
+; +-----+-------------------+
 ```
 
 ### Clustering
@@ -570,9 +589,12 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def silhoutte (ml/evaluate predictions (ml/clustering-evaluator {})))
 
 (println "Silhouette with squared euclidean distance:" silhoutte)
-(println "Cluster centers:" (ml/cluster-centers model))
+;; =stdout=>
 ; Silhouette with squared euclidean distance: 0.9997530305375207
-; Cluster centers: ((0.1 0.1 0.1) (9.1 9.1 9.1))
+
+(println "Cluster centers:" (ml/cluster-centers model))
+;; =stdout=>
+; Cluster centers: ((9.1 9.1 9.1) (0.1 0.1 0.1))
 ```
 
 #### LDA
@@ -584,26 +606,29 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 (def model
   (ml/fit dataset (ml/lda {:k 10 :max-iter 10})))
 
-(println "log-likehood:" (.logLikelihood model dataset))
-(println "log-perplexity" (.logPerplexity model dataset))
-; log-likehood: -164.51762514834732
-; log-perplexity 1.9869278399558856
+(println "log-likelihood:" (.logLikelihood model dataset))
+;; =stdout=>
+; log-likelihood: -136.8259177878647
+
+(println "log-perplexity:" (.logPerplexity model dataset))
+;; =stdout=>
+; log-perplexity: 1.6524869298051295
 
 (-> dataset
     (ml/transform model)
     (g/limit 2)
     (g/collect-col :topicDistribution))
-; => ((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
-;     (0.07701806399774133
-;      0.07701821590017151
-;      0.07701312686434603
-;      0.07701770385981303
-;      0.3068312384243969
-;      0.0770491751796324
-;      0.07701324197964737
-;      0.07701452273708989
-;      0.07701480342311406
-;      0.07700990763404734))
+;; => ((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
+;;     (0.07537574948606664
+;;      0.07537608757379946
+;;      0.07537444990446238
+;;      0.0753760406513953
+;;      0.3216250821502348
+;;      0.07537597087758716
+;;      0.0753743398006919
+;;      0.0753743698147718
+;;      0.075374842014245
+;;      0.07537306772674557))
 ```
 
 ### Collaborative Filtering
@@ -637,31 +662,36 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
                             :prediction-col :prediction}))
 
 (println "Root-mean-square error:" (ml/evaluate predictions evaluator))
+;; =stdout=>
+; Root-mean-square error: 0.2656020220314336
+
 (-> (ml/recommend-users model 3)
     (g/limit 5)
     g/show)
+;; =stdout=>
+; +--------+---------------------------------------------------+
+; |movie-id|recommendations                                    |
+; +--------+---------------------------------------------------+
+; |20      |[{17, 4.626449}, {23, 3.3895144}, {5, 3.3622315}]  |
+; |40      |[{10, 3.9663663}, {2, 3.721185}, {28, 3.1287856}]  |
+; |10      |[{17, 3.9731963}, {23, 3.6774054}, {12, 3.0596843}]|
+; |50      |[{12, 4.1866217}, {23, 4.0086837}, {11, 3.8635526}]|
+; |80      |[{3, 3.9520073}, {11, 3.3872929}, {22, 3.1267433}] |
+; +--------+---------------------------------------------------+
+
 (-> (ml/recommend-items model 3)
     (g/limit 5)
     g/show)
-; Root-mean-square error: 0.29591909389846743
-; +--------|--------------------------------------------------+
-; |movie-id|recommendations                                   |
-; +--------|--------------------------------------------------+
-; |31      |[[12, 3.893104], [6, 3.0838614], [14, 2.9631455]] |
-; |85      |[[16, 4.730368], [8, 4.6532993], [7, 3.7848458]]  |
-; |65      |[[23, 4.732419], [14, 3.1167293], [25, 2.436222]] |
-; |53      |[[22, 5.329093], [4, 4.733863], [24, 4.6916943]]  |
-; |78      |[[25, 1.3145051], [23, 1.1761607], [26, 1.135325]]|
-; +--------|--------------------------------------------------+
-; +-------|--------------------------------------------------+
-; |user-id|recommendations                                   |
-; +-------|--------------------------------------------------+
-; |28     |[[25, 5.689864], [92, 5.360779], [76, 5.1021585]] |
-; |26     |[[51, 6.298293], [22, 5.4222317], [94, 5.2276535]]|
-; |27     |[[18, 3.7351623], [7, 3.692539], [23, 3.3052857]] |
-; |12     |[[46, 9.0876255], [17, 4.984369], [35, 4.9596915]]|
-; |22     |[[53, 5.329093], [74, 5.013483], [75, 4.916749]]  |
-; +-------|--------------------------------------------------+
+;; =stdout=>
+; +-------+---------------------------------------------------+
+; |user-id|recommendations                                    |
+; +-------+---------------------------------------------------+
+; |20     |[{22, 4.613506}, {68, 3.9787068}, {77, 3.7406487}] |
+; |10     |[{85, 5.02638}, {32, 4.039686}, {40, 3.9663663}]   |
+; |0      |[{25, 4.1894135}, {92, 3.7078776}, {9, 3.6283653}] |
+; |1      |[{22, 3.7155223}, {62, 3.6570795}, {68, 3.6425867}]|
+; |21     |[{29, 5.0556}, {52, 4.73343}, {53, 4.7176776}]     |
+; +-------+---------------------------------------------------+
 ```
 
 ### Model Selection and Tuning
@@ -721,22 +751,22 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
     (ml/transform cv-model)
     (g/select :id :text :probability :prediction)
     g/collect)
-; => ({:id 4,
-;      :text "spark i j k",
-;      :probability (0.12566260711357555 0.8743373928864244),
-;      :prediction 1.0}
-;     {:id 5,
-;      :text "l m n",
-;      :probability (0.995215441016286 0.004784558983713945),
-;      :prediction 0.0}
-;     {:id 6,
-;      :text "mapreduce spark",
-;      :probability (0.3069689523262689 0.693031047673731),
-;      :prediction 1.0}
-;     {:id 7,
-;      :text "apache hadoop",
-;      :probability (0.8040279442401511 0.19597205575984883),
-;      :prediction 0.0})
+;; => ({:id 4,
+;;      :text "spark i j k",
+;;      :probability (0.2664764605192917 0.7335235394807083),
+;;      :prediction 1.0}
+;;     {:id 5,
+;;      :text "l m n",
+;;      :probability (0.9203725758458563 0.0796274241541437),
+;;      :prediction 0.0}
+;;     {:id 6,
+;;      :text "mapreduce spark",
+;;      :probability (0.44376360608061827 0.5562363939193817),
+;;      :prediction 1.0}
+;;     {:id 7,
+;;      :text "apache hadoop",
+;;      :probability (0.8586524968002056 0.1413475031997944),
+;;      :prediction 0.0})
 ```
 
 ### Frequent Pattern Mining
@@ -758,30 +788,32 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 
 (g/show (ml/frequent-item-sets model))
-; +---------|----+
+;; =stdout=>
+; +---------+----+
 ; |items    |freq|
-; +---------|----+
-; |[1]      |3   |
-; |[2]      |3   |
-; |[2, 1]   |3   |
+; +---------+----+
 ; |[5]      |2   |
-; |[5, 2]   |2   |
-; |[5, 2, 1]|2   |
 ; |[5, 1]   |2   |
-; +---------|----+
+; |[5, 1, 2]|2   |
+; |[5, 2]   |2   |
+; |[2]      |3   |
+; |[1]      |3   |
+; |[1, 2]   |3   |
+; +---------+----+
 
 (g/show (ml/association-rules model))
-; +----------|----------|------------------|----+
-; |antecedent|consequent|confidence        |lift|
-; +----------|----------|------------------|----+
-; |[2, 1]    |[5]       |0.6666666666666666|1.0 |
-; |[5, 1]    |[2]       |1.0               |1.0 |
-; |[2]       |[1]       |1.0               |1.0 |
-; |[2]       |[5]       |0.6666666666666666|1.0 |
-; |[5]       |[2]       |1.0               |1.0 |
-; |[5]       |[1]       |1.0               |1.0 |
-; |[1]       |[2]       |1.0               |1.0 |
-; |[1]       |[5]       |0.6666666666666666|1.0 |
-; |[5, 2]    |[1]       |1.0               |1.0 |
-; +----------|----------|------------------|----+
+;; =stdout=>
+; +----------+----------+------------------+----+------------------+
+; |antecedent|consequent|confidence        |lift|support           |
+; +----------+----------+------------------+----+------------------+
+; |[2]       |[5]       |0.6666666666666666|1.0 |0.6666666666666666|
+; |[2]       |[1]       |1.0               |1.0 |1.0               |
+; |[5, 2]    |[1]       |1.0               |1.0 |0.6666666666666666|
+; |[1, 2]    |[5]       |0.6666666666666666|1.0 |0.6666666666666666|
+; |[5, 1]    |[2]       |1.0               |1.0 |0.6666666666666666|
+; |[5]       |[1]       |1.0               |1.0 |0.6666666666666666|
+; |[5]       |[2]       |1.0               |1.0 |0.6666666666666666|
+; |[1]       |[5]       |0.6666666666666666|1.0 |0.6666666666666666|
+; |[1]       |[2]       |1.0               |1.0 |1.0               |
+; +----------+----------+------------------+----+------------------+
 ```

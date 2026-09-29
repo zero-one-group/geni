@@ -1,11 +1,18 @@
 name: Weekly
 
-# The canary: the suite with Spark's own defaults (code generation on), on the
-# newest patch of each Spark line, and on the newest JDK. It bumps the Spark
-# pins in deps.edn in its own checkout, so a failure means that the next patch,
-# or the next JDK, would break Geni. GitHub emails the last person to touch
-# this file when a scheduled run fails, and turns the schedule off after 60
-# days without commits, so it may need re-enabling under Actions.
+# Three checks that don't need to run on every pull request:
+#
+# - the canary: the suite with Spark's own defaults (code generation on), on
+#   the newest patch of each Spark line, and on the newest JDK. It bumps the
+#   Spark pins in deps.edn in its own checkout, so a failure means that the
+#   next patch, or the next JDK, would break Geni;
+# - the links in the Markdown files, code blocks included, so that a moved
+#   dataset shows up here;
+# - the cookbook, run as tests on :spark, with its datasets cached.
+#
+# GitHub emails the last person to touch this file when a scheduled run fails,
+# and turns the schedule off after 60 days without commits, so it may need
+# re-enabling under Actions.
 on:
   schedule:
     - cron: '17 3 * * 1'  # Mondays at 03:17 UTC, 10:17 in Jakarta
@@ -44,3 +51,54 @@ jobs:
           java: ${{ matrix.java }}
           spark: ${{ matrix.spark }}
           aliases: ':cli:tmd:canary'
+
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          # 403 and 429 mostly mean that a site turns bots away, not that the
+          # page is gone.
+          args: >-
+            --no-progress
+            --include-verbatim
+            --max-retries 3
+            --timeout 30
+            --accept '100..=103,200..=299,403,429'
+            --exclude '^https?://172\.17\.'
+            --exclude '^https://clojurians\.slack\.com'
+            './**/*.md'
+
+  # Use the same Spark setup as the reference doc tests in ci.yml.
+  cookbook:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: docs-${{ hashFiles('deps.edn') }}
+          restore-keys: deps-spark-
+      # The downloads, which the cookbook skips when they're there already.
+      - uses: actions/cache@v6
+        with:
+          path: data/cookbook
+          key: cookbook-data-${{ hashFiles('docs/cookbook/*.md') }}
+          restore-keys: cookbook-data-
+      - run: clojure -T:build prep
+      - run: clojure -T:build cookbook
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-log-cookbook
+          path: target/test.log
