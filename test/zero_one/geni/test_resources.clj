@@ -6,40 +6,68 @@
    [clojure.java.io :as io])
   (:import
    (java.io File)
+   (org.apache.spark.sql Dataset)
    (java.nio.file.attribute FileAttribute)
    (java.nio.file Files Paths)
    (java.util UUID)))
 
 (def spark zero-one.geni.defaults/spark)
 
+(def ^:private fixtures (atom {}))
+
+(defn- per-session
+  "Builds a fixture once per Spark session, since `reset-session!` replaces
+  the session and closes the old one."
+  [k build]
+  (let [session @spark
+        [built-for value] (get @fixtures k)]
+    (if (identical? built-for session)
+      value
+      (let [value (build session)]
+        (swap! fixtures assoc k [session value])
+        value))))
+
+(defn- local-copy
+  "The same rows in memory, in one partition like the `limit` they come from,
+  so that Spark doesn't scan any files to query them."
+  [^Dataset df]
+  (-> (.createDataFrame (.sparkSession df) (.collectAsList df) (.schema df))
+      (.coalesce 1)))
+
 (defn melbourne-df []
-  (g/read-parquet! @spark "test/resources/melbourne_housing_snapshot.parquet"))
+  (per-session :melbourne
+               #(g/read-parquet! % "test/resources/melbourne_housing_snapshot.parquet")))
 
 (defn df-1 []
-  (g/limit (melbourne-df) 1))
+  (per-session :df-1 (fn [_] (local-copy (g/limit (melbourne-df) 1)))))
 
 (defn df-20 []
-  (g/limit (melbourne-df) 20))
+  (per-session :df-20 (fn [_] (local-copy (g/limit (melbourne-df) 20)))))
 
 (defn df-50 []
-  (g/limit (melbourne-df) 50))
+  (per-session :df-50 (fn [_] (local-copy (g/limit (melbourne-df) 50)))))
 
 (defn libsvm-df []
-  (g/read-libsvm! @spark "test/resources/sample_libsvm_data.txt" {:num-features "780"}))
+  (per-session :libsvm
+               #(g/cache (g/read-libsvm! % "test/resources/sample_libsvm_data.txt" {:num-features "780"}))))
 
 (defn k-means-df []
-  (g/read-libsvm! @spark "test/resources/sample_kmeans_data.txt" {:num-features "780"}))
+  (per-session :k-means
+               #(g/cache (g/read-libsvm! % "test/resources/sample_kmeans_data.txt" {:num-features "780"}))))
 
 (defn ratings-df []
-  (->> (slurp "test/resources/sample_movielens_ratings.txt")
-       split-lines
-       (map #(split % #"::"))
-       (map (fn [row]
-              {:user-id   (Integer/parseInt (first row))
-               :movie-id  (Integer/parseInt (second row))
-               :rating    (Float/parseFloat (nth row 2))
-               :timestamp (long (Integer/parseInt (nth row 3)))}))
-       (g/records->dataset @spark)))
+  (per-session :ratings
+               (fn [session]
+                 (->> (slurp "test/resources/sample_movielens_ratings.txt")
+                      split-lines
+                      (map #(split % #"::"))
+                      (map (fn [row]
+                             {:user-id   (Integer/parseInt (first row))
+                              :movie-id  (Integer/parseInt (second row))
+                              :rating    (Float/parseFloat (nth row 2))
+                              :timestamp (long (Integer/parseInt (nth row 3)))}))
+                      (g/records->dataset session)
+                      g/cache))))
 
 (def -tmp-dir-attr
   (into-array FileAttribute '()))
@@ -79,3 +107,14 @@
                  (assoc-in zero-one.geni.defaults/session-config
                            [:configs :spark.sql.warehouse.dir]
                            (rand-wh-path)))))
+
+(defmacro with-fresh-session
+  "Runs `body` in a new Spark session with its own warehouse, and deletes the
+  warehouse afterwards."
+  [& body]
+  `(do
+     (reset-session!)
+     (try
+       ~@body
+       (finally
+         (delete-warehouse!)))))

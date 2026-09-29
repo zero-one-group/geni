@@ -1,11 +1,11 @@
 (ns zero-one.geni.ml-frequent-pattern-test
   (:require
-   [midje.sweet :refer [facts =>]]
+   [clojure.test :refer [deftest is]]
    [zero-one.geni.core :as g]
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [spark]]))
 
-(facts "On Prefix-Span training" :slow
+(deftest ^:slow prefix-span-training-test
   (let [dataset     (-> (g/table->dataset
                          @spark
                          [[['(1 2) '(3)]]
@@ -16,11 +16,12 @@
         prefix-span (ml/prefix-span {:min-support 0.5
                                      :max-pattern-length 5
                                      :max-local-proj-db-size 32000000})]
-    (-> dataset
-        (ml/find-patterns prefix-span)
-        g/column-names) => ["sequence" "freq"]))
+    (is (= ["sequence" "freq"]
+           (-> dataset
+               (ml/find-patterns prefix-span)
+               g/column-names)))))
 
-(facts "On FP-Growth training" :slow
+(deftest ^:slow fp-growth-training-test
   (let [dataset   (-> (g/table->dataset
                        @spark
                        [[["1" "2" "5"]]
@@ -32,9 +33,10 @@
                                  :min-confidence 0.6
                                  :min-support    0.5})
         model     (ml/fit dataset fp-growth)]
-    (g/column-names (ml/frequent-item-sets model)) => ["items" "freq"]
-    (g/column-names (ml/association-rules model)) => ["antecedent"
-                                                      "consequent"
-                                                      "confidence"
-                                                      "lift"
-                                                      "support"]))
+    (is (= ["items" "freq"] (g/column-names (ml/frequent-item-sets model))))
+    (is (= ["antecedent"
+            "consequent"
+            "confidence"
+            "lift"
+            "support"]
+           (g/column-names (ml/association-rules model))))))

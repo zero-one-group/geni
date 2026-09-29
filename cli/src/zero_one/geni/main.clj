@@ -59,9 +59,6 @@
   (-> dataframe g/count)
   (-> dataframe g/print-schema)
 
-  (require '[midje.repl :refer [autotest]])
-  (autotest :filter (every-pred :testing))
-
   (require '[zero-one.geni.core])
   (require '[zero-one.geni.docs :as docs])
   (docs/docless-vars 'zero-one.geni.repl)

@@ -1,5 +1,5 @@
 (ns zero-one.geni.arrow-test
-  (:require [midje.sweet :refer [=> fact facts throws]]
+  (:require [clojure.test :refer [deftest is testing]]
             [tech.v3.dataset :as ds]
             [tech.v3.libs.arrow :as tmd-arrow]
             [zero-one.geni.core :as g]
@@ -10,76 +10,74 @@
 
 (def temp-dir (System/getProperty "java.io.tmpdir"))
 
-(facts "On typed-action" :arrow
-  (fact "must not allow unknown type"
-    (arrow/typed-action :get :unknown-type nil nil nil nil)
-    => (throws IllegalArgumentException))
-  (fact "must not allow unknown action"
+(deftest ^:arrow typed-action-test
+  (testing "must not allow unknown type"
+    (is (thrown? IllegalArgumentException (arrow/typed-action :get :unknown-type nil nil nil nil))))
+  (testing "must not allow unknown action"
     (mapv
      (fn [col-type]
-       (arrow/typed-action :unknown-action col-type nil nil nil nil)
-       => (throws IllegalArgumentException))
+       (is (thrown? IllegalArgumentException (arrow/typed-action :unknown-action col-type nil nil nil nil))))
      [:string :double :float :long :integer :boolean :date])))
 
-(facts "On empty dataframe" :arrow
-  (fact "writes arrow file with 0 rows and no schema"
-    (-> (g/create-dataframe [] {:long    :long
-                                :int     :int
-                                :string  :string
-                                :float   :float
-                                :double  :double
-                                :date    :date
-                                :boolean :boolean})
-        (g/collect-to-arrow 10 "/tmp")
-        (first)
-        (tmd-arrow/read-stream-dataset-copying)
-        (ds/row-count))
-    => 0))
+(deftest ^:arrow empty-dataframe-test
+  (testing "writes arrow file with 0 rows and no schema"
+    (is (= 0
+           (-> (g/create-dataframe [] {:long    :long
+                                       :int     :int
+                                       :string  :string
+                                       :float   :float
+                                       :double  :double
+                                       :date    :date
+                                       :boolean :boolean})
+               (g/collect-to-arrow 10 "/tmp")
+               (first)
+               (tmd-arrow/read-stream-dataset-copying)
+               (ds/row-count))))))
 
-(facts "On melbourne-df" :arrow
-  (fact "On size of collect arrow files - string only")
-  (-> (melbourne-df)
-      (g/select-columns [:Suburb])
-      (g/collect-to-arrow 10000 temp-dir)
-      count) => 2)
+(deftest ^:arrow melbourne-df-test
 
-(fact "On size of collect arrow files"
-  (-> (melbourne-df)
-      (g/collect-to-arrow 10000 temp-dir)
-      count) => 2)
+  (is (= 2
+         (-> (melbourne-df)
+             (g/select-columns [:Suburb])
+             (g/collect-to-arrow 10000 temp-dir)
+             count))))
 
-(fact "TMD can read it all"
+(deftest size-of-collect-arrow-files-test
+  (is (= 2
+         (-> (melbourne-df)
+             (g/collect-to-arrow 10000 temp-dir)
+             count))))
+
+(deftest tmd-can-read-it-all-test
   (let [arrow-files  (g/collect-to-arrow (melbourne-df) 20000 temp-dir)
         melbourne-ds (tmd-arrow/read-stream-dataset-copying (first arrow-files))]
-    (ds/shape melbourne-ds)  => [21 13580]
-    (ds/column-names melbourne-ds) => (g/column-names (melbourne-df))
-    (str (first (get melbourne-ds "Address"))) => "85 Turner St"
-    (first (get melbourne-ds "Price")) => 1480000.0))
+    (is (= [21 13580] (ds/shape melbourne-ds)))
+    (is (= (g/column-names (melbourne-df)) (ds/column-names melbourne-ds)))
+    (is (= "85 Turner St" (str (first (get melbourne-ds "Address")))))
+    (is (= 1480000.0 (first (get melbourne-ds "Price"))))))
 
-(fact "split in rows works ok"
+(deftest split-in-rows-works-ok-test
   (let [arrow-files    (g/collect-to-arrow (melbourne-df) 10000 temp-dir)
         melbourne-ds-1 (tmd-arrow/read-stream-dataset-copying (first arrow-files))
         melbourne-ds-2 (tmd-arrow/read-stream-dataset-copying (second arrow-files))]
-    (ds/shape melbourne-ds-1) => [21 10000]
-    (ds/shape melbourne-ds-2) => [21 3580]))
+    (is (= [21 10000] (ds/shape melbourne-ds-1)))
+    (is (= [21 3580] (ds/shape melbourne-ds-2)))))
 
-(facts "Crashes and failures" :arrow
-  (fact "does not crash"
+(deftest ^:arrow crashes-and-failures-test
+  (testing "does not crash"
     (g/collect-to-arrow (ratings-df) 10000 temp-dir)
     (-> (g/read-csv! "test/resources/boolean_data.csv")
         (g/collect-to-arrow 10 temp-dir))
     (-> (g/read-parquet! "test/resources/with_sql_date.parquet")
         (g/collect-to-arrow 10 temp-dir)))
-  (fact "does fail"
-    (-> (k-means-df)
-        (g/collect-to-arrow 10 temp-dir))
-    => (throws IllegalArgumentException "No matching clause: :vector")
-    (-> (libsvm-df)
-        (g/collect-to-arrow 10000 temp-dir))
-    => (throws IllegalArgumentException "No matching clause: :vector")))
+  (testing "does fail"
+    (is (thrown? IllegalArgumentException (-> (k-means-df)
+                                              (g/collect-to-arrow 10 temp-dir))))
+    (is (thrown? IllegalArgumentException (-> (libsvm-df)
+                                              (g/collect-to-arrow 10000 temp-dir))))))
 
-(facts "On dates" :arrow
-  (fact "dates are corect"
+(deftest ^:arrow dates-test
+  (testing "dates are corect"
     (let [with-date  (g/read-parquet! "test/resources/with_sql_date.parquet")
           ds
           (-> with-date
@@ -87,39 +85,40 @@
               first
               (tmd-arrow/read-stream-dataset-copying))]
 
-      (first (get ds "date")) =>
-      (.getTime (first (-> with-date (g/collect-col "date")))))))
+      (is (= (.getTime (first (-> with-date (g/collect-col "date")))) (first (get ds "date")))))))
 
-(facts "On all-nil data frame"
-  (fact "all nils areet into arrow file"
-    (-> (g/create-dataframe
-         [(g/row nil nil nil nil nil nil nil)]
-         {:long    :long
-          :int     :int
-          :string  :string
-          :float   :float
-          :double  :double
-          :date    :date
-          :boolean :boolean})
-        (g/collect-to-arrow 10 "/tmp")
-        (first)
-        (tmd-arrow/read-stream-dataset-copying)
-        (ds/mapseq-reader)
-        (first)
-        vals) => [nil nil nil nil nil nil nil]))
+(deftest all-nil-data-frame-test
+  (testing "all nils areet into arrow file"
+    (is (= [nil nil nil nil nil nil nil]
+           (-> (g/create-dataframe
+                [(g/row nil nil nil nil nil nil nil)]
+                {:long    :long
+                 :int     :int
+                 :string  :string
+                 :float   :float
+                 :double  :double
+                 :date    :date
+                 :boolean :boolean})
+               (g/collect-to-arrow 10 "/tmp")
+               (first)
+               (tmd-arrow/read-stream-dataset-copying)
+               (ds/mapseq-reader)
+               (first)
+               vals)))))
 
-(facts "On empty dataframe"
-  (fact "writes arrow file with 0 rows and no schema"
-    (->
-     (g/create-dataframe [] {:long    :long
-                             :int     :int
-                             :string  :string
-                             :float   :float
-                             :double  :double
-                             :date    :date
-                             :boolean :boolean})
-     (g/collect-to-arrow 10 "/tmp")
-     (first)
-     (tmd-arrow/read-stream-dataset-copying)
-     (ds/row-count)) => 0))
+(deftest empty-dataframe-2-test
+  (testing "writes arrow file with 0 rows and no schema"
+    (is (= 0
+           (->
+            (g/create-dataframe [] {:long    :long
+                                    :int     :int
+                                    :string  :string
+                                    :float   :float
+                                    :double  :double
+                                    :date    :date
+                                    :boolean :boolean})
+            (g/collect-to-arrow 10 "/tmp")
+            (first)
+            (tmd-arrow/read-stream-dataset-copying)
+            (ds/row-count))))))
 

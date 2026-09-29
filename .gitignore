@@ -6,7 +6,6 @@ spark-warehouses/
 
 *.DS_Store*
 .clj-kondo/.cache
-.clj-kondo/marick
 
 pom.xml
 pom.xml.asc

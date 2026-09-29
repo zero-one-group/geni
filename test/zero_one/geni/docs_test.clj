@@ -1,6 +1,6 @@
 (ns zero-one.geni.docs-test
   (:require
-   [midje.sweet :refer [fact =>]]
+   [clojure.test :refer [deftest is]]
    [zero-one.geni.core]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.ml]
@@ -18,12 +18,12 @@
  (var some-fn-with-invalid-doc)
  ["This doc is not a string."])
 
-(fact "Correct docless vars identification" :docs
-  (docs/docless-vars 'zero-one.geni.docs-test) => [(var some-docless-fn)]
-  (docs/invalid-doc-vars 'zero-one.geni.docs-test)
-  => {'some-fn-with-invalid-doc (var some-fn-with-invalid-doc)})
+(deftest ^:docs correct-docless-vars-identification-test
+  (is (= [(var some-docless-fn)]
+         (remove (comp :test meta) (docs/docless-vars 'zero-one.geni.docs-test))))
+  (is (= {'some-fn-with-invalid-doc (var some-fn-with-invalid-doc)} (docs/invalid-doc-vars 'zero-one.geni.docs-test))))
 
-(fact "Frequently required namespaces must have complete docs" :docs
-  (docs/docless-vars 'zero-one.geni.core) => empty?
-  (docs/docless-vars 'zero-one.geni.ml) => empty?
-  (docs/docless-vars 'zero-one.geni.rdd) => empty?)
+(deftest ^:docs frequently-required-namespaces-must-have-complete-test
+  (is (empty? (docs/docless-vars 'zero-one.geni.core)))
+  (is (empty? (docs/docless-vars 'zero-one.geni.ml)))
+  (is (empty? (docs/docless-vars 'zero-one.geni.rdd))))
