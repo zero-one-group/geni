@@ -1,0 +1,77 @@
+name: Release
+
+# Publishes a tagged version: zero.one/geni and then zero.one/geni-cli to
+# Clojars, and the CLI uberjar to a GitHub release. Tag the commit on develop
+# with v<version>, where <version> is the one in build.clj, and push the tag
+# (see CONTRIBUTING.md). A version with a suffix, like 0.1.0-alpha.1, becomes
+# a pre-release. Deploys that Clojars already has are skipped, so a failed
+# run can be rerun.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+      CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: deps-spark-${{ hashFiles('deps.edn') }}
+          restore-keys: deps-spark-
+
+      - name: Check that the tag matches build.clj
+        run: |
+          version=$(sed -n 's/^(def version "\(.*\)")$/\1/p' build.clj)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "The tag is $GITHUB_REF_NAME, but build.clj says $version."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Deploy zero.one/geni to Clojars
+        run: |
+          if curl -sfI "https://repo.clojars.org/zero/one/geni/$VERSION/geni-$VERSION.pom" > /dev/null; then
+            echo "zero.one/geni $VERSION is on Clojars already."
+          else
+            clojure -T:build deploy
+          fi
+
+      - name: Deploy zero.one/geni-cli to Clojars
+        run: |
+          if curl -sfI "https://repo.clojars.org/zero/one/geni-cli/$VERSION/geni-cli-$VERSION.pom" > /dev/null; then
+            echo "zero.one/geni-cli $VERSION is on Clojars already."
+          else
+            clojure -T:build cli-deploy
+          fi
+
+      - name: Build the CLI uberjar
+        run: clojure -T:build cli-uber
+
+      - name: Publish the GitHub release
+        run: |
+          case "$VERSION" in
+            *-*) prerelease=--prerelease ;;
+            *)   prerelease= ;;
+          esac
+          notes="The changes are in [CHANGELOG.md](https://github.com/zero-one-group/geni/blob/$GITHUB_REF_NAME/CHANGELOG.md). On Clojars: \`zero.one/geni {:mvn/version \"$VERSION\"}\`."
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "$VERSION" --notes "$notes" --generate-notes $prerelease
+          gh release upload "$GITHUB_REF_NAME" "target/geni-repl-uberjar-$VERSION.jar" --clobber
