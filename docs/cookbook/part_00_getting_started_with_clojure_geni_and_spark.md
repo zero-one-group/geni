@@ -14,7 +14,7 @@ Use JDK 21 and the [Clojure CLI](https://clojure.org/guides/install_clojure), as
 
 The [Brave Clojure](https://www.braveclojure.com/) book is available for free and provides a gentle introduction to Clojure. [The Joy of Clojure](https://www.manning.com/books/the-joy-of-clojure-second-edition) provides a more substantial treatment of the language.
 
-Rich Hickey's paper [A History of Clojure](https://download.clojure.org/papers/clojure-hopl-iv-final.pdf) is particularly useful to understand the founding principles of the language and the problem it tries to solve. He has given helpful talks including [Clojure for Java Programmers](https://www.youtube.com/watch?v=P76Vbsk_3J0), [Clojure Made Simple](https://www.youtube.com/watch?v=VSdnJDO-xdg) and [Simple Made Easy](https://www.youtube.com/watch?v=oytL881p-nQ).
+Rich Hickey's paper [A History of Clojure](https://download.clojure.org/papers/clojure-hopl-iv-final.pdf) is particularly useful to understand the founding principles of the language and the problem it tries to solve. He has given helpful talks including [Clojure for Java Programmers](https://www.youtube.com/watch?v=P76Vbsk_3J0) and [Simple Made Easy](https://www.youtube.com/watch?v=SxdOUGdseq4).
 
 For paid resources, [Purely Functional TV](https://purelyfunctional.tv/) and [Lambda Island](https://lambdaisland.com/) are by far the most popular sources. John Stevenson's [Practicalli](http://practicalli.github.io/clojure/) has recently been picking up momentum as well.
 

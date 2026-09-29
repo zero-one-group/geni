@@ -90,7 +90,7 @@ To achieve this, we can compose two windowed operations:
 
 ## 8.3 Revenue Differences to the Next Best in Every Category
 
-Similar idea as the previous one, but instead of aggregating with `g/max`, we use [the analytic function](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/spark-sql-functions-windows.html) `g/lag` with an offset of one row:
+Similar idea as the previous one, but instead of aggregating with `g/max`, we use [the analytic function](https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html) `g/lag` with an offset of one row:
 
 ```clojure
 (def next-best-by-category
