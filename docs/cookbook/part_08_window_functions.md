@@ -3,6 +3,8 @@
 This part is based on [Databricks' post on window functions](https://databricks.com/blog/2015/07/15/introducing-window-functions-in-spark-sql.html). Window functions allow us to perform grouped operations such as aggregations, ranking and lagging without having to do a separate group-by and join. We are going to use a synthetic dataset:
 
 ```clojure
+(require '[zero-one.geni.core :as g])
+
 (def product-revenue
   (g/table->dataset
     [["Thin"       "Cell phone" 6000]
@@ -18,6 +20,7 @@ This part is based on [Databricks' post on window functions](https://databricks.
     [:product :category :revenue]))
 
 (g/print-schema product-revenue)
+;; =stdout=>
 ; root
 ;  |-- product: string (nullable = true)
 ;  |-- category: string (nullable = true)
@@ -39,6 +42,7 @@ The easiest way to define a windowed column is to use `g/windowed`. The function
     (g/with-column :rank-by-category rank-by-category)
     (g/filter (g/< :rank-by-category 3))
     g/show)
+;; =stdout=>
 ; +----------+----------+-------+----------------+
 ; |product   |category  |revenue|rank-by-category|
 ; +----------+----------+-------+----------------+
@@ -67,6 +71,7 @@ To achieve this, we can compose two windowed operations:
     (g/with-column :revenue-diff (g/- :max-by-category :revenue))
     (g/order-by :category (g/desc :revenue))
     g/show)
+;; =stdout=>
 ; +----------+----------+-------+---------------+------------+
 ; |product   |category  |revenue|max-by-category|revenue-diff|
 ; +----------+----------+-------+---------------+------------+
@@ -98,15 +103,16 @@ Similar idea as the previous one, but instead of aggregating with `g/max`, we us
     (g/with-column :next-best-by-category next-best-by-category)
     (g/with-column :revenue-diff (g/- :next-best-by-category :revenue))
     g/show)
+;; =stdout=>
 ; +----------+----------+-------+---------------------+------------+
 ; |product   |category  |revenue|next-best-by-category|revenue-diff|
 ; +----------+----------+-------+---------------------+------------+
-; |Thin      |Cell phone|6000   |null                 |null        |
+; |Thin      |Cell phone|6000   |NULL                 |NULL        |
 ; |Very Thin |Cell phone|6000   |6000                 |0           |
 ; |Ultra Thin|Cell phone|5000   |6000                 |1000        |
 ; |Bendable  |Cell phone|3000   |5000                 |2000        |
 ; |Foldable  |Cell phone|3000   |3000                 |0           |
-; |Pro2      |Tablet    |6500   |null                 |null        |
+; |Pro2      |Tablet    |6500   |NULL                 |NULL        |
 ; |Mini      |Tablet    |5500   |6500                 |1000        |
 ; |Pro       |Tablet    |4500   |5500                 |1000        |
 ; |Big       |Tablet    |2500   |4500                 |2000        |
@@ -131,6 +137,7 @@ Suppose we would like to identify all products that are underperforming by one s
       (g// (g/- :revenue mean-by-category) std-by-category))
     (g/filter (g/< :z-stat-by-category -1))
     g/show)
+;; =stdout=>
 ; +--------+----------+-------+-------------------+
 ; |product |category  |revenue|z-stat-by-category |
 ; +--------+----------+-------+-------------------+

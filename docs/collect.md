@@ -1,93 +1,69 @@
-# Collecting Data from SparkDatasets
+# Collecting Data from Spark Datasets
 
-So far we have used Spark functions which get executed on all nodes of the cluster by the Spark engine.
-Spark has a lot of different options to operate on data, but sometimes we want to manipulate
-the data differently in pure Clojure.
+Spark functions run on the cluster, but sometimes it's easier to work on the data in plain Clojure. That means moving the data from the Spark workers to the driver, where the Clojure REPL runs, which only works when the data is **small** enough to fit on the driver.
 
-This requires to move the data from the Spark workers into the driver node, on which the Clojure REPL is running. This is only useful and possible, if the data is **small**, and fits on the node.
+Geni's functions that start with `collect` bring the data to the driver. The examples below use the Melbourne housing data in Geni's repo:
 
-Geni offers several functions starting with `collect-` which transport the data to the driver and then into the Clojure REPL.
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(def dataframe
+  (-> (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet")
+      (g/select :Suburb :Address :Rooms :Price :Date)))
+```
 
 ## Collect as Clojure data
 
 A very common case is to access the data as Clojure maps with `collect`:
 
 ```clojure
-
- (-> fixed-df (g/limit 2) g/collect)
-=> ({:du Parc "26",
-     :Rachel1 "16",
-     :Pierre-Dupuy "10",
-     :Berri 1 "35",
-     :Maisonneuve 1 "38",
-     :Brébeuf (données non disponibles) nil,
-     :Date "01/01/2012",
-     :Côte-Sainte-Catherine "0",
-     :St-Urbain (données non disponibles) nil,
-     :Maisonneuve 2 "51"}
-    {:du Parc "53",
-     :Rachel1 "43",
-     :Pierre-Dupuy "6",
-     :Berri 1 "83",
-     :Maisonneuve 1 "68",
-     :Brébeuf (données non disponibles) nil,
-     :Date "02/01/2012",
-     :Côte-Sainte-Catherine "1",
-     :St-Urbain (données non disponibles) nil,
-     :Maisonneuve 2 "153"}
-    )
+(-> dataframe (g/limit 2) g/collect)
+;; => ({:Suburb "Abbotsford",
+;;      :Address "85 Turner St",
+;;      :Rooms 2,
+;;      :Price 1480000.0,
+;;      :Date "3/12/2016"}
+;;     {:Suburb "Abbotsford",
+;;      :Address "25 Bloomburg St",
+;;      :Rooms 2,
+;;      :Price 1035000.0,
+;;      :Date "4/02/2016"})
 ```
 
-Alternatively we can get the data as a sequence of vectors with `collect-vals`:
+Alternatively, `collect-vals` returns a sequence of vectors:
 
 ```clojure
-
-(-> fixed-df (g/limit 2) g/collect-vals)
-=> (["01/01/2012" 35 nil 0 38 51 26 10 16 nil]
-    ["02/01/2012" 83 nil 1 68 153 53 6 43 nil])
+(-> dataframe (g/limit 2) g/collect-vals)
+;; => (["Abbotsford" "85 Turner St" 2 1480000.0 "3/12/2016"]
+;;     ["Abbotsford" "25 Bloomburg St" 2 1035000.0 "4/02/2016"])
 ```
 
-To access a the values of a single column, we can use `collect-col`:
+To access the values of a single column, use `collect-col`:
 
 ```clojure
-(-> fixed-df (g/limit 2) (g/collect-col :Date))
-=> ("01/01/2012" "02/01/2012")
+(-> dataframe (g/limit 2) (g/collect-col :Address))
+;; => ("85 Turner St" "25 Bloomburg St")
 ```
 
 ## Collect as Arrow files
 
-We can get the data into the driver as arrow files as well, by using the function `collect-to-arrow`
-This has the advantage, that it can work with data larger then the heap space of the driver.
+`collect-to-arrow` brings the data to the driver as Arrow files instead. It can handle data larger than the driver's heap, as long as the **largest partition** fits on the driver, since the data travels one partition at a time. Repartitioning the data first makes sure of that.
 
-The condition is, that the **largest partition** of the data fits into the driver, as the data gets transported by partition.
-To make this sure, we can repartition the data before collecting it.
-
-The `collect-to-arrow` function needs as well to know, how many rows each arrow file should get.
-This should be set as well small enough, so that each arrow files fits in heap space.
-
-The function will then create various arrow files, each having `chunk-size` rows. (except the last one, which is smaller)
-
-We need to specify as well the target directory, where the files get written to.
-
-The function returns a sequence of file names created.
+It also needs to know how many rows each Arrow file gets, which should be small enough for each file to fit in the heap, and the directory to write the files to. It writes files of `chunk-size` rows each (the last one can be smaller) and returns their paths:
 
 ```clojure
-(-> fixed-df 
-    (g/repartition 20)      ;; split data in 20 partitions of equal size
-    (g/collect-to-arrow 100 "/tmp"))
-=>  ["/tmp/geni12331590604347994819.ipc" 
-     "/tmp/geni2107925719499812901.ipc" 
-     "/tmp/geni2239579196531625282.ipc" 
-     "/tmp/geni14530350610103010872.ipc"]
+(-> dataframe
+    (g/repartition 20)  ;; 20 partitions of about the same size
+    (g/collect-to-arrow 1000 "/tmp"))
+; ["/tmp/geni12331590604347994819.ipc"
+;  "/tmp/geni2107925719499812901.ipc"
+;  ...]
 ```
 
-Setting the number of partitions and chunk size small enough, should allow the transfer of arbitrary large data to the driver. But it can obviously become slow, if data is big.
+With enough partitions and a small enough chunk size, data of any size can make it to the driver, although slowly when there's a lot of it.
 
-The files are written in the arrow-stream format, which can be processed by other software packages or with the Clojure "tech.ml.dataset" library.
+The files are in the Arrow streaming format, which other tools can read, such as [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) with `tech.v3.libs.arrow/stream->dataset`. On Spark 3.5 with JDK 21 or newer, `collect-to-arrow` needs Arrow 13 or newer on the classpath (see the [installation notes](../README.md#installation)).
 
 ## Integration with tech.ml.dataset
 
-The very latest alpha version of tech.ml.dataset (tech.ml.dataset)[https://github.com/techascent/tech.ml.dataset]
-offers a deeper integration with Geni, and allows to convert a Spark data-frame directly into a tech.ml.dataset. This happens on the driver, so the data need to fit in heap space.
-
-See (here)[https://github.com/techascent/tech.ml.dataset/blob/43f411d224a50057ae7d8817d89eda3611b33115/src/tech/v3/libs/spark.clj#L191] for details.
+tech.ml.dataset also has a [`tech.v3.libs.spark`](https://github.com/techascent/tech.ml.dataset/blob/master/src/tech/v3/libs/spark.clj) namespace, which converts a Spark dataset into a tech.ml.dataset dataset on the driver, and back. The data has to fit in the driver's heap.

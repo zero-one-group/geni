@@ -1,5 +1,7 @@
 # A Simple Performance Benchmark
 
+> This benchmark dates from 2020: Geni 0.0.x on Spark 3.0, one run on one machine, timing each library's Parquet read and write together with the group-by. It hasn't been rerun since, so its numbers describe that setup rather than Geni today.
+
 The Geni project was initiated by [Zero One Group's](https://zero-one-group.com/) data team in mid-2020 partly due to our frustrations with Pandas' unpredictable performance. We could have gone the PySpark way, but since the rest of the team had started using Clojure, we wanted have a crack at using Clojure for our data jobs.
 
 The following piece does not attempt to present a fair, rigorous performance benchmark results. Instead, it is to illustrate typical speedups that were up for grasp for our team and for our specific use cases. Therefore, the results presented here should be taken with a grain of salt.
@@ -8,6 +10,7 @@ The following piece does not attempt to present a fair, rigorous performance ben
 
 In mid-2020, we worked on a customer segmentation project for one of Indonesia's retail giants. We were working with more than 20 million transactions and 4 million customers. We simulate a reasonably representative dummy data with Geni. The crux of the simulations is as follows:
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (-> skeleton-df
     (g/select
@@ -41,6 +44,7 @@ The dummy data contains exactly 24 million transactions and approximately one mi
 
 We do the following aggregation:
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (-> dataframe
     (g/group-by :member-id)
@@ -56,6 +60,7 @@ We do the following aggregation:
 
 Note that, we additionally increase the JVM maximum heap size to 16GB and enabled Spark 3's adaptive query execution and dynamic coalescing of partitions using the following config:
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 {:configs {:spark.sql.adaptive.enabled "true"
            :spark.sql.adaptive.coalescePartitions.enabled "true"}}
@@ -154,6 +159,7 @@ The full script can be found [here](https://github.com/zero-one-group/geni-perfo
 
 We have three TMD variants, and each one is run using the same JVM options as Geni. The first variant uses Scicloj's [tablecloth](https://github.com/scicloj/tablecloth). We found tablecloth's [dplyr](https://dplyr.tidyverse.org/)-like API to be the most straightforward and looks most like the original Geni:
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (-> dataframe
     (api/add-or-replace-column "sales" #(dfn/* (% "price") (% "quantity")))
@@ -206,4 +212,4 @@ The following results are obtained from a machine with a 12-core Intel(R) Core(T
 | Julia    | DataFrames                           | Feather | 16                 | 41                  |
 | Clojure  | tech.ml.dataset (optimised by Chris) | Arrow   | 1                  | 7                   |
 
-Thanks to Spark, Geni is fast out of the box with minimal tweaks!
+At N=2,000,000, Pandas with its built-in aggregations took 3 seconds to Geni's 8, and at N=24,000,000 the two were about level, at 42 and 39 seconds. Spark's fixed overheads weigh most on small data, and its parallelism pays off as the data grows.

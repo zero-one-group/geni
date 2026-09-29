@@ -5,12 +5,26 @@ This part of the cookbook is largely taken from Chapter 5 of NVIDIA's [Accelerat
 As usual, we download the dataset and carry out simple processing steps:
 
 ```clojure
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
+
+(defn download-data! [source-url target-path]
+  (if (.exists (io/file target-path))
+    :already-exists
+    (do
+      (io/make-parents target-path)
+      (with-open [in (io/input-stream source-url)]
+        (io/copy in (io/file target-path)))
+      :downloaded)))
+
+(require '[zero-one.geni.ml :as ml])
+
 (download-data!
   "https://raw.githubusercontent.com/ageron/handson-ml/master/datasets/housing/housing.csv"
-  "data/houses.csv")
+  "data/cookbook/houses.csv")
 
 (def houses
-  (-> (g/read-csv! "data/houses.csv" {:kebab-columns true})
+  (-> (g/read-csv! "data/cookbook/houses.csv" {:kebab-columns true})
       (g/with-column :rooms-per-house (g// :total-rooms :households))
       (g/with-column :population-per-house (g// :population :households))
       (g/with-column :bedrooms-per-house (g// :total-bedrooms :households))
@@ -20,6 +34,7 @@ As usual, we download the dataset and carry out simple processing steps:
       (g/with-column :housing-median-age (g/double :housing-median-age))))
 
 (g/print-schema houses)
+;; =stdout=>
 ; root
 ;  |-- longitude: double (nullable = true)
 ;  |-- latitude: double (nullable = true)
@@ -42,15 +57,15 @@ Typically, we would like to train on one part of the data, and evaluate the pred
 (def test-data (second houses-splits))
 
 (g/count training-data)
-=> 16525
+;; => 16525
 
 (g/count test-data)
-=> 4115
+;; => 4115
 ```
 
 ## 11.2 Building a Model Pipeline
 
-When training a machine learning model, we typically have to do a number of processing steps to come up with the features and labels. These steps can be seen as parts of the model, as they would have to be carried out on unseen data. Geni has a nice way of arbitrarily composing these steps using `g/pipeline`. For instance, the following code defines a random-forest regressor, which includes a step to assemble individual feature columns into one vector column and a normalisation step:
+When training a machine learning model, we typically have to do a number of processing steps to come up with the features and labels. These steps can be seen as parts of the model, as they would have to be carried out on unseen data. Geni has a nice way of arbitrarily composing these steps using `ml/pipeline`. For instance, the following code defines a random-forest regressor, which includes a step to assemble individual feature columns into one vector column and a normalisation step:
 
 ```clojure
 (def assembler
@@ -90,6 +105,7 @@ When we call `ml/fit` on any pipeline stage (or more precisely any Spark estimat
       (g/with-column :error (g/- :prediction :median-house-value))))
 
 (-> predictions (g/limit 5) g/show)
+;; =stdout=>
 ; +------------------+------------------+-----------------+
 ; |prediction        |median-house-value|error            |
 ; +------------------+------------------+-----------------+
@@ -109,6 +125,7 @@ Finally, to evaluate the predictions, we can use a regression evaluator:
 (let [evaluator (ml/regression-evaluator {:label-col :median-house-value
                                           :metric-name "mae"})]
   (println (format "MAE: %.2f" (ml/evaluate predictions evaluator))))
+;; =stdout=>
 ; MAE: 54554.34
 ```
 

@@ -122,6 +122,36 @@
   {:jvm-opts ["-Dspark.sql.codegen.wholeStage=true"
               "-Dspark.sql.codegen.factoryMode=FALLBACK"]}
 
+  ;; The doc tests (see CONTRIBUTING.md). test-doc-blocks turns the Clojure
+  ;; blocks in the README and docs/ into tests under target/test-doc-blocks,
+  ;; and :doc-tests runs them after :spark:test. clojure -T:build docs does both.
+  :gen-doc-tests
+  {:extra-paths ["dev"]
+   :replace-deps {com.github.lread/test-doc-blocks {:mvn/version "1.2.21"}}
+   :exec-fn      zero-one.geni.doc-tests/generate
+   :exec-args    {:docs     ["README.md" "docs/*.md"]
+                  :platform :clj}}
+
+  ;; With Spark's own defaults, code generation included, and two cores, so
+  ;; that the outputs in the docs don't depend on the machine's core count.
+  :doc-tests
+  {:extra-paths ["target/test-doc-blocks/test"]
+   :jvm-opts    ["-Dspark.master=local[2]"
+                 "-Duser.timezone=UTC"
+                 "-Dspark.sql.codegen.wholeStage=true"
+                 "-Dspark.sql.codegen.factoryMode=FALLBACK"]
+   :exec-args   {:dirs ["target/test-doc-blocks/test"]}}
+
+  ;; The same for the cookbook, which downloads its datasets into
+  ;; data/cookbook: clojure -T:build cookbook.
+  :cookbook
+  {:extra-paths ["target/cookbook/test-doc-blocks/test"]
+   :jvm-opts    ["-Dspark.master=local[2]"
+                 "-Duser.timezone=UTC"
+                 "-Dspark.sql.codegen.wholeStage=true"
+                 "-Dspark.sql.codegen.factoryMode=FALLBACK"]
+   :exec-args   {:dirs ["target/cookbook/test-doc-blocks/test"]}}
+
   ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests. build.clj
   ;; builds the uberjar from cli/src, with these deps and :spark's.
   :cli

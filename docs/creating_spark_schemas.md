@@ -24,29 +24,36 @@ StructType(Array(
 gets translated into:
 
 ```clojure
-(g/struct-type
- (g/struct-field :a :int true)
- (g/struct-field :b :str true)
- (g/struct-field :c (g/array-type :short true) true)
- (g/struct-field :d (g/map-type :str :int) true)
- (g/struct-field :e 
-                 (g/struct-type 
-                  (g/struct-field :x :float true) 
-                  (g/struct-field :y :float true))
-                 true))
+(require '[zero-one.geni.core :as g])
+
+(def spark-style-schema
+  (g/struct-type
+   (g/struct-field :a :int true)
+   (g/struct-field :b :str true)
+   (g/struct-field :c (g/array-type :short true) true)
+   (g/struct-field :d (g/map-type :str :int) true)
+   (g/struct-field :e
+                   (g/struct-type
+                    (g/struct-field :x :float true)
+                    (g/struct-field :y :double true))
+                   true)))
 ```
 
-whilst the Clojure version may look cleaner than the original Scala version, Geni offers an even more concise way to specify complex schemas such as the example above and cut through the boilerplates. In particular, we can use Geni's **data-oriented schemas**:
+Whilst the Clojure version may look cleaner than the original Scala version, Geni offers an even more concise way to specify complex schemas such as the example above and cut through the boilerplate. In particular, Geni's **data-oriented schemas** describe the same schema as:
 
 ```clojure
-{:a :int
- :b :str
- :c [:short]
- :d [:str :int]
- :z {:a :float :b :double}}
+(def data-oriented-schema
+  {:a :int
+   :b :str
+   :c [:short]
+   :d [:str :int]
+   :e {:x :float :y :double}})
+
+(= spark-style-schema (g/->schema data-oriented-schema))
+;; => true
 ```
 
-The conversion rules are simple:
+Functions that take a schema, such as `g/create-dataframe`, take either kind. The conversion rules are simple:
 
 * all fields and types default to nullable;
 * a vector of count one is interpreted as an `ArrayType`;
@@ -54,4 +61,4 @@ The conversion rules are simple:
 * a map is interpreted as a nested `StructType`; and
 * everything else is left as is.
 
-In particular, the last rule allows us to mix and match the data-oriented style with the Spark DataType style for specifying nested types.
+In particular, the last rule allows mixing and matching the data-oriented style with the Spark DataType style for specifying nested types.

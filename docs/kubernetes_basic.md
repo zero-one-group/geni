@@ -1,5 +1,7 @@
 # Geni on Kubernetes
 
+> This guide was written for Spark 3.0 on Minikube in 2020. Its versions have been updated for Spark 3.5 since, but its steps haven't been rerun.
+
 Geni works on any Spark cluster, including Spark on Kubernetes.
 There are a lot of different approaches to running Spark on Kubernetes.
 
@@ -7,7 +9,7 @@ Here, we will show a simple approach, which can be replicated on a single comput
 
 ## Prerequisites
 
-The following steps assume a Linux based OS having [Docker](https://docs.docker.com/engine/install/), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) installed. You may also need to install [rlwrap](https://linux.die.net/man/1/rlwrap), as we will be using the `clj` command.
+The following steps assume a Linux based OS having [Docker](https://docs.docker.com/engine/install/), [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) installed. It also needs the [Clojure CLI](https://clojure.org/guides/install_clojure).
 
 ## Install spark distribution
 
@@ -17,9 +19,9 @@ The Spark distribution contains tools to ease the creation of suitable Docker im
 so we need to download it first.
 
 ```bash
-wget https://downloads.apache.org/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz
-tar xzf spark-3.0.1-bin-hadoop2.7.tgz
-cd spark-3.0.1-bin-hadoop2.7/
+wget https://archive.apache.org/dist/spark/spark-3.5.9/spark-3.5.9-bin-hadoop3.tgz
+tar xzf spark-3.5.9-bin-hadoop3.tgz
+cd spark-3.5.9-bin-hadoop3/
 ```
 
 ## Minikube
@@ -37,7 +39,7 @@ minikube --memory 8192 --cpus 3 start
 
 Minikube should be running now, and kubectl is configured to work with the local Minikube cluster.
 
-Now we look for the mater URL, to be used later.
+Now we look for the master URL, to be used later.
 
 ```bash
 kubectl cluster-info
@@ -45,7 +47,7 @@ kubectl cluster-info
 
 ### Create docker images
 
-The `bin/docker-imagetool.sh` script can be used for creating Docker images.
+The `bin/docker-image-tool.sh` script can be used for creating Docker images.
 
 The `-m` switch makes the images directly accessible to Minikube.
 
@@ -53,7 +55,7 @@ It needs to be run in the directory where Spark was extracted into.
 
 ```bash
 
-bin/docker-image-tool.sh -m -t v3.0.1 build
+bin/docker-image-tool.sh -m -t v3.5.9 build
 
 ```
 
@@ -69,15 +71,13 @@ kubectl create clusterrolebinding spark-rolebinding --clusterrole=edit --service
 
 ## Setup clojure dependencies
 
-Spark on Kubernetes requires one specific spark dependency to be added, namely `org.apache.spark/spark_kubernetes_2.12`.
-The minimal Clojure dependencies to get the following code work are these:
+Spark on Kubernetes needs one more Spark dependency, `org.apache.spark/spark-kubernetes_2.12`. Add it to the `:spark` alias from Geni's [installation instructions](../README.md#installation):
 
-```bash
-GENI_VERSION=$(wget -qO- https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
-clj -Sdeps "{:deps {zero.one/geni {:mvn/version \"$GENI_VERSION\" :exclusions [reply/reply]} org.apache.spark/spark-core_2.12 {:mvn/version \"3.0.1\" } org.apache.spark/spark-mllib_2.12 {:mvn/version \"3.0.1\"} org.apache.spark/spark-kubernetes_2.12 {:mvn/version \"3.0.1\"}}}"
+```edn
+org.apache.spark/spark-kubernetes_2.12 {:mvn/version "3.5.9"}
 ```
 
-This will start a Clojure REPL including the needed dependencies of Geni and Spark on Kubernetes.
+Then `clj -M:spark` starts a Clojure REPL with Geni, Spark and Spark's Kubernetes support.
 
 ## Create Spark session
 
@@ -98,6 +98,7 @@ Running the following code in the REPL, will create a Spark session and a Spark 
 The driver will then launch three pods in Kubernetes using the provided Docker images.
 Note that you will have to **change the `:spark.master` address** according to `kubectl cluster-info`.
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (require '[zero-one.geni.core :as g])
 
@@ -108,10 +109,10 @@ Note that you will have to **change the `:spark.master` address** according to `
    {:app-name "my-app"
     :log-level "INFO"
     :configs
-    {:spark.master "k8s://https://172.17.0.3:8443" ;;  might differ for you, its the output of kubecl cluster-info
-     :spark.kubernetes.container.image "spark:v3.0.1" ;; this is for local docker images, works for minikube
+    {:spark.master "k8s://https://172.17.0.3:8443" ;;  might differ for you, it's the output of kubectl cluster-info
+     :spark.kubernetes.container.image "spark:v3.5.9" ;; this is for local docker images, works for minikube
      :spark.kubernetes.namespace "spark"
-     :spark.kubernetes.authenticate.serviceAccountName "spark" ;; created above
+     :spark.kubernetes.authenticate.executor.serviceAccountName "spark-serviceaccount" ;; created above
      :spark.executor.instances 3}}))
 ```
 
@@ -140,7 +141,7 @@ The moment we close the Clojure REPL session, the worker pods get deleted in Kub
 We have a lot of different options for reading files into Spark in a Kubernetes setup.
 The main requirement is, that the files can be addressed under a common URL in the driver and all workers.
 
-In Geni all file reading happens via functions of form  `g/read_xxx_!`. We can use different (eventually remote) file sytems by using different forms of the URL (specifically by using different prefixes).
+In Geni, all file reading happens through functions of the form `g/read-xxx!`. We can use different (eventually remote) file sytems by using different forms of the URL (specifically by using different prefixes).
 
 The reading of  files by Geni can be achieved in 4 different ways:
 
@@ -150,7 +151,7 @@ The reading of  files by Geni can be achieved in 4 different ways:
 
 2. __Mount remote filesystem__ into the pod on __operating system level__. This makes them accessible as local files. See for example: [blobfuse](https://github.com/Azure/azure-storage-fuse). This has direct support for Kubenetes as well through [kubernetes volume driver](https://github.com/Azure/kubernetes-volume-drivers) (This is then the same as 3.)
 
-3. __Mount Kubernetes data volumes into pods:__ Using a __local__ file path __and__ make sure that these path exist and work in all workers __and__ the driver. In Kubernets/Docker we can do this by __mounting__ (eventually remote) filesystems into the pods at certain location. Doing this, the files would look like local files and urls would not have a specific prefix, and be for example `(g/read "/data/test.csv")` This approach can eventually become easier if we make sure, that the driver is running as well inside Kubernetes. In the minikube setup above, the driver runs __outside__ Kubernetes.
+3. __Mount Kubernetes data volumes into pods:__ Using a __local__ file path __and__ make sure that these path exist and work in all workers __and__ the driver. In Kubernets/Docker we can do this by __mounting__ (eventually remote) filesystems into the pods at certain location. Doing this, the files would look like local files and urls would not have a specific prefix, and be for example `(g/read-csv! "/data/test.csv")` This approach can eventually become easier if we make sure, that the driver is running as well inside Kubernetes. In the minikube setup above, the driver runs __outside__ Kubernetes.
 
 4. __Using remote file systems:__ Spark can work with various types of remoe filesystem (hdfs, Amazon S3, Azure Storage based, others). This needs to be setup correctly (inside or outside Kubernetes). This might require 3 changes to the basic Minikube setup:
 

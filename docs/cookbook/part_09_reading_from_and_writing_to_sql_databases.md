@@ -1,19 +1,14 @@
 # CB-09: Reading From and Writing To SQL Databases
 
-In this part of the cookbook, we use the well-known [Chinook sample SQLite database](https://www.sqlitetutorial.net/sqlite-sample-database/). We must first download the zipped database file and unzip it:
+In this part of the cookbook, we use the [Chinook sample SQLite database](https://github.com/lerocha/chinook-database). We download the v1.4.5 release into `data/cookbook`. Start the REPL with `clj -M:spark:test` to include the SQLite JDBC driver.
 
 ```clojure
-(download-data!
-  "https://cdn.sqlitetutorial.net/wp-content/uploads/2018/03/chinook.zip"
-  "data/chinook.zip")
-=> :downloaded
-
-(when-not (-> "data/chinook.db" clojure.java.io/file .exists)
-  (clojure.java.shell/sh "unzip" "data/chinook.zip" "-d" "data/"))
-=> {:exit 0,
-    :out
-    "Archive:  data/chinook.zip\n  inflating: data/chinook.db         \n",
-    :err ""}
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
+(when-not (.exists (io/file "data/cookbook/chinook.db"))
+  (io/make-parents "data/cookbook/chinook.db")
+  (with-open [in (io/input-stream "https://github.com/lerocha/chinook-database/releases/download/v1.4.5/Chinook_Sqlite.sqlite")]
+    (io/copy in (io/file "data/cookbook/chinook.db"))))
 ```
 
 ## 9.1 Reading From SQLite
@@ -23,33 +18,35 @@ Reading from databases through JDBC is slightly different to reading from a file
 ```clojure
 (def chinook-tracks
   (g/read-jdbc! {:driver        "org.sqlite.JDBC"
-                 :url           "jdbc:sqlite:data/chinook.db"
-                 :dbtable       "tracks"
+                 :url           "jdbc:sqlite:data/cookbook/chinook.db"
+                 :dbtable       "Track"
                  :kebab-columns true}))
 
 (g/count chinook-tracks)
-=> 3503
+;; => 3503
 
 (g/print-schema chinook-tracks)
+;; =stdout=>
 ; root
-;  |-- track-id: integer (nullable = true)
-;  |-- name: string (nullable = true)
-;  |-- album-id: integer (nullable = true)
-;  |-- media-type-id: integer (nullable = true)
-;  |-- genre-id: integer (nullable = true)
-;  |-- composer: string (nullable = true)
-;  |-- milliseconds: integer (nullable = true)
-;  |-- bytes: integer (nullable = true)
-;  |-- unit-price: decimal(10,2) (nullable = true)
+;  |-- TrackId: integer (nullable = true)
+;  |-- Name: string (nullable = true)
+;  |-- AlbumId: integer (nullable = true)
+;  |-- MediaTypeId: integer (nullable = true)
+;  |-- GenreId: integer (nullable = true)
+;  |-- Composer: string (nullable = true)
+;  |-- Milliseconds: integer (nullable = true)
+;  |-- Bytes: integer (nullable = true)
+;  |-- UnitPrice: decimal(10,2) (nullable = true)
 
 (g/show chinook-tracks {:num-rows 3})
-; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
-; |track-id|name                                   |album-id|media-type-id|genre-id|composer                                           |milliseconds|bytes   |unit-price|
-; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
-; |1       |For Those About To Rock (We Salute You)|1       |1            |1       |Angus Young, Malcolm Young, Brian Johnson          |343719      |11170334|0.99      |
-; |2       |Balls to the Wall                      |2       |2            |1       |null                                               |342562      |5510424 |0.99      |
-; |3       |Fast As a Shark                        |3       |2            |1       |F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman|230619      |3990994 |0.99      |
-; +--------+---------------------------------------+--------+-------------+--------+---------------------------------------------------+------------+--------+----------+
+;; =stdout=>
+; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
+; |TrackId|Name                                   |AlbumId|MediaTypeId|GenreId|Composer                                           |Milliseconds|Bytes   |UnitPrice|
+; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
+; |1      |For Those About To Rock (We Salute You)|1      |1          |1      |Angus Young, Malcolm Young, Brian Johnson          |343719      |11170334|0.99     |
+; |2      |Balls to the Wall                      |2      |2          |1      |NULL                                               |342562      |5510424 |0.99     |
+; |3      |Fast As a Shark                        |3      |2          |1      |F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman|230619      |3990994 |0.99     |
+; +-------+---------------------------------------+-------+-----------+-------+---------------------------------------------------+------------+--------+---------+
 ; only showing top 3 rows
 ```
 
@@ -60,9 +57,10 @@ Writing to SQLite databases has a similar format to reading it:
 ```clojure
 (g/write-jdbc! chinook-tracks
                {:driver  "org.sqlite.JDBC"
-                :url     "jdbc:sqlite:data/chinook-tracks.sqlite"
-                :dbtable "tracks"})
-=> nil
+                :url     "jdbc:sqlite:data/cookbook/chinook-tracks.sqlite"
+                :dbtable "tracks"
+                :mode "overwrite"})
+;; => nil
 ```
 
 The drivers `"com.mysql.jdbc.Driver"` and `"org.postgresql.Driver"` can be used for MySQL and PostgreSQL respectively.

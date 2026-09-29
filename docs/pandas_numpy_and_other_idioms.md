@@ -4,13 +4,21 @@ Occasionally, we find functions from other languages and libraries that solve ce
 
 This doc discusses a few interesting examples of such imported idioms. It is by no means exhaustive. See the [cljdoc](https://cljdoc.org/d/zero.one/geni/CURRENT) entry for the `zero-one.geni.foreign-idioms` namespace for the complete set.
 
+The examples below use the Melbourne housing data in Geni's repo:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(def dataframe (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
+```
+
 ## Pandas
 
 Sometimes it's convenient to know the shape of a dataframe:
 
 ```clojure
 (g/shape dataframe)
-=> [13580 21]
+;; => [13580 21]
 ```
 
 The function [`value-counts`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.value_counts.html) returns the counts of unique values. Unlike in Pandas, this operation does not require a single column:
@@ -21,6 +29,7 @@ The function [`value-counts`](https://pandas.pydata.org/pandas-docs/stable/refer
     g/value-counts
     (g/limit 5)
     g/show)
+;; =stdout=>
 ; +-------+--------------+-----+
 ; |SellerG|Suburb        |count|
 ; +-------+--------------+-----+
@@ -39,6 +48,7 @@ The function [`cut`](https://pandas.pydata.org/pandas-docs/stable/reference/api/
     (g/select {:price-bins (g/cut :Price [8e5 1e6 1.2e6])})
     g/value-counts
     g/show)
+;; =stdout=>
 ; +---------------------------+-----+
 ; |price-bins                 |count|
 ; +---------------------------+-----+
@@ -60,7 +70,9 @@ At times, it may be convenient to do the binning based on the quantiles. Enter [
             :mean  (g/mean :price)
             :max   (g/max :price)
             :count (g/count "*")})
+    (g/order-by :bins)
     g/show)
+;; =stdout=>
 ; +---------------+---------+------------------+---------+-----+
 ; |bins           |min      |mean              |max      |count|
 ; +---------------+---------+------------------+---------+-----+
@@ -82,7 +94,9 @@ Or simply just, say, five equal bins:
             :mean  (g/mean :price)
             :max   (g/max :price)
             :count (g/count "*")})
+    (g/order-by :bins)
     g/show)
+;; =stdout=>
 ; +---------------+---------+------------------+---------+-----+
 ; |bins           |min      |mean              |max      |count|
 ; +---------------+---------+------------------+---------+-----+
@@ -104,6 +118,7 @@ NumPy's [`clip`](https://numpy.org/doc/stable/reference/generated/numpy.clip.htm
                :clipped   (g/clip :LandSize 100 200)})
     (g/limit 10)
     g/show)
+;; =stdout=>
 ; +---------+-------+
 ; |land-size|clipped|
 ; +---------+-------+
@@ -117,7 +132,7 @@ NumPy's [`clip`](https://numpy.org/doc/stable/reference/generated/numpy.clip.htm
 ; |256.0    |200.0  |
 ; |0.0      |100.0  |
 ; |220.0    |200.0  |
-;+---------+-------+
+; +---------+-------+
 ```
 
 ## tech.ml.dataset
@@ -128,11 +143,12 @@ Users of TechAscent's [dataset](https://github.com/techascent/tech.ml.dataset) m
 (-> [{:a 1 :b 2} {:a 2 :c 3}]
     g/->dataset
     g/show)
+;; =stdout=>
 ; +---+----+----+
 ; |a  |b   |c   |
 ; +---+----+----+
-; |1  |2   |null|
-; |2  |null|3   |
+; |1  |2   |NULL|
+; |2  |NULL|3   |
 ; +---+----+----+
 ```
 
@@ -144,6 +160,7 @@ And it works with file paths and options:
                                                   :Suburb 
                                                   :LandSize]})
     g/show)
+;; =stdout=>
 ; +---------+----------+--------+
 ; |Price    |Suburb    |LandSize|
 ; +---------+----------+--------+

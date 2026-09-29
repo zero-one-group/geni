@@ -53,10 +53,44 @@ On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two
 ```bash
 clojure -T:build lint    # clj-kondo, then cljfmt's check
 clojure -T:build fmt     # reformats the sources with cljfmt
-clojure -T:build check   # lint, then the tests on :spark
+clojure -T:build check   # lint, the tests on :spark, and the doc tests
 ```
 
 `check` is what the CI runs on a pull request, so running it before you push saves a round trip. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
+
+## Executable documentation
+
+After `prep`, run the README and reference examples with `clojure -T:build docs`.
+`clojure -T:build cookbook` runs the cookbook separately and downloads its public
+datasets into `data/cookbook/`. Part 5 uses the weather data written by part 4.
+The weekly workflow runs the cookbook and checks Markdown links. The large
+benchmark in part 10 and the login-required dataset in part 12 remain manual.
+
+`test-doc-blocks` turns Clojure fences into tests, in document order. Put
+`;; =>` before a returned value or `;; =stdout=>` before commented printed output.
+Ordinary comments are illustrative and are not assertions. A block without an
+expectation still runs, so errors in setup and examples fail the build. For a
+block that requires external infrastructure, add `<!-- :test-doc-blocks/skip -->`
+immediately before its fence and explain why it is skipped.
+
+The generated assertions use helpers in `dev/zero_one/geni/doc_assertions.clj`:
+floating-point values allow `1e-6` relative or `1e-9` absolute error, including
+decimal numbers in printed output. Spark table padding may vary with those
+numbers. Structure, keys, integer values, text and row order are still checked;
+the library's regular tests keep exact equality. Doc runs use two local Spark
+cores, code generation and UTC. Use fixed seeds and explicit ordering when an
+example depends on them.
+
+To refresh existing expectations after changing an example:
+
+```bash
+clojure -X:spark:test:doc-tests zero-one.geni.doc-outputs/regen :files '["README.md" "docs/examples.md"]'
+```
+
+This executes the examples, including their file writes, and updates their
+expectation comments. Review the diff and run `docs` or `cookbook` afterward.
+Values that cannot round-trip through the Clojure reader and output with trailing
+spaces remain illustrative comments; the refresher reports these cases.
 
 ## Pull requests
 

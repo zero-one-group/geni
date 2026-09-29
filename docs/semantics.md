@@ -1,5 +1,13 @@
 ## Geni Semantics
 
+The examples below use the Melbourne housing data in Geni's repo:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(def dataframe (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
+```
+
 ### Column Coercion
 
 Many SQL functions and Column methods are overloaded to take either a keyword, a string or a Column instance as argument. For such cases, Geni implements Column coercion where
@@ -16,14 +24,18 @@ Because of this, basic arithmetic operations do not require `lit` wrapping:
 (g/- (g// (g/sin (g/lit Math/PI)) (g/cos (g/lit Math/PI))) (g/tan (g/lit Math/PI)))
 ```
 
-However, string literals do require `lit` wrapping:
+However, string literals do require `lit` wrapping. The following throws, because `"Nelson"` is interpreted as a column that doesn't exist:
+
+<!-- :test-doc-blocks/skip -->
+```clojure
+(-> dataframe (g/filter (g/=== "SellerG" "Nelson")))
+```
+
+The following works, as it checks the column `"SellerG"` against `"Nelson"` as a literal:
 
 ```clojure
-; The following fails, because "Nelson" is interpreted as a Column
-(-> dataframe (g/filter (g/=== "SellerG" "Nelson")))
-
-; The following works, as it checks the column "SellerG" against "Nelson" as a literal
-(-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))))
+(-> dataframe (g/filter (g/=== "SellerG" (g/lit "Nelson"))) g/count)
+;; => 1565
 ```
 
 It may be useful to think of a Spark Dataset as a seq of maps, so that keywords can be idiomatically used to refer to columns (i.e. keys). For that reason, the predicate column above may be more idiomatically written as:
@@ -34,7 +46,7 @@ It may be useful to think of a Spark Dataset as a seq of maps, so that keywords 
 
 ### Column-Array Coercion
 
-Geni implements Column-array coercion to variadic SQL functions and Column methods, such as `select` and `group-by`. The coercion rules are as follos:
+Geni implements Column-array coercion to variadic SQL functions and Column methods, such as `select` and `group-by`. The coercion rules are as follows:
 
 1. maps have their values flattened, coerced into Columns and aliased as the keys and;
 2. other collections have their values flattened and coerced into Columns.
@@ -51,7 +63,7 @@ A function like `select` can take all of these different types in a single invoc
               [:Date :Method]
               #{:Lattitude :Longtitude})
     g/columns)
-=> (:SellerG :Address :Postcode :log-price :rooms :Date :Method :Lattitude :Longtitude)
+;; => (:SellerG :Address :Postcode :log-price :rooms :Date :Method :Lattitude :Longtitude)
 ```
 
 ### Boolean Casts
@@ -63,6 +75,7 @@ All calls to `filter` and `remove` are implicitly casted to booleans. This means
     (g/remove (g/mod :Rooms 2))
     (g/select :Rooms)
     g/distinct
+    (g/order-by :Rooms)
     (g/collect-col :Rooms))
-=> (4 6 2 10 8)
+;; => (2 4 6 8 10)
 ```

@@ -3,6 +3,8 @@
 In this part of the cookbook, we are going to use the cleaned dataset from the previous part:
 
 ```clojure
+(require '[zero-one.geni.core :as g])
+
 (def weather-2012
   (g/read-csv! "data/cookbook/weather-2012.csv"))
 ```
@@ -17,6 +19,7 @@ Spark (and Geni by extension) has many string operations. To filter for rows tha
     (g/select :weather)
     g/distinct
     g/show)
+;; =stdout=>
 ; +--------------------------+
 ; |weather                   |
 ; +--------------------------+
@@ -28,9 +31,7 @@ Spark (and Geni by extension) has many string operations. To filter for rows tha
 ; |Snow Showers              |
 ; |Drizzle,Snow,Fog          |
 ; |Moderate Snow             |
-; |Snow,Haze                 |
 ; |Rain,Snow,Fog             |
-; |Snow Pellets              |
 ; |Rain,Snow,Ice Pellets     |
 ; |Snow Showers,Fog          |
 ; |Snow,Blowing Snow         |
@@ -39,6 +40,8 @@ Spark (and Geni by extension) has many string operations. To filter for rows tha
 ; |Snow                      |
 ; |Freezing Drizzle,Snow     |
 ; |Drizzle,Snow              |
+; |Snow,Haze                 |
+; |Snow Pellets              |
 ; +--------------------------+
 ```
 
@@ -51,6 +54,7 @@ We verify that every distinct row contains the word "snow". To find the snowiest
     (g/agg {:n-days (g/count-distinct :day)})
     (g/order-by :year :month)
     g/show)
+;; =stdout=>
 ; +----+-----+------+
 ; |year|month|n-days|
 ; +----+-----+------+
@@ -83,6 +87,7 @@ To determine the snowiness of a month, we compute the proportion of snowy days t
                :snowiness (g/format-number (g// :n-snow-days :n-days) 2)
                :mean-temp (g/format-number :mean-temp 1)})
     g/show)
+;; =stdout=>
 ; +----+-----+---------+---------+
 ; |year|month|snowiness|mean-temp|
 ; +----+-----+---------+---------+
@@ -118,6 +123,7 @@ In each row, the `:weather` value is a comma-separated weather description. To s
                :mean-temp (g/format-number :mean-temp 1)
                :n-days :n-days})
     (g/show {:num-rows 25}))
+;; =stdout=>
 ; +---------------------+---------+------+
 ; |weather-description  |mean-temp|n-days|
 ; +---------------------+---------+------+

@@ -2,22 +2,31 @@
 
 Many data tasks such as exploratory data analysis require frequent and rapid feedback from the data. Geni optimises for the speed of this feedback loop by providing a dynamic and terse interface that complements [REPL-driven development](https://vimeo.com/223309989) or [conversational software development](https://oli.me.uk/conversational-software-development/).
 
-For many Geni functions, we do not need to make sure that the types line up; only that the args can be converted into Spark Columns. Consider the following example:
+The examples below use the Melbourne housing data in Geni's repo:
+
+```clojure
+(require '[zero-one.geni.core :as g])
+
+(def dataframe (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet"))
+```
+
+For many Geni functions, the types don't have to line up; the args only have to be convertible into Spark Columns. Consider the following example:
 
 ```clojure
 (-> dataframe
-    (group-by (lower "SellerG")  ;; Mixed Column, string and keyword types.
-              "Suburb"           ;; No need for `into-array`.
-              :Regionname)
-    (agg {:mean (mean :Price)    ;; Map keys are interpreted as aliases.
-          :std  (stddev :Price)
-          :min  (min :Price)
-          :max  (max :Price)})
-    show)
+    (g/group-by (g/lower "SellerG")  ;; Mixed Column, string and keyword types.
+                "Suburb"             ;; No need for `into-array`.
+                :Regionname)
+    (g/agg {:mean (g/mean :Price)    ;; Map keys are interpreted as aliases.
+            :std  (g/stddev :Price)
+            :min  (g/min :Price)
+            :max  (g/max :Price)})
+    g/show)
 ```
 
-In contrast, we would have to write the following with pure interop:
+With pure interop, the same query reads:
 
+<!-- :test-doc-blocks/skip -->
 ```clojure
 (import '(org.apache.spark.sql functions Column))
 
@@ -33,48 +42,57 @@ In contrast, we would have to write the following with pure interop:
     .show)
 ```
 
-At times, it can be tricky to figure out the interop , which often times requires careful inspection of Java reflection. This problem is compounded in the case of Scala interop:
+At times, it can be tricky to figure out the interop, which often requires careful inspection of Java reflection. This problem is compounded in the case of Scala interop:
 
 ```clojure
-(import '(scala.collection JavaConversions))
+(import '(scala.collection JavaConverters))
 
 (->> (.collect dataframe) ;; .collect returns an array of Spark rows
-     (map #(JavaConversions/seqAsJavaList (.toSeq %))))
-     ;; returns a seq of seqs - must zipmap with col names to get maps
+     (map #(JavaConverters/seqAsJavaList (.toSeq %))))
+     ;; returns a seq of lists, which still need zipping with the column names
 ```
 
-Geni handles all the interop in the background - `(collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps. Collecting deeply nested structs as maps becomes straightforward:
+Geni handles all the interop in the background: `(g/collect dataframe)` returns a seq of maps, where the keys are keywordised and nested structs are collected as nested maps. Collecting deeply nested structs as maps becomes straightforward:
 
 ```clojure
 (-> dataframe
-    (select
+    (g/select
       {:property
-       (struct
-         {:market   (struct :SellerG :Price :Date)
-          :house    (struct :Landsize :Rooms)
-          :location (struct :Address {:coord (struct :Lattitude :Longtitude)})})})
-    (limit 1)
-    collect)
-=> ({:property
-     {:market {:SellerG "Biggin", :Price 1480000.0, :Date "3/12/2016"},
-      :house {:Landsize 202.0, :Rooms 2},
-      :location
-      {:Suburb "Abbotsford",
-       :Address "85 Turner St",
-       :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
+       (g/struct
+         {:market   (g/struct :SellerG :Price :Date)
+          :house    (g/struct :Landsize :Rooms)
+          :location (g/struct :Address {:coord (g/struct :Lattitude :Longtitude)})})})
+    (g/limit 1)
+    g/collect)
+;; => ({:property
+;;      {:market {:SellerG "Biggin", :Price 1480000.0, :Date "3/12/2016"},
+;;       :house {:Landsize 202.0, :Rooms 2},
+;;       :location
+;;       {:Address "85 Turner St",
+;;        :coord {:Lattitude -37.7996, :Longtitude 144.9984}}}})
 ```
 
 Finally, Geni supports various Clojure (or Lisp) idioms by making some functions variadic (`+`, `<=`, `&&`, etc.) and providing functions with Clojure analogues that are not available in Spark such as `remove`. For example:
 
 ```clojure
 (-> dataframe
-    (remove (like :Regionname "%Metropolitan%"))
-    (filter (&& (< 2 :Rooms 5)
-                (< 5e5 :Price 6e5)
-                (< :YearBuilt 2010)))
-    (select :Regionname :Rooms :Price :YearBuilt)
-    show)
+    (g/remove (g/like :Regionname "%Metropolitan%"))
+    (g/filter (g/&& (g/< 2 :Rooms 5)
+                    (g/< 5e5 :Price 6e5)
+                    (g/< :YearBuilt 2010)))
+    (g/select :Regionname :Rooms :Price :YearBuilt)
+    g/show)
+;; =stdout=>
+; +-----------------+-----+--------+---------+
+; |Regionname       |Rooms|Price   |YearBuilt|
+; +-----------------+-----+--------+---------+
+; |Northern Victoria|4    |521000.0|1980.0   |
+; |Northern Victoria|3    |540000.0|1930.0   |
+; |Eastern Victoria |3    |581000.0|1970.0   |
+; |Western Victoria |4    |550000.0|1970.0   |
+; |Eastern Victoria |3    |570000.0|1960.0   |
+; |Eastern Victoria |3    |515000.0|1970.0   |
+; +-----------------+-----+--------+---------+
 ```
 
-Note that functions such as `remove` and `filter` accept the Spark Dataset in the first argument. This unfortunate departure from Clojure's idioms is necessary to emulate Scala's method chaining with the threading macro `->`.
-
+Note that functions such as `g/remove` and `g/filter` take the Spark Dataset as their first argument. This departure from Clojure's idioms is what lets the threading macro `->` stand in for Scala's method chaining.

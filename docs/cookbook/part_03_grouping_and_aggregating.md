@@ -1,8 +1,30 @@
 # CB-03: Grouping and Aggregating
 
-In this section, we reuse the Montréal cyclists data from part 1 of this cookbook:
+In this section, we reuse the Montréal cyclists data from part 1 of this cookbook. As in every part, we start with Geni and the `download-data!` function from [part 1](part_01_reading_and_writing_datasets.md):
 
 ```clojure
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
+
+(defn download-data! [source-url target-path]
+  (if (.exists (io/file target-path))
+    :already-exists
+    (do
+      (io/make-parents target-path)
+      (with-open [in (io/input-stream source-url)]
+        (io/copy in (io/file target-path)))
+      :downloaded)))
+```
+
+Then we download the data, unless part 1 already did, and load it:
+
+```clojure
+(def bikes-data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/80817f5a46ef6d2f8444eeb7181e00c0aabb5a57/cookbook/data/bikes.csv")
+
+(def bikes-data-path "data/cookbook/bikes.csv")
+
+(download-data! bikes-data-url bikes-data-path)
+
 (def bikes
   (g/read-csv! bikes-data-path {:delimiter ";"
                                 :encoding "ISO-8859-1"
@@ -15,16 +37,16 @@ Firstly, we note that the `:date` column is parsed as string:
 
 ```clojure
 (g/dtypes bikes)
-=> {:date "StringType",
-    :st-urbain-donnees-non-disponibles "StringType",
-    :du-parc "IntegerType",
-    :maisonneuve-1 "IntegerType",
-    :rachel-1 "IntegerType",
-    :pierre-dupuy "IntegerType",
-    :berri-1 "IntegerType",
-    :cote-sainte-catherine "IntegerType",
-    :brebeuf-donnees-non-disponibles "StringType",
-    :maisonneuve-2 "IntegerType"}
+;; => {:date "StringType",
+;;     :st-urbain-donnees-non-disponibles "StringType",
+;;     :du-parc "IntegerType",
+;;     :maisonneuve-1 "IntegerType",
+;;     :rachel-1 "IntegerType",
+;;     :pierre-dupuy "IntegerType",
+;;     :berri-1 "IntegerType",
+;;     :cote-sainte-catherine "IntegerType",
+;;     :brebeuf-donnees-non-disponibles "StringType",
+;;     :maisonneuve-2 "IntegerType"}
 ```
 
 To parse the date column into the date type, we use `g/to-date` and specify the date format as `"dd/M/yyyy"`. We can use the function `g/with-column` to add (or, in this case, replace) the `:date` column with its new column value. Moreover, to calculate the day of the week, we use a similar trick by parsing the same date column with the weekday-only format `"EEEE"`:
@@ -37,9 +59,10 @@ To parse the date column into the date type, we use `g/to-date` and specify the 
       (g/select :date :weekday :berri-1)))
 
 (g/dtypes berri-bikes)
-=> {:date "DateType", :weekday "StringType", :berri-1 "IntegerType"}
+;; => {:date "DateType", :weekday "StringType", :berri-1 "IntegerType"}
 
 (g/show berri-bikes)
+;; =stdout=>
 ; +----------+---------+-------+
 ; |date      |weekday  |berri-1|
 ; +----------+---------+-------+
@@ -76,6 +99,7 @@ To add up the cyclists by weekday, we compose `g/group-by` with `g/sum`:
     (g/group-by :weekday)
     (g/sum :berri-1)
     g/show)
+;; =stdout=>
 ; +---------+------------+
 ; |weekday  |sum(berri-1)|
 ; +---------+------------+
@@ -96,6 +120,7 @@ We may not like the default `sum(berri-1)`. We can rename it using `g/select` in
     (g/group-by :weekday)
     (g/agg {:n-cyclists (g/sum :berri-1)})
     g/show)
+;; =stdout=>
 ; +---------+----------+
 ; |weekday  |n-cyclists|
 ; +---------+----------+

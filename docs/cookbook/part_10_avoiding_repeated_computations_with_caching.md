@@ -1,5 +1,9 @@
 # CB-10: Avoiding Repeated Computations with Caching
 
+This chapter is a manual benchmark using 24 million generated rows; it is excluded from the automated cookbook tests.
+
+<!-- {:test-doc-blocks/skip true :test-doc-blocks/apply :all-next} -->
+
 In this part of the cookbook, we will require a more sizeable dataset than previous parts. In particular, we will be using [the dummy retail data](https://github.com/zero-one-group/geni/blob/develop/docs/simple_performance_benchmark.md#dummy-retail-data) used in Geni's simple performance benchmark doc. To generate the data locally, simply copy and paste [the data-generation code](https://github.com/zero-one-group/geni/blob/develop/examples/performance_benchmark_data.clj) to your Geni REPL. We assume that the data is stored in `/data/performance_benchmark_data` directory, but it does not need to be.
 
 We load and have a brief look at the data:

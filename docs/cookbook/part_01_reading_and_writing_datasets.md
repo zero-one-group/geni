@@ -1,30 +1,31 @@
 # CB-01: Reading and Writing Datasets
 
-As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, which is freely available [here](http://donnees.ville.montreal.qc.ca/dataset/velos-comptage). To download the dataset, we use the following setup:
+As in the [Pandas Cookbook](https://nbviewer.jupyter.org/github/jvns/pandas-cookbook/blob/master/cookbook/Chapter%201%20-%20Reading%20from%20a%20CSV.ipynb), we are going to use the Montréal cyclists data, a copy of which is in the Pandas Cookbook's repo. Every part of this cookbook starts with the same setup: Geni's core namespace, and a function that downloads a dataset once.
 
 ```clojure
-(ns geni.cookbook-code
-  (:require
-    [clojure.java.io]
-    [clojure.java.shell]
-    [zero-one.geni.core :as g]))
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
 
 (defn download-data! [source-url target-path]
-  (if (-> target-path clojure.java.io/file .exists)
+  (if (.exists (io/file target-path))
     :already-exists
     (do
-      (clojure.java.io/make-parents target-path)
-      (clojure.java.shell/sh "wget" "-O" target-path source-url)
+      (io/make-parents target-path)
+      (with-open [in (io/input-stream source-url)]
+        (io/copy in (io/file target-path)))
       :downloaded)))
 ```
 
 And actually download the data:
 
 ```clojure
-(def bikes-data-url "https://raw.githubusercontent.com/jvns/pandas-cookbook/master/data/bikes.csv")
+(def bikes-data-url
+  "https://raw.githubusercontent.com/jvns/pandas-cookbook/80817f5a46ef6d2f8444eeb7181e00c0aabb5a57/cookbook/data/bikes.csv")
+
 (def bikes-data-path "data/cookbook/bikes.csv")
+
 (download-data! bikes-data-url bikes-data-path)
-=> :downloaded
+; :downloaded
 ```
 
 ## 1.1 Reading Data from a CSV File
@@ -35,6 +36,7 @@ In most cases, we can read CSV data correctly with the default `g/read-csv!` fun
 (def broken-df (g/read-csv! bikes-data-path))
 
 (-> broken-df (g/limit 3) g/show)
+;; =stdout=>
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ; |Date;Berri 1;Br�beuf (donn�es non disponibles);C�te-Sainte-Catherine;Maisonneuve 1;Maisonneuve 2;du Parc;Pierre-Dupuy;Rachel1;St-Urbain (donn�es non disponibles)|
 ; +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -51,12 +53,13 @@ Firstly, each line on the CSV file is read as a single column. This is due to th
   (g/read-csv! bikes-data-path {:delimiter ";" :encoding "ISO-8859-1"}))
 
 (-> fixed-df (g/limit 3) g/show)
+;; =stdout=>
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
 ; |Date      |Berri 1|Brébeuf (données non disponibles)|Côte-Sainte-Catherine|Maisonneuve 1|Maisonneuve 2|du Parc|Pierre-Dupuy|Rachel1|St-Urbain (données non disponibles)|
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
-; |01/01/2012|35     |null                             |0                    |38           |51           |26     |10          |16     |null                               |
-; |02/01/2012|83     |null                             |1                    |68           |153          |53     |6           |43     |null                               |
-; |03/01/2012|135    |null                             |2                    |104          |248          |89     |3           |58     |null                               |
+; |01/01/2012|35     |NULL                             |0                    |38           |51           |26     |10          |16     |NULL                               |
+; |02/01/2012|83     |NULL                             |1                    |68           |153          |53     |6           |43     |NULL                               |
+; |03/01/2012|135    |NULL                             |2                    |104          |248          |89     |3           |58     |NULL                               |
 ; +----------+-------+---------------------------------+---------------------+-------------+-------------+-------+------------+-------+-----------------------------------+
 ```
 
@@ -67,92 +70,93 @@ It appears that we have fixed the issues! But it is still quite difficult to rea
 ; -RECORD 0-----------------------------------------
 ;  Date                                | 01/01/2012
 ;  Berri 1                             | 35
-;  Brébeuf (données non disponibles)   | null
+;  Brébeuf (données non disponibles)   | NULL
 ;  Côte-Sainte-Catherine               | 0
 ;  Maisonneuve 1                       | 38
 ;  Maisonneuve 2                       | 51
 ;  du Parc                             | 26
 ;  Pierre-Dupuy                        | 10
 ;  Rachel1                             | 16
-;  St-Urbain (données non disponibles) | null
+;  St-Urbain (données non disponibles) | NULL
 ; -RECORD 1-----------------------------------------
 ;  Date                                | 02/01/2012
 ;  Berri 1                             | 83
-;  Brébeuf (données non disponibles)   | null
+;  Brébeuf (données non disponibles)   | NULL
 ;  Côte-Sainte-Catherine               | 1
 ;  Maisonneuve 1                       | 68
 ;  Maisonneuve 2                       | 153
 ;  du Parc                             | 53
 ;  Pierre-Dupuy                        | 6
 ;  Rachel1                             | 43
-;  St-Urbain (données non disponibles) | null
+;  St-Urbain (données non disponibles) | NULL
 ; -RECORD 2-----------------------------------------
 ;  Date                                | 03/01/2012
 ;  Berri 1                             | 135
-;  Brébeuf (données non disponibles)   | null
+;  Brébeuf (données non disponibles)   | NULL
 ;  Côte-Sainte-Catherine               | 2
 ;  Maisonneuve 1                       | 104
 ;  Maisonneuve 2                       | 248
 ;  du Parc                             | 89
 ;  Pierre-Dupuy                        | 3
 ;  Rachel1                             | 58
-;  St-Urbain (données non disponibles) | null
+;  St-Urbain (données non disponibles) | NULL
 ```
 
 We may also like to inspect the inferred schema of the dataset and count the number of rows:
 
 ```clojure
 (g/print-schema fixed-df)
+;; =stdout=>
 ; root
 ;  |-- Date: string (nullable = true)
-;  |-- Berri 1: string (nullable = true)
+;  |-- Berri 1: integer (nullable = true)
 ;  |-- Brébeuf (données non disponibles): string (nullable = true)
-;  |-- Côte-Sainte-Catherine: string (nullable = true)
-;  |-- Maisonneuve 1: string (nullable = true)
-;  |-- Maisonneuve 2: string (nullable = true)
-;  |-- du Parc: string (nullable = true)
-;  |-- Pierre-Dupuy: string (nullable = true)
-;  |-- Rachel1: string (nullable = true)
+;  |-- Côte-Sainte-Catherine: integer (nullable = true)
+;  |-- Maisonneuve 1: integer (nullable = true)
+;  |-- Maisonneuve 2: integer (nullable = true)
+;  |-- du Parc: integer (nullable = true)
+;  |-- Pierre-Dupuy: integer (nullable = true)
+;  |-- Rachel1: integer (nullable = true)
 ;  |-- St-Urbain (données non disponibles): string (nullable = true)
 
 (g/count fixed-df)
-=> 310
+;; => 310
 ```
 
 Finally, we can collect the Spark Dataset into a sequence of maps through `g/collect`:
 
 ```clojure
 (-> fixed-df (g/limit 3) g/collect)
-=> ({:du Parc "26",
-     :Rachel1 "16",
-     :Pierre-Dupuy "10",
-     :Berri 1 "35",
-     :Maisonneuve 1 "38",
-     :Brébeuf (données non disponibles) nil,
-     :Date "01/01/2012",
-     :Côte-Sainte-Catherine "0",
-     :St-Urbain (données non disponibles) nil,
-     :Maisonneuve 2 "51"}
-    {:du Parc "53",
-     :Rachel1 "43",
-     :Pierre-Dupuy "6",
-     :Berri 1 "83",
-     :Maisonneuve 1 "68",
-     :Brébeuf (données non disponibles) nil,
-     :Date "02/01/2012",
-     :Côte-Sainte-Catherine "1",
-     :St-Urbain (données non disponibles) nil,
-     :Maisonneuve 2 "153"}
-    {:du Parc "89",
-     :Rachel1 "58",
-     :Pierre-Dupuy "3",
-     :Berri 1 "135",
-     :Maisonneuve 1 "104",
-     :Brébeuf (données non disponibles) nil,
-     :Date "03/01/2012",
-     :Côte-Sainte-Catherine "2",
-     :St-Urbain (données non disponibles) nil,
-     :Maisonneuve 2 "248"})
+; => ({:du Parc 26,
+;      :Rachel1 16,
+;      :Pierre-Dupuy 10,
+;      :Berri 1 35,
+;      :Maisonneuve 1 38,
+;      :Brébeuf (données non disponibles) nil,
+;      :Date "01/01/2012",
+;      :Côte-Sainte-Catherine 0,
+;      :St-Urbain (données non disponibles) nil,
+;      :Maisonneuve 2 51}
+;     {:du Parc 53,
+;      :Rachel1 43,
+;      :Pierre-Dupuy 6,
+;      :Berri 1 83,
+;      :Maisonneuve 1 68,
+;      :Brébeuf (données non disponibles) nil,
+;      :Date "02/01/2012",
+;      :Côte-Sainte-Catherine 1,
+;      :St-Urbain (données non disponibles) nil,
+;      :Maisonneuve 2 153}
+;     {:du Parc 89,
+;      :Rachel1 58,
+;      :Pierre-Dupuy 3,
+;      :Berri 1 135,
+;      :Maisonneuve 1 104,
+;      :Brébeuf (données non disponibles) nil,
+;      :Date "03/01/2012",
+;      :Côte-Sainte-Catherine 2,
+;      :St-Urbain (données non disponibles) nil,
+;      :Maisonneuve 2 248})
 ```
 
 We can see that the column names are keywordised, which may not play so well with non-kebab-case column names. In the next sub-section, we'll see how to address this.
@@ -166,6 +170,7 @@ Suppose we would like to view only the date and Berri-1 column, we could do this
     (g/select :Date "Berri 1")
     (g/limit 3)
     g/show)
+;; =stdout=>
 ; +----------+-------+
 ; |Date      |Berri 1|
 ; +----------+-------+
@@ -184,8 +189,9 @@ It is thus preferable to work with kebab-case column names (unlike `:Brébeuf (d
     (g/select {:date "Date" :berri-1 "Berri 1"})
     (g/limit 3)
     g/show)
+;; =stdout=>
 ; +----------+-------+
-; |Date      |Berri 1|
+; |date      |berri-1|
 ; +----------+-------+
 ; |01/01/2012|35     |
 ; |02/01/2012|83     |
@@ -210,12 +216,13 @@ However, in this case, it can be easier to re-set all the column names using `g/
                :st-urbain)))
 
 (-> renamed-df (g/limit 3) g/show)
+;; =stdout=>
 ; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
 ; |date      |berri-1|brebeuf|cote-sainte-catherine|maisonneuve-1|maisonneuve-2|du-parc|pierre-dupuy|rachel-1|st-urbain|
 ; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
-; |01/01/2012|35     |null   |0                    |38           |51           |26     |10          |16      |null     |
-; |02/01/2012|83     |null   |1                    |68           |153          |53     |6           |43      |null     |
-; |03/01/2012|135    |null   |2                    |104          |248          |89     |3           |58      |null     |
+; |01/01/2012|35     |NULL   |0                    |38           |51           |26     |10          |16      |NULL     |
+; |02/01/2012|83     |NULL   |1                    |68           |153          |53     |6           |43      |NULL     |
+; |03/01/2012|135    |NULL   |2                    |104          |248          |89     |3           |58      |NULL     |
 ; +----------+-------+-------+---------------------+-------------+-------------+-------+------------+--------+---------+
 ```
 
@@ -227,14 +234,15 @@ We can get descriptions of numeric columns using `g/describe`:
 (-> renamed-df
     g/describe
     g/show)
+;; =stdout=>
 ; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
 ; |summary|date      |berri-1          |brebeuf|cote-sainte-catherine|maisonneuve-1     |maisonneuve-2    |du-parc           |pierre-dupuy      |rachel-1          |st-urbain|
 ; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
 ; |count  |310       |310              |0      |310                  |310               |310              |310               |310               |310               |0        |
-; |mean   |null      |2985.048387096774|null   |1233.3516129032257   |1983.3258064516128|3510.261290322581|1862.983870967742 |1054.3064516129032|2873.483870967742 |null     |
-; |stddev |null      |2169.271061762149|null   |944.6431881884916    |1450.715170237464 |2484.959788723178|1332.5432662293993|1064.0292047222817|2039.3155043485128|null     |
-; |min    |01/01/2012|32               |null   |0                    |33                |47               |18                |0                 |0                 |null     |
-; |max    |31/10/2012|7077             |null   |3124                 |4999              |8222             |4510              |4386              |6595              |null     |
+; |mean   |NULL      |2985.048387096774|NULL   |1233.3516129032257   |1983.3258064516128|3510.261290322581|1862.983870967742 |1054.3064516129032|2873.483870967742 |NULL     |
+; |stddev |NULL      |2169.271061762149|NULL   |944.6431881884916    |1450.715170237464 |2484.959788723178|1332.5432662293993|1064.0292047222817|2039.3155043485128|NULL     |
+; |min    |01/01/2012|32               |NULL   |0                    |33                |47               |18                |0                 |0                 |NULL     |
+; |max    |31/10/2012|7077             |NULL   |3124                 |4999              |8222             |4510              |4386              |6595              |NULL     |
 ; +-------+----------+-----------------+-------+---------------------+------------------+-----------------+------------------+------------------+------------------+---------+
 ```
 
@@ -243,7 +251,7 @@ We can get descriptions of numeric columns using `g/describe`:
 Writing datasets to file is straightforward. Spark [encourages the use of parquet](https://databricks.com/glossary/what-is-parquet) formats. To write to parquet, we can invoke `g/write-parquet!`:
 
 ```clojure
-(g/write-parquet! renamed-df "data/cookbook/bikes.parquet"))
+(g/write-parquet! renamed-df "data/cookbook/bikes.parquet" {:mode "overwrite"})
 ```
 
 Analogous read and write functions are available. For instance, `g/write-avro!` to write as an Avro file and `g/read-json!` to read a JSON file.
