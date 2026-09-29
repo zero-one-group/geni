@@ -1,14 +1,18 @@
 name: Release
 
-# Publishes a tagged version: zero.one/geni and then zero.one/geni-cli to
-# Clojars, and the CLI uberjar to a GitHub release. Tag the commit on develop
-# with v<version>, where <version> is the one in build.clj, and push the tag
-# (see CONTRIBUTING.md). A version with a suffix, like 0.1.0-alpha.1, becomes
-# a pre-release. Deploys that Clojars already has are skipped, so a failed
-# run can be rerun.
+# Publishes a tagged version: zero.one/geni to Clojars, and the CLI uberjar to
+# a GitHub release. Tag the commit on develop with v<version>, where <version>
+# is the one in build.clj, and push the tag (see CONTRIBUTING.md). A version
+# with a suffix, like 0.1.0-alpha.1, becomes a pre-release. The deploy is
+# skipped when Clojars already has the version, so a failed run can be rerun.
 on:
   push:
     tags: ['v*']
+
+# One run per tag at a time: two at once would race each other on Clojars.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -52,14 +56,6 @@ jobs:
             echo "zero.one/geni $VERSION is on Clojars already."
           else
             clojure -T:build deploy
-          fi
-
-      - name: Deploy zero.one/geni-cli to Clojars
-        run: |
-          if curl -sfI "https://repo.clojars.org/zero/one/geni-cli/$VERSION/geni-cli-$VERSION.pom" > /dev/null; then
-            echo "zero.one/geni-cli $VERSION is on Clojars already."
-          else
-            clojure -T:build cli-deploy
           fi
 
       - name: Build the CLI uberjar

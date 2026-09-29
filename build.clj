@@ -6,16 +6,13 @@
    [deps-deploy.deps-deploy :as dd]))
 
 (def lib 'zero.one/geni)
-(def cli-lib 'zero.one/geni-cli)
 (def version "0.1.0-alpha.1")
 
 (def class-dir "target/classes")
 (def test-class-dir "target/test-classes")
 (def jar-class-dir "target/jar")
-(def cli-class-dir "target/cli")
 (def uber-class-dir "target/uber")
 (def jar-file (format "target/geni-%s.jar" version))
-(def cli-jar-file (format "target/geni-cli-%s.jar" version))
 ;; The name that scripts/geni downloads from the GitHub release.
 (def uber-file (format "target/geni-repl-uberjar-%s.jar" version))
 
@@ -146,34 +143,11 @@
               :artifact  (b/resolve-path jar-file)
               :pom-file  (b/pom-path {:lib lib :class-dir jar-class-dir})}))
 
-(defn cli-jar
-  "Builds the Geni CLI jar, zero.one/geni-cli, into target/. It holds cli/src,
-  and depends on zero.one/geni, Spark (the :spark alias) and the :cli deps."
-  [_]
-  (b/delete {:path cli-class-dir})
-  ;; write-pom only reads a basis's :libs and :mvn/repos, so this one isn't
-  ;; resolved, and this version of zero.one/geni needn't be on Clojars yet.
-  (write-pom! {:lib         cli-lib
-               :class-dir   cli-class-dir
-               :basis       (assoc (select-keys (basis) [:mvn/repos])
-                                   :libs (assoc (alias-deps :spark :cli) lib {:mvn/version version}))
-               :src-dirs    ["cli/src"]
-               :description "The Geni CLI: a Clojure REPL and an nREPL server, with Geni and Spark loaded"})
-  (b/copy-dir {:src-dirs ["cli/src"] :target-dir cli-class-dir})
-  (b/jar {:class-dir cli-class-dir :jar-file cli-jar-file}))
-
-(defn cli-deploy
-  "Deploys the Geni CLI jar to Clojars. Deploy the library first, since the CLI
-  depends on this version of it."
-  [_]
-  (cli-jar nil)
-  (dd/deploy {:installer :remote
-              :artifact  (b/resolve-path cli-jar-file)
-              :pom-file  (b/pom-path {:lib cli-lib :class-dir cli-class-dir})}))
-
 (defn cli-uber
-  "Builds the Geni CLI uberjar into target/, with Geni, Spark and the
-  namespaces compiled ahead of time. Run it with `java -jar`."
+  "Builds the Geni CLI uberjar into target/, from cli/src, with Geni, Spark and
+  the namespaces compiled ahead of time. Run it with `java -jar`. The CLI has
+  no Clojars artifact: Clojars no longer accepts new libraries in a group it
+  can't verify, and zero.one isn't a domain."
   [_]
   (b/delete {:path uber-class-dir})
   (let [basis (basis :spark :cli)]
