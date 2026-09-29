@@ -12,11 +12,10 @@
                             struct
                             when])
   (:require
-   [potemkin :refer [import-fn]]
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [->string-map]])
+   [zero-one.geni.utils :refer [->string-map import-fn]])
   (:import
    (org.apache.spark.sql Column functions)))
 

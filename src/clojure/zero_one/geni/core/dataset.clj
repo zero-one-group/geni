@@ -7,11 +7,10 @@
                             take])
   (:require
    [clojure.walk :refer [keywordize-keys]]
-   [potemkin :refer [import-fn]]
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [ensure-coll]])
+   [zero-one.geni.utils :refer [ensure-coll import-fn]])
   (:import
    (org.apache.spark.sql Column)))
 

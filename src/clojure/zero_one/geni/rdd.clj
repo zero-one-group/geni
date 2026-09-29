@@ -16,7 +16,7 @@
                             take
                             vals])
   (:require
-   [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.utils :refer [import-fn import-vars]]
    [zero-one.geni.defaults]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]

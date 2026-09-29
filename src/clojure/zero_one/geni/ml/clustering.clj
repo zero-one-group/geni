@@ -1,6 +1,6 @@
 (ns zero-one.geni.ml.clustering
   (:require
-   [potemkin :refer [import-fn]]
+   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop])
   (:import

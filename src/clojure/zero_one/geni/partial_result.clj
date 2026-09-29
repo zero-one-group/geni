@@ -1,6 +1,6 @@
 (ns zero-one.geni.partial-result
   (:require
-   [potemkin :refer [import-fn]]
+   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]))
 
 (defn get-final-value [result] (.getFinalValue result))

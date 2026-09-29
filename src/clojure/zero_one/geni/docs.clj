@@ -1,16 +1,14 @@
 (ns zero-one.geni.docs
   (:require
-   [clojure.java.io :as io]
-   [taoensso.nippy :as nippy])
+   [clojure.edn :as edn]
+   [clojure.java.io :as io])
   (:import
-   (org.apache.commons.io IOUtils)))
+   (java.io PushbackReader)))
 
 (def spark-docs
-  (-> "spark-docs.nippy"
-      io/resource
-      io/input-stream
-      IOUtils/toByteArray
-      nippy/thaw))
+  "Docstrings scraped from Spark's Scaladoc, see scripts/scrape-spark-docs.clj."
+  (with-open [reader (-> "spark-docs.edn" io/resource io/reader PushbackReader.)]
+    (edn/read reader)))
 
 (defn no-doc? [v]
   (-> v meta :doc nil?))

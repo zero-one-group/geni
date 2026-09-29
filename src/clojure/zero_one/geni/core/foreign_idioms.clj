@@ -5,7 +5,6 @@
   (:refer-clojure :exclude [replace])
   (:require
    [clojure.string :as string]
-   [potemkin :refer [import-fn]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.data-sources :as data-sources]
    [zero-one.geni.core.dataset :as dataset]
@@ -13,7 +12,7 @@
    [zero-one.geni.core.functions :as sql]
    [zero-one.geni.core.polymorphic :as polymorphic]
    [zero-one.geni.core.window :as window]
-   [zero-one.geni.utils :as utils])
+   [zero-one.geni.utils :as utils :refer [import-fn]])
   (:import
    (org.apache.spark.sql Column functions)))
 

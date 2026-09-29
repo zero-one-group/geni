@@ -29,7 +29,7 @@
                             zero?
                             zipmap])
   (:require
-   [potemkin :refer [import-fn]]
+   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.core.functions :as sql]

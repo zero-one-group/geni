@@ -3,10 +3,8 @@
    [midje.sweet :refer [fact =>]]
    [zero-one.geni.core]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.main]
    [zero-one.geni.ml]
-   [zero-one.geni.rdd]
-   [zero-one.geni.repl]))
+   [zero-one.geni.rdd]))
 
 (defn some-docless-fn [])
 

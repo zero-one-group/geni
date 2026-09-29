@@ -1,24 +1,22 @@
 (ns zero-one.geni.core.data-sources
   (:refer-clojure :exclude [partition-by])
   (:require
-   [camel-snake-kebab.core :refer [->camelCase]]
    [clojure.edn :as edn]
    [clojure.string :as string]
    [clojure.java.io :as io]
-   [jsonista.core :as jsonista]
-   [zero-one.fxl.core :as fxl]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.core.dataset :as dataset]
-   [zero-one.geni.utils :refer [ensure-coll]])
+   [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll]])
   (:import
+   (com.fasterxml.jackson.databind DeserializationFeature ObjectMapper)
    (java.text Normalizer Normalizer$Form)
    (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
 
 (defn- configure-reader-or-writer [unconfigured options]
   (reduce
-   (fn [r [k v]] (.option r (->camelCase (name  k)) v))
+   (fn [r [k v]] (.option r (->camel-case k) v))
    unconfigured
    options))
 
@@ -41,7 +39,7 @@
                          .columns
                          (map remove-punctuations)
                          (map deaccent)
-                         (map camel-snake-kebab.core/->kebab-case))]
+                         (map ->kebab-case))]
     (.toDF dataset (interop/->scala-seq new-columns))))
 
 (defn- read-data! [format-name spark path options]
@@ -258,21 +256,29 @@
 (defn- file-exists? [path]
   (.exists (io/file path)))
 
-(defn- read-as-keywords [json-str]
-  (jsonista/read-value json-str jsonista/keyword-keys-object-mapper))
+(defn- ensure-writable! [path options]
+  (when (and (file-exists? path) (not= (:mode options) "overwrite"))
+    (throw (Exception. (format "path file:%s already exists!" path)))))
+
+;; Spark already brings Jackson, so JSON parsing needs no extra dependency.
+(def ^:private ^ObjectMapper object-mapper
+  (doto (ObjectMapper.) (.enable DeserializationFeature/USE_LONG_FOR_INTS)))
+
+(defn- json->clojure [x]
+  (cond
+    (instance? java.util.Map x)  (into {} (map (fn [[k v]] [(keyword k) (json->clojure v)])) x)
+    (instance? java.util.List x) (mapv json->clojure x)
+    :else                        x))
+
+(defn- read-as-keywords [^String json-str]
+  (json->clojure (.readValue object-mapper json-str Object)))
 
 (defn write-edn!
   "Writes an EDN file at the specified path."
   ([dataframe path] (write-edn! dataframe path {}))
   ([dataframe path options]
-   (let [records   (->> dataframe
-                        .toJSON
-                        .collect
-                        (mapv read-as-keywords))
-         overwrite (if (= (:mode options) "overwrite") true false)]
-     (if (and overwrite (file-exists? path))
-       (spit path records)
-       (throw (Exception. (format "path file:%s already exists!" path)))))))
+   (ensure-writable! path options)
+   (spit path (->> dataframe .toJSON .collect (mapv read-as-keywords)))))
 
 (defmulti read-edn!
   "Loads an EDN file and returns the results as a DataFrame."
@@ -291,23 +297,31 @@
          (cond-> (:kebab-columns options) ->kebab-columns)))))
 
 ;; Excel
+(defn- fxl
+  "Resolves a function from zero.one/fxl, which Excel support needs."
+  [fn-name]
+  (or (try
+        (requiring-resolve (symbol "zero-one.fxl.core" fn-name))
+        (catch Exception _ nil))
+      (throw (ex-info (str "Excel support needs zero.one/fxl. Add it to your "
+                           "dependencies to use read-xlsx! and write-xlsx!.")
+                      {}))))
+
 (defn write-xlsx!
-  "Writes an Excel file at the specified path."
+  "Writes an Excel file at the specified path. Needs `zero.one/fxl` on the
+  classpath."
   ([dataframe path] (write-xlsx! dataframe path {}))
   ([dataframe path options]
-   (let [records   (dataset/collect dataframe)
-         col-keys  (dataset/columns dataframe)
-         overwrite (if (= (:mode options) "overwrite") true false)]
-     (if (and overwrite (file-exists? path))
-       (fxl/write-xlsx!
-        (fxl/concat-below
-         (fxl/row->cells (dataset/column-names dataframe))
-         (fxl/records->cells col-keys records))
-        path)
-       (throw (Exception. (format "path file:%s already exists!" path)))))))
+   (ensure-writable! path options)
+   ((fxl "write-xlsx!")
+    ((fxl "concat-below")
+     ((fxl "row->cells") (dataset/column-names dataframe))
+     ((fxl "records->cells") (dataset/columns dataframe) (dataset/collect dataframe)))
+    path)))
 
 (defmulti read-xlsx!
-  "Loads an Excel file and returns the results as a DataFrame.
+  "Loads an Excel file and returns the results as a DataFrame. Needs
+   `zero.one/fxl` on the classpath.
 
    Example options:
    ```clojure
@@ -320,8 +334,8 @@
 (defmethod read-xlsx! SparkSession
   ([spark path] (read-xlsx! spark path {:header true}))
   ([spark path options]
-   (let [cells     (fxl/read-xlsx! path)
-         table     (fxl/cells->table cells (:sheet options))
+   (let [cells     ((fxl "read-xlsx!") path)
+         table     ((fxl "cells->table") cells (:sheet options))
          col-names (if (:header options)
                      (first table)
                      (map #(str "_c" %) (-> table first count range)))

@@ -1,10 +1,10 @@
 (ns scripts.scrape-spark-docs
   (:require
-   [camel-snake-kebab.core :refer [->kebab-case]]
+   [clojure.pprint :refer [pprint]]
    [clojure.string :as string]
    [net.cgrand.enlive-html :as html]
-   [taoensso.nippy :as nippy]
-   [zero-one.geni.core :as g]))
+   [zero-one.geni.core :as g]
+   [zero-one.geni.utils :refer [->kebab-case]]))
 
 (def spark-version (g/version))
 
@@ -54,6 +54,8 @@
   (->> (polite-html-resource url)
        fn-candidate-nodes
        (filter (every-pred has-name? has-result?))
+       ;; Scala's `-` operator kebab-cases to "", and `:` isn't valid EDN.
+       (remove #(empty? (->kebab-case (extract-name %))))
        (map #(vector (keyword (->kebab-case (extract-name %)))
                      (format "Params: %s\n\nResult%s\n\n%s\n\nSource: %s\n\nTimestamp: %s"
                              (extract-params %)
@@ -233,10 +235,9 @@
   (let [class-docs    (walk-doc-map url->class-docs class-doc-url-map)
         method-docs   (walk-doc-map url->method-docs method-doc-url-map)
         complete-docs {:methods method-docs :classes class-docs}]
-    (nippy/freeze-to-file
-     "resources/spark-docs.nippy"
-     complete-docs
-     {:compressor nippy/lz4hc-compressor})))
+    (binding [*print-length* nil
+              *print-level*  nil]
+      (spit "resources/spark-docs.edn" (with-out-str (pprint complete-docs))))))
 
 (comment
 
@@ -245,7 +246,7 @@
   (time (scrape-spark-docs!))
 
   (def spark-docs
-    (nippy/thaw-from-file "resources/spark-docs.nippy"))
+    (clojure.edn/read-string (slurp "resources/spark-docs.edn")))
 
   (-> spark-docs :methods :ml :recommendation)
 

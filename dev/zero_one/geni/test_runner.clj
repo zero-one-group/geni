@@ -9,6 +9,15 @@
 (def ^:private compiled-java
   "target/classes/zero_one/geni/rdd/function/Fn1.class")
 
+(defn- classpath-dirs
+  "The project's own directories on the classpath, so that each alias (e.g.
+  :cli, :tmd or :xgb) brings its tests along."
+  []
+  (->> (.split (System/getProperty "java.class.path") java.io.File/pathSeparator)
+       (remove #(or (string/starts-with? % "target")
+                    (.isAbsolute (io/file %))))
+       (filter #(.isDirectory (io/file %)))))
+
 (defn- test-namespaces [dirs]
   (sort
    (for [dir  dirs
@@ -80,11 +89,11 @@
   "Runs the tests, and exits with a non-zero status if anything fails.
 
   Options:
-    :dirs     the test directories to scan (default: test)
+    :dirs     the directories to scan (default: the project's classpath dirs)
     :only     the namespaces to load, e.g. [zero-one.geni.dataset-test]
     :include  only run facts with this metadata, e.g. :slow
     :exclude  skip facts with this metadata, e.g. :slow"
-  [{:keys [dirs only include exclude] :or {dirs ["test"]}}]
+  [{:keys [dirs only include exclude]}]
   (when-not (.exists (io/file compiled-java))
     (println "Compiled Java classes not found. Run `clojure -T:build prep` first.")
     (System/exit 1))
@@ -93,7 +102,7 @@
         start   (System/nanoTime)
         results (mapv (fn [ns-sym]
                         (doto (load-namespace ns-sym filters) report!))
-                      (or (seq only) (test-namespaces dirs)))
+                      (or (seq only) (test-namespaces (or dirs (classpath-dirs)))))
         failed  (remove passed? results)
         seconds (/ (- (System/nanoTime) start) 1e9)
         checks  (reduce + (map :checks results))]
