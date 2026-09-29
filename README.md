@@ -1,13 +1,18 @@
 <p align="center">
-    <img src="logo/geni.png" width="375px">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zero-one-group/geni/develop/assets/geni-lockup-dark.svg">
+    <img alt="Geni" src="https://raw.githubusercontent.com/zero-one-group/geni/develop/assets/geni-lockup.svg" width="360">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://github.com/zero-one-group/geni/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/zero-one-group/geni/actions/workflows/ci.yml/badge.svg?branch=develop"></a>
+  <a href="https://clojars.org/zero.one/geni"><img alt="Clojars" src="https://img.shields.io/clojars/v/zero.one/geni.svg"></a>
+  <a href="https://cljdoc.org/d/zero.one/geni/CURRENT"><img alt="cljdoc" src="https://cljdoc.org/badge/zero.one/geni"></a>
+  <a href="https://github.com/zero-one-group/geni/blob/develop/LICENSE"><img alt="License" src="https://img.shields.io/github/license/zero-one-group/geni.svg"></a>
 </p>
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) dataframe library that runs on [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
-
-[![CI](https://github.com/zero-one-group/geni/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions/workflows/ci.yml)
-[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](https://clojars.org/zero.one/geni)
-[![cljdoc](https://cljdoc.org/badge/zero.one/geni)](https://cljdoc.org/d/zero.one/geni/CURRENT)
-[![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
 
 > **Geni is being revived.** Pre-releases of 0.1.0 are on Clojars: the [changelog](CHANGELOG.md) lists what changed, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan and a call for testers.
 
