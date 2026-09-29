@@ -12,7 +12,7 @@ You'll need JDK 21 (17 works too) and the [Clojure CLI](https://clojure.org/guid
 clojure -T:build prep
 ```
 
-This compiles the Java sources, plus the namespaces that the RDD tests need ahead of time. Run it again whenever you change anything under `src/java`.
+This compiles the Java sources, plus the namespaces that the RDD tests need ahead of time. Run it again whenever you change anything under `src/java`, or switch to another Spark alias (see below).
 
 ## Running the tests
 
@@ -26,7 +26,16 @@ clojure -X:spark:test:cli:tmd                                # what the CI runs
 clojure -X:spark:test:xgb                                    # plus the XGBoost tests
 ```
 
-Each namespace gets one line, and each failure one more. The full reports, with stack traces, are in `target/test.log`. The `:cli`, `:tmd` and `:xgb` aliases add the tests for the Geni CLI, tech.ml.dataset and XGBoost, along with their deps. The XGBoost tests don't train on Apple Silicon yet.
+Each namespace gets one line, and each failure one more. The full reports, with stack traces, are in `target/test.log`. The `:cli`, `:tmd` and `:xgb` aliases add the tests for the Geni CLI, tech.ml.dataset and XGBoost, along with their deps. The XGBoost tests don't train on Apple Silicon yet, and only run with `:spark`.
+
+`:spark` is Spark 3.5 on Scala 2.12. To run the tests on Spark 3.5 on Scala 2.13, or on Spark 4, swap in `:spark-3.5-2.13` or `:spark-4`, after a `prep` for the same alias:
+
+```bash
+clojure -T:build prep :spark :spark-4
+clojure -X:spark-4:test
+```
+
+The runner says so if `prep` was for another Spark.
 
 From a REPL started with `clj -M:spark:test`, this reloads a test namespace and runs it:
 
@@ -35,7 +44,7 @@ From a REPL started with `clj -M:spark:test`, this reloads a test namespace and 
 (test! 'zero-one.geni.dataset-test)
 ```
 
-The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. The CI splits the namespaces into three shards with `:shard '[1 3]'` and so on, on both x64 and arm64.
+The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. The CI runs each Spark alias on JDK 17 and 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, and `:spark` on arm64 as well.
 
 ## Linting and formatting
 

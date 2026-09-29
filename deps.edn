@@ -10,7 +10,9 @@
                  :ensure "target/classes"}
 
  :aliases
- {;; Spark, which library users bring themselves. The CLI depends on it.
+ {;; Spark 3.5 on Scala 2.12, which library users bring themselves. The CLI
+  ;; depends on it. Use :spark-3.5-2.13 or :spark-4 in its place for the other
+  ;; Spark builds that Geni supports.
   :spark
   {:extra-deps
    {org.apache.spark/spark-avro_2.12  {:mvn/version "3.5.9"}
@@ -38,6 +40,63 @@
     "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
     "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
     "-Djdk.reflect.useDirectMethodHandle=false"]}
+
+  ;; The same Spark, on Scala 2.13.
+  :spark-3.5-2.13
+  {:extra-deps
+   {org.apache.spark/spark-avro_2.13  {:mvn/version "3.5.9"}
+    org.apache.spark/spark-mllib_2.13 {:mvn/version "3.5.9"}
+    org.apache.spark/spark-sql_2.13   {:mvn/version "3.5.9"}
+    org.apache.arrow/arrow-vector       {:mvn/version "13.0.0"}
+    org.apache.arrow/arrow-memory-netty {:mvn/version "13.0.0"}}
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Djdk.reflect.useDirectMethodHandle=false"]}
+
+  ;; Spark 4, on Scala 2.13, with the flags from its own JavaModuleOptions.
+  :spark-4
+  {:extra-deps
+   {org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}
+    org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
+    org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}}
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-modules=jdk.incubator.vector"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Dio.netty.tryReflectionSetAccessible=true"
+    "-Dio.netty.allocator.type=pooled"
+    "-Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE"
+    "--sun-misc-unsafe-memory-access=allow"
+    "--enable-native-access=ALL-UNNAMED"]}
 
   ;; clojure -X:spark:test (see CONTRIBUTING.md)
   :test

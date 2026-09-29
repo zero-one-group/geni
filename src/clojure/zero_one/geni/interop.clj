@@ -18,8 +18,8 @@
           Function3
           Tuple2
           Tuple3)
-   (scala.collection JavaConversions Map Seq)
-   (scala.collection.convert Wrappers$IterableWrapper)))
+   (scala.collection JavaConverters Map Seq)
+   (scala.collection.immutable List)))
 
 (declare ->clojure)
 
@@ -30,7 +30,7 @@
   (instance? Seq value))
 
 (defn iterable? [value]
-  (instance? Wrappers$IterableWrapper value))
+  (instance? Iterable value))
 
 (defn scala-map? [value]
   (instance? Map value))
@@ -42,15 +42,18 @@
   (instance? Tuple3 value))
 
 (defn scala-seq->vec [scala-seq]
-  (vec (JavaConversions/seqAsJavaList scala-seq)))
+  (vec (JavaConverters/seqAsJavaList scala-seq)))
 
 (defn scala-map->map [^Map m]
   (into {}
-        (for [[k v] (JavaConversions/mapAsJavaMap m)]
+        (for [[k v] (JavaConverters/mapAsJavaMap m)]
           [k (->clojure v)])))
 
-(defn ->scala-seq [coll]
-  (JavaConversions/asScalaBuffer (seq coll)))
+(defn ->scala-seq
+  "An immutable Scala List, which Spark's methods take as a Seq on both Scala
+  2.12 and 2.13."
+  ^List [coll]
+  (.toList (JavaConverters/asScalaBuffer (vec coll))))
 
 (defn ->scala-tuple2 [coll]
   (Tuple2. (first coll) (second coll)))
@@ -185,7 +188,8 @@
   [^Class cls value]
   (let [coerce (number-coercions cls)]
     (cond
-      (= cls scala.collection.Seq)          (->scala-seq value)
+      (and (.isAssignableFrom Seq cls)
+           (.isAssignableFrom cls List))    (->scala-seq value)
       (and coerce (number? value))          (coerce value)
       (and (.isArray cls) (coll? value))    (let [component (.getComponentType cls)
                                                   values    (vec value)

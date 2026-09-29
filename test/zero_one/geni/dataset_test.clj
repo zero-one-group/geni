@@ -405,12 +405,13 @@
                g/collect-vals)))))
 
 (deftest ^:slow sample-test
-  (let [with-rep    (g/sample (df-50) 0.8 true)
-        without-rep (g/sample (df-50) 0.8)]
+  ;; Each query can sample differently, so each check collects once.
+  (let [with-rep    (g/collect (g/sample (df-50) 0.8 true))
+        without-rep (g/collect (g/sample (df-50) 0.8))]
     (testing "Sampling without replacement should have all unique rows"
-      (is (= (g/count without-rep) (-> without-rep g/distinct g/count))))
+      (is (= (count without-rep) (count (distinct without-rep)))))
     (testing "Sampling with replacement should have less unique rows"
-      (is (< (-> with-rep g/distinct g/count) 40)))))
+      (is (< (count (distinct with-rep)) 40)))))
 
 (deftest ^:slow order-by-test
   (let [df (-> (df-20) (g/select (g/as (g/->date-col :Date "d/MM/yyyy") :Date)))]

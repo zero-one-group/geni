@@ -3,6 +3,7 @@
   namespace and one line per failure. Full reports go to target/test.log.
   See CONTRIBUTING.md."
   (:require
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
    [clojure.test :as t]))
@@ -10,9 +11,39 @@
 (def ^:private compiled-java
   "target/classes/zero_one/geni/rdd/function/Fn1.class")
 
+(def ^:private prepped-spark
+  "What `clojure -T:build prep` compiled the test namespaces against."
+  "target/test-classes/spark.edn")
+
 (def ^:private log-path "target/test.log")
 
 (def ^:private default-report t/report)
+
+(defn- running-spark
+  "The Spark and Scala versions on the classpath, without starting Spark."
+  []
+  (let [props (java.util.Properties.)]
+    (with-open [in (io/input-stream (io/resource "spark-version-info.properties"))]
+      (.load props in))
+    {:spark (.getProperty props "version")
+     :scala (re-find #"^\d+\.\d+" (scala.util.Properties/versionNumberString))}))
+
+(defn- prep-problem
+  "Why the compiled classes don't suit this run, if they don't."
+  []
+  (let [prepped (io/file prepped-spark)]
+    (cond
+      (not (.exists (io/file compiled-java)))
+      "Compiled Java classes not found. Run `clojure -T:build prep` first."
+
+      (.exists prepped)
+      (let [built   (edn/read-string (slurp prepped))
+            running (running-spark)]
+        (when (not= built running)
+          (format (str "The test namespaces were compiled for Spark %s on Scala %s, but this is "
+                       "Spark %s on Scala %s. Run `clojure -T:build prep` with the same Spark "
+                       "alias, e.g. `clojure -T:build prep :spark :spark-4`.")
+                  (:spark built) (:scala built) (:spark running) (:scala running)))))))
 
 (defn- classpath-dirs
   "The project's own directories on the classpath, so that each alias (e.g.
@@ -182,8 +213,8 @@
     :shard    run every nth namespace from the ith, e.g. [1 3]
     :slowest  how many of the slowest tests to list (default: 5)"
   [{:keys [shard] :as opts}]
-  (when-not (.exists (io/file compiled-java))
-    (println "Compiled Java classes not found. Run `clojure -T:build prep` first.")
+  (when-let [problem (prep-problem)]
+    (println problem)
     (System/exit 1))
   (let [{:keys [passed?]} (run-tests (assoc opts :shard-spec shard))]
     (shutdown-agents)

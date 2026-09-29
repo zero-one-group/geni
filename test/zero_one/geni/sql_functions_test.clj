@@ -205,10 +205,10 @@
                g/collect-vals
                first))))
   (testing "correct concat-ws"
-    (is (= "Biggin,Jellis,Collins,Nelson,Greg,LITTLE"
+    (is (= "Biggin,Collins,Greg,Jellis,LITTLE,Nelson"
            (-> (df-20)
                (g/group-by :Suburb)
-               (g/agg (-> (g/collect-set :SellerG) (g/as :sellers)))
+               (g/agg (-> (g/collect-set :SellerG) g/array-sort (g/as :sellers)))
                (g/select (g/concat-ws "," :sellers))
                g/collect-vals
                ffirst))))

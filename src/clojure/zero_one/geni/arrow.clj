@@ -18,7 +18,7 @@
    (org.apache.arrow.vector.types.pojo Schema)
    (org.apache.arrow.vector.util Text)
    (org.apache.spark.sql Row)
-   (scala.collection.convert Wrappers$IteratorWrapper)))
+   (java.util Iterator)))
 
 (defn typed-action [action
                     col-type
@@ -160,7 +160,7 @@
    `out-dir` Output dir of arrow files"
   [rdd chunk-size out-dir]
   (let [schema (schema->clojure (.schema rdd))
-        ^Wrappers$IteratorWrapper row-iterator (.toLocalIterator rdd)]
+        ^Iterator row-iterator (.toLocalIterator rdd)]
     (loop [acc          []
            files        []
            counter      0

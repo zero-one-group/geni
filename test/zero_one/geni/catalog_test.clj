@@ -159,12 +159,14 @@
                                 :nullable    true
                                 :isPartition false
                                 :isBucket    false}))
-             (-> (g/union (c/list-columns @tr/spark "tbl1")
-                          (c/list-columns "tbl2")
-                          (c/list-columns "test_db" "tbl2"))
-                 (g/order-by :name)
-                 g/to-df
-                 g/collect))))))
+             ;; Spark 4 adds :isCluster.
+             (map #(dissoc % :isCluster)
+                  (-> (g/union (c/list-columns @tr/spark "tbl1")
+                               (c/list-columns "tbl2")
+                               (c/list-columns "test_db" "tbl2"))
+                      (g/order-by :name)
+                      g/to-df
+                      g/collect)))))))
 
 (deftest drop-test
   (testing "Drop tables"

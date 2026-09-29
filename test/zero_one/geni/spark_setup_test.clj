@@ -6,6 +6,8 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :refer [spark melbourne-df]])
   (:import
+   (java.lang.management ManagementFactory)
+   (org.apache.spark.launcher JavaModuleOptions)
    (org.apache.spark.sql Dataset SparkSession)))
 
 (deftest test-spark-session-and-dataframe-test
@@ -29,3 +31,9 @@
              (g/select "entry_id")
              g/distinct
              g/count))))
+
+(deftest jvm-flags-test
+  ;; The Spark aliases in deps.edn copy the JDK flags that Spark's launcher
+  ;; uses, and a new Spark release can add more.
+  (let [jvm-args (set (.getInputArguments (ManagementFactory/getRuntimeMXBean)))]
+    (is (= [] (remove jvm-args (clojure.string/split (JavaModuleOptions/defaultModuleOptions) #" "))))))
