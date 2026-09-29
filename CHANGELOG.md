@@ -11,7 +11,7 @@ Breaking changes:
 - `g/read-xlsx!` and `g/write-xlsx!` need `zero.one/fxl` on the classpath. Without it, they throw an error that says so.
 - The Geni CLI (`zero-one.geni.main` and `zero-one.geni.repl`) is no longer in the library jar. It ships as the uberjar on the GitHub release, built from `cli/`.
 - Requiring Geni no longer starts Spark. `zero-one.geni.defaults/spark` can still be dereffed, but it's no longer an atom: use `g/set-default-session!` rather than `reset!`.
-- Geni's default session has no checkpoint directory, and no AQE configs (AQE has been on by default since Spark 3.2). Pass `:checkpoint-dir` to `g/create-spark-session` before using `g/checkpoint`.
+- Geni's default session has no checkpoint directory, and no AQE configs (AQE has been on by default since Spark 3.2). Pass `:checkpoint-dir` to `g/create-spark-session` before using `g/checkpoint`, or before training ALS for many iterations, which overflows the stack without one.
 - `g/create-spark-session` only sets the log level it's given with `:log-level`. Without one, it sets `WARN` only when it starts Spark and there's no log4j2 config on the classpath, as `spark-shell` does.
 
 New:
@@ -25,4 +25,5 @@ Fixes:
 - `g/create-spark-session` no longer overrides `spark.master` or `spark.app.name` when they're set already, for instance by spark-submit.
 - `g/write-edn!` can write to a new path. It used to throw "already exists" unless the file existed and `:mode "overwrite"` was set.
 - Without XGBoost on the classpath, `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/write-native-model!` now throw a clear error instead of being unbound.
+- `g/read-jdbc!` honours `:kebab-columns`, which it used to pass on to the JDBC source as an option, and so ignored.
 - `collect-to-arrow` works on JDK 21 with Spark 3.5, as long as Arrow 13 or newer is on the classpath. Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21.

@@ -61,10 +61,11 @@ clojure -T:build check   # lint, the tests on :spark, and the doc tests
 ## Executable documentation
 
 After `prep`, run the README and reference examples with `clojure -T:build docs`.
-`clojure -T:build cookbook` runs the cookbook separately and downloads its public
-datasets into `data/cookbook/`. Part 5 uses the weather data written by part 4.
-The weekly workflow runs the cookbook and checks Markdown links. The large
-benchmark in part 10 and the login-required dataset in part 12 remain manual.
+`clojure -T:build cookbook` runs the cookbook separately. The first run downloads
+its public datasets into `data/cookbook/` and generates part 10's 12 million rows
+there, about 500 MB in all, and takes a few minutes. Part 5 uses the weather data
+written by part 4.
+The weekly workflow runs the cookbook and checks Markdown links.
 
 `test-doc-blocks` turns Clojure fences into tests, in document order. Put
 `;; =>` before a returned value or `;; =stdout=>` before commented printed output.

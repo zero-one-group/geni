@@ -121,7 +121,7 @@
       (System/exit exit))))
 
 (def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
-(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "docs" "dev" "build.clj"])
+(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
 
 (defn lint
   "Runs clj-kondo, then cljfmt's check, as the CI does."

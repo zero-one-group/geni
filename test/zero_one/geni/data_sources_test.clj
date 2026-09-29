@@ -306,6 +306,18 @@
                    (g/read-jdbc! options))]
     (is (= (g/collect-vals read-df) (g/collect-vals write-df)))))
 
+(deftest ^:slow read-jdbc-with-kebab-columns-test
+  (let [url (str "jdbc:sqlite:" (create-temp-file! ".db"))]
+    (with-open [conn (DriverManager/getConnection url)
+                stmt (.createStatement conn)]
+      (.execute stmt "CREATE TABLE tracks (TrackId INTEGER, UnitPrice REAL)")
+      (.execute stmt "INSERT INTO tracks VALUES (1, 0.99)"))
+    (is (= [{:track-id 1 :unit-price 0.99}]
+           (g/collect (g/read-jdbc! {:driver        "org.sqlite.JDBC"
+                                     :url           url
+                                     :dbtable       "tracks"
+                                     :kebab-columns true}))))))
+
 (deftest ^:slow can-write-parquet-with-partition-by-test
   (let [temp-file (.toString (create-temp-file! ".parquet"))
         read-df  (do (g/write-parquet!

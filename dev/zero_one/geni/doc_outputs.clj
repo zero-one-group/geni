@@ -82,18 +82,46 @@
         (when (seq? value) (dorun value))
         {:value value :out (str out)}))))
 
+(defn- fill
+  "A flat collection of scalars as lines of at most `width` characters, filled
+  like a paragraph, or nil for any other value. `pprint` would put each item on
+  a line of its own."
+  [value width]
+  (when (and (or (sequential? value) (set? value))
+             (seq value)
+             (not-any? coll? value))
+    (let [[open close] (cond (vector? value) ["[" "]"]
+                             (set? value)    ["#{" "}"]
+                             :else           ["(" ")"])
+          margin (apply str (repeat (count open) \space))]
+      (loop [[item & more] (map pr-str value) line open lines []]
+        (cond
+          (nil? item)
+          (string/join "\n" (conj lines (str line close)))
+
+          (#{open margin} line)
+          (recur more (str line item) lines)
+
+          (<= (+ (count line) 1 (count item)) width)
+          (recur more (str line " " item) lines)
+
+          :else
+          (recur more (str margin item) (conj lines line)))))))
+
 (defn- render-value
-  "A value as a `;; =>` comment: on one line if it fits, or pretty-printed.
-  A value that doesn't read back as itself, such as a keyword with a space,
-  becomes a `; =>` comment, which test-doc-blocks doesn't check."
+  "A value as a `;; =>` comment: on one line if it fits, filled if it's a flat
+  collection, or else pretty-printed. A value that doesn't read back as
+  itself, such as a keyword with a space, becomes a `; =>` comment, which
+  test-doc-blocks doesn't check."
   [indent value]
   (let [text (binding [pprint/*print-right-margin* 80
                        *print-length*              nil
                        *print-level*               nil]
                (let [one-line (pr-str value)]
-                 (if (<= (count one-line) 90)
-                   one-line
-                   (string/trimr (with-out-str (pprint/pprint value))))))
+                 (cond
+                   (<= (count one-line) 90) one-line
+                   (fill value 74)          (fill value 74)
+                   :else                    (string/trimr (with-out-str (pprint/pprint value))))))
         [line & more] (string/split-lines text)
         checked? (and (parseable? text)
                       (binding [*read-eval* false] (= value (read-string text))))
@@ -143,7 +171,10 @@
             {:keys [value out]} last-run
             new-lines (case kind
                         :value  (render-value indent value)
-                        :stdout (render-stdout indent out))]
+                        :stdout (if (string/blank? out)
+                                  (do (println "  note: nothing printed, so the =stdout=> is dropped")
+                                      [])
+                                  (render-stdout indent out)))]
         (recur more last-run (conj replacements [start end new-lines]))))))
 
 (defn- blocks

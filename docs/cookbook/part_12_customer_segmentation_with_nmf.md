@@ -1,55 +1,76 @@
 # CB-12: Customer Segmentation with NMF
 
-This chapter requires a manually downloaded dataset behind a sign-up wall; it is excluded from the automated cookbook tests.
-
-<!-- {:test-doc-blocks/skip true :test-doc-blocks/apply :all-next} -->
-
 In this part, we look into the use of [non-negative matrix factorisation](https://www.nature.com/articles/44565) for customer segmentation. See [this blog post](https://medium.com/@zeroonegroup/customer-segmentation-taking-a-page-out-of-the-computer-vision-book-af02155ccf53) for context.
 
-We will be using the Online Retail II dataset, which is [available for free on Kaggle](https://www.kaggle.com/hikne707/online-retail?select=online_retail_II.xlsx). Since the dataset is behind a sign-up wall, we assume that the two CSV files are already downloaded and placed in the `data/online_retail_ii` directory. We load the dataset as follows:
+We will be using the [Online Retail dataset](https://archive.ics.uci.edu/dataset/352/online+retail) from the UCI Machine Learning Repository: a year of transactions from a UK-based online shop. The repo of Databricks' [Spark: The Definitive Guide](https://github.com/databricks/Spark-The-Definitive-Guide) has a copy of it as a CSV file. As in every part, we start with Geni and the `download-data!` function from [part 1](part_01_reading_and_writing_datasets.md), and this time Geni's ML namespace too:
 
 ```clojure
+(require '[clojure.java.io :as io])
+(require '[zero-one.geni.core :as g])
+(require '[zero-one.geni.ml :as ml])
+
+(defn download-data! [source-url target-path]
+  (if (.exists (io/file target-path))
+    :already-exists
+    (do
+      (io/make-parents target-path)
+      (with-open [in (io/input-stream source-url)]
+        (io/copy in (io/file target-path)))
+      :downloaded)))
+```
+
+Then we download the data and load it:
+
+```clojure
+(def invoices-data-url
+  "https://raw.githubusercontent.com/databricks/Spark-The-Definitive-Guide/4ba5601eb9b9aed1d01ab79775e3af228216ff6f/data/retail-data/all/online-retail-dataset.csv")
+
+(def invoices-data-path "data/cookbook/online-retail.csv")
+
+(download-data! invoices-data-url invoices-data-path)
+
 (def invoices
-  (g/read-csv! "data/online_retail_ii" {:kebab-columns true}))
+  (g/read-csv! invoices-data-path {:kebab-columns true}))
 
 (g/print-schema invoices)
+;; =stdout=>
 ; root
-;  |-- invoice: string (nullable = true)
+;  |-- invoice-no: string (nullable = true)
 ;  |-- stock-code: string (nullable = true)
 ;  |-- description: string (nullable = true)
 ;  |-- quantity: integer (nullable = true)
 ;  |-- invoice-date: string (nullable = true)
-;  |-- price: double (nullable = true)
+;  |-- unit-price: double (nullable = true)
 ;  |-- customer-id: integer (nullable = true)
 ;  |-- country: string (nullable = true)
 
 (g/count invoices)
-; 1067371
+;; => 541909
 
 (-> invoices (g/limit 2) g/show-vertical)
-; -RECORD 0-------------------------------------------
-;  invoice      | 489434
-;  stock-code   | 85048
-;  description  | 15CM CHRISTMAS GLASS BALL 20 LIGHTS
-;  quantity     | 12
-;  invoice-date | 1/12/2009 07:45
-;  price        | 6.95
-;  customer-id  | 13085
+; -RECORD 0------------------------------------------
+;  invoice-no   | 536365
+;  stock-code   | 85123A
+;  description  | WHITE HANGING HEART T-LIGHT HOLDER
+;  quantity     | 6
+;  invoice-date | 12/1/2010 8:26
+;  unit-price   | 2.55
+;  customer-id  | 17850
 ;  country      | United Kingdom
-; -RECORD 1-------------------------------------------
-;  invoice      | 489434
-;  stock-code   | 79323P
-;  description  | PINK CHERRY LIGHTS
-;  quantity     | 12
-;  invoice-date | 1/12/2009 07:45
-;  price        | 6.75
-;  customer-id  | 13085
+; -RECORD 1------------------------------------------
+;  invoice-no   | 536365
+;  stock-code   | 71053
+;  description  | WHITE METAL LANTERN
+;  quantity     | 6
+;  invoice-date | 12/1/2010 8:26
+;  unit-price   | 3.39
+;  customer-id  | 17850
 ;  country      | United Kingdom
 ```
 
 Every row of the dataset is a transaction with the product and customer details. In collaborative-filtering settings, we typically have many users that consume many items, and each item is typically consumed by multiple users. Recommendations are done based on the common items that specific users selected and liked. The natural extension of that, in this case, would be to recommend stock codes to each customer ID based on their spending.
 
-However, we are going to do something different this time. We represent each product by the words in its description, and call each word a 'descriptor'. By doing this, a “15cm christmas glass ball 20 lights” share a commonality with “pink cherry lights”, because both share the word “lights”, instead of having them represented by two completely different stock codes. Next, we train a non-negative matrix factorisation (NMF) model on each customer ID’s spending and their spending on each descriptor. In essence, we decompose a matrix of #-of-customers by #-of-descriptors into an individual shopping map distinct to each customer ID and a set of canonical shopping patterns shared by every customer ID.
+However, we are going to do something different this time. We represent each product by the words in its description, and call each word a 'descriptor'. By doing this, a “white hanging heart t-light holder” shares a commonality with a “white metal lantern”, because both share the word “white”, instead of having them represented by two completely different stock codes. Next, we train a non-negative matrix factorisation (NMF) model on each customer ID’s spending and their spending on each descriptor. In essence, we decompose a matrix of #-of-customers by #-of-descriptors into an individual shopping map distinct to each customer ID and a set of canonical shopping patterns shared by every customer ID.
 
 
 ## 12.1 Exploding Sentences into Words
@@ -75,30 +96,26 @@ To extract the descriptors of each product, we make use of [Spark’s Tokenizer]
 
 (-> descriptors
     (g/group-by :descriptor)
-    (g/agg {:total-spend (g/sum (g/* :price :quantity))})
+    (g/agg {:total-spend (g/int (g/sum (g/* :unit-price :quantity)))})
     (g/sort (g/desc :total-spend))
     (g/limit 5)
     g/show)
+;; =stdout=>
 ; +----------+-----------+
 ; |descriptor|total-spend|
 ; +----------+-----------+
-; |set       |2089125    |
-; |bag       |1912097    |
-; |red       |1834692    |
-; |heart     |1465429    |
-; |vintage   |1179526    |
-; |retrospot |1166847    |
-; |white     |1155863    |
-; |pink      |1009384    |
-; |jumbo     |984806     |
-; |design    |917394     |
+; |set       |1132690    |
+; |bag       |1081737    |
+; |red       |875223     |
+; |retrospot |714970     |
+; |heart     |706751     |
 ; +----------+-----------+
 
 (-> descriptors (g/select :descriptor) g/distinct g/count)
-=> 2605
+;; => 2213
 ```
 
-Notice that we cached the `descriptor` dataset as it will be used as an intermediate result, and we would not want to carry out the expensive explode operation multiple times. We end up with 2605 unique descriptors with 'set', 'bag' and 'red' being the descriptors with the highest sales.
+Notice that we cached the `descriptor` dataset as it will be used as an intermediate result, and we would not want to carry out the expensive explode operation multiple times. We end up with 2213 unique descriptors, with 'set', 'bag' and 'red' being the descriptors with the highest sales.
 
 ## 12.2 Non-Negative Matrix Factorisation
 
@@ -109,22 +126,23 @@ Next, to measure the association of the descriptors and the customers, we use sp
   (-> descriptors
       (g/remove (g/||
                   (g/null? :customer-id)
-                  (g/< :price 0.01)
+                  (g/< :unit-price 0.01)
                   (g/< :quantity 1)))
       (g/group-by :customer-id :descriptor)
-      (g/agg {:log-spend (g/log1p (g/sum (g/* :price :quantity)))})
+      (g/agg {:log-spend (g/log1p (g/sum (g/* :unit-price :quantity)))})
       (g/order-by (g/desc :log-spend))))
 
 (-> log-spending (g/describe :log-spend) g/show)
-; +-------+--------------------+
-; |summary|log-spend           |
-; +-------+--------------------+
-; |count  |837985              |
-; |mean   |3.173295903226327   |
-; |stddev |1.3183533551300999  |
-; |min    |0.058268908123975775|
-; |max    |12.034516532838857  |
-; +-------+--------------------+
+;; =stdout=>
+; +-------+-------------------+
+; |summary|log-spend          |
+; +-------+-------------------+
+; |count  |495068             |
+; |mean   |3.100739905621917  |
+; |stddev |1.2699691878489578 |
+; |min    |0.09531017980432487|
+; |max    |12.034516532838857 |
+; +-------+-------------------+
 ```
 
 Notice that log-spending is still heavily skewed to the right tail, but it will do for the purposes of this example.
@@ -143,6 +161,12 @@ Spark ML makes it very easy for us to train NMF models using the [ALS model](htt
              :user-col    :customer-id
              :item-col    :descriptor-id
              :rating-col  :log-spend})))
+```
+
+With 100 iterations, ALS needs a checkpoint directory. It checkpoints its intermediate results every 10 iterations when the session has one, and without one, the lineage of its datasets grows until the stack overflows. Geni's default session has no checkpoint directory, so the code sets one before fitting:
+
+```clojure
+(g/create-spark-session {:checkpoint-dir "data/cookbook/checkpoint"})
 
 (def nmf-pipeline-model
   (ml/fit log-spending nmf-pipeline))
@@ -185,18 +209,19 @@ ALSModel gives us the item factors in the form of an array of factor weights, bu
     (g/agg {:descriptors (g/array-sort (g/collect-set :descriptor))})
     (g/order-by :pattern-id)
     g/show)
-; +----------+----------------------------------------------------------+
-; |pattern-id|descriptors                                               |
-; +----------+----------------------------------------------------------+
-; |0         |[heart, holder, jun, peter, tlight]                       |
-; |1         |[bar, draw, garld, seventeen, sideboard]                  |
-; |2         |[coathangers, jun, peter, pinkblack, rucksack]            |
-; |3         |[bag, jumbo, lunch, red, retrospot]                       |
-; |4         |[retrodisc, rnd, scissor, sculpted, shapes]               |
-; |5         |[afghan, capiz, lazer, mugcoasterlavender, yellowblue]    |
-; |6         |[cake, metal, sign, stand, time]                          |
-; |7         |[mintivory, necklturquois, pinkamethystgold, regency, set]|
-; +----------+----------------------------------------------------------+
+;; =stdout=>
+; +----------+----------------------------------------------------+
+; |pattern-id|descriptors                                         |
+; +----------+----------------------------------------------------+
+; |0         |[bag, jumbo, red, retrospot, vintage]               |
+; |1         |[bottle, crystalglass, grip, milkshake, rucksack]   |
+; |2         |[bar, cake, neckl, regency, set]                    |
+; |3         |[afghan, crystalglass, please, shapes, sombrero]    |
+; |4         |[christmas, geometric, lazer, phone, sanskrit]      |
+; |5         |[bow, fur, goldie, looking, medicine]               |
+; |6         |[cardpack, hall, hanging, heart, white]             |
+; |7         |[george, redblue, seventeen, sideboard, transparent]|
+; +----------+----------------------------------------------------+
 ```
 
 To find out the soft segments each customer belongs to, we use the same trick as before, but applied to individual pattern maps and filtering only for the top-ranked pattern:
@@ -219,16 +244,17 @@ To find out the soft segments each customer belongs to, we use the same trick as
     (g/agg {:n-customers (g/count-distinct :customer-id)})
     (g/order-by :pattern-id)
     g/show)
+;; =stdout=>
 ; +----------+-----------+
 ; |pattern-id|n-customers|
 ; +----------+-----------+
-; |0         |760        |
-; |1         |1095       |
-; |2         |379        |
-; |3         |444        |
-; |4         |1544       |
-; |5         |756        |
-; |6         |426        |
-; |7         |474        |
+; |0         |359        |
+; |1         |403        |
+; |2         |422        |
+; |3         |824        |
+; |4         |772        |
+; |5         |524        |
+; |6         |582        |
+; |7         |452        |
 ; +----------+-----------+
 ```
