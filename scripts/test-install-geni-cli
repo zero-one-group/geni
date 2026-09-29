@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-
-wget https://raw.githubusercontent.com/zero-one-group/geni/develop/scripts/geni
-chmod a+x geni
-mv geni /usr/local/bin/
-exit | geni

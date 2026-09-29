@@ -54,6 +54,7 @@
           (g/drop :locationUri)
           g/collect)
       => [{:name        "default"
+           :catalog     "spark_catalog"
            :description "default database"}]
       (create-test-db)
       (-> (c/list-databases)
@@ -61,8 +62,10 @@
           (g/drop :locationUri)
           g/collect)
       => [{:name        "default"
+           :catalog     "spark_catalog"
            :description "default database"}
           {:name        "test_db"
+           :catalog     "spark_catalog"
            :description ""}])))
 
 (facts "On table management"
@@ -83,7 +86,8 @@
             g/to-df
             g/collect)
         => [{:name        "tbl1"
-             :database    "default"
+             :catalog     "spark_catalog"
+             :namespace   ["default"]
              :description nil
              :tableType   "MANAGED"
              :isTemporary false}]
@@ -118,12 +122,14 @@
             g/to-df
             g/collect)
         => [{:name        "view2"
-             :database    "global_temp"
+             :catalog     nil
+             :namespace   ["global_temp"]
              :description nil
              :tableType   "TEMPORARY"
              :isTemporary true}
             {:name        "view1"
-             :database    nil
+             :catalog     nil
+             :namespace   []
              :description nil
              :tableType   "TEMPORARY"
              :isTemporary true}]

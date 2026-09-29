@@ -17,7 +17,7 @@ import scala.Tuple2;
  * Compatibility wrapper for a Spark `PairFunction` of one argument which
  * returns a pair.
  */
-public class PairFn extends SerializableFn implements PairFunction {
+public class PairFn extends SerializableFn implements PairFunction<Object, Object, Object> {
 
     public PairFn(IFn f, Collection<String> namespaces) {
         super(f, namespaces);
@@ -25,7 +25,6 @@ public class PairFn extends SerializableFn implements PairFunction {
 
 
     @Override
-    @SuppressWarnings("unchecked")
     public Tuple2<Object, Object> call(Object v1) throws Exception {
         return coercePair(f, f.invoke(v1));
     }
@@ -38,6 +37,7 @@ public class PairFn extends SerializableFn implements PairFunction {
      * @param result object to try to coerce
      * @return a Scala tuple with two values
      */
+    @SuppressWarnings("unchecked")
     public static Tuple2<Object, Object> coercePair(IFn f, Object result) {
         // Null can't be coerced.
         if (result == null) {
@@ -48,14 +48,14 @@ public class PairFn extends SerializableFn implements PairFunction {
         // Use key/value from Clojure map entries to construct a tuple.
         } else if (result instanceof IMapEntry) {
             IMapEntry entry = (IMapEntry)result;
-            return new Tuple2(entry.key(), entry.val());
+            return new Tuple2<>(entry.key(), entry.val());
         // Try to generically coerce a sequential result into a tuple.
         } else if (result instanceof IPersistentVector) {
             IPersistentVector vector = (IPersistentVector)result;
             if (vector.count() != 2) {
                 throw new RuntimeException("Wrapped pair function " + f + " returned a vector without exactly two values: " + vector.count());
             }
-            return new Tuple2(vector.nth(0), vector.nth(1));
+            return new Tuple2<>(vector.nth(0), vector.nth(1));
         // Unknown type, can't coerce.
         } else {
             throw new RuntimeException("Wrapped pair function " + f + " returned an invalid pair type: " + result.getClass().getName());

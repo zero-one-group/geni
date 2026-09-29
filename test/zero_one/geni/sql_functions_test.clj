@@ -466,8 +466,8 @@
                      (g/min :Price)
                      (g/sum :Price)
                      (g/mean :Price)
-                     (g/stddev :Price)
-                     (g/variance :Price)
+                     (g/as (g/stddev :Price) "std-dev")
+                     (g/as (g/variance :Price) "variance")
                      (g/max :Price))
                     g/collect
                     first)]
@@ -482,8 +482,8 @@
              int)
       (+ (summary (keyword "count(BuildingArea)"))
          (summary (keyword "null_count(BuildingArea)"))) => 20
-      (let [std-dev  (summary (keyword "stddev_samp(Price)"))
-            variance (summary (keyword "var_samp(Price)"))]
+      (let [std-dev  (summary :std-dev)
+            variance (summary :variance)]
         (Math/abs (- (Math/pow std-dev 2) variance))) => #(< % 1e-6))
     (fact "count distinct and approx count distinct should be similar"
       (-> (df-50)
@@ -503,7 +503,7 @@
           (g/agg
            (g/count-distinct {:seller :SellerG
                               :suburb :Suburb}))
-          g/column-names) => ["count(SellerG AS seller, Suburb AS suburb)"])))
+          g/column-names) => ["count(DISTINCT SellerG AS seller, Suburb AS suburb)"])))
 
 (facts "On window functions" :slow
   (let [window  (g/window {:partition-by :SellerG :order-by :Price})]

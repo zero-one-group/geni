@@ -110,7 +110,7 @@
   (-> (df-20)
       (g/select :SellerG :Suburb)
       g/nunique
-      g/first) => {(keyword "count(SellerG)") 6 (keyword "count(Suburb)")  1})
+      g/first) => {:SellerG 6 :Suburb 1})
 
 (fact "On value-counts" :slow
   (-> (df-20)

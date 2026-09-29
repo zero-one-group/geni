@@ -126,19 +126,24 @@
                         :Nelson 4
                         :Suburb_SellerG "Abbotsford"}])
   (fact "On freq-items"
+    ;; Spark doesn't guarantee the order of the frequent items.
     (-> (df-20)
         (g/freq-items [:Suburb :SellerG])
-        g/collect) => [{:SellerG_freqItems ["LITTLE"
-                                            "Biggin"
-                                            "Nelson"
-                                            "Collins"
-                                            "Greg"
-                                            "Jellis"]
-                        :Suburb_freqItems ["Abbotsford"]}]
+        g/collect
+        first
+        (update-vals set)) => {:SellerG_freqItems #{"LITTLE"
+                                                    "Biggin"
+                                                    "Nelson"
+                                                    "Collins"
+                                                    "Greg"
+                                                    "Jellis"}
+                               :Suburb_freqItems #{"Abbotsford"}}
     (-> (df-20)
         (g/freq-items [:Suburb :SellerG] 0.5)
-        g/collect) => [{:SellerG_freqItems ["Biggin" "Collins"]
-                        :Suburb_freqItems ["Abbotsford"]}])
+        g/collect
+        first
+        (update-vals set)) => {:SellerG_freqItems #{"Biggin" "Collins"}
+                               :Suburb_freqItems #{"Abbotsford"}})
   (fact "On bloom-filter"
     (let [bloom (-> (melbourne-df) (g/bloom-filter :Suburb 10 0.01))]
       (g/bit-size bloom) => 128
