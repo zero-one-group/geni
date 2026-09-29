@@ -4,10 +4,11 @@
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) dataframe library that runs on [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
-[![CI](https://github.com/zero-one-group/geni/actions/workflows/continuous-integration.yml/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions)
-[![Code Coverage](https://codecov.io/gh/zero-one-group/geni/branch/develop/graph/badge.svg)](https://codecov.io/gh/zero-one-group/geni)
-[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](http://clojars.org/zero.one/geni)
+[![CI](https://github.com/zero-one-group/geni/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/zero-one-group/geni/actions/workflows/ci.yml)
+[![Clojars Project](https://img.shields.io/clojars/v/zero.one/geni.svg)](https://clojars.org/zero.one/geni)
 [![License](https://img.shields.io/github/license/zero-one-group/geni.svg)](LICENSE)
+
+> **Geni is being revived.** Pre-releases of 0.1.0 are on Clojars: the [changelog](CHANGELOG.md) lists what changed, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan and a call for testers. The docs below are being refreshed, and still describe 0.0.42 in places.
 
 ## Overview
 
@@ -143,8 +144,8 @@ Spark SQL API for data wrangling:
 ; |count  |5000              |5000              |5000             |
 ; |mean   |30.9842           |2393.2132         |1334.9684        |
 ; |stddev |12.969656616832669|1812.4457510408017|954.0206427949117|
-; |min    |1.0               |1000.0            |100.0            |
-; |max    |9.0               |999.0             |999.0            |
+; |min    |1.0               |2.0               |6.0              |
+; |max    |52.0              |28258.0           |12203.0          |
 ; +-------+------------------+------------------+-----------------+
 
 (-> dataframe
@@ -225,14 +226,14 @@ Spark ML example translated from [Spark's programming guide](https://spark.apach
 ;; +---+------------------+----------------------------------------+----------+
 ;; |id |text              |probability                             |prediction|
 ;; +---+------------------+----------------------------------------+----------+
-;; |4  |spark i j k       |[0.1596407738787411,0.8403592261212589] |1.0       |
-;; |5  |l m n             |[0.8378325685476612,0.16216743145233883]|0.0       |
-;; |6  |spark hadoop spark|[0.0692663313297627,0.9307336686702373] |1.0       |
-;; |7  |apache hadoop     |[0.9821575333444208,0.01784246665557917]|0.0       |
+;; |4  |spark i j k       |[0.6292098489668484,0.3707901510331516] |0.0       |
+;; |5  |l m n             |[0.984770006762304,0.015229993237696027]|0.0       |
+;; |6  |spark hadoop spark|[0.13412348342566116,0.8658765165743388]|1.0       |
+;; |7  |apache hadoop     |[0.9955732114398529,0.00442678856014711]|0.0       |
 ;; +---+------------------+----------------------------------------+----------+
 ```
 
-More detailed examples can be found [here](examples/README.md).
+More detailed examples can be found in [`examples/`](examples).
 
 ## Quick Start
 
@@ -258,63 +259,58 @@ java -jar <uberjar-name>
 
 The uberjar app prints the default `SparkSession` instance, starts an nREPL server with an `.nrepl-port` file for easy text-editor connection and steps into a Clojure REPL(-y).
 
-### Leiningen Template
-
-Use [Leiningen](http://leiningen.org/) to create a [template](https://github.com/zero-one-group/geni-template) of a Geni project:
-
-```bash
-lein new geni <project-name>
-```
-
-`cd` into the project directory and do `lein run`. The templated app runs a Spark ML example, and then steps into a Clojure REPL-y with an `.nrepl-port` file.
-
 ### Screencast Demos
 
 <table>
     <tr>
         <th>Install</th>
         <th>Uberjar</th>
-        <th>Leiningen</th>
     </tr>
     <tr>
         <td> <a href="https://asciinema.org/a/352552?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352552.svg"/></a> </td>
         <td> <a href="https://asciinema.org/a/352138?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/352138.svg"/></a> </td>
-        <td> <a href="https://asciinema.org/a/349721?t=1&theme=monokai&speed=1.75"><img src="https://asciinema.org/a/349721.svg"/></a> </td>
     </tr>
 </table>
 
 ## Installation
 
-Add the following to your `project.clj` dependency:
+[![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](https://clojars.org/zero.one/geni)
 
-[![Clojars Project](https://clojars.org/zero.one/geni/latest-version.svg)](http://clojars.org/zero.one/geni)
-
-You would also need to add Spark as provided dependencies. For instance, have the following key-value pair for the `:profiles` map:
+Geni's only dependency is Clojure, so you bring your own Spark: 3.5 on Scala 2.12 or 2.13, or 4 on Scala 2.13, on JDK 17 or 21. Spark also needs a set of JVM flags on these JDKs, the ones its own launcher sets. This `deps.edn` runs Geni on Spark 3.5 with `clj -M:spark`:
 
 ```clojure
-:provided
-{:dependencies [;; Spark
-                [org.apache.spark/spark-avro_2.12 "3.3.3"]
-                [org.apache.spark/spark-core_2.12 "3.3.3"]
-                [org.apache.spark/spark-hive_2.12 "3.3.3"]
-                [org.apache.spark/spark-mllib_2.12 "3.3.3"]
-                [org.apache.spark/spark-sql_2.12 "3.3.3"]
-                [org.apache.spark/spark-streaming_2.12 "3.3.3"]
-                ; Arrow
-                [org.apache.arrow/arrow-memory-netty "4.0.0"]
-                [org.apache.arrow/arrow-memory-core "4.0.0"]
-                [org.apache.arrow/arrow-vector "4.0.0"
-                :exclusions [commons-codec com.fasterxml.jackson.core/jackson-databind]]
-                ;; Databases
-                [mysql/mysql-connector-java "8.0.25"]
-                [org.postgresql/postgresql "42.2.20"]
-                [org.xerial/sqlite-jdbc "3.34.0"]
-                ;; Optional: Spark XGBoost
-                [ml.dmlc/xgboost4j-spark_2.12 "1.2.0"]
-                [ml.dmlc/xgboost4j_2.12 "1.2.0"]]}
+{:deps {zero.one/geni {:mvn/version "0.1.0-alpha.1"}}
+
+ :aliases
+ {:spark
+  {:extra-deps {org.apache.spark/spark-sql_2.12   {:mvn/version "3.5.9"}
+                org.apache.spark/spark-mllib_2.12 {:mvn/version "3.5.9"}
+                org.apache.spark/spark-avro_2.12  {:mvn/version "3.5.9"}
+                ;; Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21+.
+                org.apache.arrow/arrow-vector       {:mvn/version "13.0.0"}
+                org.apache.arrow/arrow-memory-netty {:mvn/version "13.0.0"}}
+   :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
+                "--add-opens=java.base/java.lang=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+                "--add-opens=java.base/java.io=ALL-UNNAMED"
+                "--add-opens=java.base/java.net=ALL-UNNAMED"
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
+                "--add-opens=java.base/java.util=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+                "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+                "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+                "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                "-Djdk.reflect.useDirectMethodHandle=false"]}}}
 ```
 
-You may also need to install `libatlas3-base` and `libopenblas-base` to use a native BLAS, and install `libgomp1` to train XGBoost4J models. When the optional dependencies are not present, the vars to the corresponding functions (such as `ml/xgboost-classifier`) will be left unbound.
+For Spark 3.5 on Scala 2.13, or Spark 4, take the deps and JVM flags from the `:spark-3.5-2.13` or `:spark-4` alias in Geni's own [`deps.edn`](deps.edn). Spark 4 has its own set of flags. From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:provided` profile) and the flags in `:jvm-opts`.
+
+Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J, the functions throw an error that says what to add. Spark ML can use a native BLAS such as OpenBLAS if one is installed, and XGBoost4J needs `libgomp1`.
 
 ## License
 
@@ -328,10 +324,10 @@ Some parts of the project have been taken from or inspired by:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
 * [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
-* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/zero_one/geni/utils.clj).
+* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/clojure/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
-* Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](test/zero_one/geni/main_test.clj).
+* Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](cli/test/zero_one/geni/main_test.clj).
 * [Sparkling](https://github.com/gorillalabs/sparkling), [sparkplug](https://github.com/amperity/sparkplug) and [Gabriel Borges](https://github.com/borgesgabriel) for helping with the RDD function serialisation.
 * [Chris Nuernberger](https://github.com/cnuernber) and [Tomasz Sulej](https://github.com/tsulej) for helping with [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [tablecloth](https://github.com/scicloj/tablecloth).
 * [Ubuntu](https://ubuntu.com/community/code-of-conduct), [Django](https://www.djangoproject.com/conduct/) and [Conjure](https://github.com/Olical/conjure/blob/master/.github/CODE_OF_CONDUCT.md) for their codes of conduct.

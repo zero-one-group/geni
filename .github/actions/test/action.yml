@@ -1,0 +1,52 @@
+name: Run the tests
+description: Sets up a JDK and the Clojure CLI, then preps and runs the tests on one Spark alias.
+
+inputs:
+  java:
+    description: The JDK version.
+    default: '21'
+  spark:
+    description: The Spark alias in deps.edn.
+    default: spark
+  aliases:
+    description: The aliases that follow the Spark and :test aliases.
+    default: ':cli:tmd'
+  shard:
+    description: Which shard to run, counting from 1. Empty runs the whole suite.
+    default: ''
+  shards:
+    description: How many shards there are.
+    default: '1'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java }}
+    - uses: DeLaGuardo/setup-clojure@13
+      with:
+        cli: 1.12.6.1673
+    - uses: actions/cache@v6
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.gitlibs
+        key: deps-${{ inputs.spark }}-${{ hashFiles('deps.edn') }}
+        restore-keys: deps-${{ inputs.spark }}-
+    - run: clojure -P -T:build
+      shell: bash
+    - run: clojure -P -X:${{ inputs.spark }}:test${{ inputs.aliases }}
+      shell: bash
+    - run: clojure -T:build prep :spark :${{ inputs.spark }}
+      shell: bash
+    - run: |
+        shard='${{ inputs.shard }}'
+        clojure -X:${{ inputs.spark }}:test${{ inputs.aliases }} ${shard:+:shard "[$shard ${{ inputs.shards }}]"}
+      shell: bash
+    - if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-log-${{ inputs.spark }}-${{ inputs.java }}-${{ runner.arch }}-${{ inputs.shard }}
+        path: target/test.log

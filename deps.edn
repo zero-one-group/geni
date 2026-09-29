@@ -115,6 +115,13 @@
                    "-Dspark.ui.enabled=false"]
    :exec-fn       zero-one.geni.test-runner/run}
 
+  ;; The weekly canary (.github/workflows/weekly.yml): the suite with Spark's
+  ;; own defaults, code generation included. It goes after :test, so that its
+  ;; JVM options win: clojure -X:spark:test:canary
+  :canary
+  {:jvm-opts ["-Dspark.sql.codegen.wholeStage=true"
+              "-Dspark.sql.codegen.factoryMode=FALLBACK"]}
+
   ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests. build.clj
   ;; publishes cli/src as zero.one/geni-cli, with these deps and :spark's.
   :cli
