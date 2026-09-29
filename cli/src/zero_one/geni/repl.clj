@@ -32,7 +32,7 @@
   [version]
   (clojure.string/join
    "\n"
-   ["Spark session available as a future object - deref with `@spark`."
+   ["Spark session available as `spark` - deref it with `@spark`."
     "Welcome to"
     "      ____              __"
     "     / __/__  ___ _____/ /__"

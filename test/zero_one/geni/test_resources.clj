@@ -3,6 +3,7 @@
    [clojure.string :refer [split-lines split] :as string]
    [zero-one.geni.core :as g]
    [zero-one.geni.defaults]
+   [zero-one.geni.spark]
    [clojure.java.io :as io])
   (:import
    (java.io File)
@@ -12,10 +13,6 @@
    (java.util UUID)))
 
 (def spark zero-one.geni.defaults/spark)
-
-;; Geni's default session sets Spark's log level to WARN, and the tests only
-;; want errors.
-(.setLogLevel (.sparkContext ^SparkSession @spark) "ERROR")
 
 (def ^:private fixtures (atom {}))
 
@@ -104,13 +101,25 @@
   []
   (str "file:" (Paths/get test-warehouses-root (into-array String [(str (UUID/randomUUID))]))))
 
-(defn reset-session!
+(defn stop-session!
+  "Closes the running session, if there is one."
   []
-  (.close @spark)
-  (reset! spark (g/create-spark-session
-                 (-> zero-one.geni.defaults/session-config
-                     (assoc-in [:configs :spark.sql.warehouse.dir] (rand-wh-path))
-                     (assoc :log-level "ERROR")))))
+  (some-> (zero-one.geni.spark/active-session) .close))
+
+(defn reset-session!
+  "Replaces the running session with a new one that has its own warehouse.
+  Geni's default session finds it, as Spark's active session."
+  []
+  (stop-session!)
+  (g/create-spark-session {:configs {:spark.sql.warehouse.dir (rand-wh-path)}}))
+
+(defn checkpoint-dir!
+  "Gives the running session a checkpoint directory, which Geni's default
+  session doesn't have, and returns the directory."
+  []
+  (let [dir "target/checkpoint/"]
+    (.setCheckpointDir (.sparkContext ^SparkSession @spark) dir)
+    dir))
 
 (defmacro with-fresh-session
   "Runs `body` in a new Spark session with its own warehouse, and deletes the
