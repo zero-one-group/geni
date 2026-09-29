@@ -76,17 +76,30 @@
   [_]
   (javac! class-dir))
 
+(defn- spark-build
+  "The Spark and Scala versions in a basis, from its spark-core."
+  [basis]
+  (some (fn [[lib coord]]
+          (when-let [[_ scala] (re-matches #"spark-core_(2\.\d+)" (name lib))]
+            {:spark (:mvn/version coord) :scala scala}))
+        (:libs basis)))
+
 (defn prep
   "Starts from a clean target/, then compiles the Java sources, plus the
-  namespaces that the RDD tests need ahead of time. Run it after cloning, and
-  after changing src/java."
-  [_]
+  namespaces that the RDD tests need ahead of time. Run it after cloning, after
+  changing src/java, and after switching to another Spark alias, e.g.
+  `clojure -T:build prep :spark :spark-4`. The Java is always compiled against
+  :spark, as it is for the jar."
+  [{:keys [spark] :or {spark :spark}}]
   (clean nil)
   (compile-java nil)
-  (b/compile-clj {:basis      (basis :spark :test)
-                  :ns-compile '[zero-one.geni.rdd.function
-                                zero-one.geni.aot-functions]
-                  :class-dir  test-class-dir}))
+  (let [basis (basis spark :test)]
+    (b/compile-clj {:basis      basis
+                    :ns-compile '[zero-one.geni.rdd.function
+                                  zero-one.geni.aot-functions]
+                    :class-dir  test-class-dir})
+    ;; The test runner checks it against the Spark that the tests run on.
+    (spit (str test-class-dir "/spark.edn") (pr-str (spark-build basis)))))
 
 (defn jar
   "Builds the library jar into target/."

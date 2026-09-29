@@ -4,7 +4,7 @@
 
 Breaking changes:
 
-- Geni now targets Spark 3.5 on JDK 17 or 21. Spark 3.4 and older, and JDK 8 and 11, are no longer supported.
+- Geni now targets Spark 3.5 (on Scala 2.12 or 2.13) and Spark 4 (on Scala 2.13), on JDK 17 or 21, and the same jar works with all of them. Spark 3.4 and older, and JDK 8 and 11, are no longer supported.
 - `g/nunique` keys its counts by column name, e.g. `{:SellerG 6 :Suburb 1}`, instead of Spark's `count(DISTINCT SellerG)`.
 - The Leiningen template is retired. Geni itself now builds with the Clojure CLI, but you can still depend on it from Leiningen.
 - Clojure is now Geni's only runtime dependency. It no longer pulls in nREPL, REPL-y, Nippy, jsonista, Potemkin, camel-snake-kebab, java.data or expound, so if your project got any of these through Geni, please add them to your own deps.
@@ -17,6 +17,7 @@ Breaking changes:
 New:
 
 - `g/set-default-session!` sets the session that Geni functions use when they aren't given one.
+- Spark 4 support. Spark 4 turns on ANSI mode by default, so an invalid cast or an overflow throws rather than returning null. Geni leaves that setting to you. Spark 4 also fails a JDBC write when the table doesn't exist yet and Spark has no dialect for the database, as with SQLite, so create the table first.
 
 Fixes:
 

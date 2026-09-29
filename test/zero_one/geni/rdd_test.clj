@@ -224,16 +224,17 @@
                rdd/distinct
                rdd/collect))))
   (testing "flat-map-values works"
-    (is (= [["at no cost and with" 1]
-            ["by Lewis Carroll" 1]
-            ["Alice’s Adventures in Wonderland" 1]
-            ["of anyone anywhere" 1]
-            ["This eBook is for the use" 1]
-            ["Project Gutenberg’s" 1]]
+    (is (= #{["at no cost and with" 1]
+             ["by Lewis Carroll" 1]
+             ["Alice’s Adventures in Wonderland" 1]
+             ["of anyone anywhere" 1]
+             ["This eBook is for the use" 1]
+             ["Project Gutenberg’s" 1]}
            (-> dummy-pair-rdd
                (rdd/flat-map-values aot/to-pair)
                rdd/distinct
-               rdd/collect))))
+               rdd/collect
+               set))))
   (testing "keys + values work"
     (is (= 6 (-> dummy-pair-rdd rdd/keys rdd/distinct rdd/count)))
     (is (= [1] (-> dummy-pair-rdd rdd/values rdd/distinct rdd/collect))))

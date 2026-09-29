@@ -7,7 +7,10 @@
    [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20]]))
 
 (deftest explain-test
-  (is (= "lead('Suburb, 2, null)\n" (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) true)))))
+  (is (clojure.string/starts-with? (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) false))
+                                   "lead(Suburb, 2, NULL"))
+  (is (clojure.string/includes? (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) true))
+                                "lead")))
 
 (deftest hash-code-test
   (is (int?

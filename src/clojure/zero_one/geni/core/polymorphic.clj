@@ -40,7 +40,10 @@
 
    RelationalGroupedDataset: Count the number of rows for each group."
   class)
-(defmethod count :default [expr] (functions/count (->column expr)))
+;; Spark 3.5 turns count("*") into count(1), but Spark 4 keeps the star, which
+;; a pivot rejects.
+(defmethod count :default [expr]
+  (functions/count (if (#{"*" :*} expr) (functions/lit 1) (->column expr))))
 (defmethod count Dataset [dataset] (.count dataset))
 (defmethod count RelationalGroupedDataset [grouped] (.count grouped))
 

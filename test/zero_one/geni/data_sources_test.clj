@@ -10,10 +10,23 @@
                                          spark
                                          with-fresh-session]])
   (:import
+   (java.sql DriverManager)
    (org.apache.spark.sql AnalysisException)))
 
 (def write-df
   (-> (melbourne-df) (g/select :Method :Type) (g/limit 5)))
+
+(defn- sqlite-with-housing-table
+  "The URL of a new SQLite database with an empty housing table. Spark 4 only
+  treats a missing table as missing when the database's JDBC dialect says so,
+  and Spark has no dialect for SQLite."
+  []
+  (let [url (str "jdbc:sqlite:" (create-temp-file! ".db"))]
+    (Class/forName "org.sqlite.JDBC")
+    (with-open [conn (DriverManager/getConnection url)
+                stmt (.createStatement conn)]
+      (.execute stmt "CREATE TABLE housing (Type TEXT)"))
+    url))
 
 (deftest ^:schema data-oriented-schema-test
   (let [dummy-df (-> (melbourne-df)
@@ -21,8 +34,10 @@
                      g/->kebab-columns
                      (g/select {:rooms (g/struct :rooms :bathroom)
                                 :coord (g/array :longtitude :lattitude)
+                                ;; With ANSI mode, which Spark 4 turns on, a map of
+                                ;; strings and doubles would be a map of doubles.
                                 :prop  (g/map (g/lit "seller") :seller-g
-                                              (g/lit "price") :price)}))
+                                              (g/lit "price") (g/cast :price "string"))}))
         temp-file (.toString (create-temp-file! "-complex.parquet"))]
     (g/write-parquet! dummy-df temp-file {:mode "overwrite"})
     (testing "correct dataframe baseline"
@@ -200,11 +215,10 @@
   (let [temp-file (.toString (create-temp-file! ""))]
     (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
     (is (thrown? AnalysisException (g/write-libsvm! (libsvm-df) temp-file))))
-  (let [write-df  (g/select write-df :Type)
-        temp-file (.toString (create-temp-file! ""))
-        options   {:driver  "org.sqlite.JDBC"
-                   :url     (str "jdbc:sqlite:" temp-file)
-                   :dbtable "housing"}]
+  (let [write-df (g/select write-df :Type)
+        options  {:driver  "org.sqlite.JDBC"
+                  :url     (sqlite-with-housing-table)
+                  :dbtable "housing"}]
     (g/write-jdbc! write-df (assoc options :mode "overwrite"))
     (is (thrown? AnalysisException (g/write-jdbc! write-df options)))))
 
@@ -283,16 +297,13 @@
     (is (= (g/collect-vals read-df) (g/collect-vals write-df)))))
 
 (deftest ^:slow can-read-and-write-jdbc-test
-  (let [write-df  (g/select write-df :Type)
-        temp-file (.toString (create-temp-file! ".text"))
-        read-df   (do
-                    (g/write-jdbc! write-df {:mode    "overwrite"
-                                             :driver  "org.sqlite.JDBC"
-                                             :url     (str "jdbc:sqlite:" temp-file)
-                                             :dbtable "housing"})
-                    (g/read-jdbc! {:driver  "org.sqlite.JDBC"
-                                   :url     (str "jdbc:sqlite:" temp-file)
-                                   :dbtable "housing"}))]
+  (let [write-df (g/select write-df :Type)
+        options  {:driver  "org.sqlite.JDBC"
+                  :url     (sqlite-with-housing-table)
+                  :dbtable "housing"}
+        read-df  (do
+                   (g/write-jdbc! write-df (assoc options :mode "overwrite"))
+                   (g/read-jdbc! options))]
     (is (= (g/collect-vals read-df) (g/collect-vals write-df)))))
 
 (deftest ^:slow can-write-parquet-with-partition-by-test
