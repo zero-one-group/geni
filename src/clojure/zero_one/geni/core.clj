@@ -32,7 +32,6 @@
                             float
                             group-by
                             hash
-                            if
                             inc
                             int
                             keys
@@ -47,14 +46,11 @@
                             neg?
                             not
                             odd?
-                            partition-by
                             pos?
                             rand
-                            rand-int
                             rand-nth
                             range
                             remove
-                            rename-keys
                             replace
                             reverse
                             second

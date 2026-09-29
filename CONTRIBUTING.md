@@ -51,11 +51,12 @@ On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two
 ## Linting and formatting
 
 ```bash
-clojure -M:kondo --lint src test/zero_one cli test-tmd test-xgb dev build.clj
-clojure -M:fmt check src test cli test-tmd test-xgb docs dev build.clj   # or `fix` instead of `check`
+clojure -T:build lint    # clj-kondo, then cljfmt's check
+clojure -T:build fmt     # reformats the sources with cljfmt
+clojure -T:build check   # lint, then the tests on :spark
 ```
 
-The CI runs the same commands on every pull request, so it's worth running them before you push.
+`check` is what the CI runs on a pull request, so running it before you push saves a round trip. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
 
 ## Pull requests
 

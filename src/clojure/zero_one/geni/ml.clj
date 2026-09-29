@@ -1,5 +1,4 @@
 (ns zero-one.geni.ml
-  (:refer-clojure :exclude [Double])
   (:require
    [clojure.walk :refer [keywordize-keys]]
    [zero-one.geni.utils :refer [->kebab-case import-fn import-vars]]

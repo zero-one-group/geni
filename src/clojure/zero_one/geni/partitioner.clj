@@ -1,5 +1,4 @@
 (ns zero-one.geni.partitioner
-  (:refer-clojure :exclude [partition])
   (:require
    [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs])

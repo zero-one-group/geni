@@ -28,8 +28,7 @@ jobs:
             ~/.m2/repository
             ~/.gitlibs
           key: lint-${{ hashFiles('deps.edn') }}
-      - run: clojure -M:kondo --lint src test/zero_one cli test-tmd test-xgb dev build.clj
-      - run: clojure -M:fmt check src test cli test-tmd test-xgb docs dev build.clj
+      - run: clojure -T:build lint
 
   # Every run: Spark 3.5 on Scala 2.12 and Spark 4, on JDK 21, in two shards
   # each, plus the main alias on arm64 (the closest match to Apple Silicon).

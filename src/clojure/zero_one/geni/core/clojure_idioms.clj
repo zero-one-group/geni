@@ -9,7 +9,6 @@
                             double
                             even?
                             float
-                            if
                             inc
                             int
                             keys
@@ -21,7 +20,6 @@
                             pos?
                             rand-nth
                             remove
-                            rename-keys
                             select-keys
                             short
                             str
