@@ -1,7 +1,7 @@
 (ns zero-one.geni.partitioner
   (:refer-clojure :exclude [partition])
   (:require
-   [potemkin :refer [import-fn]]
+   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs])
   (:import
    (org.apache.spark HashPartitioner)))

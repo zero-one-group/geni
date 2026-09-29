@@ -1,11 +1,9 @@
 (ns zero-one.geni.interop
   (:require
-   [camel-snake-kebab.core :refer [->kebab-case]]
-   [clojure.java.data :as j]
    [clojure.string :refer [replace-first]]
    [clojure.walk :as walk]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.utils :refer [ensure-coll]])
+   [zero-one.geni.utils :refer [->kebab-case ensure-coll]])
   (:import
    (java.io ByteArrayOutputStream)
    (org.apache.spark.ml.linalg DenseVector
@@ -173,10 +171,30 @@
 (defn setter-type [^java.lang.reflect.Method method]
   (get (.getParameterTypes method) 0))
 
-(defn ->java [^Class cls value]
-  (if (= cls scala.collection.Seq)
-    (->scala-seq value)
-    (j/to-java cls value)))
+(def ^:private number-coercions
+  {Double/TYPE  double Double  double
+   Float/TYPE   float  Float   float
+   Long/TYPE    long   Long    long
+   Integer/TYPE int    Integer int
+   Short/TYPE   short  Short   short
+   Byte/TYPE    byte   Byte    byte})
+
+(defn ->java
+  "Converts a Clojure value into an argument for a Java setter that takes
+  `cls`: numbers to the right width, collections to arrays, strings to enums."
+  [^Class cls value]
+  (let [coerce (number-coercions cls)]
+    (cond
+      (= cls scala.collection.Seq)          (->scala-seq value)
+      (and coerce (number? value))          (coerce value)
+      (and (.isArray cls) (coll? value))    (let [component (.getComponentType cls)
+                                                  values    (vec value)
+                                                  arr       (java.lang.reflect.Array/newInstance component (count values))]
+                                              (dotimes [i (count values)]
+                                                (java.lang.reflect.Array/set arr i (->java component (nth values i))))
+                                              arr)
+      (and (.isEnum cls) (string? value))   (Enum/valueOf cls ^String value)
+      :else                                 value)))
 
 (defn set-value [^java.lang.reflect.Method method instance value]
   (.invoke method instance (into-array [(->java (setter-type method) value)])))

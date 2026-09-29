@@ -12,14 +12,13 @@
                             update])
   (:require
    [clojure.string]
-   [potemkin :refer [import-fn]]
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.core.functions :as sql]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [->string-map arg-count ensure-coll]])
+   [zero-one.geni.utils :refer [->string-map arg-count ensure-coll import-fn]])
   (:import
    (org.apache.spark.ml.stat Correlation)
    (org.apache.spark.sql Dataset

@@ -1,12 +1,13 @@
 {:skip-comments true
- :lint-as {serializable.fn/fn clojure.core/fn}
+ :lint-as {serializable.fn/fn             clojure.core/fn
+           zero-one.geni.utils/import-vars potemkin/import-vars}
+ :hooks {:macroexpand {zero-one.geni.utils/import-fn zero-one.geni.kondo-hooks/import-fn}}
  ;; Midje's `actual => expected` checks read as unused values.
  :ns-groups [{:pattern "zero-one\\.geni\\..*-test" :name midje-tests}]
  :config-in-ns {midje-tests {:linters {:unused-value {:level :off}}}}
  :linters
   {:unresolved-symbol
-   {:exclude [(potemkin/import-fn)
-              (zero-one.geni.utils/with-dynamic-import)
+   {:exclude [(zero-one.geni.utils/with-dynamic-import)
               (zero-one.geni.rdd.function/gen-function)]}
    :unresolved-var {:level :off}
    :redundant-expression {:level :off}}}

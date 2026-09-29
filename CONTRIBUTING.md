@@ -20,16 +20,17 @@ This compiles the Java sources, plus the namespaces that the RDD tests need ahea
 clojure -X:spark:test                                        # the main suite
 clojure -X:spark:test :exclude :slow                         # skip the slow facts
 clojure -X:spark:test :only '[zero-one.geni.dataset-test]'   # one namespace
+clojure -X:spark:test:cli:tmd                                # what the CI runs
 clojure -X:spark:test:xgb                                    # plus the XGBoost tests
 ```
 
-The XGBoost tests don't train on Apple Silicon yet. For a REPL with the test paths on the classpath, run `clj -M:spark:test`.
+The `:cli`, `:tmd` and `:xgb` aliases add the tests for the Geni CLI, tech.ml.dataset and XGBoost, along with their deps. The XGBoost tests don't train on Apple Silicon yet. For a REPL with the test paths on the classpath, run `clj -M:spark:test`.
 
 ## Linting and formatting
 
 ```bash
-clojure -M:kondo --lint src test/zero_one test-xgb dev build.clj
-clojure -M:fmt check src test test-xgb docs dev build.clj   # or `fix` instead of `check`
+clojure -M:kondo --lint src test/zero_one cli test-tmd test-xgb dev build.clj
+clojure -M:fmt check src test cli test-tmd test-xgb docs dev build.clj   # or `fix` instead of `check`
 ```
 
 The CI runs the same commands on every pull request, so it's worth running them before you push.

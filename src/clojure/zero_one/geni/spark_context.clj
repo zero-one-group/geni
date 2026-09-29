@@ -1,6 +1,6 @@
 (ns zero-one.geni.spark-context
   (:require
-   [potemkin :refer [import-fn]]
+   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]

@@ -1,9 +1,8 @@
 (ns zero-one.geni.ml
   (:refer-clojure :exclude [Double])
   (:require
-   [camel-snake-kebab.core :refer [->kebab-case]]
    [clojure.walk :refer [keywordize-keys]]
-   [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.utils :refer [->kebab-case import-fn import-vars]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.polymorphic :as polymorphic]
    [zero-one.geni.docs :as docs]

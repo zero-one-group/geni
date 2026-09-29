@@ -72,7 +72,7 @@
                             zero?
                             zipmap])
   (:require
-   [potemkin :refer [import-fn import-vars]]
+   [zero-one.geni.utils :refer [import-fn import-vars]]
    [zero-one.geni.arrow]
    [zero-one.geni.core.clojure-idioms]
    [zero-one.geni.core.column]

@@ -1,9 +1,8 @@
 (ns zero-one.geni.ml.classification
   (:require
-   [potemkin :refer [import-fn]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [coalesce]])
+   [zero-one.geni.utils :refer [coalesce import-fn]])
   (:import
    (org.apache.spark.ml.classification DecisionTreeClassifier
                                        FMClassifier

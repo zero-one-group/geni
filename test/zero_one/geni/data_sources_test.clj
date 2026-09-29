@@ -103,6 +103,10 @@
     (fact "read and write xlsx work"
       (g/collect read-df) => (g/collect write-df)
       (g/write-xlsx! write-df temp-file) => (throws Exception))
+    (fact "write-xlsx! writes to a new path"
+      (let [new-file (str (.getParent (create-temp-file! ".xlsx")) "/new.xlsx")]
+        (g/write-xlsx! write-df new-file)
+        (g/count (g/read-xlsx! new-file)) => 5))
     (fact "read edge cases"
       (g/read-xlsx! temp-file {:sheet "Sheet2"}) => g/empty?
       (g/count headerless) => 6
@@ -117,6 +121,10 @@
                                               {:Price 1035000.0 :Rooms 2}
                                               {:Price 1465000.0 :Rooms 3}]
       (g/write-edn! write-df temp-file) => (throws Exception))
+    (fact "write-edn! writes to a new path"
+      (let [new-file (str (.getParent (create-temp-file! ".edn")) "/new.edn")]
+        (g/write-edn! write-df new-file)
+        (count (edn/read-string (slurp new-file))) => 3))
     (fact "read-edn! works as expected"
       (g/collect (g/read-edn! temp-file)) => [{:Price 1480000.0 :Rooms 2}
                                               {:Price 1035000.0 :Rooms 2}
