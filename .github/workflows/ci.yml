@@ -31,20 +31,60 @@ jobs:
       - run: clojure -M:kondo --lint src test/zero_one cli test-tmd test-xgb dev build.clj
       - run: clojure -M:fmt check src test cli test-tmd test-xgb docs dev build.clj
 
+<<<<<<< Updated upstream
   # The test namespaces are split into shards, on x64 and on arm64 (the
   # closest match to Apple Silicon).
   test:
     name: test (${{ matrix.os }}, shard ${{ matrix.shard }}/3)
+=======
+  # Every run: Spark 3.5 on Scala 2.12 and Spark 4, on JDK 21, in two shards
+  # each, plus the main alias on arm64 (the closest match to Apple Silicon).
+  test:
+    name: test (${{ matrix.spark }}, JDK 21, ${{ matrix.os }}, shard ${{ matrix.shard }}/2)
+>>>>>>> Stashed changes
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+<<<<<<< Updated upstream
         os: [ubuntu-latest, ubuntu-24.04-arm]
         shard: [1, 2, 3]
+=======
+        os: [ubuntu-latest]
+        spark: [spark, spark-4]
+        shard: [1, 2]
+        include:
+          - {os: ubuntu-24.04-arm, spark: spark, shard: 1}
+          - {os: ubuntu-24.04-arm, spark: spark, shard: 2}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: ./.github/actions/test
         with:
+          spark: ${{ matrix.spark }}
+          shard: ${{ matrix.shard }}
+          shards: 2
+
+  # Pushes to develop and manual runs also cover JDK 17 and Spark 3.5 on
+  # Scala 2.13.
+  test-more:
+    if: github.event_name != 'pull_request'
+    name: test (${{ matrix.spark }}, JDK ${{ matrix.java }}, ubuntu-latest, shard ${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [17, 21]
+        spark: [spark, spark-3.5-2.13, spark-4]
+        shard: [1, 2]
+        exclude:
+          - {java: 21, spark: spark}
+          - {java: 21, spark: spark-4}
+>>>>>>> Stashed changes
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/test
+        with:
+<<<<<<< Updated upstream
           distribution: temurin
           java-version: 21
       - uses: DeLaGuardo/setup-clojure@13
@@ -66,12 +106,18 @@ jobs:
         with:
           name: test-log-${{ matrix.os }}-${{ matrix.shard }}
           path: target/test.log
+=======
+          java: ${{ matrix.java }}
+          spark: ${{ matrix.spark }}
+          shard: ${{ matrix.shard }}
+          shards: 2
+>>>>>>> Stashed changes
 
-  # The only required check, so that the shards can change without touching
+  # The only required check, so that the matrix can change without touching
   # the branch rule.
   ci:
     if: always()
-    needs: [lint, test]
+    needs: [lint, test, test-more]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

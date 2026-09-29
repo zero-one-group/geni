@@ -49,12 +49,24 @@
             :basis      (basis :spark)
             :javac-opts ["--release" "17" "-proc:none"]}))
 
+(defn- lib-basis
+  "The basis for the library's pom: Clojure, plus the :spark alias's deps
+  marked optional. Maven, Leiningen and tools.deps don't pull optional deps
+  in, so users still bring their own Spark, but cljdoc puts them on its
+  classpath, which it needs to load Geni's namespaces."
+  []
+  (let [root (basis)]
+    (assoc root :libs (merge (:libs root)
+                             (update-vals (alias-deps :spark) #(assoc % :optional true))))))
+
 (defn- write-pom! [{:keys [lib class-dir basis src-dirs description]}]
   (b/write-pom {:class-dir class-dir
                 :lib       lib
                 :version   version
                 :basis     basis
                 :src-dirs  src-dirs
+                ;; Never start from a stray pom.xml in the repo root.
+                :src-pom   :none
                 :scm       {:url                 "https://github.com/zero-one-group/geni"
                             :connection          "scm:git:git://github.com/zero-one-group/geni.git"
                             :developerConnection "scm:git:ssh://git@github.com/zero-one-group/geni.git"
@@ -95,7 +107,7 @@
   (javac! jar-class-dir)
   (write-pom! {:lib         lib
                :class-dir   jar-class-dir
-               :basis       (basis)
+               :basis       (lib-basis)
                :src-dirs    ["src/clojure"]
                :description "A Clojure dataframe library that runs on Apache Spark"})
   (b/copy-dir {:src-dirs   ["src/clojure" "resources"]

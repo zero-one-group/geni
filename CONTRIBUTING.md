@@ -35,7 +35,13 @@ From a REPL started with `clj -M:spark:test`, this reloads a test namespace and 
 (test! 'zero-one.geni.dataset-test)
 ```
 
+<<<<<<< Updated upstream
 The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. The CI splits the namespaces into three shards with `:shard '[1 3]'` and so on, on both x64 and arm64.
+=======
+The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. Adding `:canary` after `:test` turns it back on, which is how the weekly canary runs them, on the newest Spark patches.
+
+On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`.
+>>>>>>> Stashed changes
 
 ## Linting and formatting
 
@@ -52,4 +58,13 @@ Please fork the repo, branch off `develop` and open a pull request against `deve
 
 ## Releasing
 
-Bump `version` in `build.clj`. Then, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set, run `clojure -T:build deploy` for the library, and then `clojure -T:build cli-deploy` for the CLI, which depends on it. `clojure -T:build cli-uber` builds the CLI uberjar for the GitHub release.
+Set `version` in `build.clj` (a pre-release has a suffix, like `0.1.0-alpha.1`) and get it onto `develop`. Then tag that commit and push the tag:
+
+```bash
+git tag v0.1.0-alpha.1
+git push origin v0.1.0-alpha.1
+```
+
+The Release workflow deploys `zero.one/geni` and then `zero.one/geni-cli` to Clojars, builds the CLI uberjar and attaches it to a GitHub release, marked as a pre-release when the version has a suffix. It skips a deploy that Clojars already has, so a failed run can be rerun. After a final release, bump `resources/GENI_REPL_RELEASED_VERSION` on `develop`, so that installed `geni` scripts pick the new uberjar up.
+
+The same build tasks run locally, with `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` set: `clojure -T:build deploy`, then `clojure -T:build cli-deploy`, and `clojure -T:build cli-uber` for the uberjar.

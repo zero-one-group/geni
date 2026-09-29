@@ -1,0 +1,46 @@
+name: Weekly
+
+# The canary: the suite with Spark's own defaults (code generation on), on the
+# newest patch of each Spark line, and on the newest JDK. It bumps the Spark
+# pins in deps.edn in its own checkout, so a failure means that the next patch,
+# or the next JDK, would break Geni. GitHub emails the last person to touch
+# this file when a scheduled run fails, and turns the schedule off after 60
+# days without commits, so it may need re-enabling under Actions.
+on:
+  schedule:
+    - cron: '17 3 * * 1'  # Mondays at 03:17 UTC, 10:17 in Jakarta
+  workflow_dispatch:
+
+jobs:
+  canary:
+    name: canary (${{ matrix.spark }}, JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {spark: spark, java: 21}
+          - {spark: spark-4, java: 21}
+          - {spark: spark-4, java: 25}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bump the Spark pins to the newest patches
+        run: |
+          latest() {
+            curl -sSf "https://repo1.maven.org/maven2/org/apache/spark/spark-sql_$1/maven-metadata.xml" \
+              | grep -o "<version>$2</version>" | sed 's/<[^>]*>//g' | sort -V | tail -1
+          }
+          pinned() { grep -o "spark-sql_$1 *{:mvn/version \"$2\"" deps.edn | grep -o '"[^"]*"' | tr -d '"'; }
+          old35=$(pinned 2.12 '[^"]*');    new35=$(latest 2.12 '3\.5\.[0-9]*')
+          old4=$(pinned 2.13 '4[^"]*');    new4=$(latest 2.13 '4\.[0-9]*\.[0-9]*')
+          [ -n "$old35" ] && [ -n "$new35" ] && [ -n "$old4" ] && [ -n "$new4" ] \
+            || { echo "Couldn't work out the Spark versions"; exit 1; }
+          echo "Spark 3.5: $old35 -> $new35"
+          echo "Spark 4:   $old4 -> $new4"
+          sed -i -E "/org\.apache\.spark\//{s/\"$old35\"/\"$new35\"/; s/\"$old4\"/\"$new4\"/}" deps.edn
+          git diff --stat deps.edn
+      - uses: ./.github/actions/test
+        with:
+          java: ${{ matrix.java }}
+          spark: ${{ matrix.spark }}
+          aliases: ':cli:tmd:canary'

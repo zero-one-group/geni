@@ -1,0 +1,32 @@
+;; What cljdoc shows in its sidebar, besides the API. The stale pages
+;; (Dataproc, Kubernetes, the benchmark) stay out until they're refreshed.
+{:cljdoc.doc/tree
+ [["Readme" {:file "README.md"}]
+  ["Changelog" {:file "CHANGELOG.md"}]
+  ["Guides" {}
+   ["Why?" {:file "docs/why.md"}]
+   ["Design goals" {:file "docs/design_goals.md"}]
+   ["Geni semantics" {:file "docs/semantics.md"}]
+   ["Where's the Spark session?" {:file "docs/spark_session.md"}]
+   ["Examples" {:file "docs/examples.md"}]
+   ["Creating Spark schemas" {:file "docs/creating_spark_schemas.md"}]
+   ["Manual dataset creation" {:file "docs/manual_dataset_creation.md"}]
+   ["Working with SQL maps" {:file "docs/sql_maps.md"}]
+   ["Collecting data from Spark datasets" {:file "docs/collect.md"}]
+   ["Pandas, NumPy and other idioms" {:file "docs/pandas_numpy_and_other_idioms.md"}]
+   ["Optional XGBoost support" {:file "docs/xgboost.md"}]]
+  ["Cookbook" {}
+   ["0. Getting started with Clojure, Geni and Spark" {:file "docs/cookbook/part_00_getting_started_with_clojure_geni_and_spark.md"}]
+   ["1. Reading and writing datasets" {:file "docs/cookbook/part_01_reading_and_writing_datasets.md"}]
+   ["2. Selecting rows and columns" {:file "docs/cookbook/part_02_selecting_rows_and_columns.md"}]
+   ["3. Grouping and aggregating" {:file "docs/cookbook/part_03_grouping_and_aggregating.md"}]
+   ["4. Combining datasets with joins and unions" {:file "docs/cookbook/part_04_combining_datasets_with_joins_and_unions.md"}]
+   ["5. String operations" {:file "docs/cookbook/part_05_string_operations.md"}]
+   ["6. Cleaning up messy data" {:file "docs/cookbook/part_06_cleaning_up_messy_data.md"}]
+   ["7. Timestamps and dates" {:file "docs/cookbook/part_07_timestamps_and_dates.md"}]
+   ["8. Window functions" {:file "docs/cookbook/part_08_window_functions.md"}]
+   ["9. Reading from and writing to SQL databases" {:file "docs/cookbook/part_09_reading_from_and_writing_to_sql_databases.md"}]
+   ["10. Avoiding repeated computations with caching" {:file "docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md"}]
+   ["11. Basic ML pipelines" {:file "docs/cookbook/part_11_basic_ml_pipelines.md"}]
+   ["12. Customer segmentation with NMF" {:file "docs/cookbook/part_12_customer_segmentation_with_nmf.md"}]]
+  ["Contributing" {:file "CONTRIBUTING.md"}]]}
