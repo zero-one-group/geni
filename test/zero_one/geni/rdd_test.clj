@@ -102,9 +102,12 @@
                      "at no cost and with" 0.1
                      "by Lewis Carroll" 0.1
                      "of anyone anywhere" 0.1}]
-      (is (< 2 (-> dummy-pair-rdd
-                   (rdd/sample-by-key true fractions)
-                   rdd/count) 27))
+      ;; Without a seed, the count is random: about Poisson(0.5 × 126 = 63),
+      ;; so (20, 120) fails less than once in 10^9 runs. With 0.1 and (2, 27),
+      ;; it failed about once in 1,700.
+      (is (< 20 (-> dummy-pair-rdd
+                    (rdd/sample-by-key true (update-vals fractions (constantly 0.5)))
+                    rdd/count) 120))
       (is (< 2 (-> dummy-pair-rdd
                    (rdd/sample-by-key true fractions 123)
                    rdd/count) 27))
