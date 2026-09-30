@@ -57,7 +57,10 @@ jobs:
         run: |
           clojure -T:build uber
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyspark==3.5.9
+          # pip's spark-submit runs the python3 on the PATH to find Spark, so the
+          # venv has to be active.
+          . "$RUNNER_TEMP/venv/bin/activate"
+          pip install --quiet pyspark==3.5.9
           printf 'to be or not to be\n' > words.txt
-          "$RUNNER_TEMP/venv/bin/spark-submit" --master 'local[2]' target/spark_app.jar words.txt 2>&1 | tee submit.out
+          spark-submit --master 'local[2]' target/spark_app.jar words.txt 2>&1 | tee submit.out
           grep -qE '^\|be +\|2 +\|$' submit.out
