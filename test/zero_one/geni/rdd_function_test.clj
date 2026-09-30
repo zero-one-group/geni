@@ -8,6 +8,13 @@
    (java.util HashSet)
    (org.apache.spark.api.java.function Function)))
 
+(defprotocol ^:private Maker
+  (make-fn [this]))
+
+(defrecord ^:private FnMaker []
+  Maker
+  (make-fn [_] (fn [x] x)))
+
 (deftest serialisability-test
   (testing "On access-field"
     (let [actual (for [field (-> HashSet .getDeclaredFields seq)]
@@ -16,8 +23,21 @@
                (nil? (second actual))
                (not (nil? (nth actual 2)))))))
   (testing "On namespace-references"
-    (is (set/subset? #{'clojure.string 'zero-one.geni.rdd.function} (function/namespace-references function/namespace-references)))
-    (is (= #{} (function/namespace-references clojure.lang.Keyword))))
+    (is (= #{'clojure.set 'zero-one.geni.rdd-function-test}
+           (function/namespace-references (fn [a b] (set/union a b)))))
+    (is (= #{} (function/namespace-references clojure.lang.Keyword)))
+    (testing "with vars in the collections that a function closes over"
+      (let [in-vector [#'set/union]
+            in-list   (java.util.ArrayList. [#'set/union])]
+        (is (contains? (function/namespace-references (fn [] in-vector)) 'clojure.set))
+        (is (contains? (function/namespace-references (fn [] in-list)) 'clojure.set))))
+    (testing "with a function defined in a record's method"
+      (is (= #{'zero-one.geni.rdd-function-test}
+             (function/namespace-references (make-fn (->FnMaker))))))
+    (testing "without realising a lazy seq that a function closes over"
+      (let [numbers (range)]
+        (is (= #{'zero-one.geni.rdd-function-test}
+               (function/namespace-references (fn [] (first numbers))))))))
   (testing "On walk-object-vars"
     (doall
      (for [obj [nil true "abc" 123 :def 'ghi (ref {})]]

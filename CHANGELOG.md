@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- The XGBoost wrappers need XGBoost4J-Spark 3, tested with 3.4.0, whose one jar takes the place of 1.x's `xgboost4j-spark` and `xgboost4j`. They take XGBoost's own defaults rather than the ones Geni set from XGBoost4J 1.2, such as 100 rounds rather than 1, 256 bins rather than 16, and NaN rather than 0.0 for a missing value, so pass `:num-round` and the like to keep a model as it was. 3.4.0, the latest on Maven Central, predicts wrongly on sparse feature vectors, such as LIBSVM data's, and needs `:missing` to fit on them, so turn them into arrays with `ml/vector-to-array` first, as the XGBoost guide shows. On Spark 4, an XGBoost model doesn't save as a Spark ML stage, since 3.4.0 is built against Spark 3.5's json4s, but `ml/write-native-model!` works. A param that XGBoost 3 dropped, such as `:cache-training-set` or `:rabit-timeout`, throws, with the params there are.
+
 New:
 
+- `ml/xgboost-ranker`, XGBoost4J-Spark 3's learning-to-rank estimator, which takes a `:group-col`.
+- A deps-new template for a new project, with the Spark setups, a small app and its test, and an uberjar for `spark-submit`. The README's "A New Project" has the command.
 - `g/ltrim` and `g/rtrim` take the characters to trim as a second argument, as `g/trim` does, and `g/trim` trims spaces when given only a column (#344).
 - `g/udf` turns a Clojure function into a Spark UDF, and `g/register-udf!` registers one for SQL and `g/expr` (#306). The function gets Clojure data, and its result is converted to the declared return type. UDFs need classic Spark. The [Clojure UDFs guide](docs/udfs.md) has the details.
 
@@ -13,6 +19,8 @@ Fixes:
 - When Geni starts Spark and there's no log4j2 config on the classpath, Spark's INFO lines as it starts no longer show: Geni sets WARN before Spark starts rather than after.
 - A `false` that an RDD function closes over, directly or in a map or vector, stays false on the executors. Java's deserialisation made a new `Boolean` of it, which Clojure treats as true, so `(if b ...)` took the wrong branch.
 - RDD functions defined at a REPL no longer log a warning with a stack trace for each task, about loading the `user` namespace.
+- The namespaces that the executors load for an RDD function or a UDF now include those of the vars in the collections it closes over, such as a vector of functions, and the namespace of a record whose method made the function. A cluster's executors could miss them before.
+- An ML param with overloaded setters gets the one that suits its value, as XGBoost's `:features-col` does, which takes a column or several.
 - The `geni` script runs the uberjar it downloaded last time when it can't reach GitHub for the latest version, rather than stopping. Install the script again to get this.
 - When Spark's Connect client isn't on the classpath, the error from `g/connect` no longer carries the URL in its `ex-data`, since the URL can hold a token.
 

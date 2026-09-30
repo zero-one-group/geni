@@ -45,8 +45,11 @@ jobs:
             || { echo "Couldn't work out the Spark versions"; exit 1; }
           echo "Spark 3.5: $old35 -> $new35"
           echo "Spark 4:   $old4 -> $new4"
-          sed -i -E "/org\.apache\.spark\//{s/\"$old35\"/\"$new35\"/; s/\"$old4\"/\"$new4\"/}" deps.edn
-          git diff --stat deps.edn
+          # The README's setups and the template's too, which readme_test and
+          # template_test check against deps.edn.
+          sed -i -E "/org\.apache\.spark\//{s/\"$old35\"/\"$new35\"/; s/\"$old4\"/\"$new4\"/}" \
+            deps.edn README.md template/resources/zero_one/geni/build/deps.tmpl
+          git diff --stat
       - uses: ./.github/actions/test
         with:
           java: ${{ matrix.java }}

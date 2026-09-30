@@ -1,0 +1,30 @@
+(ns {{top/ns}}.{{main/ns}}
+  "{{description}}"
+  (:require
+   [zero-one.geni.core :as g])
+  (:gen-class))
+
+(defn word-counts
+  "The words in the :line column of `lines`, with how many times each one
+  appears, the most common first."
+  [lines]
+  (-> lines
+      (g/select {:word (g/explode (g/split :line " "))})
+      (g/group-by :word)
+      (g/agg {:count (g/count "*")})
+      (g/order-by (g/desc :count) :word)))
+
+(defn -main
+  "Shows the word counts of the text file at `path`, or of two lines of its
+  own without one. It starts Spark as spark-submit configures it, or on the
+  local machine otherwise."
+  [& [path]]
+  (let [spark (g/create-spark-session {})]
+    (try
+      (-> (if path
+            (g/select (g/read-text! spark path) {:line :value})
+            (g/table->dataset spark [["the quick brown fox"] ["jumps over the lazy dog"]] [:line]))
+          word-counts
+          g/show)
+      (finally
+        (.stop spark)))))

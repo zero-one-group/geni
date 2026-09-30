@@ -1,0 +1,4 @@
+/target/
+/.cpcache/
+/.nrepl-port
+/spark-warehouse/

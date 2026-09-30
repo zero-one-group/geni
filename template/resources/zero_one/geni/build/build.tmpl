@@ -1,0 +1,27 @@
+(ns build
+  "clojure -T:build uber builds target/{{main/file}}.jar, for spark-submit."
+  (:require
+   [clojure.tools.build.api :as b]))
+
+(def main '{{top/ns}}.{{main/ns}})
+(def class-dir "target/classes")
+(def uber-file "target/{{main/file}}.jar")
+
+(defn uber
+  "Builds the uberjar: the app and Geni, compiled ahead of time against the
+  Spark alias that `:spark` names (`:spark` by default, or `:spark-4`), and
+  Clojure, but not Spark, which spark-submit provides. Compiling ahead of time
+  gives the executors the classes of the functions that RDD operations and
+  UDFs send them."
+  [{:keys [spark] :or {spark :spark}}]
+  (let [spark-basis (b/create-basis {:aliases [spark]})]
+    (b/delete {:path "target"})
+    (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
+    (b/compile-clj {:basis      spark-basis
+                    :java-opts  (get-in spark-basis [:argmap :jvm-opts])
+                    :ns-compile [main]
+                    :class-dir  class-dir})
+    (b/uber {:basis     (b/create-basis {})
+             :class-dir class-dir
+             :uber-file uber-file
+             :main      main})))

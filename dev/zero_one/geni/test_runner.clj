@@ -85,12 +85,27 @@
         (when (and (seq? form) (= 'ns (first form)))
           (meta (second form)))))))
 
-(defn- other-spark
-  "The tests that this run skips: the ^:classic ones over Spark Connect, when
-  Spark's JVM client is on the classpath without classic Spark, and the
-  ^:connect ones otherwise."
+(defn- skipped
+  "The tests that this run skips, by the metadata that marks them, with why:
+  the ^:classic ones over Spark Connect, when Spark's JVM client is on the
+  classpath without classic Spark, and the ^:connect ones otherwise, the
+  ^:xgb ones without XGBoost4J-Spark 3 on the classpath, and the ^:spark-3
+  ones on Spark 4."
   []
-  (if ((requiring-resolve 'zero-one.geni.spark/connect-only?)) :classic :connect))
+  (let [class-named (requiring-resolve 'zero-one.geni.utils/class-named)]
+    (cond-> (if ((requiring-resolve 'zero-one.geni.spark/connect-only?))
+              {:classic "classic Spark only"}
+              {:connect "Spark Connect only"})
+      (not (class-named "ml.dmlc.xgboost4j.scala.spark.XGBoostRanker"))
+      (assoc :xgb "needs XGBoost4J-Spark 3")
+
+      (string/starts-with? (:spark (running-spark)) "4.")
+      (assoc :spark-3 "Spark 3.5 only"))))
+
+(defn- skip-reason
+  "Why this run skips what has the metadata `m`, if it does."
+  [skipped m]
+  (some (fn [[k why]] (when (get m k) why)) skipped))
 
 (defn- shard
   "Every nth namespace, starting from the ith: [i n], counting from 1."
@@ -155,7 +170,7 @@
                         (filter (comp :test meta))
                         (filter #(or (nil? include) (include (meta %))))
                         (remove #(and exclude (exclude (meta %))))
-                        (remove #(skip (meta %)))
+                        (remove #(skip-reason skip (meta %)))
                         (sort-by (comp :line meta))))]
     (when-not load-err
       (binding [*out*                out
@@ -200,14 +215,14 @@
   (io/make-parents log-path)
   (with-open [log (io/writer log-path)]
     (let [start      (System/nanoTime)
-          skip       (other-spark)
+          skip       (skipped)
           selected   (if (seq only)
                        (map (juxt identity ns-file) only)
                        (shard (test-namespaces (or dirs (classpath-dirs))) shard-spec))
-          skip-ns?   (fn [[_ path]] (boolean (and path (skip (ns-meta path)))))
-          _          (doseq [[ns-sym] (filter skip-ns? selected)]
-                       (println (format "%-4s  %-42s %6s   %s" "skip" ns-sym ""
-                                        (if (= skip :classic) "classic Spark only" "Spark Connect only"))))
+          reason     (fn [[_ path]] (when path (skip-reason skip (ns-meta path))))
+          skip-ns?   (comp boolean reason)
+          _          (doseq [[ns-sym :as selection] (filter skip-ns? selected)]
+                       (println (format "%-4s  %-42s %6s   %s" "skip" ns-sym "" (reason selection))))
           namespaces (map first (remove skip-ns? selected))
           results    (mapv #(doto (run-namespace % (assoc opts :skip skip) log) report!) namespaces)
           failed     (remove passed? results)
@@ -257,7 +272,9 @@
 
   Over Spark Connect, that is with Spark's JVM client on the classpath in
   place of classic Spark, it skips the namespaces and tests marked ^:classic.
-  Otherwise, it skips the ones marked ^:connect."
+  Otherwise, it skips the ones marked ^:connect. Without XGBoost4J-Spark 3 on
+  the classpath, it skips the ones marked ^:xgb, and on Spark 4 the ones
+  marked ^:spark-3."
   [{:keys [shard] :as opts}]
   (when-let [problem (prep-problem)]
     (println problem)

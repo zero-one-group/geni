@@ -179,12 +179,14 @@
       ->kebab-case
       keyword))
 
-(defn setters-map [^Class cls]
+(defn setters-map
+  "The class's setters by param keyword, each a vector of the methods of that
+  name, which can be overloads."
+  [^Class cls]
   (->> cls
        .getMethods
        (filter setter?)
-       (map #(vector (method-keyword %) %))
-       (into {})))
+       (group-by method-keyword)))
 
 (defn setter-type [^java.lang.reflect.Method method]
   (get (.getParameterTypes method) 0))
@@ -217,6 +219,18 @@
 
 (defn set-value [^java.lang.reflect.Method method instance value]
   (.invoke method instance (into-array [(->java (setter-type method) value)])))
+
+(defn- takes-many? [^java.lang.reflect.Method method]
+  (let [^Class cls (setter-type method)]
+    (or (.isArray cls) (.isAssignableFrom Seq cls))))
+
+(defn- pick-setter
+  "The one of a param's setters that suits `value`: the overload that takes an
+  array or a Scala Seq for a collection, and one that doesn't otherwise, as
+  with XGBoost's `setFeaturesCol`, which takes a column or several."
+  [methods value]
+  (or (first (filter #(= (coll? value) (takes-many? %)) methods))
+      (first methods)))
 
 (defn convert-keywords [value]
   (cond
@@ -265,9 +279,10 @@
              :when (not (contains? setters k))]
        (unknown-param! cls setters k))
      (doseq [[k v] (merge defaults params)
-             :let  [setter (setters k)]
-             :when setter]
-       (set-value setter instance (convert-keywords v)))
+             :let  [v       (convert-keywords v)
+                    methods (setters k)]
+             :when methods]
+       (set-value (pick-setter methods v) instance v))
      instance)))
 
 (defn zero-arity? [^java.lang.reflect.Method method]

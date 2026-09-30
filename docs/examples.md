@@ -396,32 +396,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 #### XGBoost Classifier
 
-These need XGBoost4J on the classpath, which the doc tests leave out (see [Optional XGBoost Support](xgboost.md)).
-
-<!-- :test-doc-blocks/skip -->
-```clojure
-(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
-
-(def xgb-model
-  (ml/fit
-    training
-    (ml/xgboost-classifier {:max-depth 2 :num-round 2})))
-
-(-> training
-    (ml/transform xgb-model)
-    (g/select :label :probability)
-    (g/limit 5)
-    g/show)
-; +-----+----------------------------------------+
-; |label|probability                             |
-; +-----+----------------------------------------+
-; |0.0  |[0.7502040266990662,0.24979597330093384]|
-; |1.0  |[0.24869805574417114,0.7513019442558289]|
-; |1.0  |[0.24869805574417114,0.7513019442558289]|
-; |1.0  |[0.24869805574417114,0.7513019442558289]|
-; |1.0  |[0.24869805574417114,0.7513019442558289]|
-; +-----+----------------------------------------+
-```
+[Optional XGBoost support](xgboost.md) has an example, which needs XGBoost4J-Spark on the classpath.
 
 ### Regression
 
@@ -542,32 +517,7 @@ These need XGBoost4J on the classpath, which the doc tests leave out (see [Optio
 
 #### XGBoost Regressor
 
-These need XGBoost4J on the classpath, which the doc tests leave out (see [Optional XGBoost Support](xgboost.md)).
-
-<!-- :test-doc-blocks/skip -->
-```clojure
-(def training (g/read-libsvm! "test/resources/sample_libsvm_data.txt"))
-
-(def xgb-model
-  (ml/fit
-    training
-    (ml/xgboost-regressor {:max-depth 2 :num-round 2})))
-
-(-> training
-    (ml/transform xgb-model)
-    (g/select :label :prediction)
-    (g/limit 5)
-    g/show)
-; +-----+-------------------+
-; |label|prediction         |
-; +-----+-------------------+
-; |0.0  |0.24979597330093384|
-; |1.0  |0.7513019442558289 |
-; |1.0  |0.7513019442558289 |
-; |1.0  |0.7513019442558289 |
-; |1.0  |0.7513019442558289 |
-; +-----+-------------------+
-```
+[Optional XGBoost support](xgboost.md) has an example, which needs XGBoost4J-Spark on the classpath.
 
 ### Clustering
 

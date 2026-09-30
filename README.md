@@ -266,7 +266,18 @@ A few differences between the setups show up in practice:
 
 From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:provided` profile) and the flags in `:jvm-opts`.
 
-Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J, those functions throw an error that says what to add. Spark ML uses a native BLAS such as OpenBLAS when one is installed.
+Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J-Spark 3 for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J-Spark, those functions throw an error that says what to add. Spark ML uses a native BLAS such as OpenBLAS when one is installed.
+
+### A New Project
+
+[deps-new](https://github.com/seancorfield/deps-new) makes a project from Geni's template: a `deps.edn` with the `:spark` and `:spark-4` setups above, a small word-count app and its test, and a `build.clj` whose uberjar is ready for `spark-submit`, with the app and Geni compiled ahead of time and without Spark. With the Clojure CLI 1.12 or newer:
+
+```bash
+clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
+clojure -Tnew create :template io.github.zero-one-group/geni%template%zero-one/geni :name acme/spark-app
+```
+
+The new project's README has the commands that run, test and build it.
 
 ### Spark Connect
 
