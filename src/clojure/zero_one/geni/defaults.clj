@@ -28,13 +28,44 @@
       (spark/active-session)
       (locking chosen
         (or (spark/active-session)
-            (spark/create-spark-session {})))))
+            (if (spark/connect-only?)
+              (spark/connect-session nil {})
+              (spark/create-spark-session {}))))))
+
+(defn connect
+  "Connects to a Spark Connect server, and returns a SparkSession for it:
+  Spark 4's `SparkSession.builder().remote(url).create()`. It needs Spark's
+  JVM client, `org.apache.spark/spark-connect-client-jvm_2.13`, on the
+  classpath in place of spark-sql. See the Spark Connect guide.
+
+  - `url`, such as \"sc://localhost:15002\", can also hold a token and other
+    options, as in \"sc://host:443/;use_ssl=true;token=...\". Without it, the
+    client reads the `SPARK_REMOTE` environment variable, or else connects to
+    sc://localhost:15002.
+  - `:configs`, a map of Spark SQL configs to set on the session.
+
+  Each call starts a new session on the server, which becomes Spark's default
+  and active session, and the one that Geni uses, in place of any session
+  passed to `set-default-session!`. Keep it, and call `.close` on it when
+  you're done.
+
+  ```clojure
+  (g/connect \"sc://localhost:15002\")
+  (g/connect \"sc://localhost:15002\" {:configs {:spark.sql.shuffle.partitions 8}})
+  ```"
+  (^SparkSession [] (connect nil {}))
+  (^SparkSession [url] (connect url {}))
+  (^SparkSession [url opts]
+   (let [session (spark/connect-session url opts)]
+     (set-default-session! nil)
+     session)))
 
 (def spark
   "The default SparkSession, which Geni functions use when they aren't given
   one. Deref it to get the session: the one passed to `set-default-session!`,
   or else Spark's active session, or else a new local one. Geni configures
   only the sessions it creates, and then only as `create-spark-session`
-  describes."
+  describes. With only the Spark Connect client on the classpath, the new
+  session connects to `SPARK_REMOTE`, as `(connect)` does."
   (reify IDeref
     (deref [_] (default-session))))

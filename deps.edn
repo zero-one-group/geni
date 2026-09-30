@@ -98,6 +98,41 @@
     "--sun-misc-unsafe-memory-access=allow"
     "--enable-native-access=ALL-UNNAMED"]}
 
+  ;; Spark 4's Spark Connect client, in place of classic Spark, for the tests
+  ;; that run over Spark Connect: clojure -T:build connect-tests. The client
+  ;; can't share a classpath with spark-sql.
+  :spark-connect
+  {:extra-deps {org.apache.spark/spark-connect-client-jvm_2.13 {:mvn/version "4.2.0"}}
+   ;; The same flags as :spark-4. Arrow, which the client shades, and Spark's
+   ;; date and time conversions reach into the JDK.
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-modules=jdk.incubator.vector"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Dio.netty.tryReflectionSetAccessible=true"
+    "-Dio.netty.allocator.type=pooled"
+    "-Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE"
+    "--sun-misc-unsafe-memory-access=allow"
+    "--enable-native-access=ALL-UNNAMED"]}
+
+  ;; The Spark Connect server that those tests run against, with :spark-4.
+  :connect-server
+  {:extra-deps {org.apache.spark/spark-connect_2.13 {:mvn/version "4.2.0"}}}
+
   ;; clojure -X:spark:test (see CONTRIBUTING.md)
   :test
   {:extra-paths   ["test" "dev" "target/test-classes"]

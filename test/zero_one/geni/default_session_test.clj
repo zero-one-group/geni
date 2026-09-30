@@ -1,4 +1,4 @@
-(ns zero-one.geni.default-session-test
+(ns ^:classic zero-one.geni.default-session-test
   "Geni's default session: requiring Geni starts no Spark, a session that Geni
   didn't create is used as it is, and a session that Geni creates has no
   settings of Geni's own."
@@ -75,6 +75,11 @@
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"Expected a SparkSession"
                           (g/set-default-session! "local[*]")))))
+
+(deftest connect-needs-the-client-test
+  (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                        #"spark-connect-client-jvm"
+                        (g/connect "sc://localhost:15002"))))
 
 ;; Requiring Geni can only be checked in a new JVM. It runs without
 ;; log4j2-test.properties, so that Spark falls back to its own log profile, and

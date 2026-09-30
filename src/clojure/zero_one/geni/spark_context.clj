@@ -4,15 +4,20 @@
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.rdd.unmangle :as unmangle])
+   [zero-one.geni.rdd.unmangle :as unmangle]
+   [zero-one.geni.spark :as spark])
   (:import
-   (org.apache.spark.api.java JavaSparkContext)
+   (clojure.lang Reflector)
    (org.apache.spark.sql SparkSession)))
 
 (defn java-spark-context
-  "Converts a SparkSession to a JavaSparkContext."
+  "Converts a SparkSession to a JavaSparkContext. Only classic sessions have
+  one, and a Spark Connect session throws an error that says so."
   [spark]
-  (JavaSparkContext/fromSparkContext (.sparkContext spark)))
+  ;; Looked up when it's called, since a Spark Connect client doesn't have it.
+  (Reflector/invokeStaticMethod "org.apache.spark.api.java.JavaSparkContext"
+                                "fromSparkContext"
+                                (object-array [(spark/spark-context spark)])))
 
 (defn app-name
   ([] (app-name @defaults/spark))
@@ -118,7 +123,7 @@
 
 (defn version
   ([] (version @defaults/spark))
-  ([spark] (-> spark java-spark-context .version)))
+  ([spark] (.version ^SparkSession spark)))
 
 (defmulti whole-text-files (fn [head & _] (class head)))
 (defmethod whole-text-files :default

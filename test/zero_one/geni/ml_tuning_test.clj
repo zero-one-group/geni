@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-tuning-test
+(ns ^:classic zero-one.geni.ml-tuning-test
   (:require
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.interop :as interop]

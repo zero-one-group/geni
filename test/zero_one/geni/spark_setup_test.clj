@@ -1,4 +1,4 @@
-(ns zero-one.geni.spark-setup-test
+(ns ^:classic zero-one.geni.spark-setup-test
   (:require
    [clojure.string]
    [clojure.test :refer [deftest is]]

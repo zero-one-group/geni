@@ -106,12 +106,37 @@
   []
   (some-> (zero-one.geni.spark/active-session) .close))
 
+(defn connect?
+  "Whether the tests run over Spark Connect, with Spark's JVM client on the
+  classpath in place of classic Spark."
+  []
+  (zero-one.geni.spark/connect-only?))
+
+(defn clean-catalog!
+  "Drops the databases, tables and global temp views that earlier tests left
+  on the Spark Connect server, whose catalog outlives its sessions."
+  []
+  (let [session @spark
+        show    #(g/collect (g/sql session %))]
+    (doseq [{db :namespace} (show "SHOW DATABASES")
+            :when (not= "default" db)]
+      (g/sql session (str "DROP DATABASE `" db "` CASCADE")))
+    (doseq [{:keys [tableName isTemporary]} (show "SHOW TABLES IN default")
+            :when (not isTemporary)]
+      (g/sql session (str "DROP TABLE IF EXISTS default.`" tableName "`")))
+    (doseq [{:keys [namespace tableName]} (show "SHOW TABLES IN global_temp")
+            :when (= "global_temp" namespace)]
+      (g/sql session (str "DROP VIEW IF EXISTS global_temp.`" tableName "`")))))
+
 (defn reset-session!
   "Replaces the running session with a new one that has its own warehouse.
-  Geni's default session finds it, as Spark's active session."
+  Geni's default session finds it, as Spark's active session. Over Spark
+  Connect, the new session shares the server's catalog, which starts empty."
   []
   (stop-session!)
-  (g/create-spark-session {:configs {:spark.sql.warehouse.dir (rand-wh-path)}}))
+  (if (connect?)
+    (do (g/connect) (clean-catalog!))
+    (g/create-spark-session {:configs {:spark.sql.warehouse.dir (rand-wh-path)}})))
 
 (defn checkpoint-dir!
   "Gives the running session a checkpoint directory, which Geni's default
@@ -130,4 +155,4 @@
      (try
        ~@body
        (finally
-         (delete-warehouse!)))))
+         (if (connect?) (clean-catalog!) (delete-warehouse!))))))

@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-frequent-pattern-test
+(ns ^:classic zero-one.geni.ml-frequent-pattern-test
   (:require
    [clojure.test :refer [deftest is]]
    [zero-one.geni.core :as g]

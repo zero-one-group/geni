@@ -3,13 +3,10 @@
    [clojure.string :as string :refer [replace-first]]
    [clojure.walk :as walk]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.utils :refer [->kebab-case ensure-coll]])
+   [zero-one.geni.utils :refer [->kebab-case class-named ensure-coll]])
   (:import
-   (java.io ByteArrayOutputStream)
-   (org.apache.spark.ml.linalg DenseVector
-                               DenseMatrix
-                               SparseVector
-                               Vectors)
+   (clojure.lang Reflector)
+   (java.io ByteArrayOutputStream PrintStream)
    (org.apache.spark.sql Row)
    (scala Console
           Function0
@@ -81,10 +78,13 @@
     (.get value)))
 
 (defmacro with-scala-out-str [& body]
-  `(let [out-buffer# (ByteArrayOutputStream.)]
+  `(let [out-buffer# (ByteArrayOutputStream.)
+         ;; In UTF-8, as it's read back, whatever the platform's charset.
+         out#        (PrintStream. out-buffer# true "UTF-8")]
      (Console/withOut
-      out-buffer#
+      out#
       (->scala-function0 (fn [] ~@body)))
+     (.flush out#)
      (.toString out-buffer# "UTF-8")))
 
 (defn spark-conf->map [conf]
@@ -94,12 +94,27 @@
        (into {})
        walk/keywordize-keys))
 
+(defn mllib-class
+  "One of MLlib's classes, such as `org.apache.spark.ml.linalg.DenseVector`.
+  They come with spark-mllib, which is classic Spark only, so a Spark Connect
+  client doesn't have them, and Geni looks them up when it needs them."
+  ^Class [class-name]
+  (or (class-named class-name)
+      (throw (ex-info (str class-name " isn't on the classpath. It comes with spark-mllib, "
+                           "which works with classic Spark only, not over Spark Connect.")
+                      {:class class-name}))))
+
+(def ^:private dense-vector-class (delay (class-named "org.apache.spark.ml.linalg.DenseVector")))
+(def ^:private sparse-vector-class (delay (class-named "org.apache.spark.ml.linalg.SparseVector")))
+(def ^:private dense-matrix-class (delay (class-named "org.apache.spark.ml.linalg.DenseMatrix")))
+
 (defn ->dense-vector [values]
-  (let [[x & xs] values]
-    (Vectors/dense x (->scala-seq xs))))
+  (Reflector/invokeConstructor (mllib-class "org.apache.spark.ml.linalg.DenseVector")
+                               (object-array [(double-array values)])))
 
 (defn ->sparse-vector [size indices values]
-  (SparseVector. size (int-array indices) (double-array values)))
+  (Reflector/invokeConstructor (mllib-class "org.apache.spark.ml.linalg.SparseVector")
+                               (object-array [(int size) (int-array indices) (double-array values)])))
 (def sparse ->sparse-vector)
 
 (defn array? [value] (.isArray (class value)))
@@ -108,13 +123,13 @@
   (instance? Row value))
 
 (defn dense-vector? [value]
-  (instance? DenseVector value))
+  (boolean (some-> ^Class @dense-vector-class (.isInstance value))))
 
 (defn sparse-vector? [value]
-  (instance? SparseVector value))
+  (boolean (some-> ^Class @sparse-vector-class (.isInstance value))))
 
 (defn dense-matrix? [value]
-  (instance? DenseMatrix value))
+  (boolean (some-> ^Class @dense-matrix-class (.isInstance value))))
 
 (defn vector->seq [spark-vector]
   (-> spark-vector .values seq))

@@ -44,7 +44,10 @@
           :or   {num-rows 20
                  truncate 0
                  vertical false}} options]
-     (-> dataframe (.showString num-rows truncate vertical) println))))
+     ;; Dataset.show prints to Scala's Console, and works over Spark Connect,
+     ;; unlike showString.
+     (print (interop/with-scala-out-str (.show dataframe num-rows truncate vertical)))
+     (flush))))
 
 (defn summary [dataframe & stat-names]
   (.summary dataframe (into-array java.lang.String (map name stat-names))))
@@ -203,7 +206,7 @@
 ;;;; Ungrouped
 (defn spark-session [dataframe] (.sparkSession dataframe))
 
-(defn sql-context [dataframe] (.sqlContext dataframe))
+(defn sql-context [dataframe] (.sqlContext (.sparkSession dataframe)))
 
 ;;;; Relational Grouped Dataset
 (defn pivot

@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-recommendation-test
+(ns ^:classic zero-one.geni.ml-recommendation-test
   (:require
    [clojure.test :refer [deftest is]]
    [zero-one.geni.core :as g]

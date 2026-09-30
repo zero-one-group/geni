@@ -2,6 +2,7 @@
   "Build tasks. Run them with `clojure -T:build <task>`."
   (:require
    [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.string :as string]
    [clojure.tools.build.api :as b]
    [deps-deploy.deps-deploy :as dd]))
@@ -164,6 +165,73 @@
   (lint nil)
   (sh! "clojure" "-X:spark:test:cli:tmd")
   (docs nil))
+
+(defn- port-open? [port]
+  (try
+    (with-open [_ (java.net.Socket. "127.0.0.1" (int port))] true)
+    (catch java.io.IOException _ false)))
+
+(defn- exit-code [command-args env]
+  (:exit (b/process {:command-args command-args :env env})))
+
+(defn- with-connect-server
+  "Starts a Spark Connect server on :spark-4 in the background, on 127.0.0.1
+  at `port`, with its log in target/connect-server.log. Once it's up, calls
+  `f` with the environment that points a client at it, then stops the server.
+  Returns an exit code, as `f` does."
+  [port f]
+  (let [log     (io/file "target/connect-server.log")
+        command (:command-args
+                 (b/java-command
+                  {:basis     (basis :spark-4 :test :connect-server)
+                   :main      'org.apache.spark.sql.connect.service.SparkConnectServer
+                   :java-opts ["-Dspark.master=local[*]"
+                               "-Dspark.connect.grpc.binding.address=127.0.0.1"
+                               (str "-Dspark.connect.grpc.binding.port=" port)
+                               "-Dspark.sql.warehouse.dir=target/connect-warehouse"]}))
+        _       (io/make-parents log)
+        server  (.start (doto (ProcessBuilder. ^java.util.List command)
+                          (.redirectErrorStream true)
+                          (.redirectOutput log)))
+        ;; In case the build is killed before the finally below.
+        hook    (Thread. #(.destroyForcibly server))]
+    (.addShutdownHook (Runtime/getRuntime) hook)
+    (try
+      (loop [waited 0]
+        (cond
+          (port-open? port)
+          (f {"SPARK_REMOTE" (str "sc://127.0.0.1:" port)})
+
+          (or (not (.isAlive server)) (> waited 120000))
+          (do (println "The Spark Connect server didn't start. See" (str log))
+              1)
+
+          :else
+          (do (Thread/sleep 500)
+              (recur (+ waited 500)))))
+      (finally
+        (.destroy server)
+        (when-not (.waitFor server 30 java.util.concurrent.TimeUnit/SECONDS)
+          (.destroyForcibly server)
+          (.waitFor server))
+        (.removeShutdownHook (Runtime/getRuntime) hook)))))
+
+(defn connect-tests
+  "Runs the tests over Spark Connect: it starts a Spark Connect server on
+  :spark-4 in the background, on 127.0.0.1 at `:port` (15002 by default), then
+  runs the tests with Spark's JVM client in place of classic Spark, which
+  skips the ones marked ^:classic. Other options go to the test runner, e.g.
+  `:only '[zero-one.geni.dataset-test]'`. Run `prep :spark :spark-4` first."
+  [{:keys [port] :or {port 15002} :as opts}]
+  (when (port-open? port)
+    (println "Port" port "is taken. Stop what's on it, or pass another :port.")
+    (System/exit 1))
+  (let [args (mapcat (fn [[k v]] [(str k) (pr-str v)]) (dissoc opts :port))
+        exit (with-connect-server
+               port
+               #(exit-code (into ["clojure" "-X:spark-connect:test"] args) %))]
+    (when-not (zero? exit)
+      (System/exit exit))))
 
 (defn jar
   "Builds the library jar into target/."

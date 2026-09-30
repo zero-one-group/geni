@@ -1,4 +1,4 @@
-(ns zero-one.geni.partitioner-test
+(ns ^:classic zero-one.geni.partitioner-test
   (:require
    [clojure.test :refer [deftest is]]
    [zero-one.geni.partitioner :as partitioner]))
