@@ -437,6 +437,17 @@
                 (-> (g/lit "x") (g/lpad 3 "_") (g/rpad 5 "_") (g/trim "_"))
                 (-> (g/lit "abcdefghi") (g/regexp-replace (g/lit "fgh") (g/lit "XYZ")))
                 (-> :Regionname (g/regexp-extract "(.*) (.*)" 2)))
+               g/collect-vals))))
+  (testing "should trim spaces, or any of the given characters"
+    (is (= [["x  " "  x" "x" "x-_" "_-x" "x"]]
+           (-> (df-1)
+               (g/select
+                (g/ltrim (g/lit "  x  "))
+                (g/rtrim (g/lit "  x  "))
+                (g/trim (g/lit "  x  "))
+                (g/ltrim (g/lit "_-x-_") "-_")
+                (g/rtrim (g/lit "_-x-_") "-_")
+                (g/trim (g/lit "_-x-_") "-_"))
                g/collect-vals)))))
 
 (deftest arithmetic-functions-test

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+New:
+
+- `g/ltrim` and `g/rtrim` take the characters to trim as a second argument, as `g/trim` does, and `g/trim` trims spaces when given only a column (#344).
+
 Fixes:
 
 - The `geni` script runs the uberjar it downloaded last time when it can't reach GitHub for the latest version, rather than stopping. Install the script again to get this.

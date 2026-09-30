@@ -291,7 +291,9 @@
 (defn locate [substr expr] (functions/locate substr (->column expr)))
 (defn lower [expr] (functions/lower (->column expr)))
 (defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
-(defn ltrim [expr] (functions/ltrim (->column expr)))
+(defn ltrim
+  ([expr] (functions/ltrim (->column expr)))
+  ([expr trim-string] (functions/ltrim (->column expr) trim-string)))
 (defn overlay
   ([src rep pos] (functions/overlay (->column src) (->column rep) (->column pos)))
   ([src rep pos len] (functions/overlay (->column src) (->column rep) (->column pos) (->column len))))
@@ -303,7 +305,9 @@
    (->column pattern-expr)
    (->column replacement-expr)))
 (defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
-(defn rtrim [expr] (functions/rtrim (->column expr)))
+(defn rtrim
+  ([expr] (functions/rtrim (->column expr)))
+  ([expr trim-string] (functions/rtrim (->column expr) trim-string)))
 (defn soundex [expr] (functions/soundex (->column expr)))
 (defn split [expr pattern] (functions/split (->column expr) pattern))
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
@@ -311,7 +315,9 @@
   (functions/substring-index (->column expr) delim cnt))
 (defn translate [expr match replacement]
   (functions/translate (->column expr) match replacement))
-(defn trim [expr trim-string] (functions/trim (->column expr) trim-string))
+(defn trim
+  ([expr] (functions/trim (->column expr)))
+  ([expr trim-string] (functions/trim (->column expr) trim-string)))
 (defn unbase-64 [expr] (functions/unbase64 (->column expr)))
 (defn upper [expr] (functions/upper (->column expr)))
 
