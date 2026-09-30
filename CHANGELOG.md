@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-09-30)
+
+Fixes:
+
+- The Geni CLI logs at WARN, as `spark-shell` does, from a log4j2 config in the uberjar. It used to print Spark's INFO logs as it started, and a few seconds later a warning about JDK 21's G1 Concurrent GC, over the REPL prompt. The library jar still has no log4j2 config.
+- The Geni CLI no longer prints Spark's config when it starts. `(g/spark-conf @spark)` still returns it.
+
 ## 0.1.0 (2026-09-30)
 
 Breaking changes:

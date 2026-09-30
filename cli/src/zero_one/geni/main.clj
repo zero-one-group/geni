@@ -2,7 +2,8 @@
   (:require
    [clojure.java.io]
    [clojure.pprint]
-   [zero-one.geni.core :as g]
+   ;; Required so that the uberjar compiles it ahead of time, with main.
+   [zero-one.geni.core]
    [zero-one.geni.defaults]
    [zero-one.geni.repl :as repl])
   (:gen-class))
@@ -36,13 +37,12 @@
   "The Geni CLI entrypoint.
 
   It does the following:
-  - Prints the Spark config and a welcome note.
+  - Prints a welcome note.
   - Launches an nREPL server, which writes to `.nrepl-port` for a
     text editor to connect to.
   - Starts a REPL(-y).
   "
   [& args]
-  (clojure.pprint/pprint (g/spark-conf @spark))
   (println (repl/spark-welcome-note (.version @spark)))
   (let [script-path (if (empty? args) nil (first args))]
     (repl/launch-repl (merge {:port (+ 65001 (rand-int 500))
