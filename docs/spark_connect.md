@@ -115,7 +115,7 @@ When you're done, `.close` releases the session on the server:
 
 ## Databricks
 
-Databricks Connect is Databricks' build of the Spark Connect client, and the one that reaches serverless compute. It goes in place of Spark's client, as `com.databricks/databricks-connect_2.13`, at the version that matches the Databricks Runtime: 19.x for Runtime 19, which is on Spark 4.2. `DatabricksSession` starts a session from the usual Databricks settings, such as the `DATABRICKS_HOST` and `DATABRICKS_TOKEN` environment variables or a config profile, and Geni uses it as it does any other:
+Databricks Connect is Databricks' build of the Spark Connect client, and the one that reaches serverless compute. It goes in place of Spark's client, as `com.databricks/databricks-connect_2.13`, at the version that matches the Databricks Runtime: 19.x for Runtime 19, which is on Spark 4.2. Databricks Connect 18 and 19 need JDK 21. `DatabricksSession` starts a session from the usual Databricks settings, such as the `DATABRICKS_HOST` and `DATABRICKS_TOKEN` environment variables or a config profile, and Geni uses it as it does any other:
 
 <!-- :test-doc-blocks/skip -->
 ```clojure

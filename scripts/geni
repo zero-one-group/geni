@@ -11,6 +11,7 @@ print_help() {
     echo -e
     echo "Downloads the uberjar of the latest stable release to"
     echo "~/.geni/geni-repl-uberjar-<version>.jar the first time it's needed."
+    echo "Without a network, runs the uberjar downloaded last time."
     echo -e
     echo "Usage:"
     echo "geni [--force-download] [--submit script.clj]"
@@ -44,17 +45,27 @@ do
     esac
 done
 
-version=$(curl -fsSL https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
-
 original_dir="$PWD"
 download_dir="$HOME/.geni/downloads"
-download_url="https://github.com/zero-one-group/geni/releases/download/v$version/geni-repl-uberjar-$version.jar"
 uberjar_dir="$HOME/.geni"
-# One file per version, so that a new release gets downloaded.
-uberjar_name="geni-repl-uberjar-$version.jar"
+version_url="https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION"
 
 mkdir -p "$uberjar_dir"
 cd "$uberjar_dir"
+if version=$(curl -fsSL "$version_url"); then
+    download_url="https://github.com/zero-one-group/geni/releases/download/v$version/geni-repl-uberjar-$version.jar"
+    # One file per version, so that a new release gets downloaded.
+    uberjar_name="geni-repl-uberjar-$version.jar"
+else
+    # Offline, or GitHub didn't answer: run the uberjar downloaded last time.
+    uberjar_name=$(ls -t geni-repl-uberjar-*.jar 2>/dev/null | head -n 1 || true)
+    if [[ -z "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
+        echo "Couldn't fetch the latest version from $version_url"
+        exit 1
+    fi
+    echo "Couldn't fetch the latest version, so running $uberjar_name."
+fi
+
 if [[ ! -f "$uberjar_name" ]] || [[ "$force_download" = true ]]; then
     mkdir -p "$download_dir"
     cd "$download_dir"

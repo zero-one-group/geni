@@ -9,10 +9,11 @@ In this part of the cookbook, we need a more sizeable dataset than in the previo
 
 ## 10.1 Generating the Data
 
-The data has a million random transactions for each month of 2019, written to Parquet one month at a time. Generating it takes a while, so the code skips it when the data is there already:
+The data has a million random transactions for each month of 2019, written to Parquet one month at a time, into a directory that gets its final name once all twelve months are in. Generating it takes a while, so the code skips it when the data is there already, and starts again from January after an interrupted run:
 
 ```clojure
 (def dummy-data-path "data/cookbook/dummy-retail")
+(def partial-data-path (str dummy-data-path "-partial"))
 
 (def max-days {1 31 2 28 3 31 4 30 5 31 6 30 7 31 8 31 9 30 10 31 11 30 12 31})
 
@@ -41,7 +42,8 @@ The data has a million random transactions for each month of 2019, written to Pa
           :day       (g/random-int 1 (inc (max-days month)))})
         (g/with-column :date (g/to-date date-col))
         (g/coalesce 1)
-        (g/write-parquet! dummy-data-path {:mode "append"}))))
+        (g/write-parquet! partial-data-path {:mode (if (= month 1) "overwrite" "append")})))
+  (.renameTo (io/file partial-data-path) (io/file dummy-data-path)))
 ```
 
 We load and have a brief look at the data:

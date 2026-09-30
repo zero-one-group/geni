@@ -77,9 +77,11 @@
                           (g/set-default-session! "local[*]")))))
 
 (deftest connect-needs-the-client-test
-  (is (thrown-with-msg? clojure.lang.ExceptionInfo
-                        #"spark-connect-client-jvm"
-                        (g/connect "sc://localhost:15002"))))
+  (let [e (try (g/connect "sc://localhost:15002/;token=secret")
+               (catch clojure.lang.ExceptionInfo e e))]
+    (is (re-find #"spark-connect-client-jvm" (str (ex-message e))))
+    (testing "and leaves out the URL, which can hold a token"
+      (is (not (string/includes? (pr-str (ex-data e)) "secret"))))))
 
 ;; Requiring Geni can only be checked in a new JVM. It runs without
 ;; log4j2-test.properties, so that Spark falls back to its own log profile, and
