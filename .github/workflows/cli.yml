@@ -40,6 +40,10 @@ jobs:
           (println "dataframe:" (g/count (g/range 3)))
           (println "rdd:" (rdd/count (rdd/parallelise [1 2 3])))
           CLJ
-          java -jar target/geni-repl-uberjar-*.jar smoke.clj | tee smoke.out
+          java -jar target/geni-repl-uberjar-*.jar smoke.clj 2>&1 | tee smoke.out
           grep -q "dataframe: 3" smoke.out
           grep -q "rdd: 3" smoke.out
+          if grep -E " INFO |default log4j profile" smoke.out; then
+            echo "The CLI logs at INFO: is its log4j2 config in the uberjar?"
+            exit 1
+          fi

@@ -169,7 +169,7 @@ Geni is `zero.one/geni` on Clojars. Clojure 1.11 or newer is its only dependency
 On these JDKs, Spark needs the JVM flags that its own launcher sets. Each setup below is a `deps.edn` alias with Spark's deps and those flags, the same as the alias that Geni's tests run with. This `deps.edn` starts a REPL on Spark 3.5 with `clj -M:spark`:
 
 ```edn
-{:deps {zero.one/geni {:mvn/version "0.1.0"}}
+{:deps {zero.one/geni {:mvn/version "0.1.1"}}
 
  :aliases
  {:spark
@@ -270,14 +270,14 @@ Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g
 
 ## The Geni CLI
 
-The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The uberjar is on the [0.1.0 release](https://github.com/zero-one-group/geni/releases/tag/v0.1.0), and runs on JDK 17 or 21:
+The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The uberjar is on the [0.1.1 release](https://github.com/zero-one-group/geni/releases/tag/v0.1.1), and runs on JDK 17 or 21:
 
 ```bash
-curl -fLO https://github.com/zero-one-group/geni/releases/download/v0.1.0/geni-repl-uberjar-0.1.0.jar
-java -jar geni-repl-uberjar-0.1.0.jar
+curl -fLO https://github.com/zero-one-group/geni/releases/download/v0.1.1/geni-repl-uberjar-0.1.1.jar
+java -jar geni-repl-uberjar-0.1.1.jar
 ```
 
-Its manifest carries the JVM flags that Spark needs. Given a file, as in `java -jar geni-repl-uberjar-0.1.0.jar script.clj`, it runs the file instead of the REPL.
+Its manifest carries the JVM flags that Spark needs, and it logs at WARN, as `spark-shell` does. Given a file, as in `java -jar geni-repl-uberjar-0.1.1.jar script.clj`, it runs the file instead of the REPL.
 
 The `geni` script downloads the uberjar of the latest stable release to `~/.geni`, and runs it:
 

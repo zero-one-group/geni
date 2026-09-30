@@ -7,7 +7,7 @@
    [deps-deploy.deps-deploy :as dd]))
 
 (def lib 'zero.one/geni)
-(def version "0.1.0")
+(def version "0.1.1")
 
 (def class-dir "target/classes")
 (def test-class-dir "target/test-classes")
@@ -199,15 +199,16 @@
               :pom-file  (b/pom-path {:lib lib :class-dir jar-class-dir})}))
 
 (defn cli-uber
-  "Builds the Geni CLI uberjar into target/, from cli/src, with Geni, Spark and
-  the namespaces compiled ahead of time. Run it with `java -jar`. The CLI has
-  no Clojars artifact: Clojars no longer accepts new libraries in a group it
-  can't verify, and zero.one isn't a domain."
+  "Builds the Geni CLI uberjar into target/, from cli/src and cli/resources
+  (its log4j2 config), with Geni, Spark and the namespaces compiled ahead of
+  time. Run it with `java -jar`. The CLI has no Clojars artifact: Clojars no
+  longer accepts new libraries in a group it can't verify, and zero.one isn't
+  a domain."
   [_]
   (b/delete {:path uber-class-dir})
   (let [basis (basis :spark :cli)]
     (javac! uber-class-dir)
-    (b/copy-dir {:src-dirs   ["src/clojure" "resources" "cli/src"]
+    (b/copy-dir {:src-dirs   ["src/clojure" "resources" "cli/src" "cli/resources"]
                  :target-dir uber-class-dir
                  :ignores    ignores})
     (b/compile-clj {:basis      basis
