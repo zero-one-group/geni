@@ -77,6 +77,7 @@
    [zero-one.geni.core.foreign-idioms]
    [zero-one.geni.core.functions]
    [zero-one.geni.core.polymorphic]
+   [zero-one.geni.core.udf]
    [zero-one.geni.core.window]
    [zero-one.geni.defaults]
    [zero-one.geni.interop]
@@ -505,6 +506,11 @@
   width
   with-column
   with-column-renamed])
+
+(import-vars
+ [zero-one.geni.core.udf
+  register-udf!
+  udf])
 
 (import-vars
  [zero-one.geni.core.window

@@ -3,9 +3,10 @@ name: Weekly
 # Three checks that don't need to run on every pull request:
 #
 # - the canary: the suite with Spark's own defaults (code generation on), on
-#   the newest patch of each Spark line, and on the newest JDK. It bumps the
-#   Spark pins in deps.edn in its own checkout, so a failure means that the
-#   next patch, or the next JDK, would break Geni;
+#   the newest patch of each Spark line, and on the newest JDK, and on Spark 4
+#   over Spark Connect too. It bumps the Spark pins in deps.edn in its own
+#   checkout, so a failure means that the next patch, or the next JDK, would
+#   break Geni;
 # - the links in the Markdown files, code blocks included, so that a moved
 #   dataset shows up here;
 # - the cookbook, run as tests on :spark, with its datasets cached.
@@ -51,6 +52,20 @@ jobs:
           java: ${{ matrix.java }}
           spark: ${{ matrix.spark }}
           aliases: ':cli:tmd:canary'
+      # The suite over Spark Connect, on the bumped client and server pins, as
+      # ci.yml's connect job runs it. The test action has prepped :spark-4.
+      - if: matrix.spark == 'spark-4'
+        run: |
+          clojure -P -X:spark-4:test:connect-server
+          clojure -P -X:spark-connect:test
+          clojure -T:build connect-tests
+      - if: failure() && matrix.spark == 'spark-4'
+        uses: actions/upload-artifact@v7
+        with:
+          name: canary-connect-logs-${{ matrix.java }}
+          path: |
+            target/test.log
+            target/connect-server.log
 
   links:
     runs-on: ubuntu-latest

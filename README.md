@@ -336,6 +336,7 @@ The guides:
 - [Creating Spark schemas](docs/creating_spark_schemas.md)
 - [Manual dataset creation](docs/manual_dataset_creation.md)
 - [Working with SQL maps](docs/sql_maps.md)
+- [Clojure UDFs](docs/udfs.md)
 - [Collecting data from Spark datasets](docs/collect.md)
 - [Pandas, NumPy and other idioms](docs/pandas_numpy_and_other_idioms.md)
 - [Optional XGBoost support](docs/xgboost.md)

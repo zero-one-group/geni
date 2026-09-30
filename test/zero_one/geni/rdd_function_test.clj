@@ -4,7 +4,9 @@
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.rdd.function :as function])
   (:import
-   (java.util HashSet)))
+   (java.io ByteArrayInputStream ByteArrayOutputStream ObjectInputStream ObjectOutputStream)
+   (java.util HashSet)
+   (org.apache.spark.api.java.function Function)))
 
 (deftest serialisability-test
   (testing "On access-field"
@@ -29,3 +31,18 @@
       (function/walk-object-vars refs visited {:abc function/walk-object-vars})
       (is (not (empty? (into #{} visited))))
       (is (set/subset? #{'clojure.core} (into #{} refs))))))
+
+(defn- round-trip [x]
+  (let [out (ByteArrayOutputStream.)]
+    (with-open [o (ObjectOutputStream. out)]
+      (.writeObject o x))
+    (with-open [in (ObjectInputStream. (ByteArrayInputStream. (.toByteArray out)))]
+      (.readObject in))))
+
+(deftest canonical-booleans-test
+  (testing "falses that a function closes over, or that sit in its data, stay false"
+    (let [b           false
+          m           {:b false :bs [false]}
+          f           (fn [_] [(if b :t :f) (if (:b m) :t :f) (if (first (:bs m)) :t :f)])
+          ^Function g (round-trip (function/function f))]
+      (is (= [:f :f :f] (.call g nil))))))

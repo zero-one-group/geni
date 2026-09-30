@@ -528,3 +528,17 @@
       (is (= ["def"] (rdd/collect (rdd/intersection left right))))))
   (testing "glom works"
     (is (< (-> dummy-rdd rdd/glom rdd/count) 126))))
+
+(deftest ^:rdd functions-compiled-at-run-time-test
+  (testing "a local session that Geni starts runs functions that weren't compiled ahead of time"
+    (is (= [10 20 30]
+           (-> (rdd/parallelise [1 2 3])
+               (rdd/map (fn [x] (* 10 x)))
+               rdd/collect))))
+  (testing "a false that a function closes over stays false on the executors"
+    (let [b false
+          m {:b false}]
+      (is (= [[:f :f] [:f :f]]
+             (-> (rdd/parallelise [1 2])
+                 (rdd/map (fn [_] [(if b :t :f) (if (:b m) :t :f)]))
+                 rdd/collect))))))

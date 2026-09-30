@@ -4,14 +4,19 @@ package zero_one.geni.rdd.function;
 
 import clojure.lang.Compiler;
 import clojure.lang.IFn;
+import clojure.lang.Namespace;
 import clojure.lang.RT;
 import clojure.lang.Symbol;
 import clojure.lang.Var;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -78,8 +83,13 @@ public abstract class SerializableFn implements Serializable {
             for (String ns : namespaces) {
                 out.writeObject(ns);
             }
-            // Write out the function itself.
-            out.writeObject(f);
+            // Write out the function itself, as bytes of its own, so that
+            // readFunction can read them back with canonical booleans.
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (ObjectOutputStream fnOut = new ObjectOutputStream(bytes)) {
+                fnOut.writeObject(f);
+            }
+            out.writeObject(bytes.toByteArray());
         } catch (IOException ex) {
             logger.error("Error serializing function " + f, ex);
             throw ex;
@@ -111,7 +121,7 @@ public abstract class SerializableFn implements Serializable {
                 requireNamespace(ns);
             }
             // Read the function itself.
-            this.f = (IFn)in.readObject();
+            this.f = readFunction((byte[])in.readObject());
         } catch (IOException ex) {
             logger.error("IO error deserializing function " + className, ex);
             throw ex;
@@ -132,14 +142,88 @@ public abstract class SerializableFn implements Serializable {
      */
     private static void requireNamespace(String namespace) {
         try {
+            Symbol sym = Symbol.intern(namespace);
+            // A namespace made at run time, such as `user` at a REPL, has no
+            // file to load, so requiring it would only fail and warn.
+            if (Namespace.find(sym) != null && !hasSource(namespace)) {
+                return;
+            }
             logger.trace("(require " + namespace + ")");
             synchronized (RT.REQUIRE_LOCK) {
-                Symbol sym = Symbol.intern(namespace);
                 require.invoke(sym);
             }
         } catch (Exception ex) {
             logger.warn("Error loading namespace " + namespace, ex);
         }
+    }
+
+
+    /**
+     * Whether the namespace has a file that `require` could load.
+     *
+     * @param namespace string designating the namespace
+     */
+    private static boolean hasSource(String namespace) {
+        String path = namespace.replace('-', '_').replace('.', '/');
+        ClassLoader loader = RT.baseLoader();
+        return loader.getResource(path + "__init.class") != null
+            || loader.getResource(path + ".clj") != null
+            || loader.getResource(path + ".cljc") != null;
+    }
+
+
+    /**
+     * Read a function back from the bytes that writeObject wrote.
+     *
+     * Java's deserialisation makes a new Boolean for each boolean it reads,
+     * and Clojure treats every Boolean but Boolean.FALSE as true, so a false
+     * that the function closes over, or that sits in a map or vector it
+     * closes over, would turn true. This stream swaps each Boolean for the
+     * canonical one.
+     *
+     * @param bytes the function, serialised on its own
+     */
+    private static IFn readFunction(byte[] bytes) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream in = new CanonicalObjectInputStream(new ByteArrayInputStream(bytes))) {
+            return (IFn)in.readObject();
+        }
+    }
+
+
+    /**
+     * An ObjectInputStream that reads canonical booleans. It resolves classes
+     * through the thread's context class loader, which Spark sets to the
+     * task's, and through Clojure's, which also knows the functions compiled
+     * at run time.
+     */
+    private static final class CanonicalObjectInputStream extends ObjectInputStream {
+
+        CanonicalObjectInputStream(InputStream in) throws IOException {
+            super(in);
+            enableResolveObject(true);
+        }
+
+
+        @Override
+        protected Object resolveObject(Object obj) {
+            return (obj instanceof Boolean) ? Boolean.valueOf((Boolean)obj) : obj;
+        }
+
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc)
+            throws IOException, ClassNotFoundException {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            try {
+                return RT.classForName(desc.getName(), false,
+                                       loader != null ? loader : RT.baseLoader());
+            } catch (Exception ex) {
+                // Java's own lookup, which also knows the primitive types.
+                // RT.classForName throws ClassNotFoundException undeclared.
+                return super.resolveClass(desc);
+            }
+        }
+
     }
 
 }
