@@ -1,0 +1,63 @@
+name: Template
+
+# Makes a project from the deps-new template in template/, runs its test and
+# its -main, builds its uberjar, and runs that with the spark-submit from
+# pyspark's package. The project depends on this checkout's Geni, installed
+# into ~/.m2. It only runs when the template or the build changes, and isn't
+# a required check.
+on:
+  push:
+    branches: [develop]
+    paths: [template/**, build.clj, deps.edn, .github/workflows/template.yml]
+  pull_request:
+    paths: [template/**, build.clj, deps.edn, .github/workflows/template.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: template-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: 1.12.6.1673
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.cache/pip
+            !~/.m2/repository/zero/one/geni
+          key: template-${{ hashFiles('deps.edn', 'template/**') }}
+          restore-keys: deps-spark-
+      - name: Install this checkout's Geni into ~/.m2
+        run: clojure -T:build install
+      - name: Make a project from the template
+        run: |
+          clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
+          clojure -Sdeps '{:deps {zero-one/geni-template {:local/root "template"}}}' \
+            -Tnew create :template zero-one/geni :name acme/spark-app \
+            :target-dir '"${{ runner.temp }}/spark-app"'
+      - name: Run the project's test and -main
+        working-directory: ${{ runner.temp }}/spark-app
+        run: |
+          clojure -X:spark:test
+          clojure -M:spark:run 2>&1 | tee run.out
+          grep -qE '^\|the +\|2 +\|$' run.out
+      - name: Build the uberjar and run it with spark-submit
+        working-directory: ${{ runner.temp }}/spark-app
+        run: |
+          clojure -T:build uber
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyspark==3.5.9
+          printf 'to be or not to be\n' > words.txt
+          "$RUNNER_TEMP/venv/bin/spark-submit" --master 'local[2]' target/spark_app.jar words.txt 2>&1 | tee submit.out
+          grep -qE '^\|be +\|2 +\|$' submit.out

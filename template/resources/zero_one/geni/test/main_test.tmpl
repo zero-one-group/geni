@@ -1,0 +1,12 @@
+(ns {{top/ns}}.{{main/ns}}-test
+  (:require
+   [clojure.test :refer [deftest is]]
+   [{{top/ns}}.{{main/ns}} :as app]
+   [zero-one.geni.core :as g]))
+
+(deftest word-counts-test
+  (is (= [{:word "the" :count 2} {:word "brown" :count 1}]
+         (-> (g/table->dataset [["the quick brown fox"] ["jumps over the lazy dog"]] [:line])
+             app/word-counts
+             (g/limit 2)
+             g/collect))))

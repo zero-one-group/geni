@@ -27,6 +27,7 @@
  [zero-one.geni.ml.xgb
   write-native-model!
   xgboost-classifier
+  xgboost-ranker
   xgboost-regressor])
 
 (import-vars

@@ -158,6 +158,20 @@
        ":target-root" "\"target/cookbook\"")
   (sh! "clojure" "-X:spark:test:cookbook"))
 
+(defn xgb-tests
+  "Runs the XGBoost tests in test-xgb/, then the XGBoost guide's examples,
+  with XGBoost4J-Spark on the classpath: :xgb on :spark, and :xgb-2.13 on the
+  Spark builds on Scala 2.13, as in `clojure -T:build xgb-tests :spark :spark-4`.
+  Run `prep` with the same Spark first."
+  [{:keys [spark] :or {spark :spark}}]
+  (let [xgb     (if (= spark :spark) ":xgb" ":xgb-2.13")
+        aliases (str "-X:" (name spark) ":test" xgb)]
+    (sh! "clojure" aliases ":dirs" "[\"test-xgb\"]")
+    (sh! "clojure" "-X:gen-doc-tests"
+         ":docs" "[\"docs/xgboost.md\"]"
+         ":target-root" "\"target/xgb-docs\"")
+    (sh! "clojure" (str aliases ":xgb-docs"))))
+
 (defn check
   "Lints, then runs the tests and the doc tests on :spark: what the CI runs on
   a pull request. Run `prep` first."

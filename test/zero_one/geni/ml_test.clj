@@ -88,6 +88,28 @@
     (is (nil? (ml/write-stage! stage temp-file {:mode "overwrite"
                                                 :persistSubModels "true"})))))
 
+(definterface ColSetters
+  (^Object setCol [^String col])
+  (^Object setCol [^"[Ljava.lang.String;" cols]))
+
+(def ^:private set-cols (atom []))
+
+(deftype ColStage []
+  ColSetters
+  (^Object setCol [_ ^String col]
+    (swap! set-cols conj [:one col])
+    nil)
+  (^Object setCol [_ ^"[Ljava.lang.String;" cols]
+    (swap! set-cols conj [:many (vec cols)])
+    nil))
+
+(deftest overloaded-setters-test
+  (testing "a param with overloaded setters, as XGBoost's :features-col, gets the one that fits"
+    (reset! set-cols [])
+    (interop/instantiate ColStage {:col "a"})
+    (interop/instantiate ColStage {:col ["a" "b"]})
+    (is (= [[:one "a"] [:many ["a" "b"]]] @set-cols))))
+
 (deftest params-test
   (testing "an unknown param throws, with the closest one as a suggestion"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo

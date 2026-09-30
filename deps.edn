@@ -208,12 +208,24 @@
    :extra-deps  {techascent/tech.ml.dataset {:mvn/version "6.101"
                                              :exclusions  [ch.qos.logback/logback-classic]}}}
 
-  ;; The XGBoost tests. XGBoost 1.2 fails to train on Apple Silicon, which
-  ;; also stops the SparkContext.
+  ;; The XGBoost tests, with XGBoost4J-Spark 3, whose jar includes XGBoost4J:
+  ;; :xgb for :spark, and :xgb-2.13 for the Spark builds on Scala 2.13.
+  ;; clojure -T:build xgb-tests runs them.
   :xgb
   {:extra-paths ["test-xgb"]
-   :extra-deps  {ml.dmlc/xgboost4j-spark_2.12 {:mvn/version "1.2.0"}
-                 ml.dmlc/xgboost4j_2.12       {:mvn/version "1.2.0"}}}
+   :extra-deps  {ml.dmlc/xgboost4j-spark_2.12 {:mvn/version "3.4.0"}}}
+  :xgb-2.13
+  {:extra-paths ["test-xgb"]
+   :extra-deps  {ml.dmlc/xgboost4j-spark_2.13 {:mvn/version "3.4.0"}}}
+
+  ;; The XGBoost guide's examples, run as the doc tests are, after :xgb.
+  :xgb-docs
+  {:extra-paths ["target/xgb-docs/test-doc-blocks/test"]
+   :jvm-opts    ["-Dspark.master=local[2]"
+                 "-Duser.timezone=UTC"
+                 "-Dspark.sql.codegen.wholeStage=true"
+                 "-Dspark.sql.codegen.factoryMode=FALLBACK"]
+   :exec-args   {:dirs ["target/xgb-docs/test-doc-blocks/test"]}}
 
   ;; For scripts/scrape-spark-docs.clj, which writes resources/spark-docs.edn.
   :scrape

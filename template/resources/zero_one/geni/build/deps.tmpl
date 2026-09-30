@@ -1,0 +1,78 @@
+{:paths ["src" "resources"]
+ :deps  {org.clojure/clojure {:mvn/version "1.12.6"}
+         zero.one/geni       {:mvn/version "{{geni/version}}"}}
+
+ :aliases
+ {;; Spark 3.5 on Scala 2.12, with the JVM flags that Spark's own launcher
+  ;; sets, as in Geni's README. Spark stays out of :deps, since spark-submit
+  ;; brings its own.
+  :spark
+  {:extra-deps
+   {org.apache.spark/spark-avro_2.12  {:mvn/version "3.5.9"}
+    org.apache.spark/spark-mllib_2.12 {:mvn/version "3.5.9"}
+    org.apache.spark/spark-sql_2.12   {:mvn/version "3.5.9"}
+    org.apache.arrow/arrow-vector       {:mvn/version "13.0.0"}
+    org.apache.arrow/arrow-memory-netty {:mvn/version "13.0.0"}}
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Djdk.reflect.useDirectMethodHandle=false"]}
+
+  ;; Spark 4 on Scala 2.13, in place of :spark.
+  :spark-4
+  {:extra-deps
+   {org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}
+    org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
+    org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}}
+   :jvm-opts
+   ["-XX:+IgnoreUnrecognizedVMOptions"
+    "--add-modules=jdk.incubator.vector"
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    "--add-opens=java.base/java.io=ALL-UNNAMED"
+    "--add-opens=java.base/java.net=ALL-UNNAMED"
+    "--add-opens=java.base/java.nio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+    "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+    "-Dio.netty.tryReflectionSetAccessible=true"
+    "-Dio.netty.allocator.type=pooled"
+    "-Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE"
+    "--sun-misc-unsafe-memory-access=allow"
+    "--enable-native-access=ALL-UNNAMED"]}
+
+  ;; clojure -M:spark:run [path ...]
+  :run
+  {:main-opts ["-m" "{{top/ns}}.{{main/ns}}"]}
+
+  ;; clojure -X:spark:test
+  :test
+  {:extra-paths ["test"]
+   :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+   :exec-fn     cognitect.test-runner.api/test}
+
+  ;; clojure -T:build uber, or clojure -T:build uber :spark :spark-4
+  :build
+  {:deps       {io.github.clojure/tools.build {:mvn/version "0.10.14"}}
+   :ns-default build}}}
