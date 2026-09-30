@@ -12,6 +12,7 @@
    ["Creating Spark schemas" {:file "docs/creating_spark_schemas.md"}]
    ["Manual dataset creation" {:file "docs/manual_dataset_creation.md"}]
    ["Working with SQL maps" {:file "docs/sql_maps.md"}]
+   ["Clojure UDFs" {:file "docs/udfs.md"}]
    ["Collecting data from Spark datasets" {:file "docs/collect.md"}]
    ["Pandas, NumPy and other idioms" {:file "docs/pandas_numpy_and_other_idioms.md"}]
    ["Optional XGBoost support" {:file "docs/xgboost.md"}]

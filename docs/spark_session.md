@@ -39,7 +39,7 @@ translates to:
 
 Like `getOrCreate`, it returns the running session if there is one. Without `:master` and `:app-name`, it uses `"local[*]"` and `"Geni App"`, unless `spark.master` and `spark.app.name` are set already, for instance by `spark-submit`.
 
-It also takes `:log-level` and `:checkpoint-dir`, which are set on the `SparkContext`. Without a log4j2 config of its own, an app gets Spark's default profile, which logs at `INFO`. So when Geni starts Spark and there's no log4j2 config on the classpath, it sets the level to `WARN`, as `spark-shell` does. A log4j2 config or `:log-level` takes precedence.
+It also takes `:log-level` and `:checkpoint-dir`, which are set on the `SparkContext`. Without a log4j2 config of its own, an app gets Spark's default profile, which logs at `INFO`. So when Geni starts Spark and there's no log4j2 config on the classpath, it sets the level to `WARN` before Spark starts, as `spark-shell` does, and Spark's `INFO` lines as it starts don't show. A log4j2 config or `:log-level` takes precedence.
 
 Geni's default session has no checkpoint directory, so `g/checkpoint` needs one first:
 

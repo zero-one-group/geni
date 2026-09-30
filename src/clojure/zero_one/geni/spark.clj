@@ -5,7 +5,7 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.utils :refer [class-named]])
   (:import
-   (clojure.lang Reflector)
+   (clojure.lang DynamicClassLoader Reflector)
    (org.apache.spark SparkConf SparkContext)
    (org.apache.spark.sql SparkSession)
    (scala Option)))
@@ -70,6 +70,44 @@
   []
   (boolean (some-> (log4j2-config-location) (string/includes? "org/apache/spark/log4j2"))))
 
+(defn- quieten-spark-start!
+  "Before Geni starts Spark on Spark's own log4j2 profile, which logs at INFO,
+  sets the root level to WARN, so that Spark's INFO lines as it starts don't
+  show. It has Spark initialise its logging first, without printing, when it
+  hasn't yet: Spark 3.5 does so as it starts, and Spark 4 when the first Column
+  is made. With a log4j2 config on the classpath, it does nothing."
+  []
+  (try
+    (let [module  #(Reflector/getStaticField ^String % "MODULE$")
+          call    #(Reflector/invokeInstanceMethod %1 %2 (object-array %3))
+          logging (module "org.apache.spark.internal.Logging$")]
+      (when (call logging "islog4j2DefaultConfigured" [])
+        ;; SparkContext's companion object has Spark's Logging trait.
+        (call (module "org.apache.spark.SparkContext$") "initializeLogIfNecessary" [false true]))
+      (when (spark-log-profile?)
+        (let [warn (Reflector/getStaticField "org.apache.logging.log4j.Level" "WARN")]
+          (Reflector/invokeStaticMethod "org.apache.logging.log4j.core.config.Configurator"
+                                        "setRootLevel"
+                                        (object-array [warn])))))
+    (catch Exception _ nil)))
+
+(defn- get-or-create
+  "Spark's `getOrCreate`, with a Clojure DynamicClassLoader as the thread's
+  context class loader while Spark starts. The executors of a local session
+  load classes through the loader they find there, and a DynamicClassLoader
+  also finds the classes of functions defined at a REPL or in a script, which
+  RDD functions and UDFs send them. REPLs such as nREPL's already use one."
+  ^SparkSession [builder]
+  (let [thread (Thread/currentThread)
+        loader (.getContextClassLoader thread)]
+    (if (instance? DynamicClassLoader loader)
+      (.getOrCreate builder)
+      (try
+        (.setContextClassLoader thread (DynamicClassLoader. loader))
+        (.getOrCreate builder)
+        (finally
+          (.setContextClassLoader thread loader))))))
+
 (defn create-spark-session
   "The entry point to programming Spark with the Dataset and DataFrame API.
 
@@ -82,7 +120,7 @@
   - `:configs`, a map of Spark configs.
   - `:log-level`, such as \"ERROR\". Without it, Geni only sets \"WARN\", and
     only when it starts Spark and there's no log4j2 config on the classpath,
-    as `spark-shell` does.
+    as `spark-shell` does, before Spark logs its INFO lines as it starts.
   - `:checkpoint-dir`, the SparkContext's checkpoint directory.
 
   ```clojure
@@ -95,6 +133,9 @@
     (throw (ex-info (str "create-spark-session starts classic Spark, but only the Spark Connect "
                          "client is on the classpath. Use g/connect to connect to a server.")
                     {})))
+  (when (and (nil? (active-session))
+             (not (#{"ALL" "TRACE" "DEBUG" "INFO"} (some-> log-level string/upper-case))))
+    (quieten-spark-start!))
   (let [preset   (SparkConf.)
         builder  (cond-> (SparkSession/builder)
                    (or app-name (not (.contains preset "spark.app.name")))
@@ -104,7 +145,7 @@
                    (.master (or master "local[*]")))
         builder  (reduce (fn [b [k v]] (.config b (name k) v)) builder configs)
         created? (nil? (active-session))
-        session  (.getOrCreate builder)
+        session  (get-or-create builder)
         context  (if (or log-level checkpoint-dir)
                    (spark-context session)
                    (spark-context-or-nil session))]

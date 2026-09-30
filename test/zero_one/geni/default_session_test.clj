@@ -123,4 +123,6 @@
     (is (map? result) "The new JVM failed. See target/fresh-jvm.log.")
     (is (false? started-on-require?))
     (testing "Geni's own session logs at WARN when Spark would log at INFO"
-      (is (= "WARN" log-level)))))
+      (is (= "WARN" log-level)))
+    (testing "from the start, so that Spark's INFO lines as it starts don't show"
+      (is (not (re-find #" INFO " (slurp "target/fresh-jvm.log")))))))

@@ -5,9 +5,14 @@
 New:
 
 - `g/ltrim` and `g/rtrim` take the characters to trim as a second argument, as `g/trim` does, and `g/trim` trims spaces when given only a column (#344).
+- `g/udf` turns a Clojure function into a Spark UDF, and `g/register-udf!` registers one for SQL and `g/expr` (#306). The function gets Clojure data, and its result is converted to the declared return type. UDFs need classic Spark. The [Clojure UDFs guide](docs/udfs.md) has the details.
 
 Fixes:
 
+- Functions defined at a REPL or in a script work in RDD functions, and in UDFs, on a local session that Geni starts. From a script, or from `clojure -X`, they used to fail with a `ClassCastException` about a `SerializedLambda` unless they were compiled ahead of time.
+- When Geni starts Spark and there's no log4j2 config on the classpath, Spark's INFO lines as it starts no longer show: Geni sets WARN before Spark starts rather than after.
+- A `false` that an RDD function closes over, directly or in a map or vector, stays false on the executors. Java's deserialisation made a new `Boolean` of it, which Clojure treats as true, so `(if b ...)` took the wrong branch.
+- RDD functions defined at a REPL no longer log a warning with a stack trace for each task, about loading the `user` namespace.
 - The `geni` script runs the uberjar it downloaded last time when it can't reach GitHub for the latest version, rather than stopping. Install the script again to get this.
 - When Spark's Connect client isn't on the classpath, the error from `g/connect` no longer carries the URL in its `ex-data`, since the URL can hold a token.
 
