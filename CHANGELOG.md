@@ -4,7 +4,7 @@
 
 New:
 
-- Spark Connect, on Spark 4. With Spark's JVM client, `org.apache.spark/spark-connect-client-jvm_2.13`, on the classpath in place of classic Spark, `g/connect` connects to a Spark Connect server, and Geni's default session connects to `SPARK_REMOTE`. The DataFrame functions work over it. The `zero-one.geni.rdd` and `zero-one.geni.ml` namespaces need classic Spark to load, and the rest of what needs it, such as `g/rdd`, the SparkContext functions and MLlib's vectors, throws an error that says so.
+- Spark Connect, on Spark 4. With Spark's JVM client, `org.apache.spark/spark-connect-client-jvm_2.13`, on the classpath in place of classic Spark, `g/connect` connects to a Spark Connect server, and Geni's default session connects to `SPARK_REMOTE`. The DataFrame functions work over it. The `zero-one.geni.rdd` and `zero-one.geni.ml` namespaces need classic Spark to load, and the rest of what needs it, such as `g/rdd`, the SparkContext functions and MLlib's vectors, throws an error that says so. The [Spark Connect guide](docs/spark_connect.md) has the details.
 
 Changes:
 

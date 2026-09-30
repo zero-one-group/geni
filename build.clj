@@ -220,8 +220,11 @@
   "Runs the tests over Spark Connect: it starts a Spark Connect server on
   :spark-4 in the background, on 127.0.0.1 at `:port` (15002 by default), then
   runs the tests with Spark's JVM client in place of classic Spark, which
-  skips the ones marked ^:classic. Other options go to the test runner, e.g.
-  `:only '[zero-one.geni.dataset-test]'`. Run `prep :spark :spark-4` first."
+  skips the ones marked ^:classic, and the Spark Connect guide's examples.
+  Other options go to the test runner instead, e.g.
+  `:only '[zero-one.geni.dataset-test]'`. They skip the guide, whose examples
+  connect to port 15002, and so does another port. Run `prep :spark :spark-4`
+  first."
   [{:keys [port] :or {port 15002} :as opts}]
   (when (port-open? port)
     (println "Port" port "is taken. Stop what's on it, or pass another :port.")
@@ -229,7 +232,17 @@
   (let [args (mapcat (fn [[k v]] [(str k) (pr-str v)]) (dissoc opts :port))
         exit (with-connect-server
                port
-               #(exit-code (into ["clojure" "-X:spark-connect:test"] args) %))]
+               (fn [env]
+                 (let [tests (exit-code (into ["clojure" "-X:spark-connect:test"] args) env)]
+                   (if (or (seq args) (not= 15002 port) (pos? tests))
+                     tests
+                     (let [gen (exit-code ["clojure" "-X:gen-doc-tests"
+                                           ":docs" "[\"docs/spark_connect.md\"]"
+                                           ":target-root" "\"target/connect-docs\""]
+                                          {})]
+                       (if (pos? gen)
+                         gen
+                         (exit-code ["clojure" "-X:spark-connect:test:connect-docs"] env)))))))]
     (when-not (zero? exit)
       (System/exit exit))))
 

@@ -187,6 +187,12 @@
                  "-Dspark.sql.codegen.factoryMode=FALLBACK"]
    :exec-args   {:dirs ["target/cookbook/test-doc-blocks/test"]}}
 
+  ;; The Spark Connect guide, run the same way over Spark Connect:
+  ;; clojure -T:build connect-tests.
+  :connect-docs
+  {:extra-paths ["target/connect-docs/test-doc-blocks/test"]
+   :exec-args   {:dirs ["target/connect-docs/test-doc-blocks/test"]}}
+
   ;; The Geni CLI (an nREPL server plus a REPL-y prompt) and its tests. build.clj
   ;; builds the uberjar from cli/src, with these deps and :spark's.
   :cli

@@ -16,7 +16,7 @@
 (deftest readme-spark-setups-test
   (let [deps-edn (edn/read-string (slurp "deps.edn"))
         setups   (apply merge (keep :aliases (edn-blocks "README.md")))]
-    (is (= #{:spark :spark-3.5-2.13 :spark-4} (set (keys setups))))
+    (is (= #{:spark :spark-3.5-2.13 :spark-4 :spark-connect} (set (keys setups))))
     (doseq [[alias setup] setups]
       (testing alias
         (is (= (get-in deps-edn [:aliases alias :extra-deps]) (:extra-deps setup)))
