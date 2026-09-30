@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-09-30)
 
 Breaking changes:
 
@@ -28,9 +28,4 @@ Fixes:
 - Without XGBoost on the classpath, `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/write-native-model!` now throw a clear error instead of being unbound.
 - `g/read-jdbc!` honours `:kebab-columns`, which it used to pass on to the JDBC source as an option, and so ignored.
 - `collect-to-arrow` works on JDK 21 with Spark 3.5, as long as Arrow 13 or newer is on the classpath. Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21.
-- The `geni` script downloads the uberjar again when a new version is released, and uses curl rather than wget. It used to keep the first uberjar it downloaded, so a script installed before 0.1.0 needs `geni --force-download` once.
-
-Fixes to 0.1.0-alpha.1:
-
-- `g/write-edn!` keeps whole numbers that don't fit in a long, such as a `DECIMAL(38,0)`, rather than failing on them.
-- `ml/write-stage!` and `ml/read-stage!` use Geni's default session. Without a running session, they failed with "A master URL must be set".
+- The `geni` script downloads the uberjar again when a new version is released, and uses curl rather than wget. It used to keep the first uberjar it downloaded, so install a script from before 0.1.0 again, or run `geni --force-download` once after each release.
