@@ -7,7 +7,7 @@ Most Geni functions that create datasets, such as `g/read-csv!` or `g/range`, ta
 
 1. the session passed to `g/set-default-session!`, if there is one;
 2. otherwise Spark's active session, for instance the one that Databricks or your own code started;
-3. otherwise a new local session, which Geni creates the first time a function needs one.
+3. otherwise a new local session, which Geni creates the first time a function needs one. With Spark's [Spark Connect](spark_connect.md) client on the classpath in place of Spark, it connects to the server at `SPARK_REMOTE` instead.
 
 Requiring Geni doesn't start Spark, and Geni leaves the settings of a session it didn't create alone.
 

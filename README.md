@@ -164,7 +164,7 @@ Geni is `zero.one/geni` on Clojars. Clojure 1.11 or newer is its only dependency
 
 - Spark 3.5 on Scala 2.12;
 - Spark 3.5 on Scala 2.13;
-- Spark 4 on Scala 2.13.
+- Spark 4 on Scala 2.13, which also works over [Spark Connect](#spark-connect).
 
 On these JDKs, Spark needs the JVM flags that its own launcher sets. Each setup below is a `deps.edn` alias with Spark's deps and those flags, the same as the alias that Geni's tests run with. This `deps.edn` starts a REPL on Spark 3.5 with `clj -M:spark`:
 
@@ -268,6 +268,40 @@ From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:prov
 
 Some features need one more dependency: `zero.one/fxl` for `g/read-xlsx!` and `g/write-xlsx!`, XGBoost4J for `ml/xgboost-classifier` and friends (see [Optional XGBoost Support](docs/xgboost.md)), and a JDBC driver such as `org.xerial/sqlite-jdbc` or `org.postgresql/postgresql` for `g/read-jdbc!` and `g/write-jdbc!`. Without fxl or XGBoost4J, those functions throw an error that says what to add. Spark ML uses a native BLAS such as OpenBLAS when one is installed.
 
+### Spark Connect
+
+With Spark 4's Spark Connect client in place of Spark, Geni sends its queries to a Spark Connect server, such as one on a cluster or on Databricks, and `g/connect` starts the session. The client can't share a classpath with `spark-sql`, so it's a setup of its own, with Spark 4's JVM flags:
+
+```edn
+{:aliases
+ {:spark-connect
+  {:extra-deps {org.apache.spark/spark-connect-client-jvm_2.13 {:mvn/version "4.2.0"}}
+   :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
+                "--add-modules=jdk.incubator.vector"
+                "--add-opens=java.base/java.lang=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+                "--add-opens=java.base/java.io=ALL-UNNAMED"
+                "--add-opens=java.base/java.net=ALL-UNNAMED"
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
+                "--add-opens=java.base/java.util=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+                "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+                "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+                "--add-opens=java.base/sun.security.action=ALL-UNNAMED"
+                "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+                "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                "-Dio.netty.tryReflectionSetAccessible=true"
+                "-Dio.netty.allocator.type=pooled"
+                "-Dio.netty.handler.ssl.defaultEndpointVerificationAlgorithm=NONE"
+                "--sun-misc-unsafe-memory-access=allow"
+                "--enable-native-access=ALL-UNNAMED"]}}}
+```
+
+RDDs, MLlib and the other parts that need a SparkContext stay with classic Spark. The [Spark Connect guide](docs/spark_connect.md) has the details.
+
 ## The Geni CLI
 
 The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The uberjar is on the [0.1.1 release](https://github.com/zero-one-group/geni/releases/tag/v0.1.1), and runs on JDK 17 or 21:
@@ -305,6 +339,7 @@ The guides:
 - [Collecting data from Spark datasets](docs/collect.md)
 - [Pandas, NumPy and other idioms](docs/pandas_numpy_and_other_idioms.md)
 - [Optional XGBoost support](docs/xgboost.md)
+- [Spark Connect](docs/spark_connect.md)
 - [Using Kubernetes](docs/kubernetes_basic.md), written for Spark 3.0
 - [A simple performance benchmark](docs/simple_performance_benchmark.md), from 2020
 

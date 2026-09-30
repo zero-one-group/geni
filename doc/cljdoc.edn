@@ -14,7 +14,8 @@
    ["Working with SQL maps" {:file "docs/sql_maps.md"}]
    ["Collecting data from Spark datasets" {:file "docs/collect.md"}]
    ["Pandas, NumPy and other idioms" {:file "docs/pandas_numpy_and_other_idioms.md"}]
-   ["Optional XGBoost support" {:file "docs/xgboost.md"}]]
+   ["Optional XGBoost support" {:file "docs/xgboost.md"}]
+   ["Spark Connect" {:file "docs/spark_connect.md"}]]
   ["Cookbook" {}
    ["0. Getting started with Clojure, Geni and Spark" {:file "docs/cookbook/part_00_getting_started_with_clojure_geni_and_spark.md"}]
    ["1. Reading and writing datasets" {:file "docs/cookbook/part_01_reading_and_writing_datasets.md"}]
