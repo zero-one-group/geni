@@ -1,4 +1,4 @@
-(ns zero-one.geni.docs-test
+(ns ^:classic zero-one.geni.docs-test
   (:require
    [clojure.test :refer [deftest is]]
    [zero-one.geni.core]

@@ -236,10 +236,6 @@
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! temp-file {:header false}))]
     (is (= ["_c0" "_c1"] (g/column-names read-df))))
-  (let [temp-file (.toString (create-temp-file! ".libsvm"))
-        read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
-                     (g/read-libsvm! temp-file {:num-features "780"}))]
-    (is (= (g/collect (libsvm-df)) (g/collect read-df))))
   (let [temp-file (.toString (create-temp-file! ".json"))
         read-df  (do (g/write-json! write-df temp-file {:mode "overwrite"})
                      (g/read-json! temp-file {}))]
@@ -281,12 +277,17 @@
                      (g/read-parquet! temp-file))]
     (is (= (g/collect read-df) (g/collect write-df)))))
 
-(deftest can-read-and-write-libsvm-test
+;; LIBSVM's features are MLlib vectors, which a Spark Connect client can't read.
+(deftest ^:classic can-read-and-write-libsvm-test
   (let [temp-file (.toString (create-temp-file! ".libsvm"))
         read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
                      (g/read-libsvm! temp-file))]
     (is (= (map #(get-in % [:features :indices]) (g/collect read-df)) (map #(get-in % [:features :indices]) (g/collect (libsvm-df)))))
-    (is (= (map #(get-in % [:features :values]) (g/collect read-df)) (map #(get-in % [:features :values]) (g/collect (libsvm-df)))))))
+    (is (= (map #(get-in % [:features :values]) (g/collect read-df)) (map #(get-in % [:features :values]) (g/collect (libsvm-df))))))
+  (let [temp-file (.toString (create-temp-file! ".libsvm"))
+        read-df  (do (g/write-libsvm! (libsvm-df) temp-file {:mode "overwrite"})
+                     (g/read-libsvm! temp-file {:num-features "780"}))]
+    (is (= (g/collect (libsvm-df)) (g/collect read-df)))))
 
 (deftest can-read-and-write-json-test
   (let [temp-file (.toString (create-temp-file! ".json"))
@@ -335,7 +336,8 @@
 (deftest read-write-of-managed-tables-test
   (testing "throws if the table doesn't exist."
     (with-fresh-session
-      (is (thrown? AnalysisException (g/read-table! @spark "i_dont_exist")))))
+      ;; Spark Connect only analyses a query when it needs its schema or rows.
+      (is (thrown? AnalysisException (g/columns (g/read-table! @spark "i_dont_exist"))))))
 
   (testing "can read and write tables"
     (with-fresh-session

@@ -1,4 +1,4 @@
-(ns zero-one.geni.rdd-test
+(ns ^:classic zero-one.geni.rdd-test
   (:require
    [clojure.java.io :as io]
    [clojure.string :as string]

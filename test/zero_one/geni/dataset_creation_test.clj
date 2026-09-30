@@ -3,14 +3,13 @@
    [clojure.string :refer [includes?]]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
+   [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :as tr])
   (:import
    (org.apache.spark.sql Dataset
                          Row)
    (org.apache.spark.sql.types StructField
-                               StructType)
-   (org.apache.spark.ml.linalg DenseVector
-                               SparseVector)))
+                               StructType)))
 
 (deftest ^:empty-dataset creation-of-empty-dataset-test
   (testing "correct creation"
@@ -31,55 +30,33 @@
            (g/dtypes
             (g/create-dataframe
              @tr/spark
-             [(g/row 32 "horse")
-              (g/row 64 "mouse")]
+             [(g/row (int 32) "horse")
+              (g/row (int 64) "mouse")]
              {:number :int :word :str})))))
-  (testing "of vector fields"
-    (let [actual (g/dtypes
-                  (g/create-dataframe
-                   @tr/spark
-                   [(g/row (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
-                    (g/row (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
-                   {:dense :vector :sparse :vector}))]
-      (is (and (includes? (:dense actual) "VectorUDT")
-               (includes? (:sparse actual) "VectorUDT")
-               (= (set (keys actual)) #{:dense :sparse})))))
   (testing "of struct fields"
     (is (= {:coord "StructType(StructField(x,IntegerType,true),StructField(y,IntegerType,true))"}
            (g/dtypes
             (g/create-dataframe
              @tr/spark
-             [(g/row (g/row 27 42))
-              (g/row (g/row 57 18))]
+             [(g/row (g/row (int 27) (int 42)))
+              (g/row (g/row (int 57) (int 18)))]
              {:coord {:x :int :y :int}})))))
   (testing "of struct array fields"
     (is (= {:coords "ArrayType(StructType(StructField(x,IntegerType,true),StructField(y,IntegerType,true)),true)"}
            (g/dtypes
             (g/create-dataframe
              @tr/spark
-             [(g/row [(g/row 27 42)])
-              (g/row [(g/row 57 18)])]
+             [(g/row [(g/row (int 27) (int 42))])
+              (g/row [(g/row (int 57) (int 18))])]
              {:coords [{:x :int :y :int}]}))))))
 
 (deftest building-blocks-test
-  (testing "can instantiate vectors"
-    (is (instance? DenseVector (g/dense 0.0 1.0)))
-    (is (instance? SparseVector (g/sparse 2 [1] [1.0])))
+  (testing "can instantiate rows"
     (is (instance? Row (g/row [2]))))
   (testing "can instantiate struct field and type"
     (let [field (g/struct-field :number :integer true)]
       (is (instance? StructField field))
       (is (instance? StructType (g/struct-type field)))))
-  (testing "can instantiate dataframe"
-    (is (instance? Dataset (g/create-dataframe
-                            @tr/spark
-                            [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
-                             (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
-                            (g/struct-type
-                             (g/struct-field :number :integer true)
-                             (g/struct-field :word :string true)
-                             (g/struct-field :dense :vector true)
-                             (g/struct-field :sparse :vector true))))))
   (testing "can instantiate example dataframes"
     (let [expected-dtypes {:number "LongType" :word "StringType"}]
       (is (= expected-dtypes
@@ -137,17 +114,7 @@
                    @tr/spark
                    {:a [1 4]
                     :b [nil nil]})]
-      (is (= [[1 nil] [4 nil]] (g/collect-vals dataset)))))
-  (let [dataset (g/table->dataset
-                 @tr/spark
-                 [[0.0 (g/dense 0.5 10.0)]
-                  [0.0 (g/dense 1.5 20.0)]
-                  [1.0 (g/dense 1.5 30.0)]
-                  [0.0 (g/dense 3.5 30.0)]
-                  [0.0 (g/dense 3.5 40.0)]
-                  [1.0 (g/dense 3.5 40.0)]]
-                 [:label :features])]
-    (is (includes? (:features (g/dtypes dataset)) "Vector"))))
+      (is (= [[1 nil] [4 nil]] (g/collect-vals dataset))))))
 
 (deftest records-dataset-test
   (testing "should create the right dataset"
@@ -318,5 +285,45 @@
       (is (= [10 13 16 19] (g/collect ds))))
     (let [ds (g/range 0 100 1 5)]
       (is (= ["id"] (g/column-names ds)))
-      (is (= (range 100) (g/collect ds)))
-      (is (= 5 (count (g/partitions ds)))))))
+      (is (= (range 100) (g/collect ds))))))
+
+(deftest ^:classic range-partitions-test
+  (is (= 5 (count (g/partitions (g/range 0 100 1 5))))))
+
+;; MLlib's vectors come with spark-mllib, which a Spark Connect client doesn't
+;; have.
+(deftest ^:classic mllib-vectors-test
+  (testing "can instantiate vectors"
+    (is (interop/dense-vector? (g/dense 0.0 1.0)))
+    (is (interop/sparse-vector? (g/sparse 2 [1] [1.0]))))
+  (testing "of vector fields"
+    (let [actual (g/dtypes
+                  (g/create-dataframe
+                   @tr/spark
+                   [(g/row (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
+                    (g/row (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
+                   {:dense :vector :sparse :vector}))]
+      (is (and (includes? (:dense actual) "VectorUDT")
+               (includes? (:sparse actual) "VectorUDT")
+               (= (set (keys actual)) #{:dense :sparse})))))
+  (testing "can instantiate dataframe"
+    (is (instance? Dataset (g/create-dataframe
+                            @tr/spark
+                            [(g/row 32 "horse" (g/dense 1.0 2.0) (g/sparse 4 [1 3] [3.0 4.0]))
+                             (g/row 64 "mouse" (g/dense 3.0 4.0) (g/sparse 4 [0 2] [1.0 2.0]))]
+                            (g/struct-type
+                             (g/struct-field :number :integer true)
+                             (g/struct-field :word :string true)
+                             (g/struct-field :dense :vector true)
+                             (g/struct-field :sparse :vector true))))))
+  (testing "can instantiate a dataset from a table"
+    (let [dataset (g/table->dataset
+                   @tr/spark
+                   [[0.0 (g/dense 0.5 10.0)]
+                    [0.0 (g/dense 1.5 20.0)]
+                    [1.0 (g/dense 1.5 30.0)]
+                    [0.0 (g/dense 3.5 30.0)]
+                    [0.0 (g/dense 3.5 40.0)]
+                    [1.0 (g/dense 3.5 40.0)]]
+                   [:label :features])]
+      (is (includes? (:features (g/dtypes dataset)) "Vector")))))

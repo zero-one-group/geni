@@ -54,18 +54,43 @@
                     (.isAbsolute (io/file %))))
        (filter #(.isDirectory (io/file %)))))
 
-(defn- test-namespaces [dirs]
-  (sort
-   (for [dir  dirs
-         file (file-seq (io/file dir))
-         :let [path (.getPath ^java.io.File file)]
-         :when (string/ends-with? path "_test.clj")]
-     (-> path
-         (subs (inc (count dir)))
-         (string/replace #"\.clj$" "")
-         (string/replace "/" ".")
-         (string/replace "_" "-")
-         symbol))))
+(defn- test-namespaces
+  "The test namespaces in `dirs`, as [name file] pairs, sorted by name."
+  [dirs]
+  (sort-by first
+           (for [dir  dirs
+                 file (file-seq (io/file dir))
+                 :let [path (.getPath ^java.io.File file)]
+                 :when (string/ends-with? path "_test.clj")]
+             [(-> path
+                  (subs (inc (count dir)))
+                  (string/replace #"\.clj$" "")
+                  (string/replace "/" ".")
+                  (string/replace "_" "-")
+                  symbol)
+              path])))
+
+(defn- ns-file
+  "Where a namespace's source is on the classpath, if it's there."
+  [ns-sym]
+  (io/resource (str (-> (str ns-sym) (string/replace "-" "_") (string/replace "." "/")) ".clj")))
+
+(defn- ns-meta
+  "The metadata on the namespace's name in its file, such as ^:classic, read
+  without loading the namespace."
+  [path]
+  (with-open [r (java.io.PushbackReader. (io/reader path))]
+    (binding [*read-eval* false]
+      (let [form (read r)]
+        (when (and (seq? form) (= 'ns (first form)))
+          (meta (second form)))))))
+
+(defn- other-spark
+  "The tests that this run skips: the ^:classic ones over Spark Connect, when
+  Spark's JVM client is on the classpath without classic Spark, and the
+  ^:connect ones otherwise."
+  []
+  (if ((requiring-resolve 'zero-one.geni.spark/connect-only?)) :classic :connect))
 
 (defn- shard
   "Every nth namespace, starting from the ith: [i n], counting from 1."
@@ -102,7 +127,7 @@
 
 (defn- run-namespace
   "Loads one namespace and runs its tests, keeping their output for the log."
-  [ns-sym {:keys [include exclude reload]} ^java.io.Writer log]
+  [ns-sym {:keys [include exclude reload skip]} ^java.io.Writer log]
   (let [out      (java.io.StringWriter.)
         failures (atom [])
         timings  (atom {})
@@ -130,6 +155,7 @@
                         (filter (comp :test meta))
                         (filter #(or (nil? include) (include (meta %))))
                         (remove #(and exclude (exclude (meta %))))
+                        (remove #(skip (meta %)))
                         (sort-by (comp :line meta))))]
     (when-not load-err
       (binding [*out*                out
@@ -174,8 +200,16 @@
   (io/make-parents log-path)
   (with-open [log (io/writer log-path)]
     (let [start      (System/nanoTime)
-          namespaces (or (seq only) (shard (test-namespaces (or dirs (classpath-dirs))) shard-spec))
-          results    (mapv #(doto (run-namespace % opts log) report!) namespaces)
+          skip       (other-spark)
+          selected   (if (seq only)
+                       (map (juxt identity ns-file) only)
+                       (shard (test-namespaces (or dirs (classpath-dirs))) shard-spec))
+          skip-ns?   (fn [[_ path]] (boolean (and path (skip (ns-meta path)))))
+          _          (doseq [[ns-sym] (filter skip-ns? selected)]
+                       (println (format "%-4s  %-42s %6s   %s" "skip" ns-sym ""
+                                        (if (= skip :classic) "classic Spark only" "Spark Connect only"))))
+          namespaces (map first (remove skip-ns? selected))
+          results    (mapv #(doto (run-namespace % (assoc opts :skip skip) log) report!) namespaces)
           failed     (remove passed? results)
           none?      (empty? results)
           seconds    (/ (- (System/nanoTime) start) 1e9)
@@ -219,7 +253,11 @@
     :include  only run tests with this metadata, e.g. :slow
     :exclude  skip tests with this metadata, e.g. :slow
     :shard    run every nth namespace from the ith, e.g. [1 3]
-    :slowest  how many of the slowest tests to list (default: 5)"
+    :slowest  how many of the slowest tests to list (default: 5)
+
+  Over Spark Connect, that is with Spark's JVM client on the classpath in
+  place of classic Spark, it skips the namespaces and tests marked ^:classic.
+  Otherwise, it skips the ones marked ^:connect."
   [{:keys [shard] :as opts}]
   (when-let [problem (prep-problem)]
     (println problem)

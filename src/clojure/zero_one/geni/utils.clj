@@ -7,6 +7,16 @@
 
 (defn ensure-coll [x] (if (or (coll? x) (nil? x)) x [x]))
 
+(defn class-named
+  "The class with this name, or nil when it isn't on the classpath. Some
+  classes are only there with classic Spark, such as MLlib's, which a Spark
+  Connect client doesn't bring."
+  ^Class [^String class-name]
+  (try
+    (Class/forName class-name false (clojure.lang.RT/baseLoader))
+    (catch ClassNotFoundException _ nil)
+    (catch LinkageError _ nil)))
+
 (defn- import-class
   ([cls] (.importClass *ns* (clojure.lang.RT/classForName (str cls))))
   ([pkg cls] (import-class (str pkg \. cls))))

@@ -5,32 +5,45 @@
   (:require
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [class-named]])
   (:import
+   (clojure.lang Reflector)
    (org.apache.spark.sql.types ArrayType DataType DataTypes)
-   (org.apache.spark.ml.linalg VectorUDT
-                               DenseVector
-                               SparseVector)
    (org.apache.spark.sql SparkSession)))
+
+(def ^:private vector-udt
+  "MLlib's vector type, when spark-mllib is on the classpath. It's classic
+  Spark only, so a Spark Connect client doesn't have it."
+  (some-> (class-named "org.apache.spark.ml.linalg.VectorUDT")
+          (Reflector/invokeConstructor (object-array 0))))
 
 (def data-type->spark-type
   "A mapping from type keywords to Spark types."
-  {:bool      DataTypes/BooleanType
-   :boolean   DataTypes/BooleanType
-   :byte      DataTypes/ByteType
-   :date      DataTypes/DateType
-   :double    DataTypes/DoubleType
-   :float     DataTypes/FloatType
-   :int       DataTypes/IntegerType
-   :integer   DataTypes/IntegerType
-   :long      DataTypes/LongType
-   :nil       DataTypes/NullType
-   :short     DataTypes/ShortType
-   :str       DataTypes/StringType
-   :string    DataTypes/StringType
-   :timestamp DataTypes/TimestampType
-   :vector    (VectorUDT.)
-   nil        DataTypes/NullType})
+  (cond-> {:bool      DataTypes/BooleanType
+           :boolean   DataTypes/BooleanType
+           :byte      DataTypes/ByteType
+           :date      DataTypes/DateType
+           :double    DataTypes/DoubleType
+           :float     DataTypes/FloatType
+           :int       DataTypes/IntegerType
+           :integer   DataTypes/IntegerType
+           :long      DataTypes/LongType
+           :nil       DataTypes/NullType
+           :short     DataTypes/ShortType
+           :str       DataTypes/StringType
+           :string    DataTypes/StringType
+           :timestamp DataTypes/TimestampType
+           nil        DataTypes/NullType}
+    vector-udt (assoc :vector vector-udt)))
+
+(defn- ->spark-type
+  "The Spark type for a type keyword. Without spark-mllib, as with a Spark
+  Connect client, :vector says what it needs."
+  [data-type]
+  (or (data-type->spark-type data-type)
+      (when (= :vector data-type)
+        (interop/mllib-class "org.apache.spark.ml.linalg.VectorUDT"))))
 
 (defn struct-field
   "Creates a StructField by specifying the name `col-name`, data type `data-type`
@@ -38,7 +51,7 @@
   [col-name data-type nullable]
   (let [spark-type (if (instance? DataType data-type)
                      data-type
-                     (data-type->spark-type data-type))]
+                     (->spark-type data-type))]
     (DataTypes/createStructField (name col-name) spark-type nullable)))
 
 (defn struct-type
@@ -52,7 +65,7 @@
   [val-type nullable]
   (let [spark-type (if (instance? DataType val-type)
                      val-type
-                     (data-type->spark-type val-type))]
+                     (->spark-type val-type))]
     (DataTypes/createArrayType spark-type nullable)))
 
 (defn map-type
@@ -60,8 +73,8 @@
    of values `val-type`, and whether values contain any null value `nullable`."
   [key-type val-type]
   (DataTypes/createMapType
-   (data-type->spark-type key-type)
-   (data-type->spark-type val-type)))
+   (->spark-type key-type)
+   (->spark-type val-type)))
 
 (defn ->schema
   "Coerces plain Clojure data structures to a Spark schema.
@@ -115,19 +128,19 @@
 
 (def java-type->spark-type
   "A mapping from Java types to Spark types."
-  {java.lang.Boolean  DataTypes/BooleanType
-   java.lang.Byte     DataTypes/ByteType
-   java.lang.Double   DataTypes/DoubleType
-   java.lang.Float    DataTypes/FloatType
-   java.lang.Integer  DataTypes/IntegerType
-   java.lang.Long     DataTypes/LongType
-   java.lang.Short    DataTypes/ShortType
-   java.lang.String   DataTypes/StringType
-   java.sql.Timestamp DataTypes/TimestampType
-   java.util.Date     DataTypes/DateType
-   DenseVector        (VectorUDT.)
-   SparseVector       (VectorUDT.)
-   nil                DataTypes/NullType})
+  (cond-> {java.lang.Boolean  DataTypes/BooleanType
+           java.lang.Byte     DataTypes/ByteType
+           java.lang.Double   DataTypes/DoubleType
+           java.lang.Float    DataTypes/FloatType
+           java.lang.Integer  DataTypes/IntegerType
+           java.lang.Long     DataTypes/LongType
+           java.lang.Short    DataTypes/ShortType
+           java.lang.String   DataTypes/StringType
+           java.sql.Timestamp DataTypes/TimestampType
+           java.util.Date     DataTypes/DateType
+           nil                DataTypes/NullType}
+    vector-udt (assoc (class-named "org.apache.spark.ml.linalg.DenseVector") vector-udt
+                      (class-named "org.apache.spark.ml.linalg.SparseVector") vector-udt)))
 
 (declare infer-schema infer-spark-type)
 

@@ -17,7 +17,7 @@
     (is (= (g/collect dataframe) (g/collect (g/to-df dataframe))))
     (is (= [:suburb :price] (g/columns (g/to-df dataframe [:suburb :price]))))))
 
-(deftest ^:slow dataset-hints-test
+(deftest ^:slow ^:classic dataset-hints-test
   (is (clojure.string/includes? (-> (df-1)
                                     (g/hint "myHint" 100 true)
                                     .queryExecution
@@ -87,7 +87,8 @@
     (is (= ["SellerG" "sum(Price)" "sum(Rooms)"] (-> grouped (g/sum :Price :Rooms) g/column-names)))
     (is (= ["SellerG" "count"] (-> grouped g/count g/column-names)))))
 
-(deftest ^:slow stats-functions-test
+;; The Spark Connect client can't send a struct as a literal.
+(deftest ^:slow ^:classic sample-by-struct-test
   (is (= [{:rooms 2 :seller "Biggin"} {:rooms 2 :seller "Jellis"}]
          (-> (df-20)
              (g/select {:seller :SellerG :rooms :Rooms})
@@ -96,7 +97,9 @@
              (g/sample-by (g/struct :seller :rooms)
                           {["Biggin" 2] 1.0 ["Jellis" 2] 1.0}
                           36)
-             g/collect)))
+             g/collect))))
+
+(deftest ^:slow stats-functions-test
   (testing "On count-min-sketch"
     (let [count-min (g/count-min-sketch (melbourne-df) :Suburb 10 10 10)]
       (is (nil? (g/add count-min "abc")))
@@ -439,7 +442,9 @@
   (is (= g/memory-only-ser-2
          (let [df (g/persist (df-1) g/memory-only-ser-2)]
            (g/storage-level df))))
-  (is (seq? (g/input-files (melbourne-df))))
+  (is (seq? (g/input-files (melbourne-df)))))
+
+(deftest ^:slow ^:classic rdd-and-checkpoint-test
   (is (instance? RDD (g/rdd (melbourne-df))))
   (let [checkpointed? (fn [df] (-> df
                                    .queryExecution
@@ -451,7 +456,7 @@
     (is (checkpointed? (g/checkpoint (df-1))))
     (is (checkpointed? (g/checkpoint (df-1) true)))))
 
-(deftest ^:slow repartition-test
+(deftest ^:slow ^:classic repartition-test
   (testing "able to repartition by a number"
     (is (= 2
            (-> (df-20)
@@ -481,6 +486,15 @@
                (g/repartition-by-range 3 :Suburb :SellerG)
                g/partitions
                count))))
+  (testing "coalesce should reduce the number of partitions"
+    (is (= 2
+           (-> (df-20)
+               (g/repartition 5)
+               (g/coalesce 2)
+               g/partitions
+               count)))))
+
+(deftest ^:slow sort-within-partitions-test
   (testing "sort within partitions is differnt to sort"
     (let [sorted  (-> (df-20)
                       (g/select :Method :SellerG)
@@ -492,14 +506,7 @@
                             (g/sort-within-partitions :Method)
                             g/collect-vals)]
       (is (false? (= sorted sorted-within)))
-      (is (= (set sorted-within) (set sorted)))))
-  (testing "coalesce should reduce the number of partitions"
-    (is (= 2
-           (-> (df-20)
-               (g/repartition 5)
-               (g/coalesce 2)
-               g/partitions
-               count)))))
+      (is (= (set sorted-within) (set sorted))))))
 
 (deftest ^:slow join-test
   (testing "joining with join exprs"
@@ -571,7 +578,9 @@
       (is (< (g/count agged) 20))
       (is (= 20 (g/count exploded))))))
 
-(deftest sparse-vector-test
+;; MLlib's vectors come with spark-mllib, which a Spark Connect client doesn't
+;; have.
+(deftest ^:classic sparse-vector-test
   (testing "collects sparse data"
     (let [sparse-df
           (g/create-dataframe

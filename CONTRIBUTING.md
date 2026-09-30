@@ -37,6 +37,14 @@ clojure -X:spark-4:test
 
 The runner says so if `prep` was for another Spark.
 
+`clojure -T:build connect-tests` runs the suite over Spark Connect. It starts a Spark Connect server on `:spark-4` in the background, with its log in `target/connect-server.log`, then runs the tests with Spark's JVM client in place of classic Spark (the `:spark-connect` alias). That run skips the tests marked `^:classic`, such as the RDD and MLlib ones, and every other run skips the ones marked `^:connect`. Other options go to the runner:
+
+```bash
+clojure -T:build prep :spark :spark-4
+clojure -T:build connect-tests
+clojure -T:build connect-tests :only '[zero-one.geni.dataset-test]'
+```
+
 From a REPL started with `clj -M:spark:test`, this reloads a test namespace and runs it:
 
 ```clojure
@@ -46,7 +54,7 @@ From a REPL started with `clj -M:spark:test`, this reloads a test namespace and 
 
 The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. Adding `:canary` after `:test` turns it back on, which is how the weekly canary runs them, on the newest Spark patches.
 
-On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
+On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64, and the suite over Spark Connect. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
 
 ## Linting and formatting
 

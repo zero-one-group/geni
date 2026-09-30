@@ -1,19 +1,46 @@
 (ns zero-one.geni.spark
   (:require
    [clojure.string :as string]
-   [clojure.walk]
-   [zero-one.geni.docs :as docs]
-   [zero-one.geni.interop :as interop])
+   [clojure.walk :as walk]
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [class-named]])
   (:import
    (clojure.lang Reflector)
-   (org.apache.spark SparkConf)
+   (org.apache.spark SparkConf SparkContext)
    (org.apache.spark.sql SparkSession)
    (scala Option)))
+
+(defn- spark-context-or-nil
+  "The session's SparkContext, or nil for a Spark Connect session, which
+  doesn't have one."
+  ^SparkContext [^SparkSession spark]
+  (try
+    (.sparkContext spark)
+    (catch UnsupportedOperationException _ nil)))
+
+(defn spark-context
+  "The session's SparkContext. Only classic sessions have one: for a Spark
+  Connect session, it throws an error that says so."
+  ^SparkContext [^SparkSession spark]
+  (or (spark-context-or-nil spark)
+      (throw (ex-info (str "This needs a classic SparkSession, with a SparkContext. A Spark Connect "
+                           "session has none, so RDDs, broadcasts and MLlib don't work over it.")
+                      {:session spark}))))
+
+(defn connect-only?
+  "Whether the Spark Connect client is on the classpath without classic
+  Spark, as it is when Spark 4's spark-connect-client-jvm takes the place of
+  spark-sql."
+  []
+  (boolean (and (class-named "org.apache.spark.sql.connect.SparkSession")
+                (not (class-named "org.apache.spark.sql.classic.SparkSession")))))
 
 (defn- running [^Option session]
   (when (.isDefined session)
     (let [^SparkSession session (.get session)]
-      (when-not (.. session sparkContext isStopped)
+      ;; Spark 4 only returns sessions that are still usable. Spark 3.5
+      ;; returns stopped ones too.
+      (when-not (some-> (spark-context-or-nil session) .isStopped)
         session))))
 
 (defn active-session
@@ -64,6 +91,10 @@
   ```"
   ^SparkSession
   [{:keys [app-name master configs log-level checkpoint-dir]}]
+  (when (connect-only?)
+    (throw (ex-info (str "create-spark-session starts classic Spark, but only the Spark Connect "
+                         "client is on the classpath. Use g/connect to connect to a server.")
+                    {})))
   (let [preset   (SparkConf.)
         builder  (cond-> (SparkSession/builder)
                    (or app-name (not (.contains preset "spark.app.name")))
@@ -74,19 +105,46 @@
         builder  (reduce (fn [b [k v]] (.config b (name k) v)) builder configs)
         created? (nil? (active-session))
         session  (.getOrCreate builder)
-        context  (.sparkContext session)]
+        context  (if (or log-level checkpoint-dir)
+                   (spark-context session)
+                   (spark-context-or-nil session))]
     (cond
-      log-level                           (.setLogLevel context log-level)
-      (and created? (spark-log-profile?)) (.setLogLevel context "WARN"))
+      log-level                                   (.setLogLevel context log-level)
+      (and created? context (spark-log-profile?)) (.setLogLevel context "WARN"))
     (when checkpoint-dir
       (.setCheckpointDir context checkpoint-dir))
     session))
 
-(defn spark-conf [spark-session]
-  (->> spark-session
-       .sparkContext
-       .getConf
-       interop/spark-conf->map))
+(defn connect-session
+  "A new session on a Spark Connect server, which becomes Spark's default and
+  active session. See `g/connect`, which also makes Geni use it."
+  ^SparkSession [url {:keys [configs]}]
+  (when-not (class-named "org.apache.spark.sql.connect.SparkSession")
+    (throw (ex-info (str "Spark Connect needs Spark 4's JVM client, "
+                         "org.apache.spark/spark-connect-client-jvm_2.13, on the classpath "
+                         "in place of spark-sql.")
+                    {:url url})))
+  (let [builder (-> (SparkSession/builder) (.config "spark.api.mode" "connect"))
+        builder (if url (.remote builder url) builder)
+        builder (reduce (fn [b [k v]] (.config b (name k) v)) builder configs)
+        ;; Not getOrCreate, which can return a session that was closed.
+        session (.create builder)]
+    (SparkSession/setDefaultSession session)
+    (SparkSession/setActiveSession session)
+    session))
+
+(defn spark-conf
+  "The session's Spark configs, as a map with keyword keys: Spark's
+  `spark.conf().getAll()`. For a classic session, these are the SparkConf's
+  settings, plus the SQL configs set on the session since. It works for Spark
+  Connect sessions too.
+
+  ```clojure
+  (:spark.app.name (g/spark-conf spark))
+  => \"Geni App\"
+  ```"
+  [^SparkSession spark-session]
+  (-> spark-session .conf .getAll interop/scala-map->map walk/keywordize-keys))
 
 (defn sql
   "Executes a SQL query using Spark, returning the result as a `DataFrame`.
@@ -99,7 +157,3 @@
   [^SparkSession spark ^String sql-text]
   (. spark sql sql-text))
 
-;; Docs
-(docs/add-doc!
- (var spark-conf)
- (-> docs/spark-docs :methods :spark :context :get-conf))

@@ -20,7 +20,7 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.utils :refer [->string-map arg-count ensure-coll import-fn]])
   (:import
-   (org.apache.spark.ml.stat Correlation)
+   (clojure.lang Reflector)
    (org.apache.spark.sql Dataset
                          RelationalGroupedDataset
                          functions)))
@@ -182,7 +182,9 @@
   (functions/corr (->column l-expr) (->column r-expr)))
 (defmethod corr Dataset
   ([dataframe col-name]
-   (Correlation/corr dataframe (name col-name)))
+   (Reflector/invokeStaticMethod (interop/mllib-class "org.apache.spark.ml.stat.Correlation")
+                                 "corr"
+                                 (object-array [dataframe (name col-name)])))
   ([dataframe col-name1 col-name2]
    (-> dataframe .stat (.corr (name col-name1) (name col-name2))))
   ([dataframe col-name1 col-name2 method]

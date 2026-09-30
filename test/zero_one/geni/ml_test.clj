@@ -1,4 +1,4 @@
-(ns zero-one.geni.ml-test
+(ns ^:classic zero-one.geni.ml-test
   (:require
    [clojure.string :refer [includes?]]
    [clojure.test :refer [deftest is testing]]
