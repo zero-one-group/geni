@@ -4,8 +4,11 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.test-resources :refer [spark df-20]]))
 
+;; 1,000 rows, so that each bound below fails less than once in 10^12 runs.
+;; With 200, the normal, exponential and uniform ones failed about once in
+;; 14,000 runs each.
 (defn descriptive-stats [col]
-  (-> (g/table->dataset @spark (mapv vector (range 200)) [:idx])
+  (-> (g/table->dataset @spark (mapv vector (range 1000)) [:idx])
       (g/with-column :x col)
       (g/agg {:min  (g/min :x)
               :mean (g/mean :x)
