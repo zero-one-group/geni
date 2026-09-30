@@ -123,7 +123,8 @@
     (throw (ex-info (str "Spark Connect needs Spark 4's JVM client, "
                          "org.apache.spark/spark-connect-client-jvm_2.13, on the classpath "
                          "in place of spark-sql.")
-                    {:url url})))
+                    ;; Not the URL, which can hold a token.
+                    {})))
   (let [builder (-> (SparkSession/builder) (.config "spark.api.mode" "connect"))
         builder (if url (.remote builder url) builder)
         builder (reduce (fn [b [k v]] (.config b (name k) v)) builder configs)

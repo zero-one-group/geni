@@ -1,13 +1,14 @@
 name: CLI
 
-# Builds the Geni CLI uberjar and runs a script through it. It only runs when
-# the CLI or the build changes, and isn't a required check.
+# Builds the Geni CLI uberjar and runs a script through it, directly and with
+# scripts/geni. It only runs when the CLI, the script or the build changes, and
+# isn't a required check.
 on:
   push:
     branches: [develop]
-    paths: [cli/**, build.clj, deps.edn, .github/workflows/cli.yml]
+    paths: [cli/**, scripts/geni, build.clj, deps.edn, .github/workflows/cli.yml]
   pull_request:
-    paths: [cli/**, build.clj, deps.edn, .github/workflows/cli.yml]
+    paths: [cli/**, scripts/geni, build.clj, deps.edn, .github/workflows/cli.yml]
   workflow_dispatch:
 
 concurrency:
@@ -47,3 +48,18 @@ jobs:
             echo "The CLI logs at INFO: is its log4j2 config in the uberjar?"
             exit 1
           fi
+      - name: Run a script through scripts/geni, online and offline
+        run: |
+          # A home with a space in it, and the new uberjar under the released
+          # version's name, so that the script finds it there.
+          export HOME="$RUNNER_TEMP/geni home"
+          version=$(curl -fsSL https://raw.githubusercontent.com/zero-one-group/geni/develop/resources/GENI_REPL_RELEASED_VERSION)
+          mkdir -p "$HOME/.geni"
+          cp target/geni-repl-uberjar-*.jar "$HOME/.geni/geni-repl-uberjar-$version.jar"
+          scripts/geni --submit smoke.clj 2>&1 | tee online.out
+          grep -q "dataframe: 3" online.out
+          # Without GitHub, it runs the uberjar it has.
+          mkdir offline && printf '#!/bin/sh\nexit 6\n' > offline/curl && chmod +x offline/curl
+          PATH="$PWD/offline:$PATH" scripts/geni --submit smoke.clj 2>&1 | tee offline.out
+          grep -q "so running geni-repl-uberjar-$version.jar" offline.out
+          grep -q "dataframe: 3" offline.out

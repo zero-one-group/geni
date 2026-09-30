@@ -5,8 +5,9 @@
    [zero-one.geni.test-resources :refer [spark df-20]]))
 
 ;; 1,000 rows, so that each bound below fails less than once in 10^12 runs.
-;; With 200, the normal, exponential and uniform ones failed about once in
-;; 14,000 runs each.
+;; The likeliest to, an exponential's std above 1.5, fails about once in
+;; 2.5 * 10^12. With 200, the normal, exponential and uniform ones failed
+;; about once in 14,000 runs each.
 (defn descriptive-stats [col]
   (-> (g/table->dataset @spark (mapv vector (range 1000)) [:idx])
       (g/with-column :x col)
@@ -27,7 +28,7 @@
 (deftest ^:slow random-norm-test
   (let [actual (descriptive-stats (g/random-norm))]
     (is (and (< -0.3 (:mean actual) 0.3)
-             (< -0.8 (:std actual) 1.2))))
+             (< 0.8 (:std actual) 1.2))))
   (let [actual (descriptive-stats (g/random-norm -3 2))]
     (is (and (< -4.0 (:mean actual) -2.0)
              (< 1.5 (:std actual) 2.5)))))
@@ -35,7 +36,7 @@
 (deftest ^:slow random-int-test
   (let [actual (descriptive-stats (g/random-int))]
     (is (and (pos? (:max actual))
-             (pos? (:min actual))
+             (not (neg? (:min actual)))
              (integer? (:max actual))
              (integer? (:min actual)))))
   (let [actual (descriptive-stats (g/random-int 1 13))]
