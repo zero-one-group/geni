@@ -106,7 +106,7 @@ The functions throw an error that says so:
 ;; => "This needs a classic SparkSession, with a SparkContext. A Spark Connect session has none, so RDDs, broadcasts and MLlib don't work over it."
 ```
 
-`g/collect-to-arrow` needs Arrow's own jars, `org.apache.arrow/arrow-vector` and `arrow-memory-netty`, since the client only has Arrow shaded.
+`g/to-tmd`, `g/stream`, `g/to-tensors` and `g/stream-tensors`, which read Arrow batches on the client, need Arrow's own jars, `org.apache.arrow/arrow-vector` and `arrow-memory-netty`, as does `g/collect-to-arrow`, since the client only has Arrow shaded. `g/to-arrow`, `g/glimpse` and `g/to-html` don't. The [collecting guide](collect.md) has them all.
 
 When you're done, `.close` releases the session on the server:
 

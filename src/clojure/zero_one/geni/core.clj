@@ -77,6 +77,7 @@
    [zero-one.geni.core.foreign-idioms]
    [zero-one.geni.core.functions]
    [zero-one.geni.core.polymorphic]
+   [zero-one.geni.core.results]
    [zero-one.geni.core.udf]
    [zero-one.geni.core.window]
    [zero-one.geni.defaults]
@@ -575,6 +576,16 @@
   to-json
   update
   where])
+
+(import-vars
+ [zero-one.geni.core.results
+  glimpse
+  stream
+  stream-tensors
+  to-arrow
+  to-html
+  to-tensors
+  to-tmd])
 
 (import-vars
  [zero-one.geni.storage

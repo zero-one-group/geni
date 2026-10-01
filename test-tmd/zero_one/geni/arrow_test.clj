@@ -1,4 +1,5 @@
-(ns zero-one.geni.arrow-test
+(ns ^:classic zero-one.geni.arrow-test
+  "g/collect-to-arrow, read back with tech.ml.dataset."
   (:require [clojure.test :refer [deftest is testing]]
             [tech.v3.dataset :as ds]
             [tech.v3.libs.arrow :as tmd-arrow]
@@ -88,23 +89,21 @@
       (is (= (.getTime (first (-> with-date (g/collect-col "date")))) (first (get ds "date")))))))
 
 (deftest all-nil-data-frame-test
-  (testing "all nils areet into arrow file"
-    (is (= [nil nil nil nil nil nil nil]
-           (-> (g/create-dataframe
-                [(g/row nil nil nil nil nil nil nil)]
-                {:long    :long
-                 :int     :int
-                 :string  :string
-                 :float   :float
-                 :double  :double
-                 :date    :date
-                 :boolean :boolean})
-               (g/collect-to-arrow 10 "/tmp")
-               (first)
-               (tmd-arrow/read-stream-dataset-copying)
-               (ds/mapseq-reader)
-               (first)
-               vals)))))
+  (testing "all nils are written into the Arrow file"
+    (let [dataset (-> (g/create-dataframe
+                       [(g/row nil nil nil nil nil nil nil)]
+                       {:long    :long
+                        :int     :int
+                        :string  :string
+                        :float   :float
+                        :double  :double
+                        :date    :date
+                        :boolean :boolean})
+                      (g/collect-to-arrow 10 "/tmp")
+                      (first)
+                      (tmd-arrow/read-stream-dataset-copying))]
+      (is (= 1 (ds/row-count dataset)))
+      (is (= (repeat 7 [nil]) (map vec (vals dataset)))))))
 
 (deftest empty-dataframe-2-test
   (testing "writes arrow file with 0 rows and no schema"

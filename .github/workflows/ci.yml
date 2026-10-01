@@ -99,7 +99,7 @@ jobs:
           restore-keys: deps-spark-4-
       - run: clojure -P -T:build
       - run: clojure -P -X:spark-4:test:connect-server
-      - run: clojure -P -X:spark-connect:test
+      - run: clojure -P -X:spark-connect:test:tmd:connect-arrow
       - run: clojure -T:build prep :spark :spark-4
       - run: clojure -T:build connect-tests
       - if: failure()

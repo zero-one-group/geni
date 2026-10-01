@@ -60,7 +60,7 @@ jobs:
       - if: matrix.spark == 'spark-4'
         run: |
           clojure -P -X:spark-4:test:connect-server
-          clojure -P -X:spark-connect:test
+          clojure -P -X:spark-connect:test:tmd:connect-arrow
           clojure -T:build connect-tests
       - if: failure() && matrix.spark == 'spark-4'
         uses: actions/upload-artifact@v7

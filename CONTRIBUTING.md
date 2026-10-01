@@ -39,7 +39,7 @@ clojure -X:spark-4:test
 
 The runner says so if `prep` was for another Spark.
 
-`clojure -T:build connect-tests` runs the suite over Spark Connect. It starts a Spark Connect server on `:spark-4` in the background, with its log in `target/connect-server.log`, then runs the tests with Spark's JVM client in place of classic Spark (the `:spark-connect` alias). That run skips the tests marked `^:classic`, such as the RDD and MLlib ones, and every other run skips the ones marked `^:connect`. Then it runs the examples in the Spark Connect guide, which are marked `^:connect` too, and connect to port 15002. Other options go to the runner, and they skip the guide, as another `:port` does:
+`clojure -T:build connect-tests` runs the suite over Spark Connect. It starts a Spark Connect server on `:spark-4` in the background, with its log in `target/connect-server.log`, then runs the tests with Spark's JVM client in place of classic Spark (the `:spark-connect` alias). That run skips the tests marked `^:classic`, such as the RDD and MLlib ones, and every other run skips the ones marked `^:connect`. Then it runs the tech.ml.dataset tests in `test-tmd/`, with Apache Arrow's own jars added (the `:tmd` and `:connect-arrow` aliases), and the examples in the Spark Connect guide, which are marked `^:connect` too, and connect to port 15002. Other options go to the runner, and they skip `test-tmd/` and the guide, as another `:port` does:
 
 ```bash
 clojure -T:build prep :spark :spark-4
@@ -67,10 +67,11 @@ On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two
 ```bash
 clojure -T:build lint    # clj-kondo, then cljfmt's check
 clojure -T:build fmt     # reformats the sources with cljfmt
-clojure -T:build check   # lint, the tests on :spark, and the doc tests
+clojure -T:build check       # lint, the tests on :spark, and the doc tests
+clojure -T:build check-all   # check, plus the tests on :spark-4 and over Spark Connect
 ```
 
-`check` is what the CI runs on a pull request, so running it before you push saves a round trip. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
+`check` is what the CI runs on a pull request, so running it before you push saves a round trip. `check-all` adds the tests on `:spark-4` and `connect-tests`, preps each Spark itself, and ends prepped for `:spark`. It stops at the first failure, and takes several minutes. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
 
 ## Executable documentation
 

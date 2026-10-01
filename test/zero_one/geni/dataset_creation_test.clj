@@ -6,7 +6,7 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :as tr])
   (:import
-   (java.time Instant LocalDate LocalDateTime)
+   (java.time Duration Instant LocalDate LocalDateTime Period)
    (java.util UUID)
    (org.apache.spark.sql Dataset
                          Row)
@@ -248,7 +248,9 @@
                    :local   local
                    :tag     :geni/new
                    :uuid    uuid
-                   :bytes   (.getBytes "hi" "UTF-8")}])]
+                   :bytes   (.getBytes "hi" "UTF-8")
+                   :wait    (Duration/ofSeconds 90)
+                   :term    (Period/ofMonths 14)}])]
     (testing "from the first value of each column"
       (is (= {:price   "DecimalType(38,18)"
               :big     "DecimalType(38,0)"
@@ -261,7 +263,9 @@
               :local   "TimestampNTZType"
               :tag     "StringType"
               :uuid    "StringType"
-              :bytes   "BinaryType"}
+              :bytes   "BinaryType"
+              :wait    "DayTimeIntervalType(0,3)"
+              :term    "YearMonthIntervalType(0,1)"}
              (g/dtypes dataset))))
     (testing "with the values converted to suit"
       (let [row (first (g/collect dataset))]
@@ -273,6 +277,7 @@
                (map #(.toInstant ^java.util.Date (row %)) [:instant :sql-ts :inst])))
         (is (= local (:local row)))
         (is (= ["geni/new" (str uuid)] [(:tag row) (:uuid row)]))
+        (is (= [(Duration/ofSeconds 90) (Period/of 1 2 0)] [(:wait row) (:term row)]))
         ;; g/collect hands back a byte array as a seq of its bytes.
         (is (= "hi" (String. (byte-array (:bytes row)) "UTF-8")))))
     (testing "with the Java 8 date and time API on too"
