@@ -127,31 +127,65 @@
      (.createDataFrame spark rows (->schema schema)))))
 
 (def java-type->spark-type
-  "A mapping from Java types to Spark types."
-  (cond-> {java.lang.Boolean  DataTypes/BooleanType
-           java.lang.Byte     DataTypes/ByteType
-           java.lang.Double   DataTypes/DoubleType
-           java.lang.Float    DataTypes/FloatType
-           java.lang.Integer  DataTypes/IntegerType
-           java.lang.Long     DataTypes/LongType
-           java.lang.Short    DataTypes/ShortType
-           java.lang.String   DataTypes/StringType
-           java.sql.Timestamp DataTypes/TimestampType
-           java.util.Date     DataTypes/DateType
-           nil                DataTypes/NullType}
+  "A mapping from Java types to Spark types, for inferring a schema from
+  Clojure data. Keywords and UUIDs become strings, and a `java.util.Date`, such
+  as `#inst`, a timestamp."
+  (cond-> {java.lang.Boolean       DataTypes/BooleanType
+           java.lang.Byte          DataTypes/ByteType
+           java.lang.Double        DataTypes/DoubleType
+           java.lang.Float         DataTypes/FloatType
+           java.lang.Integer       DataTypes/IntegerType
+           java.lang.Long          DataTypes/LongType
+           java.lang.Short         DataTypes/ShortType
+           java.lang.String        DataTypes/StringType
+           ;; Spark's own defaults, as for a Java bean's fields.
+           java.math.BigDecimal    (DataTypes/createDecimalType 38 18)
+           java.math.BigInteger    (DataTypes/createDecimalType 38 0)
+           clojure.lang.BigInt     (DataTypes/createDecimalType 38 0)
+           java.time.LocalDate     DataTypes/DateType
+           java.sql.Date           DataTypes/DateType
+           java.time.Instant       DataTypes/TimestampType
+           java.sql.Timestamp      DataTypes/TimestampType
+           java.util.Date          DataTypes/TimestampType
+           java.time.LocalDateTime DataTypes/TimestampNTZType
+           clojure.lang.Keyword    DataTypes/StringType
+           java.util.UUID          DataTypes/StringType
+           (Class/forName "[B")    DataTypes/BinaryType
+           nil                     DataTypes/NullType}
     vector-udt (assoc (class-named "org.apache.spark.ml.linalg.DenseVector") vector-udt
                       (class-named "org.apache.spark.ml.linalg.SparseVector") vector-udt)))
 
+(def ^:private value-conversions
+  "How a value of each of these classes becomes one that Spark takes for the
+  type that java-type->spark-type gives it. Dates and times become java.sql
+  ones, which a Spark Connect client takes whatever
+  `spark.sql.datetime.java8API.enabled` says, as classic Spark does. The
+  lookup is by exact class, so java.util.Date's conversion leaves a
+  java.sql.Date or java.sql.Timestamp alone."
+  {clojure.lang.BigInt  #(BigDecimal. (.toBigInteger ^clojure.lang.BigInt %))
+   java.math.BigInteger #(BigDecimal. ^java.math.BigInteger %)
+   clojure.lang.Keyword #(subs (str %) 1)
+   java.util.UUID       str
+   java.time.LocalDate  #(java.sql.Date/valueOf ^java.time.LocalDate %)
+   java.time.Instant    #(java.sql.Timestamp/from ^java.time.Instant %)
+   java.util.Date       #(java.sql.Timestamp. (.getTime ^java.util.Date %))})
+
 (declare infer-schema infer-spark-type)
 
-(defn- infer-spark-type [value]
+(defn- infer-spark-type [col-name value]
   (cond
-    (map? value) (infer-schema (map name (keys value)) (vals value))
-    (coll? value) (ArrayType. (infer-spark-type (first value)) true)
-    :else (get java-type->spark-type (type value) DataTypes/BinaryType)))
+    (map? value)  (infer-schema (map name (keys value)) (vals value))
+    (coll? value) (ArrayType. (infer-spark-type col-name (first value)) true)
+    :else         (let [cls (class value)]
+                    (or (get java-type->spark-type cls)
+                        (throw (ex-info (str "Can't infer a Spark type for the column \"" col-name
+                                             "\" from a " (.getName ^Class cls) ". Convert its "
+                                             "values first, to one of the types that the "
+                                             "manual dataset creation guide lists.")
+                                        {:column col-name :class cls}))))))
 
 (defn- infer-struct-field [col-name value]
-  (let [spark-type   (infer-spark-type value)]
+  (let [spark-type   (infer-spark-type col-name value)]
     (DataTypes/createStructField col-name spark-type true)))
 
 (defn- infer-schema [col-names values]
@@ -233,7 +267,9 @@
   (cond
     (map? value) (interop/->spark-row (transform-maps (vals value)))
     (coll? value) (map transform-maps value)
-    :else value))
+    :else (if-let [convert (value-conversions (class value))]
+            (convert value)
+            value)))
 
 (defn table->dataset
   "Construct a Dataset from a collection of collections.

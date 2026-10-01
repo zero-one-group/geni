@@ -6,6 +6,8 @@
    [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :as tr])
   (:import
+   (java.time Instant LocalDate LocalDateTime)
+   (java.util UUID)
    (org.apache.spark.sql Dataset
                          Row)
    (org.apache.spark.sql.types StructField
@@ -227,6 +229,77 @@
               [nil [nil nil] []]
               [nil nil       []]]
              (g/collect-vals dataset))))))
+
+(deftest inferred-types-test
+  (let [day     (LocalDate/of 2026 10 1)
+        instant (Instant/parse "2026-10-01T01:02:03Z")
+        local   (LocalDateTime/of 2026 10 1 1 2 3)
+        uuid    (UUID/fromString "6f1c2e4a-1d2b-4c3d-8e9f-0a1b2c3d4e5f")
+        dataset (g/records->dataset
+                 @tr/spark
+                 [{:price   1.5M
+                   :big     12345678901234567890N
+                   :integer (BigInteger. "7")
+                   :day     day
+                   :sql-day (java.sql.Date/valueOf day)
+                   :instant instant
+                   :sql-ts  (java.sql.Timestamp/from instant)
+                   :inst    (java.util.Date/from instant)
+                   :local   local
+                   :tag     :geni/new
+                   :uuid    uuid
+                   :bytes   (.getBytes "hi" "UTF-8")}])]
+    (testing "from the first value of each column"
+      (is (= {:price   "DecimalType(38,18)"
+              :big     "DecimalType(38,0)"
+              :integer "DecimalType(38,0)"
+              :day     "DateType"
+              :sql-day "DateType"
+              :instant "TimestampType"
+              :sql-ts  "TimestampType"
+              :inst    "TimestampType"
+              :local   "TimestampNTZType"
+              :tag     "StringType"
+              :uuid    "StringType"
+              :bytes   "BinaryType"}
+             (g/dtypes dataset))))
+    (testing "with the values converted to suit"
+      (let [row (first (g/collect dataset))]
+        (is (== 1.5M (:price row)))
+        (is (== 12345678901234567890M (:big row)))
+        (is (== 7M (:integer row)))
+        (is (= ["2026-10-01" "2026-10-01"] (map (comp str row) [:day :sql-day])))
+        (is (= [instant instant instant]
+               (map #(.toInstant ^java.util.Date (row %)) [:instant :sql-ts :inst])))
+        (is (= local (:local row)))
+        (is (= ["geni/new" (str uuid)] [(:tag row) (:uuid row)]))
+        ;; g/collect hands back a byte array as a seq of its bytes.
+        (is (= "hi" (String. (byte-array (:bytes row)) "UTF-8")))))
+    (testing "with the Java 8 date and time API on too"
+      ;; Classic Spark then collects java.time values, and a Spark Connect
+      ;; client still collects java.sql ones.
+      (let [conf      (.conf @tr/spark)
+            ->instant #(if (instance? Instant %) % (.toInstant ^java.sql.Timestamp %))]
+        (try
+          (.set conf "spark.sql.datetime.java8API.enabled" "true")
+          (let [row (first (g/collect (g/records->dataset
+                                       @tr/spark
+                                       [{:day     day
+                                         :sql-day (java.sql.Date/valueOf day)
+                                         :instant instant
+                                         :inst    (java.util.Date/from instant)}])))]
+            (is (= ["2026-10-01" "2026-10-01"] (map (comp str row) [:day :sql-day])))
+            (is (= [instant instant] (map (comp ->instant row) [:instant :inst]))))
+          (finally
+            (.unset conf "spark.sql.datetime.java8API.enabled")))))
+    (testing "in arrays and structs too"
+      (let [row (first (g/collect (g/records->dataset @tr/spark [{:tags [:a :b] :when {:day day}}])))]
+        (is (= ["a" "b"] (:tags row)))
+        (is (= "2026-10-01" (str (get-in row [:when :day]))))))
+    (testing "and an error that names the column for anything else"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                            #"column \"ratio\" from a clojure.lang.Ratio"
+                            (g/records->dataset @tr/spark [{:ratio 1/3}]))))))
 
 (deftest table-dataset-test
   (testing "should create the right dataset"

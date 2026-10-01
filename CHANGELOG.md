@@ -11,6 +11,7 @@ New:
 - `ml/xgboost-ranker`, XGBoost4J-Spark 3's learning-to-rank estimator, which takes a `:group-col`.
 - A deps-new template for a new project, with the Spark setups, a small app and its test, and an uberjar for `spark-submit`. The README's "A New Project" has the command.
 - `g/ltrim` and `g/rtrim` take the characters to trim as a second argument, as `g/trim` does, and `g/trim` trims spaces when given only a column (#344).
+- When the JVM lacks `--add-opens` flags that Spark's launcher sets, which Spark needs on JDK 17 and later, Geni names them as it starts Spark or connects to a Spark Connect server: in the error when Spark doesn't start, as Spark 3.5 doesn't without `sun.nio.ch`, and in a warning otherwise.
 - `g/udf` turns a Clojure function into a Spark UDF, and `g/register-udf!` registers one for SQL and `g/expr` (#306). The function gets Clojure data, and its result is converted to the declared return type. UDFs need classic Spark. The [Clojure UDFs guide](docs/udfs.md) has the details.
 
 Fixes:
@@ -23,6 +24,9 @@ Fixes:
 - An ML param with overloaded setters gets the one that suits its value, as XGBoost's `:features-col` does, which takes a column or several.
 - The `geni` script runs the uberjar it downloaded last time when it can't reach GitHub for the latest version, rather than stopping. Install the script again to get this.
 - When Spark's Connect client isn't on the classpath, the error from `g/connect` no longer carries the URL in its `ex-data`, since the URL can hold a token.
+- `rdd/collect`, `rdd/take` and the other RDD actions hand back Clojure maps, vectors and sets as they were, with what's in them converted. They used to turn them into seqs, so `{:ok false}` came back as `(((:ok false)))`.
+- A `false` in an RDD record stays false, on the executors and when it's collected, on a local session that Geni starts. Spark's Java serialisation, which Spark uses for RDD records, made a new `Boolean` of it, which Clojure treats as true. Geni sets `spark.serializer` to `zero_one.geni.rdd.ClojureSerializer`, which reads booleans back as `true` and `false`, unless `spark.serializer` is set already. A cluster's executors load their serializer before they fetch the application's jars, so Geni doesn't set it there; set it yourself when Geni's jar is on the executors' own classpath, as with `spark.executor.extraClassPath`. Either way, the RDD actions hand back `true` and `false` on the driver.
+- `g/records->dataset`, `g/map->dataset` and `g/table->dataset` infer a type for decimals, dates and times, keywords and UUIDs, which failed with a `ClassCastException`: `DecimalType(38,18)` for a `BigDecimal`, `DecimalType(38,0)` for a `BigInt`, `DateType` for a `LocalDate`, `TimestampType` for an `Instant`, `TimestampNTZType` for a `LocalDateTime`, and `StringType` for a keyword or a UUID. A `java.util.Date`, such as `#inst`, becomes a timestamp, where it used to be a date that Spark rejected. A value of another class throws an error that names its column. The [manual dataset creation guide](docs/manual_dataset_creation.md) lists the types.
 
 ## 0.2.0 (2026-09-30)
 

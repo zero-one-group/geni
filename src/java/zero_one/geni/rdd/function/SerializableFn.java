@@ -12,11 +12,9 @@ import clojure.lang.Var;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -26,6 +24,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import zero_one.geni.rdd.CanonicalObjectInputStream;
 
 
 /**
@@ -173,57 +173,16 @@ public abstract class SerializableFn implements Serializable {
 
 
     /**
-     * Read a function back from the bytes that writeObject wrote.
-     *
-     * Java's deserialisation makes a new Boolean for each boolean it reads,
-     * and Clojure treats every Boolean but Boolean.FALSE as true, so a false
-     * that the function closes over, or that sits in a map or vector it
-     * closes over, would turn true. This stream swaps each Boolean for the
-     * canonical one.
+     * Read a function back from the bytes that writeObject wrote, with
+     * canonical booleans, so that a false that the function closes over, or
+     * that sits in a map or vector it closes over, stays false.
      *
      * @param bytes the function, serialised on its own
      */
     private static IFn readFunction(byte[] bytes) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream in = new CanonicalObjectInputStream(new ByteArrayInputStream(bytes))) {
+        try (ObjectInputStream in = new CanonicalObjectInputStream(new ByteArrayInputStream(bytes), null)) {
             return (IFn)in.readObject();
         }
-    }
-
-
-    /**
-     * An ObjectInputStream that reads canonical booleans. It resolves classes
-     * through the thread's context class loader, which Spark sets to the
-     * task's, and through Clojure's, which also knows the functions compiled
-     * at run time.
-     */
-    private static final class CanonicalObjectInputStream extends ObjectInputStream {
-
-        CanonicalObjectInputStream(InputStream in) throws IOException {
-            super(in);
-            enableResolveObject(true);
-        }
-
-
-        @Override
-        protected Object resolveObject(Object obj) {
-            return (obj instanceof Boolean) ? Boolean.valueOf((Boolean)obj) : obj;
-        }
-
-
-        @Override
-        protected Class<?> resolveClass(ObjectStreamClass desc)
-            throws IOException, ClassNotFoundException {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            try {
-                return RT.classForName(desc.getName(), false,
-                                       loader != null ? loader : RT.baseLoader());
-            } catch (Exception ex) {
-                // Java's own lookup, which also knows the primitive types.
-                // RT.classForName throws ClassNotFoundException undeclared.
-                return super.resolveClass(desc);
-            }
-        }
-
     }
 
 }

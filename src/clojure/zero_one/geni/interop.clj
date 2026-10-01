@@ -150,9 +150,28 @@
 (defn ->spark-row [x]
   (Row/fromSeq (->scala-seq x)))
 
-(defn ->clojure [value]
+(defn- map-vals->clojure
+  "The map with its values through ->clojure, keeping its type, as for a
+  record or a sorted map."
+  [m]
+  (reduce-kv (fn [acc k v]
+               (let [converted (->clojure v)]
+                 (if (identical? v converted) acc (assoc acc k converted))))
+             m
+             m))
+
+(defn ->clojure
+  "Converts a value that Spark hands back, such as a Row, a Scala collection or
+  an MLlib vector, into Clojure data. A Clojure map, vector or set keeps its
+  type, with its contents converted, and a Boolean comes back as `true` or
+  `false` itself, which a Boolean that Java deserialised isn't."
+  [value]
   (cond
     (nil? value)            nil
+    (boolean? value)        (Boolean/valueOf (.booleanValue ^Boolean value))
+    (map? value)            (map-vals->clojure value)
+    (vector? value)         (mapv ->clojure value)
+    (set? value)            (into (empty value) (map ->clojure) value)
     (coll? value)           (map ->clojure value)
     (array? value)          (map ->clojure (seq value))
     (scala-seq? value)      (map ->clojure (scala-seq->vec value))
