@@ -93,7 +93,7 @@ A Spark Connect session has no `SparkContext`, and the client has no MLlib. So t
 - RDDs: `g/rdd`, `g/partitions`, and the `zero-one.geni.rdd` namespace, which doesn't load without classic Spark;
 - the SparkContext functions, such as `g/java-spark-context`, `g/app-name` and `g/default-parallelism`;
 - MLlib: the `zero-one.geni.ml` namespace, which doesn't load without classic Spark either, and MLlib's vectors, such as `g/dense`, `g/sparse`, `g/corr` on a vector column, and LIBSVM's features;
-- [Clojure UDFs](udfs.md), `g/udf` and `g/register-udf!`, since the server can't load Clojure functions;
+- [Clojure UDFs](udfs.md), `g/udf` and `g/register-udf!`, since Geni doesn't yet upload what a Clojure function needs to the server;
 - `g/sample-by` with a struct column, since the client can't send a struct as a literal.
 
 The functions throw an error that says so:

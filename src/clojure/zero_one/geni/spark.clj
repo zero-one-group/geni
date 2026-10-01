@@ -125,7 +125,9 @@
 
 (defn- missing-opens
   "The flags among `flags`, each `--add-opens=module/package=ALL-UNNAMED`, that
-  this JVM wasn't started with. A module that this JVM doesn't have is skipped."
+  this JVM wasn't started with. A module or package that this JVM doesn't have
+  is skipped, as `sun.security.action` is from JDK 24, though Spark's launcher
+  still opens it."
   [flags]
   (let [unnamed (.getModule RT)
         layer   (ModuleLayer/boot)]
@@ -133,6 +135,7 @@
               (if-let [[_ module-name package] (re-matches #"--add-opens=([^/]+)/([^=]+)=.*" flag)]
                 (let [module (.findModule layer module-name)]
                   (or (not (.isPresent module))
+                      (not (.contains (.getPackages ^Module (.get module)) package))
                       (.isOpen ^Module (.get module) package unnamed)))
                 true))
             flags)))
