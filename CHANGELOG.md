@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+New:
+
+- Results as tech.ml.dataset datasets, dtype-next tensors and Arrow, from Spark's own Arrow batches, on classic Spark and over Spark Connect. The [collecting guide](docs/collect.md) has the details.
+  - `g/to-tmd` collects a result as one tech.ml.dataset dataset, with a column per Spark column that keeps its type: DATE as LocalDates, TIMESTAMP as Instants, TIMESTAMP_NTZ as LocalDateTimes, intervals as Durations and Periods, arrays as vectors, structs and maps as maps, and nulls as missing values. A calendar interval, a geometry or a geography throws, naming its column. It needs `techascent/tech.ml.dataset` on the classpath.
+  - `g/stream` reads a result as a dataset per Arrow batch, as a reducible that stops reading when a reduce is done, stops early or throws. On classic Spark, each partition runs as a job of its own when the reduce gets to it.
+  - `g/to-tensors` and `g/stream-tensors` turn numeric columns, and columns of arrays or dense MLlib vectors of one length, into dtype-next tensors.
+  - `g/to-arrow` collects a result as Arrow IPC streams in memory, one per batch.
+  - Over Spark Connect, all but `g/to-arrow` need `org.apache.arrow/arrow-vector` and `arrow-memory-netty` on the classpath, since the client only has Arrow shaded.
+- `g/create-dataframe` takes a tech.ml.dataset dataset, with the Spark types from its columns' datatypes.
+- `g/glimpse` prints a column per line, with its type and its first values, and `g/to-html` gives Spark's HTML table of a DataFrame's first rows, as a notebook shows it.
+- `g/records->dataset`, `g/map->dataset` and `g/table->dataset` infer a day-time interval for a `java.time.Duration` and a year-month interval for a `java.time.Period`, and on Spark 4, VARIANT for Spark's `VariantVal` and, from Spark 4.1, TIME for a `java.time.LocalTime`.
+
 ## 0.3.0 (2026-10-01)
 
 Breaking changes:

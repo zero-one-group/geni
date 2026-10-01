@@ -99,6 +99,10 @@ The three shortcuts infer each column's type from its first value that isn't nil
 | a `java.time.LocalDate` or a `java.sql.Date` | `DateType` |
 | a `java.time.Instant`, a `java.sql.Timestamp` or a `java.util.Date`, such as `#inst "2026-10-01"` | `TimestampType` |
 | a `java.time.LocalDateTime` | `TimestampNTZType` |
+| a `java.time.Duration` | `DayTimeIntervalType`, from days to seconds |
+| a `java.time.Period` | `YearMonthIntervalType`, from years to months |
+| a `java.time.LocalTime`, on Spark 4.1 and later, with `spark.sql.timeType.enabled` set | `TimeType(6)` |
+| Spark's `VariantVal`, on Spark 4 | `VariantType` |
 | a keyword or a `java.util.UUID` | `StringType`, with `"geni/new"` for `:geni/new` |
 | a byte array | `BinaryType` |
 | a map | a struct of the map's keys |
@@ -113,3 +117,5 @@ The three shortcuts infer each column's type from its first value that isn't nil
 ```
 
 A value of any other class, such as the ratio `1/3`, throws an error that names its column, so convert it first.
+
+`g/create-dataframe` also takes a [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) dataset, whose column datatypes give the Spark types, and whose columns of other objects get theirs inferred the same way. The [collecting guide](collect.md#back-to-spark) has the details.

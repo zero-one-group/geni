@@ -4,7 +4,6 @@
   (:refer-clojure :exclude [range])
   (:require
    [zero-one.geni.defaults :as defaults]
-   [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.utils :refer [class-named]])
   (:import
@@ -17,6 +16,17 @@
   Spark only, so a Spark Connect client doesn't have it."
   (some-> (class-named "org.apache.spark.ml.linalg.VectorUDT")
           (Reflector/invokeConstructor (object-array 0))))
+
+(def ^:private variant-type
+  "Spark 4's VARIANT type, for a VariantVal, or nil on Spark 3.5."
+  (some-> (class-named "org.apache.spark.sql.types.VariantType$")
+          (.getField "MODULE$")
+          (.get nil)))
+
+(def ^:private time-type
+  "Spark 4.1's TIME type, at microseconds, for a LocalTime, or nil before 4.1."
+  (some-> (class-named "org.apache.spark.sql.types.TimeType")
+          (Reflector/invokeConstructor (object-array [(int 6)]))))
 
 (def data-type->spark-type
   "A mapping from type keywords to Spark types."
@@ -119,8 +129,35 @@
     (empty? schema)
     false))
 
+(declare tmd-dataset? tmd->dataframe)
+
 (defn create-dataframe
-  ([rows schema] (create-dataframe @defaults/spark rows schema))
+  "Creates a DataFrame from a tech.ml.dataset dataset, or from rows and a
+  schema, on the default session or the one given.
+
+  From a dataset, each column's datatype gives its Spark type: `:int32`
+  INT, `:float64` DOUBLE, `:string` STRING, `:local-date` DATE,
+  `:instant` TIMESTAMP, `:local-date-time` TIMESTAMP_NTZ, `:duration` a
+  day-time interval, `:decimal` DECIMAL(38,18), and so on, packed or not.
+  Columns of other objects, such as vectors and maps, get their types
+  inferred from their values, as `records->dataset` does. A missing value
+  is a null. `to-tmd` goes the other way.
+
+  ```clojure
+  (g/create-dataframe (tech.v3.dataset/->dataset {:a [1 2] :b [\"x\" nil]}))
+  ```
+
+  From rows, a java.util.List of Spark Rows, `schema` is a StructType, or
+  plain Clojure data that `->schema` takes."
+  ([dataset] (create-dataframe @defaults/spark dataset))
+  ([spark-or-rows dataset-or-schema]
+   (if (instance? SparkSession spark-or-rows)
+     (if (tmd-dataset? dataset-or-schema)
+       (tmd->dataframe spark-or-rows dataset-or-schema)
+       (throw (ex-info (str "create-dataframe takes a tech.ml.dataset dataset after a session, "
+                            "or rows and a schema.")
+                       {})))
+     (create-dataframe @defaults/spark spark-or-rows dataset-or-schema)))
   ([spark rows schema]
    (if (and (empty? rows) (empty-schema? schema))
      (.emptyDataFrame spark)
@@ -148,12 +185,16 @@
            java.sql.Timestamp      DataTypes/TimestampType
            java.util.Date          DataTypes/TimestampType
            java.time.LocalDateTime DataTypes/TimestampNTZType
+           java.time.Duration      (DataTypes/createDayTimeIntervalType)
+           java.time.Period        (DataTypes/createYearMonthIntervalType)
            clojure.lang.Keyword    DataTypes/StringType
            java.util.UUID          DataTypes/StringType
            (Class/forName "[B")    DataTypes/BinaryType
            nil                     DataTypes/NullType}
-    vector-udt (assoc (class-named "org.apache.spark.ml.linalg.DenseVector") vector-udt
-                      (class-named "org.apache.spark.ml.linalg.SparseVector") vector-udt)))
+    vector-udt   (assoc (class-named "org.apache.spark.ml.linalg.DenseVector") vector-udt
+                        (class-named "org.apache.spark.ml.linalg.SparseVector") vector-udt)
+    variant-type (assoc (class-named "org.apache.spark.unsafe.types.VariantVal") variant-type)
+    time-type    (assoc java.time.LocalTime time-type)))
 
 (def ^:private value-conversions
   "How a value of each of these classes becomes one that Spark takes for the
@@ -344,6 +385,100 @@
                         records)]
      (map->dataset spark map-of-values))))
 
+;; tech.ml.dataset
+
+(defn- tmd-dataset?
+  "Whether `value` is a tech.ml.dataset dataset. When tech.ml.dataset isn't
+  loaded, nothing is."
+  [value]
+  (boolean (when-let [dataset? (resolve 'tech.v3.dataset.impl.dataset/dataset?)]
+             (dataset? value))))
+
+(def ^:private tmd-type->spark-type
+  "The Spark type for a tech.ml.dataset column's datatype, when it has one.
+  Columns of other datatypes get theirs inferred from their values."
+  (cond-> {:boolean              DataTypes/BooleanType
+           :int8                 DataTypes/ByteType
+           :int16                DataTypes/ShortType
+           :int32                DataTypes/IntegerType
+           :int64                DataTypes/LongType
+           :uint8                DataTypes/ShortType
+           :uint16               DataTypes/IntegerType
+           :uint32               DataTypes/LongType
+           :uint64               (DataTypes/createDecimalType 20 0)
+           :float32              DataTypes/FloatType
+           :float64              DataTypes/DoubleType
+           :string               DataTypes/StringType
+           :text                 DataTypes/StringType
+           :keyword              DataTypes/StringType
+           :uuid                 DataTypes/StringType
+           :local-date           DataTypes/DateType
+           :packed-local-date    DataTypes/DateType
+           :instant              DataTypes/TimestampType
+           :packed-instant       DataTypes/TimestampType
+           :packed-milli-instant DataTypes/TimestampType
+           :zoned-date-time      DataTypes/TimestampType
+           :local-date-time      DataTypes/TimestampNTZType
+           :duration             (DataTypes/createDayTimeIntervalType)
+           :packed-duration      (DataTypes/createDayTimeIntervalType)
+           :decimal              (DataTypes/createDecimalType 38 18)}
+    time-type (assoc :local-time time-type :packed-local-time time-type)))
+
+(def ^:private tmd-coercions
+  "How a value that a tech.ml.dataset column of each of these datatypes reads
+  out, which dtype-next widens to a long or a double, becomes one of the
+  class that its Spark type takes."
+  {:int8    byte
+   :int16   short
+   :uint8   short
+   :int32   int
+   :uint16  int
+   :uint32  long
+   :int64   long
+   :uint64  #(BigDecimal. (Long/toUnsignedString (long %)))
+   :float32 float
+   :float64 double
+   :text    str})
+
+(defn- tmd-value
+  "A value of a tech.ml.dataset column of `datatype`, as Spark takes it."
+  [datatype value]
+  (cond
+    (nil? value)                              nil
+    (instance? java.time.ZonedDateTime value) (java.sql.Timestamp/from
+                                               (.toInstant ^java.time.ZonedDateTime value))
+    :else                                     (if-let [coerce (tmd-coercions datatype)]
+                                                (coerce value)
+                                                value)))
+
+(defn- column-name
+  "A tech.ml.dataset column name as a Spark one: a keyword without its colon."
+  [col-name]
+  (if (keyword? col-name) (subs (str col-name) 1) (str col-name)))
+
+(defn- tmd->dataframe
+  "A DataFrame of a tech.ml.dataset dataset, through rows on the driver."
+  [spark dataset]
+  (let [columns   ((requiring-resolve 'tech.v3.dataset/columns) dataset)
+        names     (map #(column-name (:name (meta %))) columns)
+        datatypes (map #(:datatype (meta %)) columns)
+        values    (map (fn [column datatype] (mapv #(tmd-value datatype %) column))
+                       columns
+                       datatypes)
+        samples   (map first-non-nil values)
+        values    (map fill-missing-nested-keys values samples)
+        fields    (map (fn [col-name datatype sample]
+                         (if-let [spark-type (tmd-type->spark-type datatype)]
+                           (DataTypes/createStructField col-name spark-type true)
+                           (infer-struct-field col-name (first sample))))
+                       names
+                       datatypes
+                       samples)
+        rows      (if (seq columns) (transpose values) [])]
+    (.createDataFrame spark
+                      (interop/->java-list (map interop/->spark-row (transform-maps rows)))
+                      (DataTypes/createStructType ^java.util.List (vec fields)))))
+
 (defmulti range
   "Creates a `Dataset` with a single `LongType` column named `id`.
 
@@ -378,7 +513,3 @@
   [^SparkSession spark ^Long start ^Long end ^Long step ^Integer num-partitions]
   (.range spark start end step num-partitions))
 
-;; Docs
-(docs/add-doc!
- (var create-dataframe)
- (-> docs/spark-docs :methods :spark :session :create-data-frame))

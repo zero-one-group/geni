@@ -39,7 +39,7 @@ clojure -X:spark-4:test
 
 The runner says so if `prep` was for another Spark.
 
-`clojure -T:build connect-tests` runs the suite over Spark Connect. It starts a Spark Connect server on `:spark-4` in the background, with its log in `target/connect-server.log`, then runs the tests with Spark's JVM client in place of classic Spark (the `:spark-connect` alias). That run skips the tests marked `^:classic`, such as the RDD and MLlib ones, and every other run skips the ones marked `^:connect`. Then it runs the examples in the Spark Connect guide, which are marked `^:connect` too, and connect to port 15002. Other options go to the runner, and they skip the guide, as another `:port` does:
+`clojure -T:build connect-tests` runs the suite over Spark Connect. It starts a Spark Connect server on `:spark-4` in the background, with its log in `target/connect-server.log`, then runs the tests with Spark's JVM client in place of classic Spark (the `:spark-connect` alias). That run skips the tests marked `^:classic`, such as the RDD and MLlib ones, and every other run skips the ones marked `^:connect`. Then it runs the tech.ml.dataset tests in `test-tmd/`, with Apache Arrow's own jars added (the `:tmd` and `:connect-arrow` aliases), and the examples in the Spark Connect guide, which are marked `^:connect` too, and connect to port 15002. Other options go to the runner, and they skip `test-tmd/` and the guide, as another `:port` does:
 
 ```bash
 clojure -T:build prep :spark :spark-4

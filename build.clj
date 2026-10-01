@@ -142,11 +142,11 @@
   (apply sh! "clojure" "-M:fmt" "fix" fmt-paths))
 
 (defn docs
-  "Runs the Clojure blocks in the README and docs/ as tests, on :spark. Run
-  `prep` first."
+  "Runs the Clojure blocks in the README and docs/ as tests, on :spark, with
+  tech.ml.dataset for the collecting guide. Run `prep` first."
   [_]
   (sh! "clojure" "-X:gen-doc-tests")
-  (sh! "clojure" "-X:spark:test:doc-tests"))
+  (sh! "clojure" "-X:spark:test:tmd:doc-tests"))
 
 (defn cookbook
   "Runs the cookbook's Clojure blocks as tests, on :spark, as the weekly
@@ -234,11 +234,12 @@
   "Runs the tests over Spark Connect: it starts a Spark Connect server on
   :spark-4 in the background, on 127.0.0.1 at `:port` (15002 by default), then
   runs the tests with Spark's JVM client in place of classic Spark, which
-  skips the ones marked ^:classic, and the Spark Connect guide's examples.
+  skips the ones marked ^:classic, then the tech.ml.dataset tests in
+  test-tmd/, with Apache Arrow added, and the Spark Connect guide's examples.
   Other options go to the test runner instead, e.g.
-  `:only '[zero-one.geni.dataset-test]'`. They skip the guide, whose examples
-  connect to port 15002, and so does another port. Run `prep :spark :spark-4`
-  first."
+  `:only '[zero-one.geni.dataset-test]'`. They skip test-tmd/ and the guide,
+  whose examples connect to port 15002, and so does another port. Run
+  `prep :spark :spark-4` first."
   [{:keys [port] :or {port 15002} :as opts}]
   (when (port-open? port)
     (println "Port" port "is taken. Stop what's on it, or pass another :port.")
@@ -250,13 +251,18 @@
                  (let [tests (exit-code (into ["clojure" "-X:spark-connect:test"] args) env)]
                    (if (or (seq args) (not= 15002 port) (pos? tests))
                      tests
-                     (let [gen (exit-code ["clojure" "-X:gen-doc-tests"
-                                           ":docs" "[\"docs/spark_connect.md\"]"
-                                           ":target-root" "\"target/connect-docs\""]
-                                          {})]
-                       (if (pos? gen)
-                         gen
-                         (exit-code ["clojure" "-X:spark-connect:test:connect-docs"] env)))))))]
+                     (let [tmd (exit-code ["clojure" "-X:spark-connect:test:tmd:connect-arrow"
+                                           ":dirs" "[\"test-tmd\"]"]
+                                          env)
+                           gen (when (zero? tmd)
+                                 (exit-code ["clojure" "-X:gen-doc-tests"
+                                             ":docs" "[\"docs/spark_connect.md\"]"
+                                             ":target-root" "\"target/connect-docs\""]
+                                            {}))]
+                       (cond
+                         (pos? tmd) tmd
+                         (pos? gen) gen
+                         :else      (exit-code ["clojure" "-X:spark-connect:test:connect-docs"] env)))))))]
     (when-not (zero? exit)
       (System/exit exit))))
 

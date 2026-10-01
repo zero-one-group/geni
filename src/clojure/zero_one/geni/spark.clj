@@ -29,6 +29,11 @@
                            "session has none, so RDDs, broadcasts and MLlib don't work over it.")
                       {:session spark}))))
 
+(defn classic-session?
+  "Whether the session is classic Spark's rather than a Spark Connect one."
+  [^SparkSession spark]
+  (some? (spark-context-or-nil spark)))
+
 (defn connect-only?
   "Whether the Spark Connect client is on the classpath without classic
   Spark, as it is when Spark 4's spark-connect-client-jvm takes the place of

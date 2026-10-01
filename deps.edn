@@ -202,11 +202,20 @@
                  reply/reply        {:mvn/version "0.5.1"
                                      :exclusions  [javax.servlet/servlet-api]}}}
 
-  ;; The tech.ml.dataset interop tests.
+  ;; The tech.ml.dataset tests: g/to-tmd and the other result functions, and
+  ;; collect-to-arrow's files read back with tech.ml.dataset's Arrow reader,
+  ;; which needs jarrow.
   :tmd
   {:extra-paths ["test-tmd"]
-   :extra-deps  {techascent/tech.ml.dataset {:mvn/version "6.101"
-                                             :exclusions  [ch.qos.logback/logback-classic]}}}
+   :extra-deps  {techascent/tech.ml.dataset {:mvn/version "8.026"}
+                 com.cnuernber/jarrow       {:mvn/version "1.000"}}}
+
+  ;; Apache Arrow for :spark-connect, whose client only has it shaded. g/to-tmd
+  ;; and the other result functions decode Arrow batches with it, and
+  ;; clojure -T:build connect-tests runs test-tmd/ with it.
+  :connect-arrow
+  {:extra-deps {org.apache.arrow/arrow-vector       {:mvn/version "19.0.0"}
+                org.apache.arrow/arrow-memory-netty {:mvn/version "19.0.0"}}}
 
   ;; The XGBoost tests, with XGBoost4J-Spark 3, whose jar includes XGBoost4J:
   ;; :xgb for :spark, and :xgb-2.13 for the Spark builds on Scala 2.13.
