@@ -1,9 +1,10 @@
 (ns ^:classic zero-one.geni.spark-setup-test
   (:require
    [clojure.string]
-   [clojure.test :refer [deftest is]]
+   [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
+   [zero-one.geni.spark]
    [zero-one.geni.test-resources :refer [spark melbourne-df]])
   (:import
    (java.lang.management ManagementFactory)
@@ -37,3 +38,16 @@
   ;; uses, and a new Spark release can add more.
   (let [jvm-args (set (.getInputArguments (ManagementFactory/getRuntimeMXBean)))]
     (is (= [] (remove jvm-args (clojure.string/split (JavaModuleOptions/defaultModuleOptions) #" "))))))
+
+(deftest launcher-opens-test
+  (testing "Geni's copy of the launcher's --add-opens, for the Spark Connect client, is Spark's"
+    (is (= (sort (re-seq #"--add-opens=\S+" (JavaModuleOptions/defaultModuleOptions)))
+           (sort @#'zero-one.geni.spark/launcher-opens))))
+  (testing "this JVM has them all"
+    (is (empty? (#'zero-one.geni.spark/missing-opens @#'zero-one.geni.spark/launcher-opens))))
+  (testing "a flag it lacks is found, and a module it doesn't have is skipped"
+    (is (= ["--add-opens=java.base/java.lang.ref=ALL-UNNAMED"]
+           (#'zero-one.geni.spark/missing-opens
+            ["--add-opens=java.base/java.lang=ALL-UNNAMED"
+             "--add-opens=java.base/java.lang.ref=ALL-UNNAMED"
+             "--add-opens=no.such.module/no.such.package=ALL-UNNAMED"])))))

@@ -86,3 +86,30 @@ The third and final method is to use a list of dictionaries with fixed keys (i.e
                      {:number  64 :word "mouse"}
                      {:number -27 :word "horse"}])
 ```
+
+## Inferred Types
+
+The three shortcuts infer each column's type from its first value that isn't nil:
+
+| Value | Spark type |
+|---|---|
+| a boolean, a number such as `1` or `1.0`, or a string | the matching type, such as `LongType` for `1` |
+| a `BigDecimal`, such as `1.5M` | `DecimalType(38,18)`, Spark's default decimal |
+| a `BigInt` or a `BigInteger`, such as `1N` | `DecimalType(38,0)` |
+| a `java.time.LocalDate` or a `java.sql.Date` | `DateType` |
+| a `java.time.Instant`, a `java.sql.Timestamp` or a `java.util.Date`, such as `#inst "2026-10-01"` | `TimestampType` |
+| a `java.time.LocalDateTime` | `TimestampNTZType` |
+| a keyword or a `java.util.UUID` | `StringType`, with `"geni/new"` for `:geni/new` |
+| a byte array | `BinaryType` |
+| a map | a struct of the map's keys |
+| a vector or a list | an array |
+
+```clojure
+(-> (g/records->dataset [{:price 1.5M
+                          :day   (java.time.LocalDate/of 2026 10 1)
+                          :tag   :geni/new}])
+    g/dtypes)
+;; => {:price "DecimalType(38,18)", :day "DateType", :tag "StringType"}
+```
+
+A value of any other class, such as the ratio `1/3`, throws an error that names its column, so convert it first.

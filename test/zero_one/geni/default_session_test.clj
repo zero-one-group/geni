@@ -1,13 +1,14 @@
 (ns ^:classic zero-one.geni.default-session-test
   "Geni's default session: requiring Geni starts no Spark, a session that Geni
   didn't create is used as it is, and a session that Geni creates has no
-  settings of Geni's own."
+  settings of Geni's own, but for the serializer of a local one."
   (:require
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
+   [zero-one.geni.spark]
    [zero-one.geni.test-resources :as tr :refer [spark]])
   (:import
    (java.lang.management ManagementFactory)
@@ -39,6 +40,7 @@
           (is (= "3" (-> own .conf (.get "spark.sql.shuffle.partitions"))))
           (is (nil? (g/checkpoint-dir)))
           (is (empty? (geni-configs own)))
+          (is (nil? (:spark.serializer (g/spark-conf own))))
           (is (= level (root-level)))))
       (finally
         (tr/reset-session!)))))
@@ -58,10 +60,29 @@
           (is (nil? (g/checkpoint-dir)))
           (is (empty? (geni-configs session)))
           ;; log4j2-test.properties is on the classpath.
-          (is (= level (root-level)))))
+          (is (= level (root-level))))
+        (testing "but for the serializer of a local session"
+          (is (= "zero_one.geni.rdd.ClojureSerializer"
+                 (:spark.serializer (g/spark-conf session))))))
       (finally
         (System/clearProperty "spark.master")
         (tr/reset-session!)))))
+
+(deftest own-serializer-test
+  (try
+    (tr/stop-session!)
+    (System/setProperty "spark.serializer" "org.apache.spark.serializer.JavaSerializer")
+    (testing "Geni keeps a spark.serializer that's set already"
+      (is (= "org.apache.spark.serializer.JavaSerializer"
+             (:spark.serializer (g/spark-conf @spark)))))
+    (finally
+      (System/clearProperty "spark.serializer")
+      (tr/reset-session!))))
+
+(deftest local-master-test
+  (let [local-master? #'zero-one.geni.spark/local-master?]
+    (is (every? local-master? ["local" "local[2]" "local[*]" "local[4,2]"]))
+    (is (not-any? local-master? [nil "local-cluster[2,1,1024]" "spark://host:7077" "yarn"]))))
 
 (deftest set-default-session-test
   (let [other (.newSession ^SparkSession @spark)]
@@ -98,10 +119,11 @@
        (shutdown-agents)
        (System/exit 0))))
 
-(defn- run-in-fresh-jvm [form]
+(defn- run-in-fresh-jvm [form & {:keys [drop-flag?] :or {drop-flag? (constantly false)}}]
   (let [java      (str (io/file (System/getProperty "java.home") "bin" "java"))
         jvm-opts  (->> (.getInputArguments (ManagementFactory/getRuntimeMXBean))
-                       (remove #(re-find #"^-(javaagent|agentlib|agentpath)" %)))
+                       (remove #(re-find #"^-(javaagent|agentlib|agentpath)" %))
+                       (remove drop-flag?))
         classpath (->> (string/split (System/getProperty "java.class.path")
                                      (re-pattern java.io.File/pathSeparator))
                        (remove #(.exists (io/file % "log4j2-test.properties")))
@@ -118,6 +140,18 @@
              last
              edn/read-string)))
 
+(def ^:private missing-flags-probe
+  '(do
+     (require 'zero-one.geni.spark)
+     (try
+       (zero-one.geni.spark/create-spark-session {})
+       (prn {:started? true})
+       (catch clojure.lang.ExceptionInfo e
+         (prn {:message (ex-message e) :missing (:missing-jvm-flags (ex-data e))}))
+       (finally
+         (shutdown-agents)
+         (System/exit 0)))))
+
 (deftest ^:slow requiring-geni-test
   (let [{:keys [started-on-require? log-level] :as result} (run-in-fresh-jvm fresh-jvm-probe)]
     (is (map? result) "The new JVM failed. See target/fresh-jvm.log.")
@@ -126,3 +160,20 @@
       (is (= "WARN" log-level)))
     (testing "from the start, so that Spark's INFO lines as it starts don't show"
       (is (not (re-find #" INFO " (slurp "target/fresh-jvm.log")))))))
+
+(deftest ^:slow missing-jvm-flags-test
+  ;; Without the --add-opens flags, Spark 3.5 doesn't start, and Spark 4.2
+  ;; starts but can fail later.
+  (let [{:keys [started? message missing] :as result}
+        (run-in-fresh-jvm missing-flags-probe :drop-flag? #(string/starts-with? % "--add-opens="))
+        flag "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"]
+    (is (map? result) "The new JVM failed. See target/fresh-jvm.log.")
+    (if started?
+      (testing "Geni warns about the flags that Spark's launcher sets and the JVM lacks"
+        (let [log (slurp "target/fresh-jvm.log")]
+          (is (re-find #"WARN .*The JVM lacks flags" log))
+          (is (string/includes? log flag))))
+      (testing "Spark's error names the flags that its launcher sets and the JVM lacks"
+        (is (some #{flag} missing))
+        (is (string/includes? (str message) flag))
+        (is (string/includes? (str message) "README"))))))

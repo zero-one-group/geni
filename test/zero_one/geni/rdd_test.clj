@@ -542,3 +542,28 @@
              (-> (rdd/parallelise [1 2])
                  (rdd/map (fn [_] [(if b :t :f) (if (:b m) :t :f)]))
                  rdd/collect))))))
+
+(defrecord Point [x y])
+
+(deftest ^:rdd clojure-data-test
+  (testing "collecting keeps Clojure collections as they were"
+    (let [collected (rdd/collect (rdd/parallelise [{:a 1} [1 2] #{3} (sorted-map :b 2 :a 1) (->Point 1 2)]))]
+      (is (= [{:a 1} [1 2] #{3} {:a 1 :b 2} (->Point 1 2)] collected))
+      (is (= [true true true true true]
+             (map #(%1 %2) [map? vector? set? sorted? record?] collected)))
+      (is (= [[:a 1] [:b 2]] (seq (nth collected 3))))))
+  (testing "and converts what's in them"
+    (is (= [{:pair [1 "a"]}]
+           (rdd/collect (rdd/parallelise [{:pair (scala.Tuple2. 1 "a")}])))))
+  (testing "a false in a record stays false through Spark's serialiser"
+    (let [records (-> (rdd/parallelise [{:ok false :in [false]} {:ok true :in [true]}])
+                      (rdd/repartition 2))]
+      (testing "on the executors"
+        (is (= {:f 2 :t 2}
+               (-> records
+                   (rdd/flat-map (fn [{:keys [ok in]}] [(if ok :t :f) (if (first in) :t :f)]))
+                   rdd/collect
+                   frequencies))))
+      (testing "and on the driver"
+        (is (every? #(or (identical? true %) (identical? false %))
+                    (mapcat (juxt :ok (comp first :in)) (rdd/collect records))))))))
