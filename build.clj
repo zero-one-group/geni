@@ -266,6 +266,22 @@
     (when-not (zero? exit)
       (System/exit exit))))
 
+(defn check-all
+  "Everything that `check` runs, plus the tests on :spark-4 and over Spark
+  Connect: lint, then the tests and `connect-tests` on :spark-4, then the
+  tests and the doc tests on :spark. It preps each Spark itself, and stops at
+  the first failure. It ends prepped for :spark, as `check` expects. The
+  XGBoost tests and the cookbook stay separate, as `xgb-tests` and
+  `cookbook`."
+  [_]
+  (lint nil)
+  (prep {:spark :spark-4})
+  (sh! "clojure" "-X:spark-4:test:cli:tmd")
+  (connect-tests {})
+  (prep {})
+  (sh! "clojure" "-X:spark:test:cli:tmd")
+  (docs nil))
+
 (defn jar
   "Builds the library jar into target/."
   [_]

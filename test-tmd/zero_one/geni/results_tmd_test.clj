@@ -9,9 +9,10 @@
    [tech.v3.tensor :as dtt]
    [zero-one.geni.core :as g]
    [zero-one.geni.spark :as spark]
-   [zero-one.geni.test-resources :as tr])
+   [zero-one.geni.test-resources :as tr]
+   [zero-one.geni.utils :refer [class-named]])
   (:import
-   (clojure.lang ExceptionInfo)
+   (clojure.lang ExceptionInfo Reflector)
    (java.time Duration Instant LocalDate LocalDateTime LocalTime Period)))
 
 (defn- spark-4? [] (boolean (re-find #"^4\." (g/version))))
@@ -150,6 +151,29 @@
                                               [:v]))]
       (is (= [[1.0 2.0] {:size 3 :indices [1] :values [5.0]}] (vec (dataset :v)))))))
 
+(defn- without-task-error-logs
+  "Calls `f` with Spark's executor and scheduler logs off, for a check whose
+  Spark job fails on purpose, which they'd log with a stack trace. Over Spark
+  Connect, the server does that logging, so a client without log4j2's core
+  just calls `f`."
+  [f]
+  (if-not (class-named "org.apache.logging.log4j.core.config.Configurator")
+    (f)
+    (let [call      #(Reflector/invokeStaticMethod ^String %1 ^String %2 (object-array %&))
+          set-level #(call "org.apache.logging.log4j.core.config.Configurator" "setLevel" %1 %2)
+          loggers   ["org.apache.spark.executor.Executor" "org.apache.spark.scheduler.TaskSetManager"]
+          before    (mapv #(Reflector/invokeInstanceMethod
+                            (call "org.apache.logging.log4j.LogManager" "getLogger" %)
+                            "getLevel" (object-array 0))
+                          loggers)]
+      (try
+        (doseq [logger loggers]
+          (set-level logger (call "org.apache.logging.log4j.Level" "toLevel" "OFF")))
+        (f)
+        (finally
+          (doseq [[logger level] (map vector loggers before)]
+            (set-level logger level)))))))
+
 (def ^:private three-partitions
   (delay (g/sql @tr/spark "SELECT id FROM RANGE(0, 10, 1, 3)")))
 
@@ -163,9 +187,10 @@
   (testing "transduce, stopping early"
     (is (= [3] (into [] (comp (take 1) (map ds/row-count)) (g/stream @three-partitions)))))
   (testing "Spark's error when a batch fails"
-    (is (thrown-with-msg? Exception #"boom"
-                          (into [] (g/stream (g/sql @tr/spark (str "SELECT IF(id < 2, id, raise_error('boom')) id "
-                                                                   "FROM RANGE(0, 4, 1, 4)")))))))
+    (without-task-error-logs
+     #(is (thrown-with-msg? Exception #"boom"
+                            (into [] (g/stream (g/sql @tr/spark (str "SELECT IF(id < 2, id, raise_error('boom')) id "
+                                                                     "FROM RANGE(0, 4, 1, 4)"))))))))
   (testing "a reducing function's error, after which the session still works"
     (is (thrown-with-msg? ExceptionInfo #"stop"
                           (reduce (fn [_ _] (throw (ex-info "stop" {}))) nil (g/stream @three-partitions))))

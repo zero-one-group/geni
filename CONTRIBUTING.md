@@ -67,10 +67,11 @@ On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two
 ```bash
 clojure -T:build lint    # clj-kondo, then cljfmt's check
 clojure -T:build fmt     # reformats the sources with cljfmt
-clojure -T:build check   # lint, the tests on :spark, and the doc tests
+clojure -T:build check       # lint, the tests on :spark, and the doc tests
+clojure -T:build check-all   # check, plus the tests on :spark-4 and over Spark Connect
 ```
 
-`check` is what the CI runs on a pull request, so running it before you push saves a round trip. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
+`check` is what the CI runs on a pull request, so running it before you push saves a round trip. `check-all` adds the tests on `:spark-4` and `connect-tests`, preps each Spark itself, and ends prepped for `:spark`. It stops at the first failure, and takes several minutes. Both `lint` and `check` call `clojure -M:kondo` and `clojure -M:fmt` underneath, which take the same arguments as the tools themselves.
 
 ## Executable documentation
 
