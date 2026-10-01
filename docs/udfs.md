@@ -103,7 +103,7 @@ SQL calls a UDF with a fixed number of columns, which is the function's own when
 
 ## Where UDFs Run
 
-- **Classic Spark only.** A Clojure UDF runs on the executors, and a Spark Connect server can't load it, so `g/udf` and `g/register-udf!` throw an error over [Spark Connect](spark_connect.md).
+- **Classic Spark only, for now.** A Clojure UDF runs on the executors, which need Clojure, Geni and the function's classes. Geni doesn't yet upload those to a Spark Connect server, so `g/udf` and `g/register-udf!` throw an error over [Spark Connect](spark_connect.md).
 - **Locally.** Functions defined at a REPL or in a script work on a local session that Geni starts, as in these examples.
 - **On a cluster.** The executors need the function. A var, such as `#'grade-of`, travels by name: the executors load its namespace and look it up there, so the namespace has to be on their classpath, as it is in an application's uberjar. Any other function, such as a `(fn [x] ...)`, needs its class, so AOT-compile the namespace that defines it into the uberjar. Geni's own tests run UDFs on local sessions only.
 - **Speed.** Spark can't look inside a UDF, and each value is converted on its way in and out, so a built-in function is usually faster. Reach for a UDF when there isn't one.

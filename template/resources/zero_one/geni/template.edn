@@ -1,7 +1,7 @@
 {:description  "A Spark application with Geni."
  ;; The Geni release that new projects depend on. template_test checks it
  ;; against build.clj's version.
- :geni/version "0.2.0"
+ :geni/version "0.3.0"
  :transform
  [["build" ""
    {"build.tmpl" "build.clj"

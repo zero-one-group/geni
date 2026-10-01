@@ -93,8 +93,8 @@
 
 (defn- classic-only! []
   (when (spark/connect-only?)
-    (throw (ex-info (str "UDFs need classic Spark: a Clojure UDF runs on the executors, and a "
-                         "Spark Connect server can't load it.")
+    (throw (ex-info (str "UDFs need classic Spark for now: a Clojure UDF runs on the executors, "
+                         "and Geni doesn't yet upload what it needs to a Spark Connect server.")
                     {}))))
 
 (defn- ->udf-fn

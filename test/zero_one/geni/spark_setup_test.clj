@@ -45,9 +45,11 @@
            (sort @#'zero-one.geni.spark/launcher-opens))))
   (testing "this JVM has them all"
     (is (empty? (#'zero-one.geni.spark/missing-opens @#'zero-one.geni.spark/launcher-opens))))
-  (testing "a flag it lacks is found, and a module it doesn't have is skipped"
+  (testing "a flag it lacks is found, and a module or package it doesn't have is skipped"
+    ;; JDK 24 and later have no sun.security.action, which Spark still opens.
     (is (= ["--add-opens=java.base/java.lang.ref=ALL-UNNAMED"]
            (#'zero-one.geni.spark/missing-opens
             ["--add-opens=java.base/java.lang=ALL-UNNAMED"
              "--add-opens=java.base/java.lang.ref=ALL-UNNAMED"
+             "--add-opens=java.base/no.such.package=ALL-UNNAMED"
              "--add-opens=no.such.module/no.such.package=ALL-UNNAMED"])))))
