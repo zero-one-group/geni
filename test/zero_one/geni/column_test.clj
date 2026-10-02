@@ -3,8 +3,9 @@
    [clojure.string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
+   [zero-one.geni.core.column :as column]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [melbourne-df df-1 df-20]]))
+   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20]]))
 
 (deftest explain-test
   (is (clojure.string/starts-with? (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) false))
@@ -186,3 +187,22 @@
                                       g/distinct
                                       (g/collect-col :Suburb)))))))
 
+(deftest ilike-test
+  (is (= ["Abc" "aBz"]
+         (-> (g/records->dataset @spark [{:s "Abc"} {:s "xyz"} {:s "aBz"}])
+             (g/filter (g/ilike :s "a%"))
+             (g/order-by :s)
+             (g/collect-col :s)))))
+
+(deftest with-field-and-drop-fields-test
+  (let [structs (g/sql @spark "SELECT named_struct('a', 1, 'b', 2, 'c', 3) AS s")
+        s-col   #(-> structs (g/select {:s %}) (g/collect-col :s))]
+    (is (= [{:a 1 :b 2 :c 3 :d 4}] (s-col (g/with-field :s :d 4))))
+    (is (= [{:a 10 :b 2 :c 3}] (s-col (g/with-field :s :a 10))))
+    (is (= [{:a 1}] (s-col (g/drop-fields :s :b :c))))))
+
+(deftest not-equal-test
+  (is (= [0 2] (-> (g/range 3)
+                   (g/filter (column/not-equal :id 1))
+                   (g/order-by :id)
+                   (g/collect-col :id)))))

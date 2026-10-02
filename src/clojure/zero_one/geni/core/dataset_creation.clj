@@ -124,6 +124,18 @@
     :else
     value))
 
+(defn parse-ddl
+  "Parses a DDL string into a Spark type: a schema such as
+  `\"id BIGINT, name STRING\"` into a struct type, and a type such as
+  `\"ARRAY<STRING>\"` into that type. It runs where Geni runs, with no Spark
+  job, over Spark Connect too.
+
+  ```clojure
+  (g/parse-ddl \"id BIGINT, tags ARRAY<STRING>\")
+  ```"
+  ^DataType [^String ddl]
+  (DataType/fromDDL ddl))
+
 (defn- empty-schema? [schema]
   (if (coll? schema)
     (empty? schema)

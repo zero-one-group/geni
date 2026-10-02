@@ -9,7 +9,6 @@
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll]])
   (:import
-   (com.fasterxml.jackson.databind ObjectMapper)
    (java.text Normalizer Normalizer$Form)
    (org.apache.spark.sql SparkSession Dataset DataFrameWriter)))
 
@@ -261,26 +260,12 @@
   (when (and (file-exists? path) (not= (:mode options) "overwrite"))
     (throw (Exception. (format "path file:%s already exists!" path)))))
 
-;; Spark already brings Jackson, so JSON parsing needs no extra dependency.
-;; Whole numbers come back as Integer, Long or BigInteger, whichever fits, so
-;; that a DECIMAL(38,0) survives.
-(def ^:private ^ObjectMapper object-mapper (ObjectMapper.))
-
-(defn- json->clojure [x]
-  (cond
-    (instance? java.util.Map x)  (into {} (map (fn [[k v]] [(keyword k) (json->clojure v)])) x)
-    (instance? java.util.List x) (mapv json->clojure x)
-    :else                        x))
-
-(defn- read-as-keywords [^String json-str]
-  (json->clojure (.readValue object-mapper json-str Object)))
-
 (defn write-edn!
   "Writes an EDN file at the specified path."
   ([dataframe path] (write-edn! dataframe path {}))
   ([dataframe path options]
    (ensure-writable! path options)
-   (spit path (->> dataframe .toJSON .collect (mapv read-as-keywords)))))
+   (spit path (->> dataframe .toJSON .collect (mapv interop/read-json)))))
 
 (defmulti read-edn!
   "Loads an EDN file and returns the results as a DataFrame."

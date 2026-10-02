@@ -587,3 +587,122 @@
            [(g/row (g/sparse 4 [1 3] [3.0 4.0]))]
            {:test :vector})]
       (is (= [{:size 4 :indices [1 3] :values [3.0 4.0]}] (g/collect-col sparse-df :test))))))
+
+(deftest offset-test
+  (let [ids (-> (g/range 10) (g/order-by :id))]
+    (is (= [7 8 9] (-> ids (g/offset 7) (g/collect-col :id))))
+    (is (= [2 3 4] (-> ids (g/offset 2) (g/limit 3) (g/collect-col :id))))))
+
+(deftest unpivot-test
+  (let [wide     (g/records->dataset @spark [{:id 1 :jan 10 :feb 20} {:id 2 :jan 30 :feb 40}])
+        expected [{:id 1 :month "feb" :sales 20} {:id 1 :month "jan" :sales 10}
+                  {:id 2 :month "feb" :sales 40} {:id 2 :month "jan" :sales 30}]
+        long-df  #(-> % (g/order-by :id :month) g/collect)]
+    (is (= expected (long-df (g/unpivot wide [:id] [:jan :feb] :month :sales))))
+    (testing "every column that isn't an id, without values"
+      (is (= expected (long-df (g/unpivot wide :id :month :sales))))
+      (is (= expected (long-df (g/melt wide :id :month :sales)))))))
+
+(deftest with-columns-test
+  (testing "adds the new columns in the map's order"
+    ;; Spark's java.util.Map overload loses the order past four columns.
+    (is (= [:id :f :e :d :c :b :a]
+           (-> (g/range 1) (g/with-columns {:f 6 :e 5 :d 4 :c 3 :b 2 :a 1}) g/columns))))
+  (testing "replaces a column in place, from pairs"
+    (is (= [{:id 0 :z "z"} {:id 10 :z "z"}]
+           (-> (g/range 2)
+               (g/with-columns [[:id (g/* :id 10)] [:z (g/lit "z")]])
+               (g/order-by :id)
+               g/collect)))))
+
+(deftest with-metadata-test
+  (let [metadata {:comment "the key" :tags ["a" "b"] :n 3 :share 1.5 :nested {:ok true}}
+        df       (g/with-metadata (g/range 1) :id metadata)]
+    (is (= metadata (g/column-metadata df :id)))
+    (is (= {} (g/column-metadata (g/range 1) :id)))
+    (is (= [{:id 0}] (g/collect df)))))
+
+(deftest to-test
+  (let [df (g/records->dataset @spark [{:a 1 :b "x"}])]
+    (testing "a DDL string: reorders, casts and fills a missing column with nulls"
+      (let [reconciled (g/to df "b STRING, a INT, c DOUBLE")]
+        (is (= [:b :a :c] (g/columns reconciled)))
+        (is (= {:b "StringType" :a "IntegerType" :c "DoubleType"} (g/dtypes reconciled)))
+        (is (= [{:b "x" :a 1 :c nil}] (g/collect reconciled)))))
+    (testing "Geni's schema data, and a struct type"
+      (is (= [{:b "x"}] (g/collect (g/to df {:b :string}))))
+      (is (= [{:b "x"}] (g/collect (g/to df (g/parse-ddl "b STRING"))))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Expected a schema"
+                          (g/to df "INT")))))
+
+(deftest observe-test
+  (testing "the metrics of the first action, with an observation"
+    (let [quality  (g/observation)
+          observed (g/observe (g/range 10) quality {:rows (g/count "*") :top (g/max :id)})]
+      (is (= 10 (g/count observed)))
+      (is (= {:rows 10 :top 9} (g/observed quality)))))
+  (testing "named aggregate columns"
+    (let [totals   (g/observation "totals")
+          observed (g/observe (g/range 4) totals [(g/as (g/sum :id) "total")])]
+      (is (= [0 1 2 3] (-> observed (g/order-by :id) (g/collect-col :id))))
+      (is (= {:total 6} (g/observed totals)))))
+  (testing "a name in place of an observation leaves the rows as they are"
+    (is (= 3 (-> (g/range 3) (g/observe "named" {:n (g/count "*")}) g/count)))))
+
+(deftest metadata-column-test
+  (let [df (melbourne-df)]
+    (is (= [{:file "melbourne_housing_snapshot.parquet"}]
+           (-> df
+               (g/select {:file (g/get-field (g/metadata-column df "_metadata") :file_name)})
+               (g/limit 1)
+               g/collect)))))
+
+(deftest sample-with-seed-test
+  (let [ids    (g/range 100)
+        sample (fn [& args] (-> (apply g/sample ids args) (g/order-by :id) (g/collect-col :id)))]
+    (is (= (sample 0.3 42) (sample 0.3 42)))
+    (is (= (sample 0.5 true 7) (sample 0.5 true 7)))
+    (is (not= (sample 0.3 42) (sample 0.3 43)))))
+
+(deftest union-by-name-with-missing-columns-test
+  (let [left  (g/records->dataset @spark [{:x 1 :y 2}])
+        right (g/records->dataset @spark [{:x 3}])]
+    (is (= [{:x 1 :y 2} {:x 3 :y nil}]
+           (-> (g/union-by-name left right {:allow-missing-columns true})
+               (g/order-by :x)
+               g/collect)))
+    (is (thrown? Exception (g/collect (g/union-by-name left right))))
+    (is (= 3 (g/count (g/union-by-name left left left))))))
+
+(deftest plan-inspection-test
+  (let [structs (g/sql @spark "SELECT named_struct('a', 1, 'b', 2) AS s")
+        ids     (g/range 3)]
+    (testing "the schema's tree, to a depth"
+      (is (= (str "root\n"
+                  " |-- s: struct (nullable = false)\n"
+                  " |    |-- a: integer (nullable = false)\n"
+                  " |    |-- b: integer (nullable = false)\n")
+             (g/tree-string structs)))
+      (is (= "root\n |-- s: struct (nullable = false)\n" (g/tree-string structs 1)))
+      (is (= "root\n |-- s: struct (nullable = false)\n\n" (with-out-str (g/print-schema structs 1)))))
+    (testing "explain's modes"
+      (is (clojure.string/starts-with? (g/explain-string ids) "== Physical Plan =="))
+      (is (clojure.string/starts-with? (g/explain-string ids :extended) "== Parsed Logical Plan =="))
+      (is (clojure.string/starts-with? (g/explain-string ids true) "== Parsed Logical Plan =="))
+      (is (clojure.string/starts-with? (g/explain-string ids :cost) "== Optimized Logical Plan =="))
+      ;; The tests run with code generation off, and the canary with it on,
+      ;; which marks Range with a star.
+      (is (re-find #"^== Physical Plan ==\n(\* )?Range \(1\)" (g/explain-string ids :formatted)))
+      (is (re-find #"^Found \d+ WholeStageCodegen subtrees" (g/explain-string ids :codegen)))
+      (is (= (g/explain-string ids :extended)
+             (clojure.string/trimr (interop/with-scala-out-str (g/explain ids :extended)))))
+      (is (thrown? IllegalArgumentException (g/explain-string ids :nope))))
+    (testing "semantic equality"
+      (let [above-3 #(g/filter (g/range 10) (g/> :id 3))]
+        (is (g/same-semantics (above-3) (above-3)))
+        (is (not (g/same-semantics? (above-3) (g/filter (g/range 10) (g/> :id 4)))))
+        (is (= (g/semantic-hash (above-3)) (g/semantic-hash (above-3))))))))
+
+(deftest parse-ddl-test
+  (is (= (g/->schema {:id :long :name :string}) (g/parse-ddl "id BIGINT, name STRING")))
+  (is (= (g/array-type :string true) (g/parse-ddl "ARRAY<STRING>"))))

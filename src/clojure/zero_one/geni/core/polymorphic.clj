@@ -50,12 +50,19 @@
 (defmulti explain
   "Column: Prints the expression to the console for debugging purposes.
 
-   Dataset: Prints the physical plan to the console for debugging purposes."
+   Dataset: Prints the plan to the console for debugging purposes. `mode` is
+   one of `:simple`, the default, which prints the physical plan, `:extended`,
+   which adds the logical plans, `:codegen`, `:cost` and `:formatted`. `true`
+   stands for `:extended`, and `false` for `:simple`. `explain-string` returns
+   the plan instead."
   (fn [head & _] (class head)))
 (defmethod explain :default [expr extended] (.explain (->column expr) extended))
 (defmethod explain Dataset
   ([dataset] (.explain dataset))
-  ([dataset extended] (.explain dataset extended)))
+  ([dataset mode]
+   (if (boolean? mode)
+     (.explain dataset mode)
+     (.explain dataset (name mode)))))
 
 (defmulti mean
   "Column: Aggregate function: returns the average of the values in a group.
