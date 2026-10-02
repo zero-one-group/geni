@@ -301,3 +301,14 @@
         (tr/recursive-delete-dir (.toFile partition-path))
         (c/recover-partitions "tbl")
         (is (= [{:id 0 :is_odd 0} {:id 2 :is_odd 0} {:id 4 :is_odd 0}] (g/collect df)))))))
+
+(deftest catalogs-test
+  (is (= "spark_catalog" (c/current-catalog)))
+  (is (= "spark_catalog" (c/current-catalog @tr/spark)))
+  (is (= ["spark_catalog"] (g/collect-col (g/to-df (c/list-catalogs)) :name)))
+  (is (= ["spark_catalog"] (g/collect-col (g/to-df (c/list-catalogs "spark*")) :name)))
+  (is (zero? (g/count (c/list-catalogs @tr/spark "none*"))))
+  (c/set-current-catalog "spark_catalog")
+  (c/set-current-catalog @tr/spark "spark_catalog")
+  (is (= "spark_catalog" (c/current-catalog (c/catalog @tr/spark))))
+  (is (thrown? Exception (c/set-current-catalog "nope"))))

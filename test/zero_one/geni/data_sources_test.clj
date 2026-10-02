@@ -346,3 +346,105 @@
         (g/write-table! dataset table-name)
         (is (c/table-exists? (c/catalog @spark) "tbl"))
         (is (= (g/collect (g/order-by (g/to-df dataset) :id)) (g/collect (g/order-by (g/read-table! table-name) :id))))))))
+
+(deftest generic-read-and-write-test
+  (let [df   (g/records->dataset @spark [{:id 1 :v "a"} {:id 2 :v "b"}])
+        dir  (.getParent (create-temp-file! ""))
+        path #(str dir "/" %)]
+    (testing "a format, a path, a mode and partitions"
+      (g/write! df {:format "parquet" :path (path "p") :mode :overwrite :partition-by :v})
+      (is (= [{:id 1 :v "a"} {:id 2 :v "b"}]
+             (-> (g/read! {:format "parquet" :path (path "p")}) (g/order-by :id) g/collect))))
+    (testing "several paths, a schema and reader options"
+      (g/write! df {:format :json :path (path "j1")})
+      (g/write! df {:format :json :path (path "j2")})
+      (is (= {:id "IntegerType" :v "StringType"}
+             (g/dtypes (g/read! @spark {:format :json
+                                        :paths  [(path "j1") (path "j2")]
+                                        :schema "id INT, v STRING"}))))
+      (is (= 4 (g/count (g/read! {:format "json" :paths [(path "j1") (path "j2")]}))))
+      (g/write! (g/records->dataset @spark [{:IdNum 1}]) {:format "csv" :path (path "c") :header true})
+      (is (= [{:id-num 1}]
+             (g/collect (g/read! {:format        "csv"
+                                  :path          (path "c")
+                                  :header        true
+                                  :infer-schema  true
+                                  :kebab-columns true})))))
+    (testing "a keyword :mode for the other writers"
+      (g/write-parquet! df (path "k") {:mode :overwrite})
+      (g/write-parquet! df (path "k") {:mode :overwrite})
+      (g/write-edn! df (path "k.edn"))
+      (g/write-edn! df (path "k.edn") {:mode :overwrite})
+      (is (= 2 (g/count (g/read-parquet! (path "k")))))
+      (is (= 2 (g/count (g/read-edn! (path "k.edn"))))))
+    (testing "the errors"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #":path or :paths"
+                            (g/read! {:path (path "p") :paths [(path "p")]})))
+      (is (thrown-with-msg? AnalysisException #"bucketBy"
+                            (g/write! df {:format "parquet" :path (path "b") :bucket-by [2 :id]}))))))
+
+(deftest ^:slow generic-jdbc-test
+  (let [options {:format  "jdbc"
+                 :driver  "org.sqlite.JDBC"
+                 :url     (sqlite-with-housing-table)
+                 :dbtable "housing"}
+        ;; Not write-df, which belongs to the session that the tests started
+        ;; with, and with-fresh-session stops that one.
+        df      (g/records->dataset @spark [{:Type "h"} {:Type "u"}])]
+    (g/write! df (assoc options :mode :overwrite))
+    (is (= ["h" "u"] (-> (g/read! options) (g/order-by :Type) (g/collect-col :Type))))))
+
+(deftest parse-json-and-csv-test
+  (let [json (g/records->dataset @spark [{:s "{\"a\": 1}"} {:s "{\"a\": 2, \"b\": \"x\"}"}])
+        csv  (g/records->dataset @spark [{:s "1,x"} {:s "2,y"}])]
+    (is (= [{:a 1 :b nil} {:a 2 :b "x"}] (-> json (g/parse-json :s) (g/order-by :a) g/collect)))
+    (is (= {:a "IntegerType"} (-> json (g/parse-json :s {:schema {:a :int}}) g/dtypes)))
+    (is (= [{:_c0 "1" :_c1 "x"} {:_c0 "2" :_c1 "y"}] (-> csv (g/parse-csv :s) (g/order-by :_c0) g/collect)))
+    (is (= [{:n 1 :s "x"} {:n 2 :s "y"}]
+           (-> csv (g/parse-csv :s {:schema "n INT, s STRING"}) (g/order-by :n) g/collect)))
+    (is (= [{:id-num "1" :name "x"}]
+           (-> (g/records->dataset @spark [{:s "IdNum,Name"} {:s "1,x"}])
+               (g/parse-csv :s {:header true :kebab-columns true})
+               g/collect)))))
+
+(deftest table-writes-test
+  (with-fresh-session
+    (let [df          (g/records->dataset @spark [{:id 1 :v "a"} {:id 2 :v "b"}])
+          described   (fn [table-name]
+                        (->> (g/collect (g/sql @spark (str "DESCRIBE EXTENDED " table-name)))
+                             (map (juxt :col_name :data_type))
+                             (into {})))
+          table-count #(g/count (g/read-table! %))]
+      (testing "write-table! with buckets"
+        (g/write-table! df "bucketed" {:format :parquet :bucket-by [2 :id] :sort-by :id})
+        (is (= {"Provider" "parquet" "Num Buckets" "2" "Bucket Columns" "[`id`]" "Sort Columns" "[`id`]"}
+               (select-keys (described "bucketed")
+                            ["Provider" "Num Buckets" "Bucket Columns" "Sort Columns"]))))
+      (testing "read-table! with options"
+        (is (= [:id :v] (g/columns (g/read-table! "bucketed" {:kebab-columns true}))))
+        (is (= 2 (g/count (g/read-table! @spark "bucketed" {"mergeSchema" "false"})))))
+      (testing "insert-into!"
+        (g/insert-into! df "bucketed")
+        (is (= 4 (table-count "bucketed")))
+        (g/insert-into! df "bucketed" {:overwrite true})
+        (is (= 2 (table-count "bucketed"))))
+      (testing "write-to! creates a table"
+        (g/write-to! df "created" {:mode             :create
+                                   :using            "parquet"
+                                   :partitioned-by   [:v]
+                                   :table-properties {:geni.purpose "test" :version 3}})
+        (is (= 2 (table-count "created")))
+        (is (= #{"v=a" "v=b"} (set (g/collect-col (g/sql @spark "SHOW PARTITIONS created") :partition))))
+        (is (= {"geni.purpose" "test" "version" "3"}
+               (-> (->> (g/collect (g/sql @spark "SHOW TBLPROPERTIES created"))
+                        (map (juxt :key :value))
+                        (into {}))
+                   (select-keys ["geni.purpose" "version"])))))
+      (testing "write-to!'s other modes need a v2 table, which the session catalog doesn't have"
+        (is (thrown-with-msg? AnalysisException #"v1 table" (g/write-to! df "created" {:mode :append})))
+        (is (thrown? AnalysisException (g/write-to! df "created" {:mode :create-or-replace :using "parquet"}))))
+      (testing "write-to!'s options"
+        (is (thrown-with-msg? clojure.lang.ExceptionInfo #"takes a :mode"
+                              (g/write-to! df "created" {:mode :upsert})))
+        (is (thrown-with-msg? clojure.lang.ExceptionInfo #"takes a :condition"
+                              (g/write-to! df "created" {:mode :overwrite})))))))

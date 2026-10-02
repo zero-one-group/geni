@@ -71,6 +71,7 @@
    [zero-one.geni.utils :refer [class-named import-fn import-vars]]
    [zero-one.geni.core.clojure-idioms]
    [zero-one.geni.core.column]
+   [zero-one.geni.core.conf]
    [zero-one.geni.core.data-sources]
    [zero-one.geni.core.dataset-creation]
    [zero-one.geni.core.dataset]
@@ -403,6 +404,13 @@
   zip-with])
 
 (import-vars
+ [zero-one.geni.core.conf
+  conf-get
+  conf-modifiable?
+  conf-set!
+  conf-unset!])
+
+(import-vars
  [zero-one.geni.core.dataset-creation
   ->schema
   array-type
@@ -548,6 +556,10 @@
   create-or-replace-temp-view!
   create-global-temp-view!
   create-or-replace-global-temp-view!
+  insert-into!
+  parse-csv
+  parse-json
+  read!
   read-avro!
   read-binary!
   read-csv!
@@ -559,6 +571,7 @@
   read-table!
   read-text!
   read-xlsx!
+  write!
   write-avro!
   write-csv!
   write-edn!
@@ -568,6 +581,7 @@
   write-parquet!
   write-table!
   write-text!
+  write-to!
   write-xlsx!])
 
 (import-vars

@@ -706,3 +706,13 @@
 (deftest parse-ddl-test
   (is (= (g/->schema {:id :long :name :string}) (g/parse-ddl "id BIGINT, name STRING")))
   (is (= (g/array-type :string true) (g/parse-ddl "ARRAY<STRING>"))))
+
+(deftest sql-with-args-test
+  (is (= [{:x 42 :s "hi" :k "kw"}]
+         (g/collect (g/sql @spark "SELECT :a + 1 AS x, :b AS s, :k AS k" {:a 41 :b "hi" :k :kw}))))
+  (is (= [{:x 5}] (g/collect (g/sql @spark "SELECT ? + ? AS x" [2 3]))))
+  (is (= [{:n 3 :x 1.5}] (g/collect (g/sql @spark "SELECT size(:xs) AS n, :x AS x" {:xs [1 2 3] :x (g/lit 1.5)}))))
+  (is (= [{:d (java.sql.Date/valueOf "2026-10-02")}]
+         (g/collect (g/sql @spark "SELECT :d AS d" {:d (java.time.LocalDate/of 2026 10 2)}))))
+  (is (thrown-with-msg? clojure.lang.ExceptionInfo #"as a map"
+                        (g/sql @spark "SELECT 1" "1"))))
