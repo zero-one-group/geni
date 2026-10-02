@@ -15,8 +15,6 @@
   "What `clojure -T:build prep` compiled the test namespaces against."
   "target/test-classes/spark.edn")
 
-(def ^:private log-path "target/test.log")
-
 (def ^:private default-report t/report)
 
 (defn- running-spark
@@ -211,7 +209,9 @@
 
 (defn run-tests
   "Runs the tests and returns the results. See `run` for the options."
-  [{:keys [dirs only shard-spec slowest] :or {slowest 5} :as opts}]
+  [{:keys [dirs only shard-spec slowest] log-path :log
+    :or   {slowest 5 log-path "target/test.log"}
+    :as   opts}]
   (io/make-parents log-path)
   (with-open [log (io/writer log-path)]
     (let [start      (System/nanoTime)
@@ -269,6 +269,7 @@
     :exclude  skip tests with this metadata, e.g. :slow
     :shard    run every nth namespace from the ith, e.g. [1 3]
     :slowest  how many of the slowest tests to list (default: 5)
+    :log      the file for the full reports (default: target/test.log)
 
   Over Spark Connect, that is with Spark's JVM client on the classpath in
   place of classic Spark, it skips the namespaces and tests marked ^:classic.
