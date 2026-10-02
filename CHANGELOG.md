@@ -23,6 +23,16 @@ New:
   - `g/ilike` matches a pattern without regard to case, and `g/with-field` and `g/drop-fields` set and drop the fields of a struct column.
   - `g/sample` takes a seed, `g/union-by-name` takes `{:allow-missing-columns true}` after the DataFrames, and `g/print-schema` takes a depth, as does `g/tree-string`, which returns the tree.
   - `g/explain` takes a mode, such as `:formatted` or `:cost`, and `g/explain-string` returns the plan. `g/same-semantics` and `g/semantic-hash` compare plans, and `g/parse-ddl` turns a DDL string into a Spark type.
+- Reading, writing and SQL as Spark's own APIs have them, on Spark 3.5 and 4, and over Spark Connect:
+  - `g/read!` and `g/write!` read and write any data source, such as Delta Lake, with a `:format`, a `:path` or `:paths`, and the source's own options. Without a path, they read and write what the options name, as a JDBC source does.
+  - `g/write-table!` takes `:format`, and `:bucket-by` and `:sort-by` for bucketed tables, and `g/read-table!` takes reader options.
+  - `g/insert-into!` inserts a DataFrame's rows into an existing table, by position.
+  - `g/write-to!` writes through Spark's DataFrameWriterV2, for catalogs such as Delta's and Iceberg's, with a `:mode` such as `:create`, `:append` or `:overwrite`. Spark's built-in session catalog only takes `:create`.
+  - `g/parse-json` and `g/parse-csv` parse a column of JSON or CSV strings into a DataFrame.
+  - `g/sql` binds parameters to values: a map binds named ones, such as `:min`, and a vector binds `?` ones.
+  - `g/conf-get`, `g/conf-set!`, `g/conf-unset!` and `g/conf-modifiable?` read and set the session's runtime configs.
+  - `zero-one.geni.catalog` has `list-catalogs`, `current-catalog` and `set-current-catalog`.
+  - The writers' `:mode` can be a keyword, such as `:overwrite`, as well as a string.
 
 Fixes:
 

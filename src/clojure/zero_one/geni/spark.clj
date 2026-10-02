@@ -8,7 +8,7 @@
    (clojure.lang DynamicClassLoader Reflector RT)
    (java.lang Module ModuleLayer)
    (org.apache.spark SparkConf SparkContext)
-   (org.apache.spark.sql SparkSession)
+   (org.apache.spark.sql Column SparkSession functions)
    (org.slf4j LoggerFactory)
    (scala Option)))
 
@@ -300,14 +300,45 @@
   [^SparkSession spark-session]
   (-> spark-session .conf .getAll interop/scala-map->map walk/keywordize-keys))
 
+(defn- sql-arg
+  "A value for a SQL parameter: a column, such as a `g/lit`, as it is, a
+  collection as an array literal, a keyword as its name, and anything else as
+  Spark's `lit` takes it."
+  [value]
+  (cond
+    (instance? Column value) value
+    (keyword? value)         (name value)
+    (coll? value)            (functions/lit (into-array (type (first value)) value))
+    :else                    value))
+
 (defn sql
   "Executes a SQL query using Spark, returning the result as a `DataFrame`.
+  Spark runs a command, such as `CREATE TABLE`, right away, and a query when
+  an action needs it.
 
-  The dialect that is used for SQL parsing can be configured with 'spark.sql.dialect'.
+  With `args`, the query's parameters are bound to values rather than spliced
+  into the text: a map binds the named parameters, such as `:min`, and a
+  vector binds the `?` ones in order. A value is a literal, a column such as
+  `(g/lit ...)`, or a collection, which becomes an array.
 
   ```clojure
   (g/sql spark \"SELECT * FROM my_table\")
+  (g/sql spark \"SELECT * FROM sales WHERE price > :min\" {:min 1000})
+  (g/sql spark \"SELECT ? + ?\" [2 3])
   ```"
-  [^SparkSession spark ^String sql-text]
-  (. spark sql sql-text))
+  ([^SparkSession spark ^String sql-text]
+   (. spark sql sql-text))
+  ([^SparkSession spark ^String sql-text args]
+   (cond
+     (map? args)
+     (let [named (java.util.HashMap. ^java.util.Map (update-keys (update-vals args sql-arg) name))]
+       (.sql spark sql-text ^java.util.Map named))
+
+     (sequential? args)
+     (.sql spark sql-text ^Object (object-array (map sql-arg args)))
+
+     :else
+     (throw (ex-info (str "sql takes its args as a map, for named parameters, or as a vector, "
+                          "for positional ones. Got: " (pr-str args))
+                     {:args args})))))
 

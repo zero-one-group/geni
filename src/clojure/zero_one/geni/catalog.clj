@@ -60,6 +60,59 @@
   [^Catalog catalog]
   (. catalog currentDatabase))
 
+(defmulti current-catalog
+  "Returns the name of the session's current catalog, such as
+  `\"spark_catalog\"`, Spark's built-in one."
+  ^String catalog-dispatch)
+(defmethod current-catalog []
+  []
+  (current-catalog @defaults/spark))
+(defmethod current-catalog [SparkSession]
+  [^SparkSession spark]
+  (current-catalog (catalog spark)))
+(defmethod current-catalog [Catalog]
+  [^Catalog catalog]
+  (. catalog currentCatalog))
+
+(defmulti set-current-catalog
+  "Makes the catalog `catalog-name` the session's current one, for the table
+  names that don't name a catalog. A catalog other than Spark's built-in one
+  comes from a `spark.sql.catalog.<name>` config."
+  catalog-dispatch)
+(defmethod set-current-catalog [String]
+  [^String catalog-name]
+  (set-current-catalog @defaults/spark catalog-name))
+(defmethod set-current-catalog [SparkSession String]
+  [^SparkSession spark ^String catalog-name]
+  (set-current-catalog (catalog spark) catalog-name))
+(defmethod set-current-catalog [Catalog String]
+  [^Catalog catalog ^String catalog-name]
+  (. catalog setCurrentCatalog catalog-name))
+
+(defmulti list-catalogs
+  "Returns a Dataset of the session's catalogs, with a `name` and a
+  `description` column, or only those whose names match the pattern, where
+  `*` matches any characters."
+  ^Dataset catalog-dispatch)
+(defmethod list-catalogs []
+  []
+  (list-catalogs @defaults/spark))
+(defmethod list-catalogs [String]
+  [^String pattern]
+  (list-catalogs @defaults/spark pattern))
+(defmethod list-catalogs [SparkSession]
+  [^SparkSession spark]
+  (list-catalogs (catalog spark)))
+(defmethod list-catalogs [SparkSession String]
+  [^SparkSession spark ^String pattern]
+  (list-catalogs (catalog spark) pattern))
+(defmethod list-catalogs [Catalog]
+  [^Catalog catalog]
+  (. catalog listCatalogs))
+(defmethod list-catalogs [Catalog String]
+  [^Catalog catalog ^String pattern]
+  (. catalog listCatalogs pattern))
+
 (defmulti database-exists? ^Boolean catalog-dispatch)
 (defmethod database-exists? [String]
   [^String db-name]
