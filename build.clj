@@ -130,23 +130,29 @@
 (def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
 (def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
 
+(def ^:private lint-commands
+  [(into ["clojure" "-M:kondo" "--lint"] lint-paths)
+   (into ["clojure" "-M:fmt" "check"] fmt-paths)])
+
 (defn lint
   "Runs clj-kondo, then cljfmt's check, as the CI does."
   [_]
-  (apply sh! "clojure" "-M:kondo" "--lint" lint-paths)
-  (apply sh! "clojure" "-M:fmt" "check" fmt-paths))
+  (run! #(apply sh! %) lint-commands))
 
 (defn fmt
   "Reformats the sources with cljfmt."
   [_]
   (apply sh! "clojure" "-M:fmt" "fix" fmt-paths))
 
+(def ^:private doc-commands
+  [["clojure" "-X:gen-doc-tests"]
+   ["clojure" "-X:spark:test:tmd:doc-tests"]])
+
 (defn docs
   "Runs the Clojure blocks in the README and docs/ as tests, on :spark, with
   tech.ml.dataset for the collecting guide. Run `prep` first."
   [_]
-  (sh! "clojure" "-X:gen-doc-tests")
-  (sh! "clojure" "-X:spark:test:tmd:doc-tests"))
+  (run! #(apply sh! %) doc-commands))
 
 (defn cookbook
   "Runs the cookbook's Clojure blocks as tests, on :spark, as the weekly
@@ -172,13 +178,50 @@
          ":target-root" "\"target/xgb-docs\"")
     (sh! "clojure" (str aliases ":xgb-docs"))))
 
+(defn- run-all!
+  "Runs the commands one after another, until one fails, with their output,
+  stderr included, appended to `file`. Returns the last exit code."
+  [file commands]
+  (reduce (fn [_ args]
+            (let [exit (-> (doto (ProcessBuilder. ^java.util.List args)
+                             (.redirectErrorStream true)
+                             (.redirectOutput (java.lang.ProcessBuilder$Redirect/appendTo file)))
+                           .start
+                           .waitFor)]
+              (if (zero? exit) 0 (reduced exit))))
+          0
+          commands))
+
+(defn- in-background
+  "Runs the commands as `run-all!` does, in the background, with their output
+  in the file `out`. Returns a future of the exit code and the output."
+  [out commands]
+  (let [file (io/file out)]
+    (io/make-parents file)
+    (spit file "")
+    (future (let [exit (run-all! file commands)]
+              {:exit exit :out (slurp file)}))))
+
 (defn check
-  "Lints, then runs the tests and the doc tests on :spark: what the CI runs on
-  a pull request. Run `prep` first."
+  "Lints, runs the tests and runs the doc tests, on :spark: what the CI runs
+  on a pull request. The lint and the doc tests run alongside the tests, and
+  their output follows the tests'. Run `prep` first."
   [_]
-  (lint nil)
-  (sh! "clojure" "-X:spark:test:cli:tmd")
-  (docs nil))
+  (let [lint-run (in-background "target/lint.out" lint-commands)
+        ;; With a log of their own, since the tests write target/test.log.
+        docs-run (in-background "target/docs.out"
+                                (update doc-commands 1 conj ":log" "\"target/doc-tests.log\""))
+        tests    (:exit (b/process {:command-args ["clojure" "-X:spark:test:cli:tmd"]}))
+        {lint-exit :exit lint-out :out} @lint-run
+        {docs-exit :exit docs-out :out} @docs-run
+        failed   (keep (fn [[step exit]] (when (pos? exit) step))
+                       [["lint" lint-exit] ["the tests" tests] ["the doc tests" docs-exit]])]
+    (print (str "\n" lint-out "\n" docs-out))
+    (flush)
+    (shutdown-agents)
+    (when (seq failed)
+      (println "\nFailed:" (string/join ", " failed))
+      (System/exit 1))))
 
 (defn- port-open? [port]
   (try
