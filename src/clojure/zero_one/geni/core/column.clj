@@ -88,7 +88,7 @@
 (def eq-null-safe <=>)
 
 (def =!= (partial compare-columns #(.notEqual %1 %2)))
-(def not-equal <=>)
+(def not-equal =!=)
 
 (def < (partial compare-columns #(.lt %1 %2)))
 (def lt <)
@@ -119,6 +119,28 @@
 
 (defn get-field [expr field-name] (.getField (col expr) (name field-name)))
 
+(defn with-field
+  "Returns the struct column with the field `field-name` set to `value`, in
+  its place when the struct has that field, and at the end otherwise. `value`
+  goes through `->column`, so a string names a column; use `lit` for a string
+  value. `field-name` can be a path, such as `:a.b`, into nested structs.
+
+  ```clojure
+  (g/select dataframe {:address (g/with-field :address :postcode (g/lit \"3000\"))})
+  ```"
+  [expr field-name value]
+  (.withField (col expr) (name field-name) (col value)))
+
+(defn drop-fields
+  "Returns the struct column without the fields `field-names`, each of which
+  can be a path, such as `:a.b`, into nested structs.
+
+  ```clojure
+  (g/select dataframe {:address (g/drop-fields :address :unit :street)})
+  ```"
+  [expr & field-names]
+  (.dropFields (col expr) (interop/->scala-seq (map name field-names))))
+
 (defn get-item [expr k] (.getItem (col expr) (try
                                                (name k)
                                                (catch Exception _ k))))
@@ -135,6 +157,16 @@
 (defn isin [expr coll] (.isin (col expr) (interop/->scala-seq coll)))
 
 (defn like [expr literal] (.like (col expr) literal))
+
+(defn ilike
+  "SQL ILIKE: true where the string column matches the pattern `literal`,
+  ignoring case. `%` matches any characters, and `_` one.
+
+  ```clojure
+  (g/filter dataframe (g/ilike :suburb \"%north%\"))
+  ```"
+  [expr literal]
+  (.ilike (col expr) literal))
 
 (defn rlike [expr literal] (.rlike (col expr) literal))
 

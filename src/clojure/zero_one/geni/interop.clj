@@ -6,6 +6,7 @@
    [zero-one.geni.utils :refer [->kebab-case class-named ensure-coll]])
   (:import
    (clojure.lang Reflector)
+   (com.fasterxml.jackson.databind ObjectMapper)
    (java.io ByteArrayOutputStream PrintStream)
    (org.apache.spark.sql Row)
    (scala Console
@@ -16,7 +17,7 @@
           Tuple2
           Tuple3)
    (scala.collection JavaConverters Map Seq)
-   (scala.collection.immutable List)))
+   (scala.collection.immutable List ListMap ListMap$)))
 
 (declare ->clojure)
 
@@ -52,6 +53,14 @@
   ^List [coll]
   (.toList (JavaConverters/asScalaBuffer (vec coll))))
 
+(defn ->scala-list-map
+  "An immutable Scala ListMap of the key-value pairs, which keeps their order,
+  on Scala 2.12 and 2.13."
+  ^ListMap [pairs]
+  (reduce (fn [^ListMap m [k v]] (.updated m k v))
+          (.empty ListMap$/MODULE$)
+          pairs))
+
 (defn ->scala-tuple2 [coll]
   (Tuple2. (first coll) (second coll)))
 
@@ -86,6 +95,40 @@
       (->scala-function0 (fn [] ~@body)))
      (.flush out#)
      (.toString out-buffer# "UTF-8")))
+
+;; Spark brings Jackson, so JSON needs no extra dependency. Whole numbers come
+;; back as Integer, Long or BigInteger, whichever fits, so that a DECIMAL(38,0)
+;; survives.
+(def ^:private ^ObjectMapper object-mapper (ObjectMapper.))
+
+(defn- jackson->clojure [x]
+  (cond
+    (instance? java.util.Map x)  (into {} (map (fn [[k v]] [(keyword k) (jackson->clojure v)])) x)
+    (instance? java.util.List x) (mapv jackson->clojure x)
+    :else                        x))
+
+(defn read-json
+  "Parses a JSON string into Clojure data, with keywords for the keys."
+  [^String json-str]
+  (jackson->clojure (.readValue object-mapper json-str Object)))
+
+(defn- json-key [k]
+  (if (keyword? k) (subs (str k) 1) (str k)))
+
+(defn- clojure->jackson [x]
+  (cond
+    (map? x)     (let [m (java.util.LinkedHashMap.)]
+                   (doseq [[k v] x]
+                     (.put m (json-key k) (clojure->jackson v)))
+                   m)
+    (keyword? x) (json-key x)
+    (coll? x)    (java.util.ArrayList. ^java.util.Collection (mapv clojure->jackson x))
+    :else        x))
+
+(defn write-json
+  "Writes Clojure data as a JSON string, with keywords as strings."
+  ^String [x]
+  (.writeValueAsString object-mapper (clojure->jackson x)))
 
 (defn spark-conf->map [conf]
   (->> conf

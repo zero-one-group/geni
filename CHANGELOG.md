@@ -13,6 +13,20 @@ New:
 - `g/create-dataframe` takes a tech.ml.dataset dataset, with the Spark types from its columns' datatypes.
 - `g/glimpse` prints a column per line, with its type and its first values, and `g/to-html` gives Spark's HTML table of a DataFrame's first rows, as a notebook shows it.
 - `g/records->dataset`, `g/map->dataset` and `g/table->dataset` infer a day-time interval for a `java.time.Duration` and a year-month interval for a `java.time.Period`, and on Spark 4, VARIANT for Spark's `VariantVal` and, from Spark 4.1, TIME for a `java.time.LocalTime`.
+- More of Spark's Dataset API, on Spark 3.5 and 4, and over Spark Connect:
+  - `g/offset` skips rows, and `g/unpivot`, also called `g/melt`, turns columns into rows.
+  - `g/with-columns` adds or replaces columns from a map, and adds the new ones in the map's order.
+  - `g/to` reconciles a DataFrame with a schema, as a struct type, Geni's schema data or a DDL string: it puts the columns in the schema's order, casts them where that's safe, drops the ones the schema lacks and fills a missing nullable one with nulls.
+  - `g/with-metadata` sets a column's metadata from a map, and `g/column-metadata` reads it back.
+  - `g/observe` computes aggregates while an action runs, and `g/observed` returns them from a `g/observation`.
+  - `g/metadata-column` selects a metadata column, such as the `_metadata` column of a file source.
+  - `g/ilike` matches a pattern without regard to case, and `g/with-field` and `g/drop-fields` set and drop the fields of a struct column.
+  - `g/sample` takes a seed, `g/union-by-name` takes `{:allow-missing-columns true}` after the DataFrames, and `g/print-schema` takes a depth, as does `g/tree-string`, which returns the tree.
+  - `g/explain` takes a mode, such as `:formatted` or `:cost`, and `g/explain-string` returns the plan. `g/same-semantics` and `g/semantic-hash` compare plans, and `g/parse-ddl` turns a DDL string into a Spark type.
+
+Fixes:
+
+- `zero-one.geni.core.column/not-equal`, which `g/` doesn't export, was null-safe equality, `g/<=>`, rather than `g/=!=`.
 
 ## 0.3.0 (2026-10-01)
 

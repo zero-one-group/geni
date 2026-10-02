@@ -156,10 +156,12 @@
   desc
   desc-nulls-first
   desc-nulls-last
+  drop-fields
   ends-with
   get-field
   get-item
   hash-code
+  ilike
   is-in-collection
   is-nan
   is-not-null
@@ -175,6 +177,7 @@
   null?
   rlike
   starts-with
+  with-field
   |
   ||])
 
@@ -406,6 +409,7 @@
   create-dataframe
   map->dataset
   map-type
+  parse-ddl
   range
   records->dataset
   struct-field
@@ -426,6 +430,7 @@
   collect
   collect-col
   collect-vals
+  column-metadata
   column-names
   columns
   compatible?
@@ -447,6 +452,7 @@
   except
   except-all
   expected-fpp
+  explain-string
   fill-na
   first-vals
   freq-items
@@ -466,8 +472,14 @@
   last-vals
   limit
   local?
+  melt
   merge-in-place
+  metadata-column
   might-contain
+  observation
+  observe
+  observed
+  offset
   order-by
   partitions
   persist
@@ -482,10 +494,13 @@
   repartition-by-range
   replace-na
   rollup
+  same-semantics
+  same-semantics?
   sample
   sample-by
   select
   select-expr
+  semantic-hash
   show
   show-vertical
   sort
@@ -499,14 +514,19 @@
   tail-vals
   take
   take-vals
+  to
   to-byte-array
   total-count
+  tree-string
   union
   union-by-name
   unpersist
+  unpivot
   width
   with-column
-  with-column-renamed])
+  with-column-renamed
+  with-columns
+  with-metadata])
 
 (import-vars
  [zero-one.geni.core.udf

@@ -6,13 +6,16 @@
                             sort
                             take])
   (:require
+   [clojure.string :as string]
    [clojure.walk :refer [keywordize-keys]]
    [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.utils :refer [ensure-coll import-fn]])
   (:import
-   (org.apache.spark.sql Column)))
+   (org.apache.spark.sql Column Observation)
+   (org.apache.spark.sql.types Metadata StructType)))
 
 ;;;; Actions
 (defn- collected->maps [collected]
@@ -81,8 +84,20 @@
   ([dataframe] (.persist dataframe))
   ([dataframe new-level] (.persist dataframe new-level)))
 
-(defn print-schema [dataframe]
-  (-> dataframe .schema .treeString println))
+(defn tree-string
+  "Returns the schema as the tree that `print-schema` prints. With `level`, the
+  tree goes that many levels deep.
+
+  ```clojure
+  (g/tree-string (g/range 3))
+  => \"root\\n |-- id: long (nullable = false)\\n\"
+  ```"
+  ([dataframe] (-> dataframe .schema .treeString))
+  ([dataframe level] (-> dataframe .schema (.treeString (int level)))))
+
+(defn print-schema
+  ([dataframe] (println (tree-string dataframe)))
+  ([dataframe level] (println (tree-string dataframe level))))
 
 (defn rdd [dataframe] (.rdd dataframe))
 
@@ -141,16 +156,43 @@
       (.repartitionByRange dataframe (->col-array args)))))
 
 (defn sample
-  ([dataframe fraction] (.sample dataframe fraction))
-  ([dataframe fraction with-replacement]
-   (.sample dataframe with-replacement fraction)))
+  "Returns a sample of about `fraction` of the rows, without replacement unless
+  `with-replacement` is true, and with a random seed unless `seed` is given.
+  The third argument is `with-replacement` when it's a boolean, and the seed
+  otherwise.
+
+  ```clojure
+  (g/sample dataframe 0.1)
+  (g/sample dataframe 0.1 42)
+  (g/sample dataframe 0.1 true 42)
+  ```"
+  ([dataframe fraction] (.sample dataframe (double fraction)))
+  ([dataframe fraction with-replacement-or-seed]
+   (if (boolean? with-replacement-or-seed)
+     (.sample dataframe with-replacement-or-seed (double fraction))
+     (.sample dataframe (double fraction) (long with-replacement-or-seed))))
+  ([dataframe fraction with-replacement seed]
+   (.sample dataframe (boolean with-replacement) (double fraction) (long seed))))
 
 (defn sort-within-partitions [dataframe & exprs]
   (.sortWithinPartitions dataframe (->col-array exprs)))
 
 (defn union [& dataframes] (reduce #(.union %1 %2) dataframes))
 
-(defn union-by-name [& dataframes] (reduce #(.unionByName %1 %2) dataframes))
+(defn union-by-name
+  "Returns the union of the dataframes' rows, matching their columns by name.
+  A map of options can follow the dataframes. With `:allow-missing-columns`
+  true, a column that some of them lack is null in their rows.
+
+  ```clojure
+  (g/union-by-name left right)
+  (g/union-by-name left right {:allow-missing-columns true})
+  ```"
+  [& dataframes-and-options]
+  (let [options    (when (map? (last dataframes-and-options)) (last dataframes-and-options))
+        dataframes (cond-> dataframes-and-options options butlast)
+        allow?     (boolean (:allow-missing-columns options))]
+    (reduce #(.unionByName %1 %2 allow?) dataframes)))
 
 ;; Untyped Transformations
 (defn agg [dataframe & args]
@@ -202,6 +244,188 @@
 
 (defn with-column-renamed [dataframe old-name new-name]
   (.withColumnRenamed dataframe (name old-name) (name new-name)))
+
+(defn with-columns
+  "Returns a new Dataset with columns added, or replaced where a column of the
+  same name exists, from a map of names to columns, or a seq of name-column
+  pairs. A value that isn't a column goes through `->column`, as in
+  `with-column`. The new columns go at the end, in the map's order, so pass
+  pairs for more than eight, where a Clojure map no longer keeps its order.
+
+  ```clojure
+  (g/with-columns dataframe {:price-k (g/* :price 0.001)
+                             :big?    (g/> :rooms 3)})
+  ```"
+  [dataframe cols]
+  (.withColumns dataframe (interop/->scala-list-map
+                           (map (fn [[k v]] [(name k) (->column v)]) cols))))
+
+(defn offset
+  "Returns a new Dataset that skips the first `n-rows` rows. As with `limit`,
+  which rows come first is only certain after `order-by`.
+
+  ```clojure
+  (-> dataframe (g/order-by :id) (g/offset 10) (g/limit 10))
+  ```"
+  [dataframe n-rows]
+  (.offset dataframe (int n-rows)))
+
+(defn unpivot
+  "Turns columns into rows: for each row, a row per column in `values`, with
+  the `ids` columns, a `variable-col` column that holds the column's name and
+  a `value-col` column that holds its value. The `values` columns need a
+  common type. Without `values`, it unpivots every column that isn't in `ids`.
+  Also called `melt`.
+
+  ```clojure
+  (g/unpivot sales [:id] [:jan :feb] :month :amount)
+  (g/unpivot sales :id :month :amount)
+  ```"
+  ([dataframe ids variable-col value-col]
+   (.unpivot dataframe
+             (->col-array (ensure-coll ids))
+             (name variable-col)
+             (name value-col)))
+  ([dataframe ids values variable-col value-col]
+   (.unpivot dataframe
+             (->col-array (ensure-coll ids))
+             (->col-array (ensure-coll values))
+             (name variable-col)
+             (name value-col))))
+
+(defn- ->struct-type ^StructType [schema]
+  (let [parsed (if (string? schema)
+                 (dataset-creation/parse-ddl schema)
+                 (dataset-creation/->schema schema))]
+    (if (instance? StructType parsed)
+      parsed
+      (throw (ex-info (str "Expected a schema: a struct type, a map such as {:id :long}, "
+                           "or a DDL string such as \"id BIGINT\". Got: " (pr-str schema))
+                      {:schema schema})))))
+
+(defn to
+  "Returns a new Dataset with the columns of `schema`, in its order, with its
+  types: Spark's `Dataset.to`. It matches columns by name, drops the ones that
+  `schema` lacks, casts where a column's type differs and the cast is safe,
+  and fills a missing nullable column with nulls. `schema` is a struct type, a
+  map as for `->schema`, or a DDL string.
+
+  ```clojure
+  (g/to dataframe \"id BIGINT, name STRING\")
+  (g/to dataframe {:id :long :name :string})
+  ```"
+  [dataframe schema]
+  (.to dataframe (->struct-type schema)))
+
+(defn- ->metadata ^Metadata [metadata]
+  (if (instance? Metadata metadata)
+    metadata
+    (Metadata/fromJson (interop/write-json metadata))))
+
+(defn with-metadata
+  "Returns a new Dataset with `metadata` on the column `col-name`, in place of
+  the metadata it had. `metadata` is a map of strings, numbers, booleans,
+  vectors of one of those, and maps of the same, or Spark's `Metadata`.
+
+  ```clojure
+  (-> dataframe
+      (g/with-metadata :price {:comment \"In AUD\"})
+      (g/column-metadata :price))
+  => {:comment \"In AUD\"}
+  ```"
+  [dataframe col-name metadata]
+  (.withMetadata dataframe (name col-name) (->metadata metadata)))
+
+(defn column-metadata
+  "Returns the metadata of the top-level column `col-name`, as a map with
+  keyword keys, or an empty map."
+  [dataframe col-name]
+  (-> dataframe
+      .schema
+      (.apply ^String (name col-name))
+      .metadata
+      .json
+      interop/read-json))
+
+(defn metadata-column
+  "Returns a metadata column by its name, such as the `_metadata` column that
+  file sources have, with each row's file path, name, size and modification
+  time.
+
+  ```clojure
+  (let [dataframe (g/read-parquet! \"data.parquet\")]
+    (g/select dataframe {:file (g/get-field (g/metadata-column dataframe \"_metadata\")
+                                            :file_name)}))
+  ```"
+  [dataframe col-name]
+  (.metadataColumn dataframe (name col-name)))
+
+(defn observation
+  "Creates a Spark `Observation`, with a name or a random one, for `observe`
+  to fill and `observed` to read. Each one goes with a single `observe`."
+  ([] (Observation.))
+  ([observation-name] (Observation. ^String (name observation-name))))
+
+(defn observe
+  "Returns a new Dataset that computes the aggregates in `metrics` as an
+  action runs on it, without changing its rows. `metrics` is a map of names to
+  aggregate columns, or a seq of named aggregate columns. Given an
+  `observation`, the metrics of the first action go to `observed`. Given a
+  name instead, Spark only reports them to its query execution listeners.
+
+  ```clojure
+  (let [quality (g/observation)
+        cleaned (g/observe dataframe quality {:rows   (g/count \"*\")
+                                              :lowest (g/min :price)})]
+    (g/write-parquet! cleaned \"cleaned.parquet\")
+    (g/observed quality))
+  => {:rows 13580, :lowest 85000.0}
+  ```"
+  [dataframe observation-or-name metrics]
+  (let [[head & tail] (->col-array [metrics])
+        target        (if (instance? Observation observation-or-name)
+                        observation-or-name
+                        (name observation-or-name))]
+    (.observe dataframe target head (into-array Column tail))))
+
+(defn observed
+  "Returns the metrics that `observe` computed for the `observation`, as a map
+  with keyword keys. It waits for the first action on the observed Dataset to
+  finish, so call it after that action, or from another thread."
+  [^Observation observation]
+  (into {}
+        (map (fn [[k v]] [(keyword k) (interop/->clojure v)]))
+        (.getAsJava observation)))
+
+(defn- explain-mode ^String [mode]
+  (cond
+    (true? mode)  "extended"
+    (false? mode) "simple"
+    :else         (name mode)))
+
+(defn explain-string
+  "Returns the plan that `explain` prints, as a string. `mode` is one of
+  `:simple`, the default, `:extended`, `:codegen`, `:cost` and `:formatted`.
+
+  ```clojure
+  (g/explain-string dataframe :formatted)
+  ```"
+  ([dataframe] (explain-string dataframe :simple))
+  ([dataframe mode]
+   (let [mode (explain-mode mode)]
+     (string/trimr (interop/with-scala-out-str (.explain dataframe mode))))))
+
+(defn same-semantics
+  "Returns true when the two Datasets' plans compute the same thing, as Spark
+  sees it once it has analysed them. It doesn't run them."
+  [dataframe other]
+  (.sameSemantics dataframe other))
+
+(defn semantic-hash
+  "Returns a hash of the Dataset's analysed plan, which is equal for two
+  Datasets that `same-semantics` finds the same."
+  [dataframe]
+  (.semanticHash dataframe))
 
 ;;;; Ungrouped
 (defn spark-session [dataframe] (.sparkSession dataframe))
@@ -393,4 +617,6 @@
 (import-fn is-streaming streaming?)
 (import-fn order-by sort)
 (import-fn is-compatible compatible?)
+(import-fn unpivot melt)
+(import-fn same-semantics same-semantics?)
 
