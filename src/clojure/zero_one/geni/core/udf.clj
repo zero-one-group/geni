@@ -163,7 +163,11 @@
   The options are:
   - `:name`, which the column's name and `g/explain` show;
   - `:deterministic`, false when `f` can return different results for the same
-    values, so that Spark calls it once per row, as it's written;
+    values, as one that draws random numbers can, so that Spark's optimiser
+    doesn't move it or merge it with other expressions as it can a
+    deterministic one. It says nothing about how many times Spark calls `f`
+    for a row: a retried task, or a DataFrame that's computed twice, calls it
+    again, so any side effects have to cope with repeated calls;
   - `:nullable`, false when `f` never returns nil.
 
   UDFs run on the executors. Functions defined at a REPL, or in a script,

@@ -91,7 +91,7 @@
   "Writes resources/spark-function-docs.edn from functions.scala at `:scala`."
   [{:keys [scala]}]
   (let [docs     (scala-docs (slurp (str scala)))
-        names    (sort (map :spark (vals @function-table/table)))
+        names    (sort (map :spark (vals (function-table/table))))
         missing  (remove docs names)
         out      (into (sorted-map)
                        (for [spark-name names

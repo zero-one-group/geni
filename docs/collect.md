@@ -101,7 +101,7 @@ The data comes over as Arrow batches, which the executors make, as they do for P
 | TIMESTAMP | `:packed-instant`, which reads as Instants |
 | TIMESTAMP_NTZ | `:local-date-time` |
 | TIME | `:packed-local-time`, which reads as LocalTimes |
-| day-time interval | `:packed-duration`, which reads as Durations |
+| day-time interval | `:duration`, of Durations, of any length |
 | year-month interval | Periods |
 | BINARY | byte arrays |
 | ARRAY | vectors |
@@ -110,7 +110,14 @@ The data comes over as Arrow batches, which the executors make, as they do for P
 | VARIANT | Spark's VariantVal, whose string is the value as JSON |
 | MLlib's vectors | what `collect` gives: a vector of doubles for a dense one, and a map for a sparse one |
 
-A null becomes a missing value. Spark's calendar intervals, geometries and geographies have no equivalent, so `to-tmd` throws for them, and for two columns of one name. Columns get keyword names, and `:key-fn` names them otherwise, as `{:key-fn identity}` does with strings.
+A null becomes a missing value. Spark's calendar intervals, geometries and geographies have no equivalent, so `to-tmd` throws for them. Columns get keyword names, and `:key-fn` names them otherwise, as `{:key-fn identity}` does with strings. Two columns of one name throw before a job runs, and so do two that `:key-fn` names alike, as `{:key-fn (comp keyword clojure.string/lower-case)}` would `a` and `A`. A dataset holds rows only in its columns, so a result with rows but no columns throws too.
+
+Each column keeps its Spark type, as DDL, in its metadata, which `create-dataframe` uses on the way back:
+
+```clojure
+(-> housing :Price meta :zero-one.geni/spark-type)
+;; => "DOUBLE"
+```
 
 ### A batch at a time
 
@@ -121,7 +128,7 @@ A null becomes a missing value. Spark's calendar intervals, geometries and geogr
 ;; => 13580
 ```
 
-`stream` returns a reducible, so `reduce`, `transduce`, `into` and `run!` read the batches as they go, and stop reading when they're done, when they stop early, as with `(take 2)`, and when they throw. On classic Spark, each partition runs as a job of its own when the reduce gets to it, so only one partition's batches are on the driver at a time. It's also Iterable, for `seq`, `first` and `doseq`, which can stop before the end, so close it with `with-open` for those:
+`stream` returns a reducible, so `reduce`, `transduce`, `into` and `run!` read the batches as they go, and stop reading when they're done, when they stop early, as with `(take 2)`, and when they throw. On classic Spark, each partition runs as a job of its own when the reduce gets to it, so only one partition's batches are on the driver at a time. That makes a reduce the way to read it. It's also seqable, for `seq`, `first` and `doseq`, which read a batch at a time as the seq is realised, but can stop before the end, so close it with `with-open` for those:
 
 ```clojure
 (with-open [batches (g/stream (g/repartition dataframe 4))]
@@ -131,7 +138,7 @@ A null becomes a missing value. Spark's calendar intervals, geometries and geogr
 
 ### Back to Spark
 
-`create-dataframe` takes a dataset, and each column's datatype gives its Spark type, so a round trip keeps them. Columns of vectors, maps and other objects get their types inferred from their values, as `records->dataset` does, so a map becomes a struct:
+`create-dataframe` takes a dataset. A column that `to-tmd` made, and that still has the datatype that `to-tmd` gave it, gets the Spark type in its metadata, so a round trip keeps the types, a DECIMAL's precision and scale, a map's key type and an interval's fields among them. Selecting, filtering and concatenating rows keep a column's metadata, and replacing its values drops it:
 
 ```clojure
 (-> housing
@@ -141,9 +148,20 @@ A null becomes a missing value. Spark's calendar intervals, geometries and geogr
 ;; => {:Suburb "StringType", :Rooms "LongType"}
 ```
 
+Any other column gets its Spark type from its datatype, such as `:int32` INT and `:local-date` DATE, or, for vectors, maps and other objects, from its values, as `records->dataset` infers them, so a map becomes a struct. BigDecimals become a DECIMAL of 38 digits, 18 of them after the point, unless the column's values need more digits before the point or have more after it. `:schema` gives columns their types, as DataTypes, DDL strings or what `g/->schema` takes:
+
+```clojure
+(-> (ds/->dataset {:price [1.5M 2.25M]})
+    (g/create-dataframe {:schema {:price "DECIMAL(5, 2)"}})
+    g/dtypes)
+;; => {:price "DecimalType(5,2)"}
+```
+
+A value that its column's type can't hold exactly throws, naming the column, rather than being rounded or becoming a null: a number with more digits than its DECIMAL has room for, a whole number too large for its INT, or a Duration that doesn't fit its interval's fields.
+
 ## Collect as tensors
 
-`to-tensors` turns numeric columns into [dtype-next](https://github.com/cnuernber/dtype-next) tensors, which tech.ml.dataset brings, in a map by column name:
+`to-tensors` turns columns of numbers into [dtype-next](https://github.com/cnuernber/dtype-next) tensors, which tech.ml.dataset brings, in a map by column name:
 
 ```clojure
 (require '[tech.v3.tensor :as dtt])
@@ -156,7 +174,7 @@ A null becomes a missing value. Spark's calendar intervals, geometries and geogr
 ;; => [1480000.0 1035000.0 1465000.0]
 ```
 
-A numeric column with no nulls becomes a tensor of shape [rows], and a column of arrays of numbers, or of dense MLlib vectors, all of one length, a tensor of shape [rows length], which suits a model's features. Anything else throws, naming the column. `stream-tensors` gives a map of tensors per batch, as `stream` gives datasets.
+A column of integers (TINYINT, SMALLINT, INT or BIGINT) or floating-point numbers (FLOAT or DOUBLE) with no nulls becomes a tensor of shape [rows], and a column of arrays of those, or of dense MLlib vectors, all of one length, a tensor of shape [rows length], which suits a model's features. Anything else throws, naming the column, DECIMAL among them, which can be cast to DOUBLE first. `stream-tensors` gives a map of tensors per batch, as `stream` gives datasets.
 
 ## Collect as Arrow
 

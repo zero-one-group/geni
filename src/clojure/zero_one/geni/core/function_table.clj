@@ -186,9 +186,17 @@
         (edn/read reader))
       {})))
 
-(defonce ^{:doc "The table's rows, as maps keyed by the Geni name."}
-  table
-  (atom {}))
+(defn table
+  "The table's rows, as maps keyed by the Geni name, from the metadata of the
+  functions that `def-spark-functions` defined, in the namespaces loaded, but
+  not of their copies under other names, such as `->utc-timestamp`."
+  []
+  (into {}
+        (for [n       (all-ns)
+              [sym v] (ns-publics n)
+              :let [{::keys [spark since row] :keys [arglists]} (meta v)]
+              :when (and spark (= row sym))]
+          [sym {:name sym :spark spark :since since :arglists (vec arglists)}])))
 
 (defn- version-vector [since]
   (when since
@@ -213,15 +221,19 @@
        (if since (str ", which needs Spark " since ".") ".")))
 
 (defmacro def-spark-functions
-  "Defines a function for each row of the table. See `parse-row`."
+  "Defines a function for each row of the table, with the row's Spark name
+  and version in its metadata, for `table`. See `parse-row`. Each `defn` is a
+  top-level form of its own, which AOT compilation keeps apart: more forms per
+  row, or the table as one literal, would be more code than a JVM method can
+  hold."
   [& rows]
-  (let [parsed (map parse-row rows)]
-    `(do
-       ~@(for [{:keys [name spark since arglists] :as row} parsed]
-           `(defn ~name
-              ~(docstring row)
-              {:arglists '~(map (fn [arglist] (vec arglist)) arglists)}
-              [& args#]
-              (invoke ~spark ~(version-vector since) '~name args#)))
-       (swap! table merge '~(into {} (map (juxt :name identity)) parsed))
-       nil)))
+  `(do
+     ~@(for [{:keys [name spark since arglists] :as row} (map parse-row rows)]
+         `(defn ~name
+            ~(docstring row)
+            {:arglists    '~(map (fn [arglist] (vec arglist)) arglists)
+             ::spark      ~spark
+             ::since      ~since
+             ::row        '~name}
+            [& args#]
+            (invoke ~spark ~(version-vector since) '~name args#)))))

@@ -2,6 +2,7 @@
   "g/to-tmd, g/stream, g/to-tensors, g/stream-tensors and g/create-dataframe
   with tech.ml.dataset, on classic Spark and over Spark Connect."
   (:require
+   [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column :as ds-col]
@@ -12,7 +13,8 @@
    [zero-one.geni.test-resources :as tr])
   (:import
    (clojure.lang ExceptionInfo)
-   (java.time Duration Instant LocalDate LocalDateTime LocalTime Period)))
+   (java.time Duration Instant LocalDate LocalDateTime LocalTime Period)
+   (java.time.temporal ChronoUnit)))
 
 (defn- spark-4? [] (boolean (re-find #"^4\." (g/version))))
 
@@ -75,7 +77,7 @@
                 :st      :persistent-map
                 :m       :persistent-map
                 :nothing :object
-                :wait    :packed-duration
+                :wait    :duration
                 :term    :object
                 :maybe   :int64}
                (datatypes dataset))))
@@ -111,7 +113,11 @@
       (is (= [(LocalTime/parse "12:34:56.789")]
              (vec ((g/to-tmd (g/sql @tr/spark "SELECT TIME'12:34:56.789' t")) :t))))))
   (testing "column names through :key-fn"
-    (is (= ["id"] (ds/column-names (g/to-tmd (g/range 2) {:key-fn identity}))))))
+    (is (= ["id"] (ds/column-names (g/to-tmd (g/range 2) {:key-fn identity})))))
+  (testing "each column's Spark type, as DDL, in its metadata"
+    (let [dataset (g/to-tmd (g/sql @tr/spark "SELECT CAST(1 AS DECIMAL(10, 2)) d, MAP('k', 1) m"))]
+      (is (= ["DECIMAL(10,2)" "MAP<STRING, INT>"]
+             (map #(:zero-one.geni/spark-type (meta (dataset %))) [:d :m]))))))
 
 (deftest to-tmd-edge-cases-test
   (testing "an empty result has the columns and their datatypes, and no rows"
@@ -131,6 +137,23 @@
                                                   "AS DECIMAL(38, 18)) big, CAST(-1.5 AS DECIMAL(3, 1)) neg")))]
       (is (= [12345678901234567890.123456789012345678M] (vec (dataset :big))))
       (is (= [-1.5M] (vec (dataset :neg))))))
+  (testing "day-time intervals as Durations, past where nanoseconds in a long end"
+    (let [dataset (g/to-tmd (g/sql @tr/spark (str "SELECT INTERVAL '200000' DAY d, "
+                                                  "INTERVAL '106751991 04:00:54.775807' DAY TO SECOND top, "
+                                                  "-INTERVAL '106751991 04:00:54.775807' DAY TO SECOND bottom")))]
+      (is (= [:duration (Duration/ofDays 200000)] [(:datatype (meta (dataset :d))) (first (dataset :d))]))
+      (is (= [(Duration/of Long/MAX_VALUE ChronoUnit/MICROS) (Duration/of (- Long/MAX_VALUE) ChronoUnit/MICROS)]
+             [(first (dataset :top)) (first (dataset :bottom))]))))
+  (testing "and of one datatype across batches"
+    (let [df (g/sql @tr/spark "SELECT make_dt_interval(id * 100000) d FROM RANGE(0, 4, 1, 4)")]
+      (is (= (map #(Duration/ofDays (* 100000 %)) (range 4)) (vec ((g/to-tmd df) :d))))
+      (is (= [:duration :duration :duration :duration]
+             (into [] (map #(:datatype (meta (% :d)))) (g/stream df))))))
+  (testing "inside an array, up to where Arrow's Java reader gives them exactly"
+    (is (= [[(Duration/ofDays 100000) (Duration/ofDays -100000)]]
+           (vec ((g/to-tmd (g/sql @tr/spark "SELECT ARRAY(INTERVAL '100000' DAY, -INTERVAL '100000' DAY) a")) :a))))
+    (is (thrown-with-msg? ExceptionInfo #"column \"a\" has a day-time interval of more than 106,751 days"
+                          (g/to-tmd (g/sql @tr/spark "SELECT ARRAY(INTERVAL '200000' DAY) a")))))
   (testing "batches become one dataset, in order"
     (let [dataset (g/to-tmd (g/sql @tr/spark "SELECT id, IF(id % 3 = 0, NULL, id) x FROM RANGE(0, 9, 1, 3)"))]
       (is (= (range 9) (vec (dataset :id))))
@@ -141,7 +164,18 @@
     (is (thrown-with-msg? ExceptionInfo #"\"x\", which holds calendar intervals"
                           (g/to-tmd (g/sql @tr/spark "SELECT ARRAY(MAKE_INTERVAL(1, 2)) x"))))
     (is (thrown-with-msg? ExceptionInfo #"two columns are named \"a\""
-                          (g/to-tmd (g/sql @tr/spark "SELECT 1 a, 2 a"))))))
+                          (g/to-tmd (g/sql @tr/spark "SELECT 1 a, 2 a")))))
+  (testing "nor two columns that :key-fn names alike, before a job runs"
+    (is (thrown-with-msg? ExceptionInfo #"to-tmd's :key-fn gives the columns \"a\" and \"A\" one name, :a"
+                          (g/to-tmd (g/sql @tr/spark (str "SELECT IF(id < 0, 1, raise_error('boom')) a, "
+                                                          "id A FROM RANGE(1)"))
+                                    {:key-fn (comp keyword string/lower-case)}))))
+  (testing "no columns and no rows, as an empty dataset"
+    (is (= [0 0] ((juxt ds/row-count ds/column-count)
+                  (g/to-tmd (g/select (g/limit (g/range 3) 0) []))))))
+  (testing "but no columns and some rows throws, since a dataset counts rows by its columns"
+    (is (thrown-with-msg? ExceptionInfo #"to-tmd can't give rows without columns"
+                          (g/to-tmd (g/select (g/range 3) []))))))
 
 (deftest ^:classic to-tmd-vectors-test
   (testing "MLlib's vectors, as g/collect gives them"
@@ -159,7 +193,13 @@
     (is (= [3] (into [] (map ds/row-count) (g/stream (g/filter @three-partitions (g/< :id 3))))))
     (is (= [] (into [] (g/stream (g/limit @three-partitions 0))))))
   (testing "with to-tmd's columns and options"
-    (is (= [["id"]] (into [] (map ds/column-names) (g/stream (g/range 0 2 1 1) {:key-fn identity})))))
+    (is (= [["id"]] (into [] (map ds/column-names) (g/stream (g/range 0 2 1 1) {:key-fn identity}))))
+    (is (thrown-with-msg? ExceptionInfo #"stream's :key-fn gives the columns \"a\" and \"A\" one name"
+                          (g/stream (g/sql @tr/spark "SELECT 1 a, 2 A") {:key-fn (comp keyword string/lower-case)}))))
+  (testing "and its rule for rows without columns"
+    (is (= [] (into [] (g/stream (g/select (g/limit @three-partitions 0) [])))))
+    (is (thrown-with-msg? ExceptionInfo #"stream can't give rows without columns"
+                          (into [] (g/stream (g/select @three-partitions []))))))
   (testing "transduce, stopping early"
     (is (= [3] (into [] (comp (take 1) (map ds/row-count)) (g/stream @three-partitions)))))
   (testing "Spark's error when a batch fails"
@@ -171,16 +211,19 @@
     (is (thrown-with-msg? ExceptionInfo #"stop"
                           (reduce (fn [_ _] (throw (ex-info "stop" {}))) nil (g/stream @three-partitions))))
     (is (= 10 (g/count @three-partitions))))
-  (testing "as an Iterable, closed with with-open"
+  (testing "as a seq, closed with with-open"
     (with-open [batches (g/stream @three-partitions)]
       (is (= 3 (ds/row-count (first batches))))
       (is (= 3 (count (seq batches)))))))
 
 (deftest ^:classic stream-early-stop-test
-  (testing "on classic Spark, a partition runs only when a reduce gets to it"
-    (is (= [1] (into [] (comp (take 1) (map ds/row-count))
-                     (g/stream (g/sql @tr/spark (str "SELECT IF(id < 1, id, raise_error('boom')) id "
-                                                     "FROM RANGE(0, 4, 1, 4)"))))))))
+  (let [one-good-partition #(g/sql @tr/spark (str "SELECT IF(id < 1, id, raise_error('boom')) id "
+                                                  "FROM RANGE(0, " % ", 1, " % ")"))]
+    (testing "on classic Spark, a partition runs only when a reduce gets to it"
+      (is (= [1] (into [] (comp (take 1) (map ds/row-count)) (g/stream (one-good-partition 4))))))
+    (testing "and when a seq does, one batch at a time, not 32"
+      (with-open [batches (g/stream (one-good-partition 40))]
+        (is (= 1 (ds/row-count (first batches))))))))
 
 (deftest to-tensors-test
   (let [df (g/sql @tr/spark "SELECT id, id * 0.5D half, ARRAY(id, id + 1) pair FROM RANGE(0, 4, 1, 2)")]
@@ -195,12 +238,18 @@
     (testing "the columns it's given, under :key-fn's names"
       (is (= ["half"] (keys (g/to-tensors df {:columns [:half] :key-fn identity})))))
     (testing "a map per batch with stream-tensors"
-      (is (= [[2] [2]] (into [] (map (comp dtype/shape :id)) (g/stream-tensors df {:columns [:id]}))))))
+      (is (= [[2] [2]] (into [] (map (comp dtype/shape :id)) (g/stream-tensors df {:columns [:id]})))))
+    (testing "every integer and floating-point type"
+      (is (= {:b :int8 :s :int16 :i :int32 :l :int64 :f :float32 :d :float64}
+             (update-vals (g/to-tensors (g/sql @tr/spark (str "SELECT CAST(1 AS TINYINT) b, CAST(1 AS SMALLINT) s, "
+                                                              "1 i, 1L l, CAST(1 AS FLOAT) f, 1.0D d")))
+                          dtype/elemwise-datatype)))))
   (testing "what it can't take, by name"
     (doseq [[reason sql] [["which has nulls" "SELECT IF(id = 1, NULL, id) x FROM RANGE(3)"]
                           ["which has nulls" "SELECT ARRAY(1.0D, NULL) x"]
                           ["whose type is string" "SELECT 'a' x"]
                           ["whose type is boolean" "SELECT true x"]
+                          ["whose type is decimal\\(2,1\\)" "SELECT 1.5BD x"]
                           ["whose type is array<string>" "SELECT ARRAY('a') x"]
                           ;; Within one batch, and across batches.
                           ["whose arrays aren't all one length"
@@ -209,11 +258,19 @@
                            "SELECT IF(id = 1, ARRAY(1.0D), ARRAY(1.0D, 2.0D)) x FROM RANGE(0, 3, 1, 3)"]]]
       (is (thrown-with-msg? ExceptionInfo (re-pattern (str "the column \"x\", " reason))
                             (g/to-tensors (g/sql @tr/spark sql))))))
-  (testing "nor an empty result, nor two columns of one name"
+  (testing "nor an empty result, rows without columns, or two columns of one name"
     (is (thrown-with-msg? ExceptionInfo #"at least one row"
                           (g/to-tensors (g/sql @tr/spark "SELECT id FROM RANGE(0)"))))
+    (is (thrown-with-msg? ExceptionInfo #"to-tensors can't give rows without columns"
+                          (g/to-tensors (g/select (g/range 3) []))))
+    (is (thrown-with-msg? ExceptionInfo #"stream-tensors can't give rows without columns"
+                          (into [] (g/stream-tensors (g/select (g/range 3) [])))))
     (is (thrown-with-msg? ExceptionInfo #"two columns are named \"a\""
-                          (g/to-tensors (g/sql @tr/spark "SELECT 1 a, 2 a"))))))
+                          (g/to-tensors (g/sql @tr/spark "SELECT 1 a, 2 a"))))
+    (is (thrown-with-msg? ExceptionInfo #"to-tensors's :key-fn gives the columns \"a\" and \"A\" one name"
+                          (g/to-tensors (g/sql @tr/spark "SELECT 1 a, 2 A") {:key-fn (comp keyword string/lower-case)})))
+    (is (thrown-with-msg? ExceptionInfo #"stream-tensors's :key-fn gives the columns \"a\" and \"A\" one name"
+                          (g/stream-tensors (g/sql @tr/spark "SELECT 1 a, 2 A") {:key-fn (comp keyword string/lower-case)})))))
 
 (deftest ^:classic to-tensors-vectors-test
   (let [df (g/table->dataset @tr/spark
@@ -227,28 +284,89 @@
                             (g/to-tensors df {:columns [:mixed]}))))))
 
 (deftest create-dataframe-test
-  (testing "a round trip through to-tmd keeps the types and values"
+  (testing "a round trip through to-tmd keeps the types, from each column's metadata, and the values"
     (let [df   (g/sql @tr/spark types-sql)
           back (g/create-dataframe @tr/spark (g/to-tmd df))]
-      (is (= (dissoc (simple-types df) :m :dec)
-             (dissoc (simple-types back) :m :dec)))
-      (is (= "decimal(38,18)" (:dec (simple-types back))))
-      (is (= (g/collect-vals (g/drop df :m)) (g/collect-vals (g/drop back :m))))
-      (testing "except that a map becomes a struct, as in records->dataset"
-        (is (= [{:k 0} {:k 1} {:k 2}] (g/collect-col back :m))))))
+      (is (= (simple-types df) (simple-types back)))
+      (is (= (g/collect-vals df) (g/collect-vals back)))))
+  (testing "decimals of any precision and scale, and maps with any keys"
+    (let [df   (g/sql @tr/spark (str "SELECT CAST('123456789012345678901234567890' AS DECIMAL(38, 0)) big, "
+                                     "CAST('-0.123456789012345678901234567890' AS DECIMAL(38, 30)) fine, "
+                                     "CAST(NULL AS DECIMAL(5, 2)) none, MAP(1, 'a') m"))
+          back (g/create-dataframe @tr/spark (g/to-tmd df))]
+      (is (= {:big "decimal(38,0)" :fine "decimal(38,30)" :none "decimal(5,2)" :m "map<int,string>"}
+             (simple-types back)))
+      (is (= (g/collect-vals df) (g/collect-vals back)))))
+  (testing "intervals of any length, with their fields"
+    (let [df   (g/sql @tr/spark (str "SELECT INTERVAL '200000' DAY d, INTERVAL '1 02:03' DAY TO MINUTE m, "
+                                     "INTERVAL '3' YEAR y"))
+          back (g/create-dataframe @tr/spark (g/to-tmd df))]
+      ;; Over Spark Connect, createDataFrame gives an interval all its fields.
+      (when (classic?)
+        (is (= (simple-types df) (simple-types back))))
+      (is (= [(Duration/ofDays 200000) (Duration/parse "PT26H3M") (Period/ofYears 3)]
+             (map #(first ((g/to-tmd back) %)) [:d :m :y])))))
+  (testing "the metadata's type only while the column has the datatype that to-tmd gave it"
+    (let [dataset (ds/new-dataset [{:tech.v3.dataset/name     :s
+                                    :tech.v3.dataset/data     ["a" "b"]
+                                    :tech.v3.dataset/metadata {:zero-one.geni/spark-type "BIGINT"}}])]
+      (is (= {:s "string"} (simple-types (g/create-dataframe @tr/spark dataset))))))
+  (testing "and a value that the metadata's type can't hold throws, naming the column"
+    (let [dataset (ds/concat (g/to-tmd (g/sql @tr/spark "SELECT CAST(1.5 AS DECIMAL(10, 2)) d"))
+                             (ds/->dataset {:d [1.125M]}))]
+      (is (thrown-with-msg? ExceptionInfo #"column \"d\" has the value 1.125M, which DECIMAL\(10,2\) can't hold"
+                            (g/create-dataframe @tr/spark dataset)))))
+  (testing "decimals of a dataset made by hand, with room for all of a column's values"
+    (let [back (g/create-dataframe @tr/spark
+                                   (ds/->dataset {:big   [123456789012345678901234567890M nil -1.5M]
+                                                  :fine  [0.123456789012345678901234567890M -2M nil]
+                                                  :plain [1.5M 2.25M nil]}))]
+      (is (= {:big "decimal(38,8)" :fine "decimal(38,30)" :plain "decimal(38,18)"} (simple-types back)))
+      (is (= [[123456789012345678901234567890M 0.123456789012345678901234567890M 1.5M]
+              [nil -2M 2.25M]
+              [-1.5M nil nil]]
+             (g/collect-vals back))))
+    (is (thrown-with-msg? ExceptionInfo
+                          #"column \"x\" has numbers with up to 12 digits before the point and 30 after it"
+                          (g/create-dataframe @tr/spark (ds/->dataset {:x [0.123456789012345678901234567890M
+                                                                           123456789012M]})))))
+  (testing ":schema gives columns their types"
+    (let [dataset (ds/->dataset {:price [1.5M 2.25M nil] :n [1 2 3]})]
+      (is (= {:price "decimal(5,2)" :n "int"}
+             (simple-types (g/create-dataframe @tr/spark dataset {:schema {:price "DECIMAL(5, 2)" "n" :int}}))))
+      (is (= [[1.5M 1] [2.25M 2] [nil 3]]
+             (g/collect-vals (g/create-dataframe dataset {:schema {:price (g/parse-ddl "DECIMAL(5, 2)")}}))))
+      (testing "and values that they can't hold throw, naming the column"
+        (is (thrown-with-msg? ExceptionInfo #"column \"price\" has the value 2.25M, which DECIMAL\(5,1\) can't hold"
+                              (g/create-dataframe @tr/spark dataset {:schema {:price "DECIMAL(5, 1)"}})))
+        (is (thrown-with-msg? ExceptionInfo #"column \"n\" has the value 300, which TINYINT can't hold"
+                              (g/create-dataframe @tr/spark (ds/->dataset {:n [1 300]}) {:schema {:n :byte}})))
+        (is (thrown-with-msg? ExceptionInfo #"column \"w\" has the value .*PT25H.*, which INTERVAL DAY can't hold"
+                              (g/create-dataframe @tr/spark (ds/->dataset {:w [(Duration/ofHours 25)]})
+                                                  {:schema {:w "INTERVAL DAY"}}))))
+      (testing "and only the dataset's columns"
+        (is (thrown-with-msg? ExceptionInfo #"doesn't have: \[\"nope\"\]"
+                              (g/create-dataframe @tr/spark dataset {:schema {:nope :int}}))))))
   (testing "a dataset of plain Clojure data, on the default session"
     (let [back (g/create-dataframe (ds/->dataset {:n [1 2 nil] :s ["x" nil "z"] :k [:p :q :r]}))]
       (is (= {:n "LongType" :s "StringType" :k "StringType"} (g/dtypes back)))
       (is (= [{:n 1 :s "x" :k "p"} {:n 2 :s nil :k "q"} {:n nil :s "z" :k "r"}]
              (g/collect (g/order-by back :k))))))
+  (testing "a map of a dataset made by hand as a struct, as in records->dataset"
+    (is (= [{:a 1 :b nil} {:a nil :b "x"}]
+           (g/collect-col (g/create-dataframe @tr/spark (ds/->dataset {:m [{:a 1} {:b "x"}]})) :m))))
   (testing "VARIANT on Spark 4"
     (when (spark-4?)
       (let [df (g/sql @tr/spark "SELECT PARSE_JSON('{\"a\": 1}') v")]
         (is (= {:v "VariantType"} (g/dtypes (g/create-dataframe @tr/spark (g/to-tmd df)))))
         (is (= ["{\"a\":1}"]
                (map str (g/collect-col (g/create-dataframe @tr/spark (g/to-tmd df)) :v)))))))
-  (testing "an empty dataset"
-    (is (zero? (g/count (g/create-dataframe @tr/spark (g/to-tmd (g/limit (g/range 3) 0)))))))
+  (testing "an empty dataset, and one without columns, which has no rows"
+    (is (zero? (g/count (g/create-dataframe @tr/spark (g/to-tmd (g/limit (g/range 3) 0))))))
+    (let [back (g/create-dataframe @tr/spark (ds/new-dataset []))]
+      (is (= [true 0] [(empty? (g/column-names back)) (g/count back)]))))
   (testing "and what it takes"
     (is (thrown-with-msg? ExceptionInfo #"tech.ml.dataset dataset"
-                          (g/create-dataframe @tr/spark {:a [1]})))))
+                          (g/create-dataframe @tr/spark {:a [1]})))
+    (is (thrown-with-msg? ExceptionInfo #"takes a map of options after a dataset"
+                          (g/create-dataframe (ds/->dataset {:a [1]}) [:a])))))

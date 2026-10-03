@@ -586,7 +586,7 @@
 
   ```clojure
   (g/write-to! dataframe \"lake.events\" {:mode :create :using \"delta\" :partitioned-by [:day]})
-  (g/write-to! dataframe \"lake.events\" {:mode :overwrite :condition (g/=== :day \"2026-10-01\")})
+  (g/write-to! dataframe \"lake.events\" {:mode :overwrite :condition (g/=== :day (g/lit \"2026-10-01\"))})
   ```"
   [dataframe table-name options]
   (let [{:keys [mode using partitioned-by cluster-by table-properties condition]} options

@@ -8,8 +8,15 @@
    [zero-one.geni.utils :refer [class-named]])
   (:import
    (clojure.lang Reflector)
-   (org.apache.spark.sql.types ArrayType DataType DataTypes)
-   (org.apache.spark.sql SparkSession)))
+   (java.math BigDecimal RoundingMode)
+   (java.time Duration Period)
+   (org.apache.spark.sql.types ArrayType BooleanType ByteType DataType DataTypes DateType
+                               DayTimeIntervalType DecimalType DoubleType FloatType IntegerType
+                               LongType MapType ShortType StringType StructField
+                               StructType TimestampNTZType TimestampType UserDefinedType
+                               YearMonthIntervalType)
+   (org.apache.spark.sql SparkSession)
+   (scala.collection JavaConverters)))
 
 (def ^:private vector-udt
   "MLlib's vector type, when spark-mllib is on the classpath. It's classic
@@ -147,38 +154,67 @@
   "Creates a DataFrame from a tech.ml.dataset dataset, or from rows and a
   schema, on the default session or the one given.
 
-  From a dataset, each column's datatype gives its Spark type: `:int32`
-  INT, `:float64` DOUBLE, `:string` STRING, `:local-date` DATE,
-  `:instant` TIMESTAMP, `:local-date-time` TIMESTAMP_NTZ, `:duration` a
-  day-time interval, `:decimal` DECIMAL(38,18), and so on, packed or not.
-  Columns of other objects, such as vectors and maps, get their types
-  inferred from their values, as `records->dataset` does. A missing value
-  is a null. `to-tmd` goes the other way.
+  From a dataset, each column gets its Spark type from, in turn:
+  - the `:schema` option, a map from column names to Spark types, each a
+    DataType, a DDL string such as \"DECIMAL(12, 2)\", or what `->schema`
+    takes;
+  - the Spark type that `to-tmd` keeps in the column's metadata, under
+    `:zero-one.geni/spark-type`, when the column still has the datatype
+    that `to-tmd` gave it, so that a round trip keeps the types;
+  - the column's datatype: `:int32` INT, `:float64` DOUBLE, `:string`
+    STRING, `:local-date` DATE, `:instant` TIMESTAMP, `:local-date-time`
+    TIMESTAMP_NTZ, `:duration` a day-time interval, and so on, packed or
+    not. `:decimal` is a DECIMAL of 38 digits, 18 of them after the point,
+    as Spark has for a BigDecimal, unless the values need more digits
+    before the point or have more after it;
+  - the values, as `records->dataset` infers them, for columns of other
+    objects, such as vectors and maps.
+
+  A missing value is a null. A value that its column's type can't hold
+  exactly, such as a number with more digits after the point than its
+  DECIMAL has, throws, naming the column, rather than being rounded or
+  becoming a null. A dataset has no rows without a column, so neither does
+  the DataFrame. `to-tmd` goes the other way.
 
   ```clojure
   (g/create-dataframe (tech.v3.dataset/->dataset {:a [1 2] :b [\"x\" nil]}))
+  (g/create-dataframe dataset {:schema {:price \"DECIMAL(12, 2)\"}})
   ```
 
   From rows, a java.util.List of Spark Rows, `schema` is a StructType, or
   plain Clojure data that `->schema` takes."
   ([dataset] (create-dataframe @defaults/spark dataset))
   ([spark-or-rows dataset-or-schema]
-   (if (instance? SparkSession spark-or-rows)
+   (cond
+     (instance? SparkSession spark-or-rows)
      (if (tmd-dataset? dataset-or-schema)
-       (tmd->dataframe spark-or-rows dataset-or-schema)
+       (tmd->dataframe spark-or-rows dataset-or-schema {})
        (throw (ex-info (str "create-dataframe takes a tech.ml.dataset dataset after a session, "
                             "or rows and a schema.")
                        {})))
+
+     (tmd-dataset? spark-or-rows)
+     (tmd->dataframe @defaults/spark spark-or-rows dataset-or-schema)
+
+     :else
      (create-dataframe @defaults/spark spark-or-rows dataset-or-schema)))
-  ([spark rows schema]
-   (if (and (empty? rows) (empty-schema? schema))
+  ([spark rows-or-dataset schema-or-options]
+   (cond
+     (tmd-dataset? rows-or-dataset)
+     (tmd->dataframe spark rows-or-dataset schema-or-options)
+
+     (and (empty? rows-or-dataset) (empty-schema? schema-or-options))
      (.emptyDataFrame spark)
-     (.createDataFrame spark rows (->schema schema)))))
+
+     :else
+     (.createDataFrame spark rows-or-dataset (->schema schema-or-options)))))
 
 (def java-type->spark-type
   "A mapping from Java types to Spark types, for inferring a schema from
   Clojure data. Keywords and UUIDs become strings, and a `java.util.Date`, such
-  as `#inst`, a timestamp."
+  as `#inst`, a timestamp. A DECIMAL here is where inference starts: the
+  column's values then give its digits after the point, as `fit-decimals`
+  says."
   (cond-> {java.lang.Boolean       DataTypes/BooleanType
            java.lang.Byte          DataTypes/ByteType
            java.lang.Double        DataTypes/DoubleType
@@ -244,6 +280,110 @@
 (defn- infer-schema [col-names values]
   (DataTypes/createStructType
    (mapv infer-struct-field col-names values)))
+
+;; Decimals
+
+(def ^:private max-precision
+  "The most digits that Spark's DECIMAL holds."
+  38)
+
+(defn- ->big-decimal
+  "A BigDecimal or a whole number as a BigDecimal, or nil for anything else."
+  ^BigDecimal [value]
+  (cond
+    (instance? BigDecimal value)           value
+    (instance? clojure.lang.BigInt value)  (BigDecimal. (.toBigInteger ^clojure.lang.BigInt value))
+    (instance? BigInteger value)           (BigDecimal. ^BigInteger value)
+    (integer? value)                       (BigDecimal/valueOf (long value))))
+
+(defn- digits
+  "A BigDecimal's digits before the point and after it, as a DECIMAL needs
+  room for them: none before the point for a number under one, and none
+  after it for a negative scale, such as 1E+5's."
+  [^BigDecimal d]
+  (let [d (if (neg? (.scale d)) (.setScale d 0) d)]
+    [(max 0 (- (.precision d) (.scale d))) (.scale d)]))
+
+(defn- field-name
+  "The name of a struct field that the map key `k` gives, as `infer-schema`
+  names it."
+  [k]
+  (if (or (keyword? k) (symbol? k) (string? k)) (name k) (str k)))
+
+(defn- by-field-name
+  "A map's values by the names of the struct fields that its keys give."
+  [m]
+  (persistent! (reduce-kv (fn [acc k v] (assoc! acc (field-name k) v)) (transient {}) m)))
+
+(defn- decimal-type-for
+  "The DECIMAL of 38 digits, Spark's widest, that holds every number in
+  `values`, the column `col-name`'s, with `preferred-scale` digits after
+  the point, as Spark gives a BigDecimal 18 and a whole number none, when
+  the values leave room for that, and otherwise with as many as they need.
+  Throws when no DECIMAL holds them."
+  ^DecimalType [col-name preferred-scale values]
+  (let [[whole fraction] (reduce (fn [[w f :as acc] value]
+                                   (if-let [d (->big-decimal value)]
+                                     (let [[dw df] (digits d)] [(max w dw) (max f df)])
+                                     acc))
+                                 [0 0]
+                                 values)
+        scale            (max fraction (min preferred-scale (- max-precision whole)))]
+    (when (< max-precision (+ whole scale))
+      (throw (ex-info (str "The column \"" col-name "\" has numbers with up to " whole " digits "
+                           "before the point and " fraction " after it, which no DECIMAL holds, "
+                           "since Spark's DECIMAL has at most " max-precision " digits. Round "
+                           "them, or convert them to strings or doubles, first.")
+                      {:column col-name :digits [whole fraction]})))
+    (DataTypes/createDecimalType max-precision scale)))
+
+(defn- has-decimal? [^DataType dt]
+  (cond
+    (instance? DecimalType dt) true
+    (instance? ArrayType dt)   (has-decimal? (.elementType ^ArrayType dt))
+    (instance? MapType dt)     (or (has-decimal? (.keyType ^MapType dt))
+                                   (has-decimal? (.valueType ^MapType dt)))
+    (instance? StructType dt)  (boolean (some #(has-decimal? (.dataType ^StructField %))
+                                              (.fields ^StructType dt)))
+    :else                      false))
+
+(defn- fit-decimals
+  "`dt`, a type that the first values of the column `col-name` gave, with
+  each DECIMAL in it, at the top or inside arrays and structs, made to hold
+  all the column's `values` there, as `decimal-type-for` makes it, and with
+  the digits after the point that the inferred DECIMAL has, 18 or none, when
+  they fit."
+  ^DataType [col-name ^DataType dt values]
+  (cond
+    (not (has-decimal? dt))
+    dt
+
+    (instance? DecimalType dt)
+    (decimal-type-for col-name (.scale ^DecimalType dt) values)
+
+    (instance? ArrayType dt)
+    (ArrayType. (fit-decimals col-name (.elementType ^ArrayType dt) (mapcat seq (filter coll? values)))
+                (.containsNull ^ArrayType dt))
+
+    (instance? MapType dt)
+    (let [maps (filter map? values)]
+      (DataTypes/createMapType (fit-decimals col-name (.keyType ^MapType dt) (mapcat keys maps))
+                               (fit-decimals col-name (.valueType ^MapType dt) (mapcat vals maps))
+                               (.valueContainsNull ^MapType dt)))
+
+    (instance? StructType dt)
+    (let [structs (map by-field-name (filter map? values))]
+      (DataTypes/createStructType
+       ^java.util.List
+       (mapv (fn [^StructField field]
+               (DataTypes/createStructField (.name field)
+                                            (fit-decimals col-name (.dataType field)
+                                                          (map #(get % (.name field)) structs))
+                                            (.nullable field)))
+             (.fields ^StructType dt))))
+
+    :else
+    dt))
 
 (defn- update-val-in
   "Works similar to update-in but accepts value instead of function.
@@ -345,7 +485,16 @@
            values     (map first-non-nil transposed)
            table      (transpose (map (partial apply fill-missing-nested-keys) (map vector transposed values)))
            rows       (interop/->java-list (map interop/->spark-row (transform-maps table)))
-           schema     (infer-schema col-names (map first values))]
+           schema     (DataTypes/createStructType
+                       ^java.util.List
+                       (mapv (fn [col-name sample column]
+                               (DataTypes/createStructField
+                                col-name
+                                (fit-decimals col-name (infer-spark-type col-name sample) column)
+                                true))
+                             col-names
+                             (map first values)
+                             transposed))]
        (.createDataFrame spark rows schema)))))
 
 (defn map->dataset
@@ -448,7 +597,7 @@
    :uint32  long
    :int64   long
    :uint64  #(BigDecimal. (Long/toUnsignedString (long %)))
-   :float32 float
+   :float32 unchecked-float
    :float64 double
    :text    str})
 
@@ -468,28 +617,255 @@
   [col-name]
   (if (keyword? col-name) (subs (str col-name) 1) (str col-name)))
 
+;; The types that to-tmd keeps
+
+(defn- recorded-datatypes
+  "The datatypes that `to-tmd` gives a column of Spark type `dt`, packed and
+  unpacked, as zero-one.geni.arrow.reader decodes it, or none for an MLlib
+  vector, whose Spark type doesn't survive as DDL."
+  [^DataType dt]
+  (cond
+    (instance? UserDefinedType dt)       #{}
+    (instance? BooleanType dt)           #{:boolean}
+    (instance? ByteType dt)              #{:int8}
+    (instance? ShortType dt)             #{:int16}
+    (instance? IntegerType dt)           #{:int32}
+    (instance? LongType dt)              #{:int64}
+    (instance? FloatType dt)             #{:float32}
+    (instance? DoubleType dt)            #{:float64}
+    (instance? StringType dt)            #{:string :text}
+    (instance? DecimalType dt)           #{:decimal}
+    (instance? DateType dt)              #{:packed-local-date :local-date}
+    (instance? TimestampType dt)         #{:packed-instant :instant}
+    (instance? TimestampNTZType dt)      #{:local-date-time}
+    (instance? DayTimeIntervalType dt)   #{:duration :packed-duration}
+    (instance? ArrayType dt)             #{:persistent-vector}
+    (or (instance? MapType dt)
+        (instance? StructType dt))       #{:persistent-map}
+    (and time-type
+         (instance? (class time-type) dt)) #{:packed-local-time :local-time}
+    :else                                #{:object}))
+
+(defn- ->nullable
+  "`dt` with every value inside it nullable, as a DataFrame's columns are
+  here: a struct's fields, an array's elements and a map's values."
+  ^DataType [^DataType dt]
+  (cond
+    (instance? ArrayType dt)  (ArrayType. (->nullable (.elementType ^ArrayType dt)) true)
+    (instance? MapType dt)    (DataTypes/createMapType (->nullable (.keyType ^MapType dt))
+                                                       (->nullable (.valueType ^MapType dt))
+                                                       true)
+    (instance? StructType dt) (DataTypes/createStructType
+                               ^java.util.List
+                               (mapv (fn [^StructField field]
+                                       (DataTypes/createStructField (.name field)
+                                                                    (->nullable (.dataType field))
+                                                                    true))
+                                     (.fields ^StructType dt)))
+    :else                     dt))
+
+(defn- recorded-type
+  "The Spark type that `to-tmd` kept in a column's metadata, when the column
+  still has the datatype that `to-tmd` gave it, or nil. A type that this
+  Spark doesn't have, such as Spark 4's VARIANT on Spark 3.5, is nil too."
+  [metadata datatype]
+  (when-let [ddl (:zero-one.geni/spark-type metadata)]
+    (when-let [dt (try (DataType/fromDDL ddl) (catch Exception _ nil))]
+      (when (contains? (recorded-datatypes dt) datatype)
+        (->nullable dt)))))
+
+(defn- ->spark-type-of
+  "The Spark type that the :schema option gives a column: a DataType, a DDL
+  string, or what `->schema` takes."
+  ^DataType [col-name spec]
+  (let [dt (cond
+             (instance? DataType spec) spec
+             (string? spec)            (DataType/fromDDL spec)
+             :else                     (let [t (->schema spec)]
+                                         (if (instance? DataType t) t (->spark-type t))))]
+    (or dt
+        (throw (ex-info (str "create-dataframe's :schema gives the column \"" col-name "\" "
+                             (pr-str spec) ", which isn't a Spark type. It takes a DataType, a "
+                             "DDL string such as \"DECIMAL(12, 2)\", or what g/->schema takes.")
+                        {:column col-name :type spec})))))
+
+;; Values, as their column's type has them
+
+(defn- unrepresentable!
+  [col-name ^DataType dt value]
+  (throw (ex-info (str "The column \"" col-name "\" has the value " (pr-str value) ", which "
+                       (.sql dt) " can't hold exactly. Give the column a type that holds it, "
+                       "with create-dataframe's :schema, or convert the value first.")
+                  {:column col-name :value value :type (.sql dt)})))
+
+(defn- decimal-value
+  "`value` as a BigDecimal at the DECIMAL's scale, when the DECIMAL holds it
+  exactly."
+  [col-name ^DecimalType dt value]
+  (let [d      (->big-decimal value)
+        fitted (when d
+                 (try (.setScale d (.scale dt) RoundingMode/UNNECESSARY)
+                      (catch ArithmeticException _ nil)))]
+    (if (and fitted (<= (.precision ^BigDecimal fitted) (.precision dt)))
+      fitted
+      (unrepresentable! col-name dt value))))
+
+(defn- whole-value
+  "`value`, a whole number between `lo` and `hi`, through `coerce`."
+  [col-name dt value lo hi coerce]
+  (if (and (integer? value) (<= lo value hi))
+    (coerce value)
+    (unrepresentable! col-name dt value)))
+
+(defn- float-value
+  "A number as a float, when it's within a float's range, or not finite."
+  [col-name dt value]
+  (let [d (when (number? value) (double value))]
+    (if (and d (or (not (Double/isFinite d)) (<= (Math/abs (double d)) Float/MAX_VALUE)))
+      (unchecked-float d)
+      (unrepresentable! col-name dt value))))
+
+(def ^:private micros-per-unit
+  "The microseconds in each of a day-time interval's fields, by its index."
+  [86400000000 3600000000 60000000 1])
+
+(defn- day-time-value
+  "A Duration that the day-time interval holds exactly: to its last field,
+  and to the microsecond."
+  [col-name ^DayTimeIntervalType dt value]
+  (if (and (instance? Duration value)
+           (zero? (rem (.getNano ^Duration value) 1000))
+           (let [unit (micros-per-unit (int (.endField dt)))]
+             (or (= 1 unit)
+                 (and (zero? (.getNano ^Duration value))
+                      (zero? (rem (.getSeconds ^Duration value) (quot unit 1000000)))))))
+    value
+    (unrepresentable! col-name dt value)))
+
+(defn- year-month-value
+  "A Period that the year-month interval holds exactly: with no days, and in
+  whole years for INTERVAL YEAR."
+  [col-name ^YearMonthIntervalType dt value]
+  (if (and (instance? Period value)
+           (zero? (.getDays ^Period value))
+           (or (== 1 (.endField dt))
+               (zero? (rem (.toTotalMonths ^Period value) 12))))
+    value
+    (unrepresentable! col-name dt value)))
+
+(defn- converter
+  "A function from a value in the column `col-name`, at the top or inside
+  it, to what Spark takes for `dt`. A map becomes a Row for a struct, by its
+  keys' names, and a Scala map for a map, which a Spark Connect client needs
+  and classic Spark takes too. A number becomes one of the class that its
+  type takes. A value that its type can't hold exactly throws."
+  [col-name ^DataType dt]
+  (let [guard (fn [f] (fn [value] (when (some? value) (f value))))]
+    (cond
+      (instance? DecimalType dt)
+      (guard #(decimal-value col-name dt %))
+
+      (instance? ByteType dt)
+      (guard #(whole-value col-name dt % Byte/MIN_VALUE Byte/MAX_VALUE byte))
+
+      (instance? ShortType dt)
+      (guard #(whole-value col-name dt % Short/MIN_VALUE Short/MAX_VALUE short))
+
+      (instance? IntegerType dt)
+      (guard #(whole-value col-name dt % Integer/MIN_VALUE Integer/MAX_VALUE int))
+
+      (instance? LongType dt)
+      (guard #(whole-value col-name dt % Long/MIN_VALUE Long/MAX_VALUE long))
+
+      (instance? FloatType dt)
+      (guard #(float-value col-name dt %))
+
+      (instance? DoubleType dt)
+      (guard #(if (number? %) (double %) (unrepresentable! col-name dt %)))
+
+      (instance? DayTimeIntervalType dt)
+      (guard #(day-time-value col-name dt %))
+
+      (instance? YearMonthIntervalType dt)
+      (guard #(year-month-value col-name dt %))
+
+      (instance? ArrayType dt)
+      (let [f (converter col-name (.elementType ^ArrayType dt))]
+        (guard #(if (coll? %) (mapv f %) %)))
+
+      (instance? MapType dt)
+      (let [kf (converter col-name (.keyType ^MapType dt))
+            vf (converter col-name (.valueType ^MapType dt))]
+        (guard #(if (map? %)
+                  (let [m (java.util.HashMap.)]
+                    (doseq [[k v] %] (.put m (kf k) (vf v)))
+                    (JavaConverters/mapAsScalaMap m))
+                  %)))
+
+      (instance? StructType dt)
+      (let [fields (mapv (fn [^StructField field]
+                           [(.name field) (converter col-name (.dataType field))])
+                         (.fields ^StructType dt))]
+        (guard #(if (map? %)
+                  (let [values (by-field-name %)]
+                    (interop/->spark-row (mapv (fn [[n f]] (f (get values n))) fields)))
+                  %)))
+
+      :else
+      (guard #(if-let [convert (value-conversions (class %))] (convert %) %)))))
+
+(defn- column-type
+  "The Spark type of a tech.ml.dataset column whose values, with `tmd-value`
+  applied, are `values`, as `create-dataframe` says."
+  ^DataType [col-name datatype metadata values override]
+  (or override
+      (recorded-type metadata datatype)
+      (when-let [dt (tmd-type->spark-type datatype)]
+        (if (= :decimal datatype) (decimal-type-for col-name 18 values) dt))
+      (fit-decimals col-name
+                    (infer-spark-type col-name (first (first-non-nil values)))
+                    values)))
+
 (defn- tmd->dataframe
   "A DataFrame of a tech.ml.dataset dataset, through rows on the driver."
-  [spark dataset]
+  [spark dataset {:keys [schema] :as options}]
+  (when-not (map? options)
+    (throw (ex-info (str "create-dataframe takes a map of options after a dataset, such as "
+                         "{:schema {:price \"DECIMAL(12, 2)\"}}. Got: " (pr-str options))
+                    {:options options})))
   (let [columns   ((requiring-resolve 'tech.v3.dataset/columns) dataset)
-        names     (map #(column-name (:name (meta %))) columns)
-        datatypes (map #(:datatype (meta %)) columns)
-        values    (map (fn [column datatype] (mapv #(tmd-value datatype %) column))
-                       columns
-                       datatypes)
-        samples   (map first-non-nil values)
-        values    (map fill-missing-nested-keys values samples)
-        fields    (map (fn [col-name datatype sample]
-                         (if-let [spark-type (tmd-type->spark-type datatype)]
-                           (DataTypes/createStructField col-name spark-type true)
-                           (infer-struct-field col-name (first sample))))
-                       names
-                       datatypes
-                       samples)
-        rows      (if (seq columns) (transpose values) [])]
+        names     (mapv #(column-name (:name (meta %))) columns)
+        overrides (into {} (map (fn [[k v]] [(column-name k) v])) schema)
+        unknown   (remove (set names) (keys overrides))
+        _         (when (seq unknown)
+                    (throw (ex-info (str "create-dataframe's :schema names columns that the dataset "
+                                         "doesn't have: " (pr-str (vec unknown)) ". It has "
+                                         (pr-str names) ".")
+                                    {:columns (vec unknown)})))
+        values    (mapv (fn [column]
+                          (let [datatype (:datatype (meta column))]
+                            (mapv #(tmd-value datatype %) column)))
+                        columns)
+        types     (mapv (fn [col-name column column-values]
+                          (column-type col-name
+                                       (:datatype (meta column))
+                                       (meta column)
+                                       column-values
+                                       (some->> (get overrides col-name) (->spark-type-of col-name))))
+                        names
+                        columns
+                        values)
+        converted (mapv (fn [col-name dt column-values]
+                          (mapv (converter col-name dt) column-values))
+                        names
+                        types
+                        values)
+        rows      (if (seq columns) (apply map vector converted) [])]
     (.createDataFrame spark
-                      (interop/->java-list (map interop/->spark-row (transform-maps rows)))
-                      (DataTypes/createStructType ^java.util.List (vec fields)))))
+                      (interop/->java-list (map interop/->spark-row rows))
+                      (DataTypes/createStructType
+                       ^java.util.List
+                       (mapv #(DataTypes/createStructField %1 %2 true) names types)))))
 
 (defmulti range
   "Creates a `Dataset` with a single `LongType` column named `id`.

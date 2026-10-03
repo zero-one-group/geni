@@ -11,7 +11,8 @@
    (java.io ByteArrayInputStream ByteArrayOutputStream)
    (java.nio.channels Channels)
    (java.nio.charset StandardCharsets)
-   (java.time Instant LocalDate LocalTime Period)
+   (java.time Duration Instant LocalDate LocalTime Period)
+   (java.time.temporal ChronoUnit)
    (java.util Iterator List Map)
    (org.apache.arrow.memory BufferAllocator RootAllocator)
    (org.apache.arrow.vector BigIntVector BitVector DateDayVector DecimalVector DurationVector
@@ -22,9 +23,11 @@
    (org.apache.arrow.vector.complex ListVector StructVector)
    (org.apache.arrow.vector.ipc ArrowStreamReader ArrowStreamWriter WriteChannel)
    (org.apache.arrow.vector.ipc.message IpcOption MessageSerializer)
+   (org.apache.arrow.vector.types TimeUnit)
    (org.apache.arrow.vector.types.pojo Schema)
-   (org.apache.spark.sql.types ArrayType DataType DateType MapType StringType StructField
-                               StructType TimestampType UserDefinedType YearMonthIntervalType)))
+   (org.apache.spark.sql.types ArrayType DataType DateType DayTimeIntervalType MapType StringType
+                               StructField StructType TimestampType UserDefinedType
+                               YearMonthIntervalType)))
 
 (set! *warn-on-reflection* true)
 
@@ -143,13 +146,29 @@
      :indices (vec (.get m "indices"))
      :values  (vec (.get m "values"))}))
 
+(defn- checked-duration
+  "A day-time interval inside an array, map or struct, which Arrow's
+  `getObject` gives through nanoseconds in a long, which end at about 106,751
+  days: one beyond that comes back as the end, which a whole number of
+  microseconds never is, so it throws, naming the column."
+  [col-name ^Duration d]
+  (when d
+    (if (zero? (rem (.getNano d) 1000))
+      d
+      (throw (ex-info (str "The column \"" col-name "\" has a day-time interval of more than "
+                           "106,751 days inside an array, a map or a struct, which Arrow's Java "
+                           "reader can't give exactly. Select it as a column of its own, which "
+                           "can be any length, or cast it to a string, first.")
+                      {:column col-name})))))
+
 (defn- value-converter
   "A function from the Java value that Arrow's `getObject` gives for a value
-  of Spark type `dt`, inside an array, struct or map, to the Clojure value
-  that the column holds."
-  [^DataType dt]
+  of Spark type `dt`, inside an array, struct or map of the column
+  `col-name`, to the Clojure value that the column holds."
+  [col-name ^DataType dt]
   (cond
     (instance? StringType dt)            #(some-> % str)
+    (instance? DayTimeIntervalType dt)   #(checked-duration col-name %)
     (instance? DateType dt)              #(some-> % long LocalDate/ofEpochDay)
     (instance? TimestampType dt)         #(some-> % long micros->instant)
     (instance? YearMonthIntervalType dt) (fn [^Period p] (when p (.normalized p)))
@@ -157,11 +176,11 @@
     (instance-of? variant-type dt)       (fn [^Map m] (when m (variant-val (.get m "value")
                                                                            (.get m "metadata"))))
     (vector-udt? dt)                     (fn [^Map m] (when m (mllib-vector m)))
-    (instance? UserDefinedType dt)       (value-converter (.sqlType ^UserDefinedType dt))
-    (instance? ArrayType dt)             (let [f (value-converter (.elementType ^ArrayType dt))]
+    (instance? UserDefinedType dt)       (value-converter col-name (.sqlType ^UserDefinedType dt))
+    (instance? ArrayType dt)             (let [f (value-converter col-name (.elementType ^ArrayType dt))]
                                            (fn [^List xs] (when xs (mapv f xs))))
-    (instance? MapType dt)               (let [kf (value-converter (.keyType ^MapType dt))
-                                               vf (value-converter (.valueType ^MapType dt))]
+    (instance? MapType dt)               (let [kf (value-converter col-name (.keyType ^MapType dt))
+                                               vf (value-converter col-name (.valueType ^MapType dt))]
                                            (fn [^List entries]
                                              (when entries
                                                (into {}
@@ -171,7 +190,7 @@
     (instance? StructType dt)            (let [fields (mapv (fn [^StructField field]
                                                               [(.name field)
                                                                (keyword (.name field))
-                                                               (value-converter (.dataType field))])
+                                                               (value-converter col-name (.dataType field))])
                                                             (.fields ^StructType dt))]
                                            (fn [^Map m]
                                              (when m
@@ -217,10 +236,25 @@
         (aset a i (f i))))
     a))
 
+(def ^:private chrono-units
+  {TimeUnit/SECOND      ChronoUnit/SECONDS
+   TimeUnit/MILLISECOND ChronoUnit/MILLIS
+   TimeUnit/MICROSECOND ChronoUnit/MICROS
+   TimeUnit/NANOSECOND  ChronoUnit/NANOS})
+
+(defn- durations
+  "A duration vector's values as Durations, made from its counts of its
+  unit, where Arrow's `getObject` goes through nanoseconds in a long, which
+  end at about 106,751 days."
+  ^objects [^DurationVector v n]
+  (let [buf  (.getDataBuffer v)
+        unit (chrono-units (.getUnit v))]
+    (objects v n #(Duration/of (DurationVector/get buf (int %)) unit))))
+
 (defn- column-data
-  "A column's values, as an array, and the datatype that tech.ml.dataset
-  gets for it."
-  [^FieldVector v ^DataType dt]
+  "The values of the column `col-name`, as an array, and the datatype that
+  tech.ml.dataset gets for it."
+  [col-name ^FieldVector v ^DataType dt]
   (let [n (.getValueCount v)]
     (condp instance? v
       BitVector              [:boolean (let [^BitVector v v] (fill boolean-array v n (fn [i] (== 1 (.get v i))) nil))]
@@ -232,13 +266,14 @@
       Float8Vector           [:float64 (let [^Float8Vector v v] (fill double-array v n (fn [i] (.get v i)) Double/NaN))]
       DateDayVector          [:packed-local-date (let [^DateDayVector v v] (fill int-array v n (fn [i] (.get v i)) nil))]
       TimeStampMicroTZVector [:packed-instant (let [^TimeStampMicroTZVector v v] (fill long-array v n (fn [i] (.get v i)) nil))]
-      ;; tech.ml.dataset packs a LocalTime as microseconds and a Duration as
-      ;; nanoseconds, where Spark sends nanoseconds and microseconds.
+      ;; tech.ml.dataset packs a LocalTime as microseconds, where Spark
+      ;; sends nanoseconds.
       TimeNanoVector         [:packed-local-time
                               (let [^TimeNanoVector v v] (fill long-array v n (fn [i] (quot (.get v i) 1000)) nil))]
-      DurationVector         [:packed-duration
-                              (let [^DurationVector v v buf (.getDataBuffer v)]
-                                (fill long-array v n (fn [i] (* 1000 (DurationVector/get buf i))) nil))]
+      ;; Durations, not tech.ml.dataset's packed ones, which are nanoseconds
+      ;; in a long, and so end at about 292 years, where Spark's day-time
+      ;; intervals, microseconds in a long, go on to about 292,000.
+      DurationVector         [:duration (durations v n)]
       TimeStampMicroVector   [:local-date-time
                               (let [^TimeStampMicroVector v v] (objects v n #(.getObject v (int %))))]
       VarCharVector          [:string (let [^VarCharVector v v]
@@ -251,7 +286,7 @@
       IntervalYearVector     [:object (let [^IntervalYearVector v v]
                                         (objects v n #(.normalized ^Period (.getObject v (int %)))))]
       NullVector             [:object (object-array n)]
-      (let [f (value-converter dt)]
+      (let [f (value-converter col-name dt)]
         [(cond (instance? ArrayType dt)                    :persistent-vector
                (or (instance? MapType dt)
                    (instance? StructType dt))               :persistent-map
@@ -264,7 +299,7 @@
   [^VectorSchemaRoot root ^StructType schema]
   {:row-count (.getRowCount root)
    :columns   (mapv (fn [^FieldVector v ^StructField field]
-                      (let [[datatype data] (column-data v (.dataType field))]
+                      (let [[datatype data] (column-data (.name field) v (.dataType field))]
                         {:name     (.name field)
                          :datatype datatype
                          :data     data
@@ -302,8 +337,8 @@
   follows the column's name, as in \", whose type is string\"."
   [col-name reason]
   (throw (ex-info (str *caller* " can't take the column \"" col-name "\"" reason ". It takes "
-                       "numeric columns with no nulls, and arrays or dense MLlib vectors of "
-                       "numbers, all of one length.")
+                       "columns of integers or floating-point numbers with no nulls, and arrays "
+                       "or dense MLlib vectors of them, all of one length.")
                   {:column col-name})))
 
 (defn- of-type [^DataType dt]

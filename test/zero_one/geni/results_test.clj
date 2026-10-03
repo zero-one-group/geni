@@ -7,11 +7,13 @@
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
+   [zero-one.geni.core.results :as results]
    [zero-one.geni.test-resources :as tr]
    [zero-one.geni.utils :refer [class-named]])
   (:import
    (clojure.lang ExceptionInfo)
-   (java.nio ByteBuffer ByteOrder)))
+   (java.nio ByteBuffer ByteOrder)
+   (java.util Iterator)))
 
 (defn- continuation-marker?
   "Whether an Arrow IPC stream starts as one does: with the continuation
@@ -111,3 +113,41 @@
     (testing "create-dataframe says what it takes after a session"
       (is (thrown-with-msg? ExceptionInfo #"tech.ml.dataset dataset"
                             (g/create-dataframe @tr/spark [{:a 1}]))))))
+
+(defn- counting-source
+  "A stand-in for open-streams: an iterator over 100 streams, here numbers,
+  that counts how many are read, and how many runs are closed."
+  [reads closed]
+  (fn [_dataframe _mode]
+    (let [^Iterator streams (.iterator ^Iterable (range 100))]
+      {:iterator (reify Iterator
+                   (hasNext [_] (.hasNext streams))
+                   (next [_] (swap! reads inc) (.next streams)))
+       :close    #(swap! closed inc)})))
+
+(deftest batches-read-test
+  ;; The reducible that g/stream and g/stream-tensors return, over a source
+  ;; that counts its reads, with each stream decoded as one batch.
+  (let [reads   (atom 0)
+        closed  (atom 0)
+        batches #(#'results/batches nil :lazy vector)]
+    (with-redefs [results/open-streams (counting-source reads closed)]
+      (testing "first reads one batch, where Clojure's seq of an Iterable reads 32 ahead"
+        (with-open [b (batches)]
+          (is (= 0 (first b)))
+          (is (= 1 @reads)))
+        (is (= 1 @closed)))
+      (testing "a seq reads as far as it's realised"
+        (reset! reads 0)
+        (with-open [b (batches)]
+          (is (= [0 1 2] (take 3 b)))
+          (is (= 3 @reads))))
+      (testing "a reduce reads until it stops, and closes the run"
+        (reset! reads 0)
+        (reset! closed 0)
+        (is (= [0 1 2] (into [] (take 3) (batches))))
+        (is (= [3 1] [@reads @closed])))
+      (testing "and to the end"
+        (reset! reads 0)
+        (is (= 100 (count (into [] (batches)))))
+        (is (= 100 @reads))))))

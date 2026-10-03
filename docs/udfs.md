@@ -1,6 +1,6 @@
 # Clojure UDFs
 
-Spark's built-in functions cover most column work, and Spark's optimiser knows what they do. When none of them does the job, `g/udf` turns a Clojure function into a Spark UDF (user-defined function), which Spark calls once per row, on the executors.
+Spark's built-in functions cover most column work, and Spark's optimiser knows what they do. When none of them does the job, `g/udf` turns a Clojure function into a Spark UDF (user-defined function), which Spark calls for each row, on the executors.
 
 The examples use a small dataset:
 
@@ -69,7 +69,7 @@ The return type is a type keyword such as `:long`, a schema in the form that `g/
 ;;     {:name "Linus", :stats {:n 0, :longest ""}, :loud ()})
 ```
 
-A map of two types, such as `[:string :long]`, is a map column. A struct can also come from the values in order, as in `[n longest]`.
+A vector of two types, such as `[:string :long]`, describes a map column, with keys of the first type and values of the second. A struct can also come from the values in order, as in `[n longest]`.
 
 ## Options
 
@@ -82,7 +82,7 @@ A third argument gives the options. `:name` names the UDF in the column's name a
 ;; => ("UDF(score)" "grade(score)")
 ```
 
-`:deterministic false` tells Spark that the function can return different results for the same values, as one that draws random numbers can, so that Spark calls it once per row, as written. `:nullable false` tells Spark that the function never returns `nil`.
+`:deterministic false` marks a function that can return different results for the same values, as one that draws random numbers can, so that Spark's optimiser doesn't move it, or merge it with other expressions, as it can a deterministic one. It doesn't set how many times Spark calls the function for a row: a task that's retried, or a DataFrame that's computed twice, calls it again, so any side effects have to cope with repeated calls. `:nullable false` tells Spark that the function never returns `nil`.
 
 ## SQL
 

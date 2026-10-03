@@ -453,6 +453,15 @@
       (testing "write-to!'s other modes need a v2 table, which the session catalog doesn't have"
         (is (thrown-with-msg? AnalysisException #"v1 table" (g/write-to! df "created" {:mode :append})))
         (is (thrown? AnalysisException (g/write-to! df "created" {:mode :create-or-replace :using "parquet"}))))
+      (testing "write-to!'s docstring condition, which picks the rows of one day"
+        ;; The session catalog can't overwrite rows, so this filters by it.
+        (let [doc       (:doc (meta #'g/write-to!))
+              condition (binding [*ns* (the-ns 'zero-one.geni.data-sources-test)]
+                          (eval (read-string (second (re-find #":condition (.*)\}\)" doc)))))]
+          (is (= ["2026-10-01"]
+                 (g/collect-col (g/filter (g/table->dataset @spark [["2026-10-01"] ["2026-10-02"]] [:day])
+                                          condition)
+                                :day)))))
       (testing "write-to!'s options"
         (is (thrown-with-msg? clojure.lang.ExceptionInfo #"takes a :mode"
                               (g/write-to! df "created" {:mode :upsert})))

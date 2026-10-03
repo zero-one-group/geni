@@ -14,6 +14,10 @@
    (java.lang.reflect Method Modifier)
    (org.apache.spark.sql Column functions)))
 
+(def ^:private rows
+  "The table's rows, by function."
+  (delay (function-table/table)))
+
 (defn- at-least? [since]
   (let [needed  (mapv parse-long (string/split since #"\."))
         version (mapv parse-long (re-seq #"\d+" (spark/classpath-version)))]
@@ -48,7 +52,7 @@
   names it."
   [[fn-sym args sql wrap] run]
   (let [f     @(ns-resolve 'zero-one.geni.core fn-sym)
-        since (:since (get @function-table/table fn-sym))]
+        since (:since (get @rows fn-sym))]
     (if (and since (not (at-least? since)))
       (is (thrown-with-msg? ExceptionInfo #"needs Spark" (apply f args)) (str fn-sym))
       (try
@@ -457,7 +461,7 @@
   (into [sym (mapv #(if (delay? %) @% %) args)] more))
 
 (defn- this-sparks? [[sym]]
-  (let [since (:since (get @function-table/table sym))]
+  (let [since (:since (get @rows sym))]
     (or (nil? since) (at-least? since))))
 
 (defn- check-older-sparks
@@ -509,7 +513,7 @@
     (run-batch rows query run)))
 
 (deftest every-function-has-an-example-test
-  (is (= (set (keys @function-table/table))
+  (is (= (set (keys @rows))
          (set (concat (map first scalar-examples)
                       (map first aggregate-examples)
                       (map first merge-agg-examples)
@@ -532,7 +536,7 @@
 
 (deftest merge-aggregate-functions-test
   (doseq [[sym args sql wrap sketches] merge-agg-examples
-          :let [since (:since (get @function-table/table sym))]]
+          :let [since (:since (get @rows sym))]]
     (if (and since (not (at-least? since)))
       (is (thrown-with-msg? ExceptionInfo #"needs Spark"
                             (apply @(ns-resolve 'zero-one.geni.core sym) args))
@@ -616,7 +620,7 @@
   (let [spark-names (spark-function-names)
         geni-names  (set (map str (keys (ns-publics 'zero-one.geni.core))))]
     (testing "the table's functions are this Spark's, from their versions"
-      (doseq [[sym {:keys [spark since]}] @function-table/table
+      (doseq [[sym {:keys [spark since]}] @rows
               :when (or (nil? since) (at-least? since))]
         (is (spark-names spark) (str sym " has no Spark function " spark))))
     (testing "the other names exist"

@@ -18,12 +18,12 @@ New:
 - `g/udf` and `g/register-udf!` work over Spark Connect. Geni uploads Clojure's and Geni's jars, and the code of the namespaces that a function uses, to the session, once. `g/connect` takes `:keep-classes`, true by default, which has Clojure keep the classes that it compiles from then on, so that a function defined at the REPL after it can go to the server. The [UDFs guide](docs/udfs.md) has the details.
 
 - Results as tech.ml.dataset datasets, dtype-next tensors and Arrow, from Spark's own Arrow batches, on classic Spark and over Spark Connect. The [collecting guide](docs/collect.md) has the details.
-  - `g/to-tmd` collects a result as one tech.ml.dataset dataset, with a column per Spark column that keeps its type: DATE as LocalDates, TIMESTAMP as Instants, TIMESTAMP_NTZ as LocalDateTimes, intervals as Durations and Periods, arrays as vectors, structs and maps as maps, and nulls as missing values. A calendar interval, a geometry or a geography throws, naming its column. It needs `techascent/tech.ml.dataset` on the classpath.
-  - `g/stream` reads a result as a dataset per Arrow batch, as a reducible that stops reading when a reduce is done, stops early or throws. On classic Spark, each partition runs as a job of its own when the reduce gets to it.
-  - `g/to-tensors` and `g/stream-tensors` turn numeric columns, and columns of arrays or dense MLlib vectors of one length, into dtype-next tensors.
+  - `g/to-tmd` collects a result as one tech.ml.dataset dataset, with a column per Spark column that keeps its type: DATE as LocalDates, TIMESTAMP as Instants, TIMESTAMP_NTZ as LocalDateTimes, day-time intervals as Durations of any length, year-month intervals as Periods, arrays as vectors, structs and maps as maps, and nulls as missing values. Each column keeps its Spark type, as DDL, in its metadata. A calendar interval, a geometry or a geography throws, naming its column, as do two columns that `:key-fn` names alike, before a job runs, and rows without columns. It needs `techascent/tech.ml.dataset` on the classpath.
+  - `g/stream` reads a result as a dataset per Arrow batch, as a reducible that stops reading when a reduce is done, stops early or throws. On classic Spark, each partition runs as a job of its own when the reduce gets to it. It's seqable too, and a seq reads a batch at a time.
+  - `g/to-tensors` and `g/stream-tensors` turn columns of integers or floating-point numbers, and columns of arrays or dense MLlib vectors of them of one length, into dtype-next tensors.
   - `g/to-arrow` collects a result as Arrow IPC streams in memory, one per batch.
   - Over Spark Connect, all but `g/to-arrow` need `org.apache.arrow/arrow-vector` and `arrow-memory-netty` on the classpath, since the client only has Arrow shaded.
-- `g/create-dataframe` takes a tech.ml.dataset dataset, with the Spark types from its columns' datatypes.
+- `g/create-dataframe` takes a tech.ml.dataset dataset. Each column's Spark type comes from `:schema`, from the type that `g/to-tmd` kept in its metadata, so a round trip keeps the types, or from its datatype or values. A DECIMAL has room for every value in its column, and a value that its column's type can't hold exactly throws, naming the column, rather than being rounded or becoming a null.
 - `g/glimpse` prints a column per line, with its type and its first values, and `g/to-html` gives Spark's HTML table of a DataFrame's first rows, as a notebook shows it.
 - `g/records->dataset`, `g/map->dataset` and `g/table->dataset` infer a day-time interval for a `java.time.Duration` and a year-month interval for a `java.time.Period`, and on Spark 4, VARIANT for Spark's `VariantVal` and, from Spark 4.1, TIME for a `java.time.LocalTime`.
 - More of Spark's Dataset API, on Spark 3.5 and 4, and over Spark Connect:
@@ -66,6 +66,7 @@ Fixes:
 - A reader or writer option with a string key, such as Iceberg's `"snapshot-id"`, goes to Spark as it is. It was turned into camelCase, as a keyword key is, so an option with a hyphen or an underscore in its name was lost. A keyword value, such as `:failfast` for `:mode`, goes as its name.
 - `g/read-table!` and `g/write-table!` take a keyword as the table's name.
 - `g/posexplode-outer` was `g/posexplode`, which drops the rows whose array or map is null or empty, and `zero-one.geni.core.functions/explode-outer` was `explode`. They're Spark's outer ones now, and `g/explode-outer` is in `g/`.
+- `g/records->dataset`, `g/map->dataset` and `g/table->dataset` give a column of decimals room for all its values, at the top or in arrays and structs: `DecimalType(38,18)` for BigDecimals and `DecimalType(38,0)` for whole numbers as before, when the values fit, and otherwise as many digits after the point as the values have, with 38 in all. A value that didn't fit became a null on Spark 3.5, and on Spark 4 threw or was rounded. A column that no DECIMAL holds throws an error that names it.
 
 ## 0.3.0 (2026-10-01)
 
