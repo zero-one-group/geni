@@ -300,6 +300,89 @@
   [^SparkSession spark-session]
   (-> spark-session .conf .getAll interop/scala-map->map walk/keywordize-keys))
 
+(defn- version-numbers
+  "The major, minor and patch numbers of a Spark version such as \"4.2.0\"."
+  [^String version]
+  (->> (re-find #"^(\d+)\.(\d+)(?:\.(\d+))?" version)
+       rest
+       (mapv #(some-> % parse-long))))
+
+(def ^:private classpath-version*
+  (delay
+    (some (fn [[class-name method]]
+            (some-> (class-named class-name)
+                    (.getField "MODULE$")
+                    (.get nil)
+                    (Reflector/invokeInstanceMethod method (object-array 0))))
+          [["org.apache.spark.SparkBuildInfo$" "spark_version"]
+           ["org.apache.spark.package$" "SPARK_VERSION"]])))
+
+(defn classpath-version
+  "The version of the Spark on the classpath, such as \"4.2.0\": the Spark
+  Connect client's, over Spark Connect. It says which of Spark's methods Geni
+  can call, where the session's version says what the server runs."
+  []
+  @classpath-version*)
+
+(defn require-version!
+  "Throws an error that names `what` and the Spark version it needs, as
+  `[major minor]`, when the Spark on the classpath is older."
+  [[major minor :as needed] what]
+  (let [version (classpath-version)]
+    (when (and version (neg? (compare (vec (take 2 (version-numbers version))) needed)))
+      (throw (ex-info (format "%s needs Spark %d.%d or later, and this is Spark %s."
+                              what major minor version)
+                      {:needs (str major "." minor) :spark-version version})))))
+
+(defn- positional-args-misbound?
+  "Whether the session's Spark binds more than four positional SQL parameters
+  in the wrong order: 4.1.0 to 4.1.3 and 4.2.0 (SPARK-58341)."
+  [^SparkSession spark n-args]
+  (let [[major minor patch] (version-numbers (.version spark))]
+    (and (< 4 n-args)
+         (or (and (= [major minor] [4 1]) (<= (or patch 0) 3))
+             (= [major minor patch] [4 2 0])))))
+
+(def ^:private integer-classes #{Long Integer Short Byte})
+
+(defn- sql-arg-error [message value]
+  (throw (ex-info (str message " Got: " (pr-str value)) {:value value})))
+
+(defn- map-arg-error [value]
+  (sql-arg-error (str "sql takes a map in its args only as a column, such as "
+                      "(g/map (g/lit \"k\") (g/lit 1)), which needs Spark 4.0.")
+                 value))
+
+(defn- sql-array
+  "A Java array of the collection's values, which Spark's `lit` takes as an
+  array literal: whole numbers mixed with decimals become doubles, keywords
+  their names, and a nested collection a nested array."
+  [value]
+  (let [elements (map #(cond
+                         (keyword? %) (name %)
+                         (map? %)     (map-arg-error value)
+                         (coll? %)    (sql-array %)
+                         :else        %)
+                      value)
+        classes  (set (map class (remove nil? elements)))
+        [element-class convert]
+        (cond
+          (empty? classes)
+          (sql-arg-error (str "sql can't tell the element type of a collection in its args that's "
+                              "empty or all nils, so it takes a typed Java array instead, such as "
+                              "(long-array 0).")
+                         value)
+
+          (= 1 (count classes))                                  [(first classes) identity]
+          (every? integer-classes classes)                       [Long long]
+          (every? (into integer-classes [Double Float]) classes) [Double double]
+          (every? (into integer-classes [BigDecimal]) classes)   [BigDecimal bigdec]
+
+          :else
+          (sql-arg-error "sql takes a collection in its args whose values have one type, or are all numbers."
+                         value))]
+    (into-array element-class (map #(some-> % convert) elements))))
+
 (defn- sql-arg
   "A value for a SQL parameter: a column, such as a `g/lit`, as it is, a
   collection as an array literal, a keyword as its name, and anything else as
@@ -308,7 +391,8 @@
   (cond
     (instance? Column value) value
     (keyword? value)         (name value)
-    (coll? value)            (functions/lit (into-array (type (first value)) value))
+    (map? value)             (map-arg-error value)
+    (coll? value)            (functions/lit (sql-array value))
     :else                    value))
 
 (defn sql
@@ -319,7 +403,13 @@
   With `args`, the query's parameters are bound to values rather than spliced
   into the text: a map binds the named parameters, such as `:min`, and a
   vector binds the `?` ones in order. A value is a literal, a column such as
-  `(g/lit ...)`, or a collection, which becomes an array.
+  `(g/lit ...)`, or a collection, which becomes an array: of doubles when it
+  mixes whole numbers and decimals, and of arrays when it nests. From Spark
+  4.0, a value can also be a column that builds an array, a map or a struct of
+  literals, such as `(g/map (g/lit \"k\") (g/lit 1))`. Spark 4.1.0 to 4.1.3 and
+  4.2.0 bind more than four `?` parameters in the wrong order (SPARK-58341),
+  so on those `sql` throws an error for more than four, and named parameters
+  work instead.
 
   ```clojure
   (g/sql spark \"SELECT * FROM my_table\")
@@ -333,6 +423,12 @@
      (map? args)
      (let [named (java.util.HashMap. ^java.util.Map (update-keys (update-vals args sql-arg) name))]
        (.sql spark sql-text ^java.util.Map named))
+
+     (and (sequential? args) (positional-args-misbound? spark (count args)))
+     (throw (ex-info (str "Spark " (.version spark) " binds more than four positional parameters "
+                          "in the wrong order (SPARK-58341), so use named ones, such as :a, "
+                          "with a map of args.")
+                     {:spark-version (.version spark) :args args}))
 
      (sequential? args)
      (.sql spark sql-text ^Object (object-array (map sql-arg args)))

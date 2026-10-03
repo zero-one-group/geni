@@ -64,14 +64,6 @@
   ([dataframe] (.checkpoint dataframe true))
   ([dataframe eager] (.checkpoint dataframe eager)))
 
-(defn- spark-version
-  "The major and minor version of the Dataset's Spark, such as [4 2]."
-  [dataframe]
-  (->> (.version (.sparkSession dataframe))
-       (re-find #"^(\d+)\.(\d+)")
-       rest
-       (mapv parse-long)))
-
 (defn local-checkpoint
   "Returns a checkpointed version of the Dataset, with its plan cut at this
   point, so that the work behind it isn't done again. Unlike `checkpoint`, it
@@ -88,10 +80,7 @@
   ([dataframe] (.localCheckpoint dataframe))
   ([dataframe eager] (.localCheckpoint dataframe (boolean eager)))
   ([dataframe eager storage-level]
-   (when (neg? (compare (spark-version dataframe) [4 0]))
-     (throw (ex-info (str "local-checkpoint takes a storage level from Spark 4.0. This is Spark "
-                          (.version (.sparkSession dataframe)) ".")
-                     {:spark-version (.version (.sparkSession dataframe))})))
+   (spark/require-version! [4 0] "local-checkpoint with a storage level")
    (.localCheckpoint dataframe (boolean eager) storage-level)))
 
 (defn- not-a-checkpoint! [dataframe]
@@ -107,40 +96,69 @@
         fs   (.getFileSystem path (.. spark-session sparkContext hadoopConfiguration))]
     (.delete fs path true)))
 
-(defn- release-classic-checkpoint! [dataframe]
+(defn- classic-checkpoint-rdd
+  "The RDD that a classic checkpoint holds: its plan is a `LogicalRDD` around
+  an RDD marked for checkpointing, which `checkpointData`, private to Spark,
+  says. A DataFrame made from an RDD has a `LogicalRDD` too, without that."
+  [dataframe]
   (let [logical  (.. dataframe queryExecution logical)
         rdd-plan (class-named "org.apache.spark.sql.execution.LogicalRDD")
-        rdd      (if (and rdd-plan (instance? rdd-plan logical))
-                   (.rdd logical)
-                   (not-a-checkpoint! dataframe))
-        file     (.getCheckpointFile rdd)]
-    (when (.isDefined file)
-      (delete-checkpoint-file! (.sparkSession dataframe) (.get file)))
-    (.unpersist rdd true)))
+        rdd      (when (and rdd-plan (instance? rdd-plan logical))
+                   (.rdd logical))]
+    (if (and rdd (.isDefined (.checkpointData rdd)))
+      rdd
+      (not-a-checkpoint! dataframe))))
+
+(defn- connect-checkpoint-root [dataframe]
+  (let [root (.getRoot (.plan dataframe))]
+    (if (.hasCachedRemoteRelation root)
+      root
+      (not-a-checkpoint! dataframe))))
+
+(defn- ensure-checkpoint
+  "Returns `dataframe` when `release-checkpoint!` can release it, and throws
+  otherwise."
+  [dataframe]
+  (if (spark/classic-session? (.sparkSession dataframe))
+    (classic-checkpoint-rdd dataframe)
+    (connect-checkpoint-root dataframe))
+  dataframe)
+
+(defn- release-classic-checkpoint! [dataframe]
+  (let [rdd (classic-checkpoint-rdd dataframe)]
+    ;; A lazy checkpoint that no action has computed holds nothing yet, and
+    ;; unpersisting it would break its first computation.
+    (when (.isCheckpointed rdd)
+      (let [file (.getCheckpointFile rdd)]
+        (when (.isDefined file)
+          (delete-checkpoint-file! (.sparkSession dataframe) (.get file))))
+      (.unpersist rdd true))))
 
 (defn- release-connect-checkpoint! [dataframe]
-  (let [root (.getRoot (.plan dataframe))]
-    (when-not (.hasCachedRemoteRelation root)
-      (not-a-checkpoint! dataframe))
-    (let [relation-id (.getRelationId (.getCachedRemoteRelation root))
-          cleaner     (try
-                        (.cleaner (.sparkSession dataframe))
-                        (catch IllegalArgumentException e
-                          (throw (ex-info (str "This Spark Connect client has no SessionCleaner, "
-                                               "which release-checkpoint! needs.")
-                                          {}
-                                          e))))]
-      (.doCleanupCachedRemoteRelation cleaner relation-id))))
+  (let [root        (connect-checkpoint-root dataframe)
+        relation-id (.getRelationId (.getCachedRemoteRelation root))
+        cleaner     (try
+                      (.cleaner (.sparkSession dataframe))
+                      (catch IllegalArgumentException e
+                        (throw (ex-info (str "This Spark Connect client has no SessionCleaner, "
+                                             "which release-checkpoint! needs.")
+                                        {}
+                                        e))))]
+    (.doCleanupCachedRemoteRelation cleaner relation-id)))
 
 (defn release-checkpoint!
   "Frees what a Dataset from `checkpoint` or `local-checkpoint` holds: the
   blocks of a local checkpoint, and the files of a reliable one in the
-  checkpoint directory. Over Spark Connect, the server lets go of the
-  checkpoint, though a reliable checkpoint's files stay until its context
-  cleaner removes them, as `spark.cleaner.referenceTracking.cleanCheckpoints`
-  has it do. The Dataset can't be read afterwards. Releasing twice does
-  nothing more. Over Spark Connect, it calls the client's `SessionCleaner`,
-  which isn't public API."
+  checkpoint directory. The Dataset can't be read afterwards, and releasing
+  twice does nothing more. On classic Spark, a lazy checkpoint holds nothing
+  until an action computes it, so releasing it before then does nothing, and
+  it can still be read.
+
+  Over Spark Connect, the server lets go of the checkpoint, and its context
+  cleaner frees the blocks of a local checkpoint once the server's JVM
+  collects it, and the files of a reliable one only when
+  `spark.cleaner.referenceTracking.cleanCheckpoints` is on. That goes through
+  the client's `SessionCleaner`, which isn't public API."
   [dataframe]
   (if (spark/classic-session? (.sparkSession dataframe))
     (release-classic-checkpoint! dataframe)
@@ -152,6 +170,8 @@
   body, and then releases the checkpoints with `release-checkpoint!`, in
   reverse order, whether or not the body throws. So the body can query the
   checkpoint many times, but what it returns can't depend on reading it later.
+  A Dataset that `release-checkpoint!` can't release is refused before the
+  body runs.
 
   ```clojure
   (g/with-checkpoint [base (g/local-checkpoint expensive)]
@@ -164,7 +184,7 @@
             "with-checkpoint takes a vector of names and checkpointed Datasets.")))
   (if (clojure.core/empty? bindings)
     `(do ~@body)
-    `(let [~(bindings 0) ~(bindings 1)]
+    `(let [~(bindings 0) (#'ensure-checkpoint ~(bindings 1))]
        (try
          (with-checkpoint ~(subvec bindings 2) ~@body)
          (finally
@@ -522,6 +542,124 @@
   ([dataframe mode]
    (let [mode (explain-mode mode)]
      (string/trimr (interop/with-scala-out-str (.explain dataframe mode))))))
+
+(defn transpose
+  "Returns a new Dataset with its rows and columns swapped: the values of
+  `index-col`, the first column by default, become the column names, and a
+  `key` column holds the other columns' names. The other columns need a common
+  type. Spark collects the Dataset on the driver to do it, so it suits small
+  ones. Needs Spark 4.0.
+
+  ```clojure
+  (g/transpose (g/records->dataset [{:k \"a\" :x 1} {:k \"b\" :x 2}]))
+  ```"
+  ([dataframe]
+   (spark/require-version! [4 0] "transpose")
+   (.transpose dataframe))
+  ([dataframe index-col]
+   (spark/require-version! [4 0] "transpose")
+   (.transpose dataframe (->column index-col))))
+
+(defn grouping-sets
+  "Groups the Dataset by each of the grouping sets in `sets`, as SQL's
+  GROUPING SETS does, for `agg` to aggregate: `rollup` and `cube` are special
+  cases. An empty set is the grand total. `cols` are the grouping columns.
+  Needs Spark 4.0.
+
+  ```clojure
+  (-> sales
+      (g/grouping-sets [[:region :year] [:region] []] :region :year)
+      (g/agg {:total (g/sum :price)}))
+  ```"
+  [dataframe sets & cols]
+  (spark/require-version! [4 0] "grouping-sets")
+  (.groupingSets dataframe
+                 (interop/->scala-seq (map #(interop/->scala-seq (->col-array (ensure-coll %))) sets))
+                 (->col-array cols)))
+
+(def ^:private lateral-join-types #{"inner" "cross" "left" "leftouter" "left_outer"})
+
+(defn- lateral-join-type? [x]
+  (and (or (string? x) (keyword? x))
+       (contains? lateral-join-types (string/lower-case (name x)))))
+
+(defn lateral-join
+  "Joins each row of `left` with the rows that `right` gives for it, as SQL's
+  LATERAL does: `right` can refer to `left`'s columns through `g/outer`. The
+  optional `condition` filters the pairs, and `join-type` is `:inner`, the
+  default, `:left` or `:cross`. With three arguments, the third is the join
+  type when it names one, and the condition otherwise. Needs Spark 4.0.
+
+  ```clojure
+  (g/lateral-join orders
+                  (g/select (g/range 3) {:week (g/+ :id (g/outer :start-week))})
+                  :left)
+  ```"
+  ([left right]
+   (spark/require-version! [4 0] "lateral-join")
+   (.lateralJoin left right))
+  ([left right condition-or-join-type]
+   (spark/require-version! [4 0] "lateral-join")
+   (if (lateral-join-type? condition-or-join-type)
+     (.lateralJoin left right (name condition-or-join-type))
+     (.lateralJoin left right (->column condition-or-join-type))))
+  ([left right condition join-type]
+   (spark/require-version! [4 0] "lateral-join")
+   (.lateralJoin left right (->column condition) (name join-type))))
+
+(defn scalar
+  "Returns the Dataset as a scalar subquery: a column with its one value, for
+  a Dataset of one row and one column, such as an aggregate. Needs Spark 4.0.
+
+  ```clojure
+  (g/filter sales (g/> :price (g/scalar (g/agg sales (g/mean :price)))))
+  ```"
+  [dataframe]
+  (spark/require-version! [4 0] "scalar")
+  (.scalar dataframe))
+
+(defn zip-with-index
+  "Returns a new Dataset with a column of consecutive indices from 0, named
+  `index` unless `col-name` is given. Unlike `monotonically-increasing-id`,
+  the indices have no gaps across partitions. Needs Spark 4.2.
+
+  ```clojure
+  (g/zip-with-index (g/order-by sales :date) :row)
+  ```"
+  ([dataframe]
+   (spark/require-version! [4 2] "zip-with-index")
+   (.zipWithIndex dataframe))
+  ([dataframe col-name]
+   (spark/require-version! [4 2] "zip-with-index")
+   (.zipWithIndex dataframe (name col-name))))
+
+(defn nearest-by-join
+  "Joins each row of `left` with the `:num-results` rows of `right` that rank
+  best by the column `ranking`, which can use both sides' columns. The options
+  take `:num-results`, from 1 to 100,000, `:mode`, `:exact` or `:approx`,
+  which lets Spark use an approximate search, and `:direction`, `:distance`,
+  where smaller ranks better, or `:similarity`, where larger does. With
+  `:join-type :left`, the rows of `left` that match nothing stay. Needs
+  Spark 4.2.
+
+  ```clojure
+  (g/nearest-by-join queries items (g/abs (g/- :q :x))
+                     {:num-results 3 :mode :exact :direction :distance})
+  ```"
+  [left right ranking {:keys [num-results mode direction join-type] :as options}]
+  (spark/require-version! [4 2] "nearest-by-join")
+  (when-not (and num-results mode direction)
+    (throw (ex-info (str "nearest-by-join takes :num-results, :mode and :direction. Got: "
+                         (pr-str options))
+                    {:options options})))
+  (let [ranking (->column ranking)
+        n       (int num-results)
+        mode    (name mode)
+        dir     (name direction)]
+    (if join-type
+      (.nearestByJoin left right ranking n mode dir
+                      (if (#{:left "left"} join-type) "leftouter" (name join-type)))
+      (.nearestByJoin left right ranking n mode dir))))
 
 (defn same-semantics
   "Returns true when the two Datasets' plans compute the same thing, as Spark

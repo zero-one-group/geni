@@ -716,7 +716,18 @@
   (is (= [{:d (java.sql.Date/valueOf "2026-10-02")}]
          (g/collect (g/sql @spark "SELECT :d AS d" {:d (java.time.LocalDate/of 2026 10 2)}))))
   (is (thrown-with-msg? clojure.lang.ExceptionInfo #"as a map"
-                        (g/sql @spark "SELECT 1" "1"))))
+                        (g/sql @spark "SELECT 1" "1")))
+  (testing "collections as arrays"
+    (is (= [{:a [1.0 2.5 nil] :b [[1 2] [3]] :c ["x" "y"]}]
+           (g/collect (g/sql @spark "SELECT :a AS a, :b AS b, :c AS c"
+                             {:a [1 2.5 nil] :b [[1 2] [3]] :c [:x :y]}))))
+    (is (= [{:n 0}] (g/collect (g/sql @spark "SELECT size(?) AS n" [(long-array 0)]))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"typed Java array"
+                          (g/sql @spark "SELECT :a" {:a []})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"one type"
+                          (g/sql @spark "SELECT :a" {:a [1 "x"]})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"map in its args only as a column"
+                          (g/sql @spark "SELECT :a" {:a [{:k 1}]})))))
 
 (defn- spark-4? []
   (clojure.string/starts-with? (.version @spark) "4."))
@@ -733,7 +744,7 @@
     (is (= 100 (g/count (g/local-checkpoint ids false))))
     (if (spark-4?)
       (is (= 100 (g/count (g/local-checkpoint ids true g/memory-only))))
-      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"from Spark 4.0"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"needs Spark 4.0"
                             (g/local-checkpoint ids true g/memory-only))))))
 
 (deftest with-checkpoint-test
@@ -768,4 +779,33 @@
       (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
                             (g/release-checkpoint! ids)))
       (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
-                            (g/release-checkpoint! (g/filter (g/local-checkpoint ids) (g/> :id 3))))))))
+                            (g/release-checkpoint! (g/filter (g/local-checkpoint ids) (g/> :id 3)))))
+      (testing "with-checkpoint refuses one before the body runs, and releases the others"
+        (let [ran   (atom false)
+              local (g/local-checkpoint ids)]
+          (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
+                                (g/with-checkpoint [checkpointed local
+                                                    filtered     (g/filter checkpointed (g/> :id 3))]
+                                  (reset! ran true)
+                                  filtered)))
+          (is (not @ran))
+          (without-task-error-logs
+           #(is (thrown? Exception (g/count local)))))))
+    (testing "a lazy checkpoint, released before an action computes it"
+      (let [lazy (g/local-checkpoint ids false)]
+        (g/release-checkpoint! lazy)
+        (if (connect?)
+          (without-task-error-logs
+           #(is (thrown? Exception (g/count lazy))))
+          (do (is (= 100 (g/count lazy)))
+              (g/release-checkpoint! lazy)
+              (without-task-error-logs
+               #(is (thrown? Exception (g/count lazy))))))))))
+
+(deftest ^:classic release-checkpoint-of-an-rdd-test
+  (testing "a DataFrame made from an RDD has an RDD in its plan, but isn't a checkpoint"
+    (let [rows (.parallelize (g/java-spark-context @spark)
+                             [(org.apache.spark.sql.RowFactory/create (object-array [(int 1)]))])
+          df   (.createDataFrame @spark rows (g/parse-ddl "x INT"))]
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
+                            (g/release-checkpoint! df))))))

@@ -28,6 +28,12 @@
       (is (not (g/conf-modifiable? @spark "spark.sql.warehouse.dir")))
       (is (not (g/conf-modifiable? "geni.test.flag")))
       (is (thrown? AnalysisException (g/conf-set! "spark.sql.warehouse.dir" "elsewhere"))))
+    (testing "a value for each config"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"conf-unset! unsets one"
+                            (g/conf-set! {:geni.test.n 4 :geni.test.flag nil})))
+      (is (= "3" (g/conf-get "geni.test.n")))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"conf-unset! unsets one"
+                            (g/conf-set! "geni.test.flag"))))
     (finally
       (doseq [k ["spark.sql.shuffle.partitions" "geni.test.flag" "geni.test.n" "geni.test.share" "geni.test.kw"]]
         (g/conf-unset! k)))))
