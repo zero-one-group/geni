@@ -245,7 +245,10 @@
                    :java-opts ["-Dspark.master=local[*]"
                                "-Dspark.connect.grpc.binding.address=127.0.0.1"
                                (str "-Dspark.connect.grpc.binding.port=" port)
-                               "-Dspark.sql.warehouse.dir=target/connect-warehouse"]}))
+                               "-Dspark.sql.warehouse.dir=target/connect-warehouse"
+                               ;; For reliable checkpoints, which a Connect client
+                               ;; can't give a directory.
+                               "-Dspark.checkpoint.dir=target/connect-checkpoints"]}))
         _       (io/make-parents log)
         server  (.start (doto (ProcessBuilder. ^java.util.List command)
                           (.redirectErrorStream true)

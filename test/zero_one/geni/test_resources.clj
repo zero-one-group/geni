@@ -4,8 +4,10 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.defaults]
    [zero-one.geni.spark]
+   [zero-one.geni.utils :refer [class-named]]
    [clojure.java.io :as io])
   (:import
+   (clojure.lang Reflector)
    (java.io File)
    (org.apache.spark.sql Dataset SparkSession)
    (java.nio.file.attribute FileAttribute)
@@ -156,3 +158,26 @@
        ~@body
        (finally
          (if (connect?) (clean-catalog!) (delete-warehouse!))))))
+
+(defn without-task-error-logs
+  "Calls `f` with Spark's executor and scheduler logs off, for a check whose
+  Spark job fails on purpose, which they'd log with a stack trace. Over Spark
+  Connect, the server does that logging, so a client without log4j2's core
+  just calls `f`."
+  [f]
+  (if-not (class-named "org.apache.logging.log4j.core.config.Configurator")
+    (f)
+    (let [call      #(Reflector/invokeStaticMethod ^String %1 ^String %2 (object-array %&))
+          set-level #(call "org.apache.logging.log4j.core.config.Configurator" "setLevel" %1 %2)
+          loggers   ["org.apache.spark.executor.Executor" "org.apache.spark.scheduler.TaskSetManager"]
+          before    (mapv #(Reflector/invokeInstanceMethod
+                            (call "org.apache.logging.log4j.LogManager" "getLogger" %)
+                            "getLevel" (object-array 0))
+                          loggers)]
+      (try
+        (doseq [logger loggers]
+          (set-level logger (call "org.apache.logging.log4j.Level" "toLevel" "OFF")))
+        (f)
+        (finally
+          (doseq [[logger level] (map vector loggers before)]
+            (set-level logger level)))))))

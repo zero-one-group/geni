@@ -33,6 +33,10 @@ New:
   - `g/conf-get`, `g/conf-set!`, `g/conf-unset!` and `g/conf-modifiable?` read and set the session's runtime configs.
   - `zero-one.geni.catalog` has `list-catalogs`, `current-catalog` and `set-current-catalog`.
   - The writers' `:mode` can be a keyword, such as `:overwrite`, as well as a string.
+- Checkpoints that free what they hold, on Spark 3.5 and 4, and over Spark Connect:
+  - `g/local-checkpoint` cuts a Dataset's plan with a checkpoint in the executors' storage, which needs no checkpoint directory, and from Spark 4.0 takes the storage level.
+  - `g/release-checkpoint!` frees a checkpoint: the blocks of a local one, and the files of a reliable one. Over Spark Connect, the server lets go of it.
+  - `g/with-checkpoint` binds checkpointed Datasets, as `with-open` does, and releases them when its body is done.
 
 Fixes:
 

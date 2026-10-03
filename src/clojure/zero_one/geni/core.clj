@@ -479,6 +479,7 @@
   join-with
   last-vals
   limit
+  local-checkpoint
   local?
   melt
   merge-in-place
@@ -497,6 +498,7 @@
   random-split
   rdd
   relative-error
+  release-checkpoint!
   rename-columns
   repartition
   repartition-by-range
@@ -531,6 +533,7 @@
   unpersist
   unpivot
   width
+  with-checkpoint
   with-column
   with-column-renamed
   with-columns

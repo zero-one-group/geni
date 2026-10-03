@@ -12,8 +12,10 @@
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [ensure-coll import-fn]])
+   [zero-one.geni.spark :as spark]
+   [zero-one.geni.utils :refer [class-named ensure-coll import-fn]])
   (:import
+   (clojure.lang Reflector)
    (org.apache.spark.sql Column Observation)
    (org.apache.spark.sql.types Metadata StructType)))
 
@@ -61,6 +63,112 @@
 (defn checkpoint
   ([dataframe] (.checkpoint dataframe true))
   ([dataframe eager] (.checkpoint dataframe eager)))
+
+(defn- spark-version
+  "The major and minor version of the Dataset's Spark, such as [4 2]."
+  [dataframe]
+  (->> (.version (.sparkSession dataframe))
+       (re-find #"^(\d+)\.(\d+)")
+       rest
+       (mapv parse-long)))
+
+(defn local-checkpoint
+  "Returns a checkpointed version of the Dataset, with its plan cut at this
+  point, so that the work behind it isn't done again. Unlike `checkpoint`, it
+  keeps the data in the executors' storage rather than in the checkpoint
+  directory: quicker, and it needs no directory, but the data is lost when an
+  executor is. It runs a job now unless `eager` is false. From Spark 4.0, it
+  takes the storage level, such as `g/memory-only`, which is
+  `g/memory-and-disk` otherwise. `release-checkpoint!` frees it.
+
+  ```clojure
+  (g/local-checkpoint expensive)
+  (g/local-checkpoint expensive true g/memory-only)
+  ```"
+  ([dataframe] (.localCheckpoint dataframe))
+  ([dataframe eager] (.localCheckpoint dataframe (boolean eager)))
+  ([dataframe eager storage-level]
+   (when (neg? (compare (spark-version dataframe) [4 0]))
+     (throw (ex-info (str "local-checkpoint takes a storage level from Spark 4.0. This is Spark "
+                          (.version (.sparkSession dataframe)) ".")
+                     {:spark-version (.version (.sparkSession dataframe))})))
+   (.localCheckpoint dataframe (boolean eager) storage-level)))
+
+(defn- not-a-checkpoint! [dataframe]
+  (throw (ex-info (str "release-checkpoint! takes a Dataset that checkpoint or local-checkpoint "
+                       "returned, before any other transformation.")
+                  {:dataframe dataframe})))
+
+(defn- delete-checkpoint-file! [spark-session ^String file]
+  ;; Hadoop's classes come with classic Spark, which is the only Spark that
+  ;; gets here, but not with a Spark Connect client.
+  (let [path (Reflector/invokeConstructor (class-named "org.apache.hadoop.fs.Path")
+                                          (object-array [file]))
+        fs   (.getFileSystem path (.. spark-session sparkContext hadoopConfiguration))]
+    (.delete fs path true)))
+
+(defn- release-classic-checkpoint! [dataframe]
+  (let [logical  (.. dataframe queryExecution logical)
+        rdd-plan (class-named "org.apache.spark.sql.execution.LogicalRDD")
+        rdd      (if (and rdd-plan (instance? rdd-plan logical))
+                   (.rdd logical)
+                   (not-a-checkpoint! dataframe))
+        file     (.getCheckpointFile rdd)]
+    (when (.isDefined file)
+      (delete-checkpoint-file! (.sparkSession dataframe) (.get file)))
+    (.unpersist rdd true)))
+
+(defn- release-connect-checkpoint! [dataframe]
+  (let [root (.getRoot (.plan dataframe))]
+    (when-not (.hasCachedRemoteRelation root)
+      (not-a-checkpoint! dataframe))
+    (let [relation-id (.getRelationId (.getCachedRemoteRelation root))
+          cleaner     (try
+                        (.cleaner (.sparkSession dataframe))
+                        (catch IllegalArgumentException e
+                          (throw (ex-info (str "This Spark Connect client has no SessionCleaner, "
+                                               "which release-checkpoint! needs.")
+                                          {}
+                                          e))))]
+      (.doCleanupCachedRemoteRelation cleaner relation-id))))
+
+(defn release-checkpoint!
+  "Frees what a Dataset from `checkpoint` or `local-checkpoint` holds: the
+  blocks of a local checkpoint, and the files of a reliable one in the
+  checkpoint directory. Over Spark Connect, the server lets go of the
+  checkpoint, though a reliable checkpoint's files stay until its context
+  cleaner removes them, as `spark.cleaner.referenceTracking.cleanCheckpoints`
+  has it do. The Dataset can't be read afterwards. Releasing twice does
+  nothing more. Over Spark Connect, it calls the client's `SessionCleaner`,
+  which isn't public API."
+  [dataframe]
+  (if (spark/classic-session? (.sparkSession dataframe))
+    (release-classic-checkpoint! dataframe)
+    (release-connect-checkpoint! dataframe))
+  nil)
+
+(defmacro with-checkpoint
+  "Binds each name to a checkpointed Dataset, as `with-open` does, runs the
+  body, and then releases the checkpoints with `release-checkpoint!`, in
+  reverse order, whether or not the body throws. So the body can query the
+  checkpoint many times, but what it returns can't depend on reading it later.
+
+  ```clojure
+  (g/with-checkpoint [base (g/local-checkpoint expensive)]
+    {:rows (g/count base)
+     :big  (g/count (g/filter base (g/> :price 1e6)))})
+  ```"
+  [bindings & body]
+  (when-not (and (vector? bindings) (even? (count bindings)))
+    (throw (IllegalArgumentException.
+            "with-checkpoint takes a vector of names and checkpointed Datasets.")))
+  (if (clojure.core/empty? bindings)
+    `(do ~@body)
+    `(let [~(bindings 0) ~(bindings 1)]
+       (try
+         (with-checkpoint ~(subvec bindings 2) ~@body)
+         (finally
+           (release-checkpoint! ~(bindings 0)))))))
 
 (defn columns
   "Returns all column names as an array of keywords."
