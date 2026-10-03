@@ -9,6 +9,7 @@
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.core.dataset :as dataset]
+   [zero-one.geni.core.function-table :as function-table]
    [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll]])
   (:import
    (java.text Normalizer Normalizer$Form)
@@ -433,14 +434,20 @@
     (cond-> parsed kebab-columns ->kebab-columns)))
 
 (defn parse-json
-  "Parses the JSON strings in the column `col-name` into a DataFrame, as
-  `read-json!` reads a file, with a row for each string. The options are
-  `read-json!`'s, `:schema` included; without one, Spark infers the schema from
-  the strings.
+  "With a DataFrame, parses the JSON strings in the column `col-name` into a
+  DataFrame, as `read-json!` reads a file, with a row for each string. The
+  options are `read-json!`'s, `:schema` included; without one, Spark infers
+  the schema from the strings.
+
+  With only a column, it's Spark's `parse_json` function, which parses a JSON
+  string into a VARIANT, and needs Spark 4.0.
 
   ```clojure
   (g/parse-json events :payload {:schema \"id BIGINT, kind STRING\"})
+  (g/select events {:payload (g/parse-json :payload)})
   ```"
+  ([expr]
+   (function-table/invoke "parse_json" [4 0] 'parse-json [expr]))
   ([dataframe col-name] (parse-json dataframe col-name {}))
   ([dataframe col-name options] (parse-strings :json dataframe col-name options)))
 
@@ -579,7 +586,7 @@
 
   ```clojure
   (g/write-to! dataframe \"lake.events\" {:mode :create :using \"delta\" :partitioned-by [:day]})
-  (g/write-to! dataframe \"lake.events\" {:mode :overwrite :condition (g/=== :day \"2026-10-01\")})
+  (g/write-to! dataframe \"lake.events\" {:mode :overwrite :condition (g/=== :day (g/lit \"2026-10-01\"))})
   ```"
   [dataframe table-name options]
   (let [{:keys [mode using partitioned-by cluster-by table-properties condition]} options

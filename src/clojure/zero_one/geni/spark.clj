@@ -269,7 +269,7 @@
 (defn connect-session
   "A new session on a Spark Connect server, which becomes Spark's default and
   active session. See `g/connect`, which also makes Geni use it."
-  ^SparkSession [url {:keys [configs]}]
+  ^SparkSession [url {:keys [configs keep-classes] :or {keep-classes true}}]
   (when-not (class-named "org.apache.spark.sql.connect.SparkSession")
     (throw (ex-info (str "Spark Connect needs Spark 4's JVM client, "
                          "org.apache.spark/spark-connect-client-jvm_2.13, on the classpath "
@@ -283,6 +283,8 @@
         session (.create builder)]
     (when-let [missing (seq (missing-opens (spark-opens)))]
       (warn! (missing-flags-message missing)))
+    (when keep-classes
+      ((requiring-resolve 'zero-one.geni.core.udf-artifacts/keep-classes!)))
     (SparkSession/setDefaultSession session)
     (SparkSession/setActiveSession session)
     session))
@@ -326,13 +328,16 @@
 
 (defn require-version!
   "Throws an error that names `what` and the Spark version it needs, as
-  `[major minor]`, when the Spark on the classpath is older."
-  [[major minor :as needed] what]
-  (let [version (classpath-version)]
-    (when (and version (neg? (compare (vec (take 2 (version-numbers version))) needed)))
-      (throw (ex-info (format "%s needs Spark %d.%d or later, and this is Spark %s."
-                              what major minor version)
-                      {:needs (str major "." minor) :spark-version version})))))
+  `[major minor]` or `[major minor patch]`, when the Spark on the classpath is
+  older."
+  [needed what]
+  (let [version (classpath-version)
+        needs   (string/join "." needed)]
+    (when (and version
+               (neg? (compare (mapv #(or % 0) (take (count needed) (version-numbers version)))
+                              (vec needed))))
+      (throw (ex-info (format "%s needs Spark %s or later, and this is Spark %s." what needs version)
+                      {:needs needs :spark-version version})))))
 
 (defn- positional-args-misbound?
   "Whether the session's Spark binds more than four positional SQL parameters
@@ -343,45 +348,11 @@
          (or (and (= [major minor] [4 1]) (<= (or patch 0) 3))
              (= [major minor patch] [4 2 0])))))
 
-(def ^:private integer-classes #{Long Integer Short Byte})
-
-(defn- sql-arg-error [message value]
-  (throw (ex-info (str message " Got: " (pr-str value)) {:value value})))
-
 (defn- map-arg-error [value]
-  (sql-arg-error (str "sql takes a map in its args only as a column, such as "
-                      "(g/map (g/lit \"k\") (g/lit 1)), which needs Spark 4.0.")
-                 value))
-
-(defn- sql-array
-  "A Java array of the collection's values, which Spark's `lit` takes as an
-  array literal: whole numbers mixed with decimals become doubles, keywords
-  their names, and a nested collection a nested array."
-  [value]
-  (let [elements (map #(cond
-                         (keyword? %) (name %)
-                         (map? %)     (map-arg-error value)
-                         (coll? %)    (sql-array %)
-                         :else        %)
-                      value)
-        classes  (set (map class (remove nil? elements)))
-        [element-class convert]
-        (cond
-          (empty? classes)
-          (sql-arg-error (str "sql can't tell the element type of a collection in its args that's "
-                              "empty or all nils, so it takes a typed Java array instead, such as "
-                              "(long-array 0).")
-                         value)
-
-          (= 1 (count classes))                                  [(first classes) identity]
-          (every? integer-classes classes)                       [Long long]
-          (every? (into integer-classes [Double Float]) classes) [Double double]
-          (every? (into integer-classes [BigDecimal]) classes)   [BigDecimal bigdec]
-
-          :else
-          (sql-arg-error "sql takes a collection in its args whose values have one type, or are all numbers."
-                         value))]
-    (into-array element-class (map #(some-> % convert) elements))))
+  (throw (ex-info (str "sql takes a map in its args only as a column, such as "
+                       "(g/map (g/lit \"k\") (g/lit 1)), which needs Spark 4.0. Got: "
+                       (pr-str value))
+                  {:value value})))
 
 (defn- sql-arg
   "A value for a SQL parameter: a column, such as a `g/lit`, as it is, a
@@ -392,7 +363,7 @@
     (instance? Column value) value
     (keyword? value)         (name value)
     (map? value)             (map-arg-error value)
-    (coll? value)            (functions/lit (sql-array value))
+    (coll? value)            (functions/lit (interop/->java-array value))
     :else                    value))
 
 (defn sql

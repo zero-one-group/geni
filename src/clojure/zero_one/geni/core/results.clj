@@ -139,11 +139,38 @@
                            twice "\". Rename one first.")
                       {:column twice})))))
 
-(defn- check-schema!
-  "Throws when the result has two columns of one name, or a column of a type
-  that has no tech.ml.dataset equivalent."
-  [fn-name ^StructType schema]
+(defn- output-names
+  "The names that `key-fn` gives the result's columns, checked before a job
+  runs: two columns of one name throw, and so do two columns that `key-fn`
+  gives one name, which would otherwise lose one of them."
+  [fn-name ^StructType schema key-fn]
   (check-names! fn-name schema)
+  (let [names  (mapv #(.name ^StructField %) (.fields schema))
+        output (mapv key-fn names)]
+    (when-let [[k sources] (some (fn [[k pairs]]
+                                   (when (< 1 (count pairs)) [k (mapv second pairs)]))
+                                 (group-by first (map vector output names)))]
+      (throw (ex-info (str fn-name "'s :key-fn gives the columns "
+                           (string/join " and " (map #(str "\"" % "\"") sources))
+                           " one name, " (pr-str k) ". Pass a :key-fn that keeps them apart, "
+                           "or rename one of the columns first.")
+                      {:key k :columns sources})))
+    output))
+
+(defn- check-columns!
+  "Throws for a batch with rows but no columns, since `what`, a dataset or a
+  map of tensors, holds rows only in its columns."
+  [fn-name what row-count n-columns]
+  (when (and (zero? n-columns) (pos? row-count))
+    (throw (ex-info (str fn-name " can't give rows without columns: the result has rows but no "
+                         "columns, and " what " holds rows only in its columns. Select at least "
+                         "one column first.")
+                    {:rows row-count}))))
+
+(defn- check-types!
+  "Throws when the result has a column of a type that has no tech.ml.dataset
+  equivalent."
+  [fn-name ^StructType schema]
   (doseq [^StructField field (.fields schema)]
     (when-let [what (refused (.dataType field))]
       (throw (ex-info (str fn-name " can't convert the column \"" (.name field) "\", which holds "
@@ -195,25 +222,43 @@
                                     :missing (when (seq missing) (int-array missing)))))
                          (map :columns batches))})))
 
+(defn- tmd-columns
+  "Each of the result's columns as a dataset gets it: its name, as `key-fn`
+  gives it, and its Spark type as DDL in its metadata, under
+  `:zero-one.geni/spark-type`, for create-dataframe, except for an MLlib
+  vector, whose DDL is its storage's."
+  [fn-name ^StructType schema key-fn]
+  (mapv (fn [k ^StructField field]
+          {:name     k
+           :metadata (when-not (instance? UserDefinedType (.dataType field))
+                       {:zero-one.geni/spark-type (.sql (.dataType field))})})
+        (output-names fn-name schema key-fn)
+        (.fields schema)))
+
 (defn- ->tmd-dataset
-  "A tech.ml.dataset dataset of a decoded batch. Each column keeps its
-  datatype, even with no values, or none that aren't missing, which
+  "A tech.ml.dataset dataset of a decoded batch, with `columns`, from
+  `tmd-columns`, giving each column's name and metadata. Each column keeps
+  its datatype, even with no values, or none that aren't missing, which
   tech.ml.dataset would otherwise take for booleans."
-  [{:keys [columns]} key-fn]
+  [{:keys [row-count] decoded :columns} fn-name columns]
+  (check-columns! fn-name "a dataset" row-count (count decoded))
   (let [new-dataset  (tmd 'tech.v3.dataset/new-dataset)
         array-buffer (tmd 'tech.v3.datatype.array-buffer/array-buffer)
         ->bitmap     (tmd 'tech.v3.datatype.bitmap/->bitmap)]
     (new-dataset
-     (mapv (fn [{:keys [name datatype data missing]}]
-             {:tech.v3.dataset/name            (key-fn name)
+     (mapv (fn [{:keys [datatype data missing]} {:keys [name metadata]}]
+             {:tech.v3.dataset/name            name
               :tech.v3.dataset/data            (array-buffer data datatype)
               :tech.v3.dataset/missing         (->bitmap (or missing []))
+              :tech.v3.dataset/metadata        metadata
               :tech.v3.dataset/force-datatype? true})
+           decoded
            columns))))
 
 (defn- ->tensors
   "dtype-next tensors of decoded tensor data, by column name."
-  [{:keys [columns]} col-names]
+  [{:keys [row-count columns]} fn-name col-names]
+  (check-columns! fn-name "a map of tensors" row-count (count columns))
   (let [reshape (tmd 'tech.v3.tensor/reshape)]
     (zipmap col-names
             (map (fn [{:keys [data shape]}] (reshape data shape)) columns))))
@@ -240,6 +285,17 @@
               (if (reduced? acc) @acc (recur acc)))
             acc))
         (finally (close)))))
+
+  ;; A seq reads a batch at a time, where Clojure's seq of an Iterable would
+  ;; read 32 ahead.
+  clojure.lang.Seqable
+  (seq [this]
+    (let [^Iterator iterator (.iterator ^Iterable this)
+          step               (fn step []
+                               (lazy-seq
+                                (when (.hasNext iterator)
+                                  (cons (.next iterator) (step)))))]
+      (seq (step))))
 
   Iterable
   (iterator [_]
@@ -297,20 +353,25 @@
   year-month interval a Period and BINARY a byte array. An array becomes a
   vector, and a struct or a map a map, with keyword keys for a struct's
   fields. VARIANT becomes Spark's VariantVal, and an MLlib vector what
-  `collect` gives. A calendar interval, a geometry or a geography throws, as
-  do two columns of one name.
+  `collect` gives. Each column keeps its Spark type, as DDL, in its metadata
+  under `:zero-one.geni/spark-type`, which `create-dataframe` uses.
+
+  A calendar interval, a geometry or a geography throws, as do two columns
+  of one name, or two that `:key-fn` names alike, before a job runs. So do
+  rows without columns, which a dataset can't hold.
 
   Over Spark Connect, it needs `org.apache.arrow/arrow-vector` and
   `arrow-memory-netty` on the classpath, since the client's Arrow is shaded."
   ([dataframe] (to-tmd dataframe {}))
   ([dataframe {:keys [key-fn] :or {key-fn keyword}}]
-   (let [schema (.schema dataframe)
-         _      (check-schema! "to-tmd" schema)
-         decode (reader "decode")
-         _      (tmd 'tech.v3.dataset/new-dataset)]
+   (let [schema  (.schema dataframe)
+         _       (check-types! "to-tmd" schema)
+         columns (tmd-columns "to-tmd" schema key-fn)
+         decode  (reader "decode")
+         _       (tmd 'tech.v3.dataset/new-dataset)]
      (-> (mapcat #(decode % schema) (all-streams dataframe))
          concat-batches
-         (->tmd-dataset key-fn)))))
+         (->tmd-dataset "to-tmd" columns)))))
 
 (defn stream
   "The result of `dataframe` as tech.ml.dataset datasets, one per Arrow batch
@@ -318,8 +379,9 @@
 
   Returns a reducible, so that `reduce`, `transduce`, `into` and `run!` read
   the batches as they go, and stop reading when they're done, stop early or
-  throw. It's also Iterable, for `seq`, `first` and `doseq`, which can stop
-  before the end, so close it with `with-open` for those:
+  throw. It's also seqable, for `seq`, `first` and `doseq`, which read a
+  batch at a time but can stop before the end, so close it with `with-open`
+  for those:
 
   ```clojure
   (transduce (map tech.v3.dataset/row-count) + (g/stream df))
@@ -333,15 +395,16 @@
   stopping releases the execution."
   ([dataframe] (stream dataframe {}))
   ([dataframe {:keys [key-fn] :or {key-fn keyword}}]
-   (let [schema (.schema dataframe)
-         _      (check-schema! "stream" schema)
-         decode (reader "decode")
-         _      (tmd 'tech.v3.dataset/new-dataset)]
+   (let [schema  (.schema dataframe)
+         _       (check-types! "stream" schema)
+         columns (tmd-columns "stream" schema key-fn)
+         decode  (reader "decode")
+         _       (tmd 'tech.v3.dataset/new-dataset)]
      (batches dataframe :lazy
               (fn [ipc]
                 (->> (decode ipc schema)
                      (filter #(pos? (:row-count %)))
-                     (map #(->tmd-dataset % key-fn))))))))
+                     (map #(->tmd-dataset % "stream" columns))))))))
 
 (defn- tensor-columns
   "The result's column names and indices for to-tensors and stream-tensors,
@@ -349,10 +412,9 @@
   [fn-name dataframe columns key-fn]
   (let [dataframe (if (seq columns) (.select dataframe (->col-array columns)) dataframe)
         schema    (.schema dataframe)]
-    (check-names! fn-name schema)
     {:dataframe dataframe
      :schema    schema
-     :names     (mapv #(key-fn (.name ^StructField %)) (.fields schema))
+     :names     (output-names fn-name schema key-fn)
      :indices   (vec (range (count (.fields schema))))}))
 
 (defn to-tensors
@@ -361,11 +423,13 @@
   `:columns` selects the columns first. The whole result comes to the
   driver; `stream-tensors` is for one batch at a time.
 
-  A numeric column with no nulls becomes a tensor of shape [rows], and a
-  column of arrays of numbers, or of dense MLlib vectors, all of one length,
-  a tensor of shape [rows length]. Anything else throws, naming the column:
-  nulls, strings, booleans, arrays of different lengths and sparse vectors.
-  So does an empty result.
+  A column of integers (TINYINT, SMALLINT, INT or BIGINT) or floating-point
+  numbers (FLOAT or DOUBLE) with no nulls becomes a tensor of shape [rows],
+  and a column of arrays of those, or of dense MLlib vectors, all of one
+  length, a tensor of shape [rows length]. Anything else throws, naming the
+  column: nulls, DECIMALs, strings, booleans, arrays of different lengths
+  and sparse vectors. So do an empty result, rows without columns, and two
+  columns that `:key-fn` names alike.
 
   ```clojure
   (g/to-tensors scored {:columns [:features :label]})
@@ -386,18 +450,20 @@
      (when (empty? decoded)
        (throw (ex-info "to-tensors needs at least one row, and the result is empty." {})))
      (->tensors
-      {:columns (apply mapv
-                       (fn [^StructField field & columns]
-                         ;; Each batch checks its own rows, so this checks
-                         ;; the batches against each other.
-                         (let [widths (set (map #(vec (rest (:shape %))) columns))]
-                           (when (< 1 (count widths))
-                             ((reader "refuse!") (.name field) ", whose arrays aren't all one length"))
-                           {:data  (typed-array-concat (map :data columns))
-                            :shape (into [(reduce + (map #(first (:shape %)) columns))]
-                                         (first widths))}))
-                       (.fields ^StructType schema)
-                       (map :columns decoded))}
+      {:row-count (reduce + (map :row-count decoded))
+       :columns   (apply mapv
+                         (fn [^StructField field & columns]
+                           ;; Each batch checks its own rows, so this checks
+                           ;; the batches against each other.
+                           (let [widths (set (map #(vec (rest (:shape %))) columns))]
+                             (when (< 1 (count widths))
+                               ((reader "refuse!") (.name field) ", whose arrays aren't all one length"))
+                             {:data  (typed-array-concat (map :data columns))
+                              :shape (into [(reduce + (map #(first (:shape %)) columns))]
+                                           (first widths))}))
+                         (.fields ^StructType schema)
+                         (map :columns decoded))}
+      "to-tensors"
       names))))
 
 (defn stream-tensors
@@ -406,8 +472,8 @@
   batch's tensors are its own: stacking them is up to the caller.
 
   Returns a reducible, as `stream` does, which stops reading when a reduce is
-  done, stops early or throws. It's Iterable too, so close it with
-  `with-open` when reading it as a seq."
+  done, stops early or throws. It's seqable too, a batch at a time, so close
+  it with `with-open` when reading it as a seq."
   ([dataframe] (stream-tensors dataframe {}))
   ([dataframe {:keys [columns key-fn] :or {key-fn keyword}}]
    (let [{:keys [dataframe schema names indices]} (tensor-columns "stream-tensors" dataframe columns key-fn)
@@ -417,7 +483,7 @@
               (fn [ipc]
                 (->> (decode ipc schema indices "stream-tensors")
                      (filter #(pos? (:row-count %)))
-                     (map #(->tensors % names))))))))
+                     (map #(->tensors % "stream-tensors" names))))))))
 
 (defn- glimpse-value
   "A value as glimpse shows it: Clojure's printed form for strings, numbers,

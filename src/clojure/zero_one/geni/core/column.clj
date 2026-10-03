@@ -20,9 +20,12 @@
                          functions)))
 
 ;;;; Coercions
-(defn lit [arg]
-  (let [normed-arg (if (coll? arg) (into-array (type (first arg)) arg) arg)]
-    (functions/lit normed-arg)))
+(defn lit
+  "Returns a column of the literal value `arg`. A collection becomes an array,
+  as `interop/->java-array` describes: of doubles when it mixes whole numbers
+  and decimals, and of arrays when it nests."
+  [arg]
+  (functions/lit (if (and (coll? arg) (not (map? arg))) (interop/->java-array arg) arg)))
 
 (defmulti col (fn [head & _] (class head)))
 (defmethod col :default [x & _] (lit x))

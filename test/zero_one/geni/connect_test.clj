@@ -69,10 +69,6 @@
   (testing "create-spark-session points to g/connect"
     (is (thrown-with-msg? ExceptionInfo #"g/connect"
                           (g/create-spark-session {}))))
-  (testing "UDFs say that they need classic Spark"
-    (is (thrown-with-msg? ExceptionInfo #"UDFs need classic Spark" (g/udf inc :long)))
-    (is (thrown-with-msg? ExceptionInfo #"UDFs need classic Spark"
-                          (g/register-udf! "plus_one" inc :long))))
   (testing "MLlib's vectors and Geni's Arrow export name what they need"
     (is (thrown-with-msg? ExceptionInfo #"spark-mllib" (g/dense 1.0 2.0)))
     (is (thrown-with-msg? ExceptionInfo #"spark-mllib" (g/corr (g/range 3) :id)))

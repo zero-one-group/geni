@@ -726,8 +726,10 @@
                           (g/sql @spark "SELECT :a" {:a []})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"one type"
                           (g/sql @spark "SELECT :a" {:a [1 "x"]})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"can't hold maps"
+                          (g/sql @spark "SELECT :a" {:a [{:k 1}]})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"map in its args only as a column"
-                          (g/sql @spark "SELECT :a" {:a [{:k 1}]})))))
+                          (g/sql @spark "SELECT :a" {:a {:k 1}})))))
 
 (defn- spark-4? []
   (clojure.string/starts-with? (.version @spark) "4."))

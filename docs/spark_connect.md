@@ -86,6 +86,21 @@ Data from the client goes to the server with the query:
 
 Spark Connect analyses a query when it needs its schema or its rows, rather than when it's built. So a typo in a column name shows up at `g/collect`, not at `g/select`.
 
+## UDFs
+
+[Clojure UDFs](udfs.md) work over Spark Connect too. The server runs them, so Geni uploads what a UDF needs to the session, once: Clojure's and Geni's jars, and the code of the namespaces that the function uses.
+
+```clojure
+(def plus-one (g/udf inc :long))
+
+(-> (g/range 3)
+    (g/select {:x (plus-one :id)})
+    (g/collect-col :x))
+;; => (1 2 3)
+```
+
+A function defined at the REPL needs its class on the server, so `g/connect` has Clojure keep the classes that it compiles from then on, in a temporary directory, unless it's given `{:keep-classes false}`. Define such a function after `g/connect`, or reload its namespace then. A var, such as `#'my.app/grade`, goes by name, and the server loads its namespace. The first UDF on a session takes a few seconds, while the server loads Clojure and Geni.
+
 ## What needs classic Spark
 
 A Spark Connect session has no `SparkContext`, and the client has no MLlib. So these need classic Spark:
@@ -93,7 +108,6 @@ A Spark Connect session has no `SparkContext`, and the client has no MLlib. So t
 - RDDs: `g/rdd`, `g/partitions`, and the `zero-one.geni.rdd` namespace, which doesn't load without classic Spark;
 - the SparkContext functions, such as `g/java-spark-context`, `g/app-name` and `g/default-parallelism`;
 - MLlib: the `zero-one.geni.ml` namespace, which doesn't load without classic Spark either, and MLlib's vectors, such as `g/dense`, `g/sparse`, `g/corr` on a vector column, and LIBSVM's features;
-- [Clojure UDFs](udfs.md), `g/udf` and `g/register-udf!`, since Geni doesn't yet upload what a Clojure function needs to the server;
 - `g/sample-by` with a struct column, since the client can't send a struct as a literal.
 
 The functions throw an error that says so:

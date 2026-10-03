@@ -94,8 +94,8 @@ The three shortcuts infer each column's type from its first value that isn't nil
 | Value | Spark type |
 |---|---|
 | a boolean, a number such as `1` or `1.0`, or a string | the matching type, such as `LongType` for `1` |
-| a `BigDecimal`, such as `1.5M` | `DecimalType(38,18)`, Spark's default decimal |
-| a `BigInt` or a `BigInteger`, such as `1N` | `DecimalType(38,0)` |
+| a `BigDecimal`, such as `1.5M` | `DecimalType(38,18)`, Spark's default decimal, when the column's values fit it |
+| a `BigInt` or a `BigInteger`, such as `1N` | `DecimalType(38,0)`, when the column's values fit it |
 | a `java.time.LocalDate` or a `java.sql.Date` | `DateType` |
 | a `java.time.Instant`, a `java.sql.Timestamp` or a `java.util.Date`, such as `#inst "2026-10-01"` | `TimestampType` |
 | a `java.time.LocalDateTime` | `TimestampNTZType` |
@@ -118,4 +118,6 @@ The three shortcuts infer each column's type from its first value that isn't nil
 
 A value of any other class, such as the ratio `1/3`, throws an error that names its column, so convert it first.
 
-`g/create-dataframe` also takes a [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) dataset, whose column datatypes give the Spark types, and whose columns of other objects get theirs inferred the same way. The [collecting guide](collect.md#back-to-spark) has the details.
+A decimal column's type has room for all its values, at the top or inside arrays and structs. It has 38 digits, Spark's most, with 18 of them after the point for BigDecimals and none for whole numbers when the values fit that, and otherwise as many after the point as the values have, leaving room for their digits before it. A column that no DECIMAL holds, such as one with a 30-digit whole number and a number with 10 digits after the point, throws an error that names it.
+
+`g/create-dataframe` also takes a [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) dataset, whose columns get their Spark types from the metadata that `g/to-tmd` keeps, from their datatypes, or from `:schema`, and whose columns of other objects get theirs inferred the same way. The [collecting guide](collect.md#back-to-spark) has the details.

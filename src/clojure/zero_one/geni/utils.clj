@@ -96,20 +96,28 @@
              (fn [_ _ _ value]
                (alter-var-root dst (constantly value)))))
 
+(defn import-var
+  "Interns `alias` in the current namespace as a copy of the var `src`, with
+  its docstring and arglists, a macro when `src` is, and following `src`.
+  Returns the new var."
+  [^clojure.lang.Var src alias]
+  (let [dst (intern *ns* alias @src)]
+    (alter-meta! dst merge (dissoc (meta src) :name :ns))
+    (when (.isMacro src)
+      (.setMacro dst))
+    (link-vars src dst)
+    dst))
+
 (defmacro import-fn
   "Defines `alias` in the current namespace as a copy of the var `sym`,
-  keeping its docstring and arglists."
+  keeping its docstring and arglists. It's one call, so that a namespace
+  that imports hundreds of vars, as `zero-one.geni.core` does, still fits the
+  JVM's limit on a method's size when it's compiled ahead of time."
   [sym alias]
   (let [^clojure.lang.Var src (resolve sym)]
     (when-not (var? src)
       (throw (IllegalArgumentException. (str "Can't import " sym))))
-    (let [src-sym (symbol (str (.-ns src)) (str (.-sym src)))]
-      `(do
-         (def ~alias @(var ~src-sym))
-         (alter-meta! (var ~alias) merge (dissoc (meta (var ~src-sym)) :name :ns))
-         ~@(when (:macro (meta src)) [`(.setMacro (var ~alias))])
-         (link-vars (var ~src-sym) (var ~alias))
-         (var ~alias)))))
+    `(import-var (var ~(symbol (str (.-ns src)) (str (.-sym src)))) '~alias)))
 
 (defmacro import-vars
   "Imports vars under their own names: (import-vars [ns a b] [other-ns c])."

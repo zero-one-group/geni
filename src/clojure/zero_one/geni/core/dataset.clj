@@ -10,6 +10,7 @@
    [clojure.walk :refer [keywordize-keys]]
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.function-table :as function-table]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.spark :as spark]
@@ -706,8 +707,25 @@
 (defn might-contain [bloom item] (.mightContain bloom item))
 (defn put [bloom item] (.put bloom item))
 
-(defn count-min-sketch [dataframe expr eps-or-depth confidence-or-width seed]
-  (-> dataframe .stat (.countMinSketch (->column expr) eps-or-depth confidence-or-width seed)))
+(defn count-min-sketch
+  "With a DataFrame, builds a count-min sketch of the column `expr` on the
+  driver, as Spark's `DataFrameStatFunctions.countMinSketch` does, for `add`,
+  `estimate-count` and the like.
+
+  With a column first, it's Spark's `count_min_sketch` aggregate function,
+  which returns the sketch, serialised, as a binary column: `eps`, the
+  relative error, `confidence` and `seed` are columns or literals.
+
+  ```clojure
+  (g/count-min-sketch dataframe :id 0.01 0.95 42)
+  (g/agg dataframe {:sketch (g/count-min-sketch :id 0.01 0.95 42)})
+  ```"
+  ([expr eps confidence]
+   (function-table/invoke "count_min_sketch" [4 0] 'count-min-sketch [expr eps confidence]))
+  ([expr eps confidence seed]
+   (function-table/invoke "count_min_sketch" nil 'count-min-sketch [expr eps confidence seed]))
+  ([dataframe expr eps-or-depth confidence-or-width seed]
+   (-> dataframe .stat (.countMinSketch (->column expr) eps-or-depth confidence-or-width seed))))
 (defn add
   ([cms item] (.add cms item))
   ([cms item cnt] (.add cms item cnt)))

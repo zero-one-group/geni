@@ -58,6 +58,16 @@ The tests run with Spark's code generation off (see the `:test` alias), which ma
 
 On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64, the suite over Spark Connect, and `xgb-tests` on `:spark` (x64 and arm64) and `:spark-4`. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
 
+## Spark's functions
+
+Most of Spark's SQL functions are rows of the table at the end of `src/clojure/zero_one/geni/core/functions.clj`: a name, its argument lists, and `:since` for one that Spark 4.0 or later added. A new one also needs an example in `test/zero_one/geni/spark_functions_test.clj`, which runs each function against the same call in SQL, and its docstring in `resources/spark-function-docs.edn`, which `zero-one.geni.function-docs` writes from Spark's `functions.scala` at the tag that `:spark-4` pins:
+
+```bash
+clojure -X:spark:test zero-one.geni.function-docs/write! :scala '"../spark/sql/api/src/main/scala/org/apache/spark/sql/functions.scala"'
+```
+
+The same test file's `coverage-test` prints, to stderr, the functions of the Spark on the classpath that Geni doesn't have yet, so the weekly canary shows the ones that a newer Spark adds.
+
 ## The project template
 
 `template/` is the deps-new template that the README shows, with its files under `template/resources/zero_one/geni/`. `template_test` checks its Spark setups against `deps.edn` and its `:geni/version` against `build.clj`, so a release bumps that too. The `Template` workflow makes a project from it when it changes, runs the project's test, and runs its uberjar with `spark-submit`.

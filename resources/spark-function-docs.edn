@@ -1,0 +1,609 @@
+{"acosh" "Returns inverse hyperbolic cosine of `e`.",
+ "aes_decrypt"
+ "Returns a decrypted value of `input` using AES in `mode` with `padding`. Key lengths of 16,\n24 and 32 bits are supported. Supported combinations of (`mode`, `padding`) are ('ECB',\n'PKCS'), ('GCM', 'NONE') and ('CBC', 'PKCS'). Optional additional authenticated data (AAD) is\nonly supported for GCM. If provided for encryption, the identical AAD value must be provided\nfor decryption. The default mode is GCM.\n\n`input`: The binary value to decrypt.\n`key`: The passphrase to use to decrypt the data.\n`mode`: Specifies which block cipher mode should be used to decrypt messages. Valid modes: ECB, GCM, CBC.\n`padding`: Specifies how to pad messages whose length is not a multiple of the block size. Valid values: PKCS, NONE, DEFAULT. The DEFAULT padding means PKCS for ECB, NONE for GCM and PKCS for CBC.\n`aad`: Optional additional authenticated data. Only supported for GCM mode. This can be any free-form input and must be provided for both encryption and decryption.",
+ "aes_encrypt"
+ "Returns an encrypted value of `input` using AES in given `mode` with the specified `padding`.\nKey lengths of 16, 24 and 32 bits are supported. Supported combinations of (`mode`,\n`padding`) are ('ECB', 'PKCS'), ('GCM', 'NONE') and ('CBC', 'PKCS'). Optional initialization\nvectors (IVs) are only supported for CBC and GCM modes. These must be 16 bytes for CBC and 12\nbytes for GCM. If not provided, a random vector will be generated and prepended to the\noutput. Optional additional authenticated data (AAD) is only supported for GCM. If provided\nfor encryption, the identical AAD value must be provided for decryption. The default mode is\nGCM.\n\n`input`: The binary value to encrypt.\n`key`: The passphrase to use to encrypt the data.\n`mode`: Specifies which block cipher mode should be used to encrypt messages. Valid modes: ECB, GCM, CBC.\n`padding`: Specifies how to pad messages whose length is not a multiple of the block size. Valid values: PKCS, NONE, DEFAULT. The DEFAULT padding means PKCS for ECB, NONE for GCM and PKCS for CBC.\n`iv`: Optional initialization vector. Only supported for CBC and GCM modes. Valid values: None or \"\". 16-byte array for CBC mode. 12-byte array for GCM mode.\n`aad`: Optional additional authenticated data. Only supported for GCM mode. This can be any free-form input and must be provided for both encryption and decryption.",
+ "any"
+ "Aggregate function: returns true if at least one value of `e` is true.",
+ "any_value"
+ "Aggregate function: returns some value of `e` for a group of rows.",
+ "approx_percentile"
+ "Aggregate function: returns the approximate `percentile` of the numeric column `col` which is\nthe smallest value in the ordered `col` values (sorted from least to greatest) such that no\nmore than `percentage` of `col` values is less than the value or equal to that value.\n\nIf percentage is an array, each value must be between 0.0 and 1.0. If it is a single floating\npoint value, it must be between 0.0 and 1.0.\n\nThe accuracy parameter is a positive numeric literal which controls approximation accuracy at\nthe cost of memory. Higher value of accuracy yields better accuracy, 1.0/accuracy is the\nrelative error of the approximation.",
+ "array_agg"
+ "Aggregate function: returns a list of objects with duplicates.\n\nThe function is non-deterministic because the order of collected results depends on the\n  order of the rows which may be non-deterministic after a shuffle.",
+ "array_append"
+ "Returns an ARRAY containing all elements from the source ARRAY as well as the new element.\nThe new element/column is located at end of the ARRAY.",
+ "array_compact" "Remove all null elements from the given array.",
+ "array_insert"
+ "Adds an item into a given array at a specified position",
+ "array_prepend"
+ "Returns an array containing value as well as all elements from array. The new element is\npositioned at the beginning of the array.",
+ "array_size"
+ "Returns the total number of elements in the array. The function returns null for null input.",
+ "asinh" "Returns inverse hyperbolic sine of `e`.",
+ "assert_true"
+ "Returns null if the condition is true, and throws an exception otherwise.",
+ "atanh" "Returns inverse hyperbolic tangent of `e`.",
+ "bit_and"
+ "Aggregate function: returns the bitwise AND of all non-null input values, or null if none.",
+ "bit_count"
+ "Returns the number of bits that are set in the argument expr as an unsigned 64-bit integer,\nor NULL if the argument is NULL.",
+ "bit_get"
+ "Returns the value of the bit (0 or 1) at the specified position. The positions are numbered\nfrom right to left, starting at zero. The position argument cannot be negative.",
+ "bit_length"
+ "Calculates the bit length for the specified string column.",
+ "bit_or"
+ "Aggregate function: returns the bitwise OR of all non-null input values, or null if none.",
+ "bit_xor"
+ "Aggregate function: returns the bitwise XOR of all non-null input values, or null if none.",
+ "bitmap_and_agg"
+ "Returns a bitmap that is the bitwise AND of all of the bitmaps from the input column. The\ninput column should be bitmaps created from bitmap_construct_agg().",
+ "bitmap_bit_position"
+ "Returns the bucket number for the given input column.",
+ "bitmap_bucket_number"
+ "Returns the bit position for the given input column.",
+ "bitmap_construct_agg"
+ "Returns a bitmap with the positions of the bits set from all the values from the input\ncolumn. The input column will most likely be bitmap_bit_position().",
+ "bitmap_count" "Returns the number of set bits in the input bitmap.",
+ "bitmap_or_agg"
+ "Returns a bitmap that is the bitwise OR of all of the bitmaps from the input column. The\ninput column should be bitmaps created from bitmap_construct_agg().",
+ "bool_and"
+ "Aggregate function: returns true if all values of `e` are true.",
+ "bool_or"
+ "Aggregate function: returns true if at least one value of `e` is true.",
+ "bround"
+ "Returns the value of the column `e` rounded to 0 decimal places with HALF_EVEN round mode.",
+ "btrim"
+ "Removes the leading and trailing space characters from `str`.",
+ "bucket"
+ "(Java-specific) A transform for any type that partitions by a hash of the input column.",
+ "call_function"
+ "Call a SQL function.\n\n`func-name`: function name that follows the SQL identifier syntax (can be quoted, can be qualified)\n`cols`: the expression parameters of function",
+ "call_udf" "Call an user-defined function. Example:",
+ "cardinality"
+ "Returns length of array or map. This is an alias of `size` function.\n\nThis function returns -1 for null input only if spark.sql.ansi.enabled is false and\nspark.sql.legacy.sizeOfNull is true. Otherwise, it returns null for null input. With the\ndefault settings, the function returns null for null input.",
+ "ceil"
+ "Computes the ceiling of the given value of `e` to `scale` decimal places.",
+ "ceiling"
+ "Computes the ceiling of the given value of `e` to `scale` decimal places.",
+ "char"
+ "Returns the ASCII character having the binary equivalent to `n`. If n is larger than 256 the\nresult is equivalent to char(n % 256)",
+ "char_length"
+ "Returns the character length of string data or number of bytes of binary data. The length of\nstring data includes the trailing spaces. The length of binary data includes binary zeros.",
+ "character_length"
+ "Returns the character length of string data or number of bytes of binary data. The length of\nstring data includes the trailing spaces. The length of binary data includes binary zeros.",
+ "chr"
+ "Returns the ASCII character having the binary equivalent to `n`. If n is larger than 256 the\nresult is equivalent to chr(n % 256)",
+ "collate" "Marks a given column with specified collation.",
+ "collation" "Returns the collation name of a given column.",
+ "convert_timezone"
+ "Converts the timestamp without time zone `sourceTs` from the `sourceTz` time zone to\n`targetTz`.\n\n`source-tz`: the time zone for the input timestamp. If it is missed, the current session time zone is used as the source time zone.\n`target-tz`: the time zone to which the input timestamp should be converted.\n`source-ts`: a timestamp without time zone.",
+ "cot" "Returns cotangent of the angle.\n\n`e`: angle in radians",
+ "count_if"
+ "Aggregate function: returns the number of `TRUE` values for the expression.",
+ "csc" "Returns cosecant of the angle.\n\n`e`: angle in radians",
+ "curdate"
+ "Returns the current date at the start of query evaluation as a date column. All calls of\ncurrent_date within the same query return the same value.",
+ "current_catalog" "Returns the current catalog.",
+ "current_database" "Returns the current database.",
+ "current_path"
+ "Returns the current SQL path as a comma-separated list of qualified schema names.",
+ "current_schema" "Returns the current schema.",
+ "current_time"
+ "Returns the current time at the start of query evaluation. Note that the result will contain\n6 fractional digits of seconds.\n\n`precision`: An integer literal in the range [0..6], indicating how many fractional digits of seconds to include in the result.",
+ "current_timezone" "Returns the current session local timezone.",
+ "current_user" "Returns the user name of current execution context.",
+ "date_from_unix_date"
+ "Create date from the number of `days` since 1970-01-01.",
+ "date_part"
+ "Extracts a part of the date/timestamp or interval source.\n\n`field`: selects which part of the source should be extracted, and supported string values are as same as the fields of the equivalent function `extract`.\n`source`: a date/timestamp or interval column from where `field` should be extracted.",
+ "dateadd"
+ "Returns the date that is `days` days after `start`\n\n`start`: A date, timestamp or string. If a string, the data must be in a format that can be cast to a date, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`\n`days`: A column of the number of days to add to `start`, can be negative to subtract days",
+ "datepart"
+ "Extracts a part of the date/timestamp or interval source.\n\n`field`: selects which part of the source should be extracted, and supported string values are as same as the fields of the equivalent function `EXTRACT`.\n`source`: a date/timestamp or interval column from where `field` should be extracted.",
+ "day"
+ "Extracts the day of the month as an integer from a given date/timestamp/string.",
+ "dayname"
+ "Extracts the three-letter abbreviated day name from a given date/timestamp/string.",
+ "days"
+ "(Java-specific) A transform for timestamps and dates to partition data into days.",
+ "e" "Returns Euler's number.",
+ "elt"
+ "Returns the `n`-th input, e.g., returns `input2` when `n` is 2. The function returns NULL if\nthe index exceeds the length of the array and `spark.sql.ansi.enabled` is set to false. If\n`spark.sql.ansi.enabled` is set to true, it throws ArrayIndexOutOfBoundsException for invalid\nindices.",
+ "endswith"
+ "Returns a boolean. The value is True if str ends with suffix. Returns NULL if either input\nexpression is NULL. Otherwise, returns False. Both str or suffix must be of STRING or BINARY\ntype.",
+ "equal_null"
+ "Returns same result as the EQUAL(=) operator for non-null operands, but returns true if both\nare null, false if one of the them is null.",
+ "every"
+ "Aggregate function: returns true if all values of `e` are true.",
+ "explode_outer"
+ "Creates a new row for each element in the given array or map column. Uses the default column\nname `col` for elements in the array and `key` and `value` for elements in the map unless\nspecified otherwise. Unlike explode, if the array/map is null or empty then null is produced.",
+ "extract"
+ "Extracts a part of the date/timestamp or interval source.\n\n`field`: selects which part of the source should be extracted.\n`source`: a date/timestamp or interval column from where `field` should be extracted.",
+ "find_in_set"
+ "Returns the index (1-based) of the given string (`str`) in the comma-delimited list\n(`strArray`). Returns 0, if the string was not found or if the given string (`str`) contains\na comma.",
+ "first_value"
+ "Aggregate function: returns the first value in a group.\n\nThe function is non-deterministic because its results depends on the order of the rows\n  which may be non-deterministic after a shuffle.",
+ "floor"
+ "Computes the floor of the given value of `e` to `scale` decimal places.",
+ "from_utc_timestamp"
+ "Given a timestamp like '2017-07-14 02:40:00.0', interprets it as a time in UTC, and renders\nthat time as a timestamp in the given time zone. For example, 'GMT+1' would yield '2017-07-14\n03:40:00.0'.\n\n`ts`: A date, timestamp or string. If a string, the data must be in a format that can be cast to a timestamp, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`\n`tz`: A string detailing the time zone ID that the input should be adjusted to. It should be in the format of either region-based zone IDs or zone offsets. Region IDs must have the form 'area/city', such as 'America/Los_Angeles'. Zone offsets must be in the format '(+|-)HH:mm', for example '-08:00' or '+01:00'. Also 'UTC' and 'Z' are supported as aliases of '+00:00'. Other short names are not recommended to use because they can be ambiguous.",
+ "from_xml"
+ "Parses a column containing a XML string into the data type corresponding to the specified\nschema. Returns `null`, in the case of an unparseable string.\n\n`e`: a string column containing XML data.\n`schema`: the schema to use when parsing the XML string\n`options`: options to control how the XML is parsed. accepts the same options and the XML data source. See <a href= \"https://spark.apache.org/docs/latest/sql-data-sources-xml.html#data-source-option\"> Data Source Option</a> in the version you use.",
+ "get"
+ "Returns element of array at given (0-based) index. If the index points outside of the array\nboundaries, then this function returns NULL.",
+ "get_json_object"
+ "Extracts json object from a json string based on json path specified, and returns json string\nof the extracted json object. It will return null if the input json string is invalid.",
+ "getbit"
+ "Returns the value of the bit (0 or 1) at the specified position. The positions are numbered\nfrom right to left, starting at zero. The position argument cannot be negative.",
+ "histogram_numeric"
+ "Aggregate function: computes a histogram on numeric 'expr' using nb bins. The return value is\nan array of (x,y) pairs representing the centers of the histogram's bins. As the value of\n'nb' is increased, the histogram approximation gets finer-grained, but may yield artifacts\naround outliers. In practice, 20-40 histogram bins appear to work well, with more bins being\nrequired for skewed or smaller datasets. Note that this function creates a histogram with\nnon-uniform bin widths. It offers no guarantees in terms of the mean-squared-error of the\nhistogram, but in practice is comparable to the histograms produced by the R/S-Plus\nstatistical computing packages. Note: the output type of the 'x' field in the return value is\npropagated from the input value consumed in the aggregate function.",
+ "hll_sketch_agg"
+ "Aggregate function: returns the updatable binary representation of the Datasketches HllSketch\nconfigured with lgConfigK arg.",
+ "hll_sketch_estimate"
+ "Returns the estimated number of unique values given the binary representation of a\nDatasketches HllSketch.",
+ "hll_union"
+ "Merges two binary representations of Datasketches HllSketch objects, using a Datasketches\nUnion object. Throws an exception if sketches have different lgConfigK values.",
+ "hll_union_agg"
+ "Aggregate function: returns the updatable binary representation of the Datasketches\nHllSketch, generated by merging previously created Datasketches HllSketch instances via a\nDatasketches Union instance. Throws an exception if sketches have different lgConfigK values\nand allowDifferentLgConfigK is set to false.",
+ "hours"
+ "(Java-specific) A transform for timestamps to partition data into hours.",
+ "ifnull" "Returns `col2` if `col1` is null, or `col1` otherwise.",
+ "inline"
+ "Creates a new row for each element in the given array of structs.",
+ "inline_outer"
+ "Creates a new row for each element in the given array of structs. Unlike inline, if the array\nis null or empty then null is produced for each nested column.",
+ "input_file_block_length"
+ "Returns the length of the block being read, or -1 if not available.",
+ "input_file_block_start"
+ "Returns the start offset of the block being read, or -1 if not available.",
+ "is_valid_utf8"
+ "Returns true if the input is a valid UTF-8 string, otherwise returns false.",
+ "is_valid_variant"
+ "Check if a variant value is valid. Returns true if the variant is valid, false if it is\nmalformed, and NULL if the input is NULL.\n\n`v`: a variant column.",
+ "is_variant_null"
+ "Check if a variant value is a variant null. Returns true if and only if the input is a\nvariant null and false otherwise (including in the case of SQL NULL).\n\n`v`: a variant column.",
+ "isnan" "Return true iff the column is NaN.",
+ "isnotnull" "Returns true if `col` is not null, or false otherwise.",
+ "isnull" "Return true iff the column is null.",
+ "java_method" "Calls a method with reflection.",
+ "json_array_length"
+ "Returns the number of elements in the outermost JSON array. `NULL` is returned in case of any\nother valid JSON string, `NULL` or an invalid JSON.",
+ "json_object_keys"
+ "Returns all the keys of the outermost JSON object as an array. If a valid JSON object is\ngiven, all the keys of the outermost object will be returned as an array. If it is any other\nvalid JSON string, an invalid JSON string or an empty string, the function returns null.",
+ "json_tuple"
+ "Creates a new row for a json column according to the given field names.",
+ "kll_merge_agg_bigint"
+ "Aggregate function: merges binary KllLongsSketch representations and returns the merged\nsketch. The optional k parameter controls the size and accuracy of the merged sketch (range\n8-65535). If k is not specified, the merged sketch adopts the k value from the first input\nsketch.",
+ "kll_merge_agg_double"
+ "Aggregate function: merges binary KllDoublesSketch representations and returns merged sketch.\nThe optional k parameter controls the size and accuracy of the merged sketch (range 8-65535).\nIf k is not specified, the merged sketch adopts the k value from the first input sketch.",
+ "kll_merge_agg_float"
+ "Aggregate function: merges binary KllFloatsSketch representations and returns merged sketch.\nThe optional k parameter controls the size and accuracy of the merged sketch (range 8-65535).\nIf k is not specified, the merged sketch adopts the k value from the first input sketch.",
+ "kll_sketch_agg_bigint"
+ "Aggregate function: returns the compact binary representation of the Datasketches\nKllLongsSketch built with the values in the input column. The optional k parameter controls\nthe size and accuracy of the sketch (default 200, range 8-65535).",
+ "kll_sketch_agg_double"
+ "Aggregate function: returns the compact binary representation of the Datasketches\nKllDoublesSketch built with the values in the input column. The optional k parameter controls\nthe size and accuracy of the sketch (default 200, range 8-65535).",
+ "kll_sketch_agg_float"
+ "Aggregate function: returns the compact binary representation of the Datasketches\nKllFloatsSketch built with the values in the input column. The optional k parameter controls\nthe size and accuracy of the sketch (default 200, range 8-65535).",
+ "kll_sketch_get_n_bigint"
+ "Returns the number of items collected in the KLL bigint sketch.",
+ "kll_sketch_get_n_double"
+ "Returns the number of items collected in the KLL double sketch.",
+ "kll_sketch_get_n_float"
+ "Returns the number of items collected in the KLL float sketch.",
+ "kll_sketch_get_quantile_bigint"
+ "Extracts a quantile value from a KLL bigint sketch given an input rank value. The rank can be\na single value or an array.",
+ "kll_sketch_get_quantile_double"
+ "Extracts a quantile value from a KLL double sketch given an input rank value. The rank can be\na single value or an array.",
+ "kll_sketch_get_quantile_float"
+ "Extracts a quantile value from a KLL float sketch given an input rank value. The rank can be\na single value or an array.",
+ "kll_sketch_get_rank_bigint"
+ "Extracts a rank value from a KLL bigint sketch given an input quantile value. The quantile\ncan be a single value or an array.",
+ "kll_sketch_get_rank_double"
+ "Extracts a rank value from a KLL double sketch given an input quantile value. The quantile\ncan be a single value or an array.",
+ "kll_sketch_get_rank_float"
+ "Extracts a rank value from a KLL float sketch given an input quantile value. The quantile can\nbe a single value or an array.",
+ "kll_sketch_merge_bigint"
+ "Merges two KLL bigint sketch buffers together into one.",
+ "kll_sketch_merge_double"
+ "Merges two KLL double sketch buffers together into one.",
+ "kll_sketch_merge_float"
+ "Merges two KLL float sketch buffers together into one.",
+ "kll_sketch_to_string_bigint"
+ "Returns a string with human readable summary information about the KLL bigint sketch.",
+ "kll_sketch_to_string_double"
+ "Returns a string with human readable summary information about the KLL double sketch.",
+ "kll_sketch_to_string_float"
+ "Returns a string with human readable summary information about the KLL float sketch.",
+ "lag"
+ "Window function: returns the value that is `offset` rows before the current row, and `null`\nif there is less than `offset` rows before the current row. For example, an `offset` of one\nwill return the previous row at any given point in the window partition.\n\nThis is equivalent to the LAG function in SQL.",
+ "last_value"
+ "Aggregate function: returns the last value in a group.\n\nThe function is non-deterministic because its results depends on the order of the rows\n  which may be non-deterministic after a shuffle.",
+ "lcase" "Returns `str` with all characters changed to lowercase.",
+ "lead"
+ "Window function: returns the value that is `offset` rows after the current row, and `null` if\nthere is less than `offset` rows after the current row. For example, an `offset` of one will\nreturn the next row at any given point in the window partition.\n\nThis is equivalent to the LEAD function in SQL.",
+ "left"
+ "Returns the leftmost `len`(`len` can be string type) characters from the string `str`, if\n`len` is less or equal than 0 the result is an empty string.",
+ "len"
+ "Computes the character length of a given string or number of bytes of a binary string. The\nlength of character strings include the trailing spaces. The length of binary strings\nincludes binary zeros.",
+ "levenshtein"
+ "Computes the Levenshtein distance of the two given string columns if it's less than or equal\nto a given threshold.",
+ "listagg"
+ "Aggregate function: returns the concatenation of non-null input values.",
+ "listagg_distinct"
+ "Aggregate function: returns the concatenation of distinct non-null input values.",
+ "ln" "Computes the natural logarithm of the given value.",
+ "localtimestamp"
+ "Returns the current timestamp without time zone at the start of query evaluation as a\ntimestamp without time zone column. All calls of localtimestamp within the same query return\nthe same value.",
+ "locate"
+ "Locate the position of the first occurrence of substr.\n\nThe position is not zero based, but 1 based index. Returns 0 if substr could not be found\n  in str.\n\nThe position is not zero based, but 1 based index. returns 0 if substr could not be found\n  in str.",
+ "log" "Computes the natural logarithm of the given value.",
+ "make_date" "Returns A date created from year, month and day fields.",
+ "make_dt_interval"
+ "Make DayTimeIntervalType duration from days, hours, mins and secs.",
+ "make_interval"
+ "Make interval from years, months, weeks, days, hours, mins and secs.",
+ "make_time"
+ "Create time from hour, minute and second fields. For invalid inputs it will throw an error.\n\n`hour`: the hour to represent, from 0 to 23\n`minute`: the minute to represent, from 0 to 59\n`second`: the second to represent, from 0 to 59.999999",
+ "make_timestamp"
+ "Create timestamp from years, months, days, hours, mins, secs and timezone fields. The result\ndata type is consistent with the value of configuration `spark.sql.timestampType`. If the\nconfiguration `spark.sql.ansi.enabled` is false, the function returns NULL on invalid inputs.\nOtherwise, it will throw an error instead.",
+ "make_timestamp_ltz"
+ "Create the current timestamp with local time zone from years, months, days, hours, mins, secs\nand timezone fields. If the configuration `spark.sql.ansi.enabled` is false, the function\nreturns NULL on invalid inputs. Otherwise, it will throw an error instead.",
+ "make_timestamp_ntz"
+ "Create local date-time from years, months, days, hours, mins, secs fields. If the\nconfiguration `spark.sql.ansi.enabled` is false, the function returns NULL on invalid inputs.\nOtherwise, it will throw an error instead.",
+ "make_valid_utf8"
+ "Returns a new string in which all invalid UTF-8 byte sequences, if any, are replaced by the\nUnicode replacement character (U+FFFD).",
+ "make_ym_interval" "Make year-month interval from years, months.",
+ "map_contains_key" "Returns true if the map contains the key.",
+ "mask"
+ "Masks the given string value. The function replaces characters with 'X' or 'x', and numbers\nwith 'n'. This can be useful for creating copies of tables with sensitive information\nremoved.\n\n`input`: string value to mask. Supported types: STRING, VARCHAR, CHAR\n`upper-char`: character to replace upper-case characters with. Specify NULL to retain original character.\n`lower-char`: character to replace lower-case characters with. Specify NULL to retain original character.\n`digit-char`: character to replace digit characters with. Specify NULL to retain original character.\n`other-char`: character to replace all other characters with. Specify NULL to retain original character.",
+ "max_by"
+ "Aggregate function: returns the value associated with the maximum value of ord.\n\nThe function is non-deterministic so the output order can be different for those associated\n  the same values of `e`.\n\nThe function is non-deterministic because the order of collected results depends on the\n  order of the rows which may be non-deterministic after a shuffle when there are ties in the\n  ordering expression.\n\nThe maximum value of `k` is 100000.",
+ "min_by"
+ "Aggregate function: returns the value associated with the minimum value of ord.\n\nThe function is non-deterministic so the output order can be different for those associated\n  the same values of `e`.\n\nThe function is non-deterministic because the order of collected results depends on the\n  order of the rows which may be non-deterministic after a shuffle when there are ties in the\n  ordering expression.\n\nThe maximum value of `k` is 100000.",
+ "mode"
+ "Aggregate function: returns the most frequent value in a group.",
+ "monthname"
+ "Extracts the three-letter abbreviated month name from a given date/timestamp/string.",
+ "months"
+ "(Java-specific) A transform for timestamps and dates to partition data into months.",
+ "months_between"
+ "Returns number of months between dates `start` and `end`.\n\nA whole number is returned if both inputs have the same day of month or both are the last day\nof their respective months. Otherwise, the difference is calculated assuming 31 days per\nmonth.\n\n`end`: A date, timestamp or string. If a string, the data must be in a format that can be cast to a timestamp, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`\n`start`: A date, timestamp or string. If a string, the data must be in a format that can cast to a timestamp, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`",
+ "named_struct"
+ "Creates a struct with the given field names and values.",
+ "negative" "Returns the negated value.",
+ "now"
+ "Returns the current timestamp at the start of query evaluation.",
+ "nth_value"
+ "Window function: returns the value that is the `offset`th row of the window frame (counting\nfrom 1), and `null` if the size of window frame is less than `offset` rows.\n\nIt will return the `offset`th non-null value it sees when ignoreNulls is set to true. If all\nvalues are null, then null is returned.\n\nThis is equivalent to the nth_value function in SQL.",
+ "nullif"
+ "Returns null if `col1` equals to `col2`, or `col1` otherwise.",
+ "nullifzero"
+ "Returns null if `col` is equal to zero, or `col` otherwise.",
+ "nvl" "Returns `col2` if `col1` is null, or `col1` otherwise.",
+ "nvl2" "Returns `col2` if `col1` is not null, or `col3` otherwise.",
+ "octet_length"
+ "Calculates the byte length for the specified string column.",
+ "parse_url" "Extracts a part from a URL.",
+ "percentile"
+ "Aggregate function: returns the exact percentile(s) of numeric column `expr` at the given\npercentage(s) with value range in [0.0, 1.0].",
+ "percentile_approx"
+ "Aggregate function: returns the approximate `percentile` of the numeric column `col` which is\nthe smallest value in the ordered `col` values (sorted from least to greatest) such that no\nmore than `percentage` of `col` values is less than the value or equal to that value.\n\nIf percentage is an array, each value must be between 0.0 and 1.0. If it is a single floating\npoint value, it must be between 0.0 and 1.0.\n\nThe accuracy parameter is a positive numeric literal which controls approximation accuracy at\nthe cost of memory. Higher value of accuracy yields better accuracy, 1.0/accuracy is the\nrelative error of the approximation.",
+ "posexplode_outer"
+ "Creates a new row for each element with position in the given array or map column. Uses the\ndefault column name `pos` for position, and `col` for elements in the array and `key` and\n`value` for elements in the map unless specified otherwise. Unlike posexplode, if the\narray/map is null or empty then the row (null, null) is produced.",
+ "position"
+ "Returns the position of the first occurrence of `substr` in `str` after position `start`. The\ngiven `start` and return value are 1-based.",
+ "positive" "Returns the value.",
+ "power"
+ "Returns the value of the first argument raised to the power of the second argument.",
+ "printf"
+ "Formats the arguments in printf-style and returns the result as a string column.",
+ "product"
+ "Aggregate function: returns the product of all numerical elements in a group.",
+ "quote"
+ "Returns `str` enclosed by single quotes and each instance of single quote in it is preceded\nby a backslash.",
+ "raise_error" "Throws an exception with the provided error message.",
+ "random"
+ "Returns a random value with independent and identically distributed (i.i.d.) uniformly\ndistributed values in [0, 1).",
+ "randstr"
+ "Returns a string of the specified length whose characters are chosen uniformly at random from\nthe following pool of characters: 0-9, a-z, A-Z. The string length must be a constant\ntwo-byte or four-byte integer (SMALLINT or INT, respectively).",
+ "reflect" "Calls a method with reflection.",
+ "regexp"
+ "Returns true if `str` matches `regexp`, or false otherwise.",
+ "regexp_count"
+ "Returns a count of the number of times that the regular expression pattern `regexp` is\nmatched in the string `str`.",
+ "regexp_extract_all"
+ "Extract all strings in the `str` that match the `regexp` expression and corresponding to the\nfirst regex group index.",
+ "regexp_instr"
+ "Searches a string for a regular expression and returns an integer that indicates the\nbeginning position of the matched substring. Positions are 1-based, not 0-based. If no match\nis found, returns 0.",
+ "regexp_like"
+ "Returns true if `str` matches `regexp`, or false otherwise.",
+ "regexp_substr"
+ "Returns the substring that matches the regular expression `regexp` within the string `str`.\nIf the regular expression is not found, the result is null.",
+ "regr_avgx"
+ "Aggregate function: returns the average of the independent variable for non-null pairs in a\ngroup, where `y` is the dependent variable and `x` is the independent variable.",
+ "regr_avgy"
+ "Aggregate function: returns the average of the independent variable for non-null pairs in a\ngroup, where `y` is the dependent variable and `x` is the independent variable.",
+ "regr_count"
+ "Aggregate function: returns the number of non-null number pairs in a group, where `y` is the\ndependent variable and `x` is the independent variable.",
+ "regr_intercept"
+ "Aggregate function: returns the intercept of the univariate linear regression line for\nnon-null pairs in a group, where `y` is the dependent variable and `x` is the independent\nvariable.",
+ "regr_r2"
+ "Aggregate function: returns the coefficient of determination for non-null pairs in a group,\nwhere `y` is the dependent variable and `x` is the independent variable.",
+ "regr_slope"
+ "Aggregate function: returns the slope of the linear regression line for non-null pairs in a\ngroup, where `y` is the dependent variable and `x` is the independent variable.",
+ "regr_sxx"
+ "Aggregate function: returns REGR_COUNT(y, x) * VAR_POP(x) for non-null pairs in a group,\nwhere `y` is the dependent variable and `x` is the independent variable.",
+ "regr_sxy"
+ "Aggregate function: returns REGR_COUNT(y, x) * COVAR_POP(y, x) for non-null pairs in a group,\nwhere `y` is the dependent variable and `x` is the independent variable.",
+ "regr_syy"
+ "Aggregate function: returns REGR_COUNT(y, x) * VAR_POP(y) for non-null pairs in a group,\nwhere `y` is the dependent variable and `x` is the independent variable.",
+ "repeat"
+ "Repeats a string column n times, and returns it as a new string column.",
+ "replace"
+ "Replaces all occurrences of `search` with `replace`.\n\n`src`: A column of string to be replaced\n`search`: A column of string, If `search` is not found in `str`, `str` is returned unchanged.\n`replace`: A column of string, If `replace` is not specified or is an empty string, nothing replaces the string that is removed from `str`.",
+ "right"
+ "Returns the rightmost `len`(`len` can be string type) characters from the string `str`, if\n`len` is less or equal than 0 the result is an empty string.",
+ "round"
+ "Returns the value of the column `e` rounded to 0 decimal places with HALF_UP round mode.",
+ "schema_of_variant"
+ "Returns schema in the SQL format of a variant.\n\n`v`: a variant column.",
+ "schema_of_variant_agg"
+ "Returns the merged schema in the SQL format of a variant column.\n\n`v`: a variant column.",
+ "schema_of_xml"
+ "Parses a XML string and infers its schema in DDL format.\n\n`xml`: a XML string.\n`options`: options to control how the xml is parsed. accepts the same options and the XML data source. See <a href= \"https://spark.apache.org/docs/latest/sql-data-sources-xml.html#data-source-option\"> Data Source Option</a> in the version you use.",
+ "sec" "Returns secant of the angle.\n\n`e`: angle in radians",
+ "sentences"
+ "Splits a string into arrays of sentences, where each sentence is an array of words.",
+ "sequence"
+ "Generate a sequence of integers from start to stop, incrementing by step.",
+ "session_user" "Returns the user name of current execution context.",
+ "session_window"
+ "Generates session window given a timestamp specifying column.\n\nSession window is one of dynamic windows, which means the length of window is varying\naccording to the given inputs. The length of session window is defined as \"the timestamp of\nlatest input of the session + gap duration\", so when the new inputs are bound to the current\nsession window, the end time of session window can be expanded according to the new inputs.\n\nWindows can support microsecond precision. gapDuration in the order of months are not\nsupported.\n\nFor a streaming query, you may use the function `current_timestamp` to generate windows on\nprocessing time.\n\n`time-column`: The column or the expression to use as the timestamp for windowing by time. The time column must be of TimestampType or TimestampNTZType.\n`gap-duration`: A string specifying the timeout of the session, e.g. `10 minutes`, `1 second`. Check `org.apache.spark.unsafe.types.CalendarInterval` for valid duration identifiers.",
+ "sha" "Returns a sha1 hash value as a hex string of the `col`.",
+ "shiftleft"
+ "Shift the given value numBits left. If the given value is a long value, this function will\nreturn a long value else it will return an integer value.",
+ "shiftright"
+ "(Signed) shift the given value numBits right. If the given value is a long value, it will\nreturn a long value else it will return an integer value.",
+ "shiftrightunsigned"
+ "Unsigned shift the given value numBits right. If the given value is a long value, it will\nreturn a long value else it will return an integer value.",
+ "sign" "Computes the signum of the given value.",
+ "some"
+ "Aggregate function: returns true if at least one value of `e` is true.",
+ "split"
+ "Splits str around matches of the given pattern.\n\n`str`: a string expression to split\n`pattern`: a string representing a regular expression. The regex string should be a Java regular expression.\n`limit`: an integer expression which controls the number of times the regex is applied. - limit greater than 0: The resulting array's length will not be more than limit, and the resulting array's last entry will contain all input beyond the last matched regex. - limit less than or equal to 0: `regex` will be applied as many times as possible, and the resulting array can be of any size.",
+ "split_part"
+ "Splits `str` by delimiter and return requested part of the split (1-based). If any input is\nnull, returns null. if `partNum` is out of range of split parts, returns empty string. If\n`partNum` is 0, throws an error. If `partNum` is negative, the parts are counted backward\nfrom the end of the string. If the `delimiter` is an empty string, the `str` is not split.",
+ "st_asbinary"
+ "Returns the input GEOGRAPHY or GEOMETRY value in WKB format.",
+ "st_geogfromwkb"
+ "Parses the WKB description of a geography and returns the corresponding GEOGRAPHY value.",
+ "st_geomfromwkb"
+ "Parses the WKB description of a geometry and returns the corresponding GEOMETRY value.",
+ "st_setsrid"
+ "Returns a new GEOGRAPHY or GEOMETRY value whose SRID is the specified SRID value.",
+ "st_srid"
+ "Returns the SRID of the input GEOGRAPHY or GEOMETRY value.",
+ "stack"
+ "Separates `col1`, ..., `colk` into `n` rows. Uses column names col0, col1, etc. by default\nunless specified otherwise.",
+ "startswith"
+ "Returns a boolean. The value is True if str starts with prefix. Returns NULL if either input\nexpression is NULL. Otherwise, returns False. Both str or prefix must be of STRING or BINARY\ntype.",
+ "str_to_map"
+ "Creates a map after splitting the text into key/value pairs using delimiters. Both\n`pairDelim` and `keyValueDelim` are treated as regular expressions.",
+ "string_agg"
+ "Aggregate function: returns the concatenation of non-null input values. Alias for `listagg`.",
+ "string_agg_distinct"
+ "Aggregate function: returns the concatenation of distinct non-null input values. Alias for\n`listagg`.",
+ "substr"
+ "Returns the substring of `str` that starts at `pos` and is of length `len`, or the slice of\nbyte array that starts at `pos` and is of length `len`.",
+ "theta_difference"
+ "Subtracts two binary representations of Datasketches ThetaSketch objects in the input columns\nusing a Datasketches AnotB object",
+ "theta_intersection"
+ "Intersects two binary representations of Datasketches ThetaSketch objects in the input\ncolumns using a Datasketches Intersection object",
+ "theta_intersection_agg"
+ "Aggregate function: returns the compact binary representation of the Datasketches\nThetaSketch, generated by intersecting the Datasketches ThetaSketch instances in the input\ncolumn via a Datasketches Intersection instance.",
+ "theta_sketch_agg"
+ "Aggregate function: returns the compact binary representation of the Datasketches ThetaSketch\nbuilt with the values in the input column and configured with the `lgNomEntries` nominal\nentries.",
+ "theta_sketch_estimate"
+ "Returns the estimated number of unique values given the binary representation of a\nDatasketches ThetaSketch.",
+ "theta_union"
+ "Unions two binary representations of Datasketches ThetaSketch objects in the input columns\nusing a Datasketches Union object. It is configured with the default value of 12 for\n`lgNomEntries`.",
+ "theta_union_agg"
+ "Aggregate function: returns the compact binary representation of the Datasketches\nThetaSketch, generated by the union of Datasketches ThetaSketch instances in the input column\nvia a Datasketches Union instance. It allows the configuration of `lgNomEntries` log nominal\nentries for the union buffer.",
+ "time_bucket"
+ "Returns the start of the fixed-size bucket of `bucketSize` that contains `ts`, with buckets\naligned to the default origin (1970-01-01 00:00:00). For `TIMESTAMP_NTZ`, bucketing is\nperformed in UTC. For `TIMESTAMP`, year-month interval buckets and calendar-day components of\nday-time interval buckets align to the session time zone.\n\n`bucket-size`: A day-time or year-month interval defining the bucket size. Must be positive and foldable.\n`ts`: A TIMESTAMP or TIMESTAMP_NTZ value to bucket.\n`origin`: Alignment anchor. Must be the same type as `ts` and must be foldable.",
+ "time_diff"
+ "Returns the difference between two times, measured in specified units. Throws a\nSparkIllegalArgumentException, in case the specified unit is not supported.\n\n`unit`: A STRING representing the unit of the time difference. Supported units are: \"HOUR\", \"MINUTE\", \"SECOND\", \"MILLISECOND\", and \"MICROSECOND\". The unit is case-insensitive.\n`start`: A starting TIME.\n`end`: An ending TIME.\n\nIf any of the inputs is `NULL`, the result is `NULL`.",
+ "time_from_micros"
+ "Creates a TIME from the number of microseconds since midnight.",
+ "time_from_millis"
+ "Creates a TIME from the number of milliseconds since midnight.",
+ "time_from_seconds"
+ "Creates a TIME from the number of seconds since midnight.",
+ "time_to_micros"
+ "Extracts the number of microseconds since midnight from a TIME value.",
+ "time_to_millis"
+ "Extracts the number of milliseconds since midnight from a TIME value.",
+ "time_to_seconds"
+ "Extracts the number of seconds (including fractional seconds) from a TIME value. Returns a\nDECIMAL(14,6) to preserve microsecond precision.",
+ "time_trunc"
+ "Returns `time` truncated to the `unit`.\n\n`unit`: A STRING representing the unit to truncate the time to. Supported units are: \"HOUR\", \"MINUTE\", \"SECOND\", \"MILLISECOND\", and \"MICROSECOND\". The unit is case-insensitive.\n`time`: A TIME to truncate.\n\nIf any of the inputs is `NULL`, the result is `NULL`.",
+ "timestamp_add"
+ "Adds the specified number of units to the given timestamp.",
+ "timestamp_diff"
+ "Gets the difference between the timestamps in the specified units by truncating the fraction\npart.",
+ "timestamp_micros"
+ "Creates timestamp from the number of microseconds since UTC epoch.",
+ "timestamp_millis"
+ "Creates timestamp from the number of milliseconds since UTC epoch.",
+ "timestamp_seconds"
+ "Converts the number of seconds from the Unix epoch (1970-01-01T00:00:00Z) to a timestamp.",
+ "to_binary"
+ "Converts the input `e` to a binary value based on the supplied `format`. The `format` can be\na case-insensitive string literal of \"hex\", \"utf-8\", \"utf8\", or \"base64\". By default, the\nbinary format for conversion is \"hex\" if `format` is omitted. The function returns NULL if at\nleast one of the input parameters is NULL.",
+ "to_char"
+ "Convert `e` to a string based on the `format`. Throws an exception if the conversion fails.\nThe format can consist of the following characters, case insensitive: '0' or '9': Specifies\nan expected digit between 0 and 9. A sequence of 0 or 9 in the format string matches a\nsequence of digits in the input value, generating a result string of the same length as the\ncorresponding sequence in the format string. The result string is left-padded with zeros if\nthe 0/9 sequence comprises more digits than the matching part of the decimal value, starts\nwith 0, and is before the decimal point. Otherwise, it is padded with spaces. '.' or 'D':\nSpecifies the position of the decimal point (optional, only allowed once). ',' or 'G':\nSpecifies the position of the grouping (thousands) separator (,). There must be a 0 or 9 to\nthe left and right of each grouping separator. '$': Specifies the location of the $ currency\nsign. This character may only be specified once. 'S' or 'MI': Specifies the position of a '-'\nor '+' sign (optional, only allowed once at the beginning or end of the format string). Note\nthat 'S' prints '+' for positive values but 'MI' prints a space. 'PR': Only allowed at the\nend of the format string; specifies that the result string will be wrapped by angle brackets\nif the input value is negative.\n\nIf `e` is a datetime, `format` shall be a valid datetime pattern, see Datetime\nPatterns. If `e` is a binary, it is converted to a string in one of the formats:\n'base64': a base 64 string. 'hex': a string in the hexadecimal format. 'utf-8': the input\nbinary is decoded to UTF-8 string.",
+ "to_number"
+ "Convert string 'e' to a number based on the string format 'format'. Throws an exception if\nthe conversion fails. The format can consist of the following characters, case insensitive:\n'0' or '9': Specifies an expected digit between 0 and 9. A sequence of 0 or 9 in the format\nstring matches a sequence of digits in the input string. If the 0/9 sequence starts with 0\nand is before the decimal point, it can only match a digit sequence of the same size.\nOtherwise, if the sequence starts with 9 or is after the decimal point, it can match a digit\nsequence that has the same or smaller size. '.' or 'D': Specifies the position of the decimal\npoint (optional, only allowed once). ',' or 'G': Specifies the position of the grouping\n(thousands) separator (,). There must be a 0 or 9 to the left and right of each grouping\nseparator. 'expr' must match the grouping separator relevant for the size of the number. '$':\nSpecifies the location of the $ currency sign. This character may only be specified once. 'S'\nor 'MI': Specifies the position of a '-' or '+' sign (optional, only allowed once at the\nbeginning or end of the format string). Note that 'S' allows '-' but 'MI' does not. 'PR':\nOnly allowed at the end of the format string; specifies that 'expr' indicates a negative\nnumber with wrapping angled brackets.",
+ "to_time"
+ "Parses a string value to a time value.\n\n`str`: A string to be parsed to time.\n`format`: A time format pattern to follow.",
+ "to_timestamp_ltz"
+ "Parses the `timestamp` expression with the `format` expression to a timestamp without time\nzone. Returns null with invalid input.",
+ "to_timestamp_ntz"
+ "Parses the `timestamp_str` expression with the `format` expression to a timestamp without\ntime zone. Returns null with invalid input.",
+ "to_unix_timestamp" "Returns the UNIX timestamp of the given time.",
+ "to_utc_timestamp"
+ "Given a timestamp like '2017-07-14 02:40:00.0', interprets it as a time in the given time\nzone, and renders that time as a timestamp in UTC. For example, 'GMT+1' would yield\n'2017-07-14 01:40:00.0'.\n\n`ts`: A date, timestamp or string. If a string, the data must be in a format that can be cast to a timestamp, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`\n`tz`: A string detailing the time zone ID that the input should be adjusted to. It should be in the format of either region-based zone IDs or zone offsets. Region IDs must have the form 'area/city', such as 'America/Los_Angeles'. Zone offsets must be in the format '(+|-)HH:mm', for example '-08:00' or '+01:00'. Also 'UTC' and 'Z' are supported as aliases of '+00:00'. Other short names are not recommended to use because they can be ambiguous.",
+ "to_varchar"
+ "Convert `e` to a string based on the `format`. Throws an exception if the conversion fails.\nThe format can consist of the following characters, case insensitive: '0' or '9': Specifies\nan expected digit between 0 and 9. A sequence of 0 or 9 in the format string matches a\nsequence of digits in the input value, generating a result string of the same length as the\ncorresponding sequence in the format string. The result string is left-padded with zeros if\nthe 0/9 sequence comprises more digits than the matching part of the decimal value, starts\nwith 0, and is before the decimal point. Otherwise, it is padded with spaces. '.' or 'D':\nSpecifies the position of the decimal point (optional, only allowed once). ',' or 'G':\nSpecifies the position of the grouping (thousands) separator (,). There must be a 0 or 9 to\nthe left and right of each grouping separator. '$': Specifies the location of the $ currency\nsign. This character may only be specified once. 'S' or 'MI': Specifies the position of a '-'\nor '+' sign (optional, only allowed once at the beginning or end of the format string). Note\nthat 'S' prints '+' for positive values but 'MI' prints a space. 'PR': Only allowed at the\nend of the format string; specifies that the result string will be wrapped by angle brackets\nif the input value is negative.\n\nIf `e` is a datetime, `format` shall be a valid datetime pattern, see Datetime\nPatterns. If `e` is a binary, it is converted to a string in one of the formats:\n'base64': a base 64 string. 'hex': a string in the hexadecimal format. 'utf-8': the input\nbinary is decoded to UTF-8 string.",
+ "to_variant_object"
+ "Converts a column containing nested inputs (array/map/struct) into a variants where maps and\nstructs are converted to variant objects which are unordered unlike SQL structs. Input maps\ncan only have string keys.\n\n`col`: a column with a nested schema or column name.",
+ "to_xml"
+ "(Java-specific) Converts a column containing a `StructType` into a XML string with the\nspecified schema. Throws an exception, in the case of an unsupported type.\n\n`e`: a column containing a struct.\n`options`: options to control how the struct column is converted into a XML string. It accepts the same options as the XML data source. See <a href= \"https://spark.apache.org/docs/latest/sql-data-sources-xml.html#data-source-option\"> Data Source Option</a> in the version you use.",
+ "trunc"
+ "Returns date truncated to the unit specified by the format.\n\nFor example, `trunc(\"2018-11-19 12:01:19\", \"year\")` returns 2018-01-01\n\n`date`: A date, timestamp or string. If a string, the data must be in a format that can be cast to a date, such as `yyyy-MM-dd` or `yyyy-MM-dd HH:mm:ss.SSSS`\n`format`: : 'year', 'yyyy', 'yy' to truncate by year, or 'month', 'mon', 'mm' to truncate by month Other options are: 'week', 'quarter'",
+ "try_add"
+ "Returns the sum of `left` and `right` and the result is null on overflow. The acceptable\ninput types are the same with the `+` operator.",
+ "try_aes_decrypt"
+ "This is a special version of `aes_decrypt` that performs the same operation, but returns a\nNULL value instead of raising an error if the decryption cannot be performed.\n\n`input`: The binary value to decrypt.\n`key`: The passphrase to use to decrypt the data.\n`mode`: Specifies which block cipher mode should be used to decrypt messages. Valid modes: ECB, GCM, CBC.\n`padding`: Specifies how to pad messages whose length is not a multiple of the block size. Valid values: PKCS, NONE, DEFAULT. The DEFAULT padding means PKCS for ECB, NONE for GCM and PKCS for CBC.\n`aad`: Optional additional authenticated data. Only supported for GCM mode. This can be any free-form input and must be provided for both encryption and decryption.",
+ "try_avg"
+ "Returns the mean calculated from values of a group and the result is null on overflow.",
+ "try_divide"
+ "Returns `dividend``/``divisor`. It always performs floating point division. Its result is\nalways null if `divisor` is 0.",
+ "try_element_at"
+ "(array, index) - Returns element of array at given (1-based) index. If Index is 0, Spark will\nthrow an error. If index &lt; 0, accesses elements from the last to the first. The function\nalways returns NULL if the index exceeds the length of the array.\n\n(map, key) - Returns value for given key. The function always returns NULL if the key is not\ncontained in the map.",
+ "try_make_interval"
+ "This is a special version of `make_interval` that performs the same operation, but returns a\nNULL value instead of raising an error if interval cannot be created.",
+ "try_make_timestamp"
+ "Try to create a timestamp from years, months, days, hours, mins, secs and timezone fields.\nThe result data type is consistent with the value of configuration `spark.sql.timestampType`.\nThe function returns NULL on invalid inputs.",
+ "try_make_timestamp_ltz"
+ "Try to create the current timestamp with local time zone from years, months, days, hours,\nmins, secs and timezone fields. The function returns NULL on invalid inputs.",
+ "try_make_timestamp_ntz"
+ "Try to create a local date-time from years, months, days, hours, mins, secs fields. The\nfunction returns NULL on invalid inputs.",
+ "try_mod"
+ "Returns the remainder of `dividend``/``divisor`. Its result is always null if `divisor` is 0.",
+ "try_multiply"
+ "Returns `left``*``right` and the result is null on overflow. The acceptable input types are\nthe same with the `*` operator.",
+ "try_parse_json"
+ "Parses a JSON string and constructs a Variant value. Returns null if the input string is not\na valid JSON value.\n\n`json`: a string column that contains JSON data.",
+ "try_parse_url" "Extracts a part from a URL.",
+ "try_reflect"
+ "This is a special version of `reflect` that performs the same operation, but returns a NULL\nvalue instead of raising an error if the invoke method thrown exception.",
+ "try_subtract"
+ "Returns `left``-``right` and the result is null on overflow. The acceptable input types are\nthe same with the `-` operator.",
+ "try_sum"
+ "Returns the sum calculated from values of a group and the result is null on overflow.",
+ "try_to_binary"
+ "This is a special version of `to_binary` that performs the same operation, but returns a NULL\nvalue instead of raising an error if the conversion cannot be performed.",
+ "try_to_date"
+ "This is a special version of `to_date` that performs the same operation, but returns a NULL\nvalue instead of raising an error if date cannot be created.",
+ "try_to_number"
+ "Convert string `e` to a number based on the string format `format`. Returns NULL if the\nstring `e` does not match the expected format. The format follows the same semantics as the\nto_number function.",
+ "try_to_time"
+ "Parses a string value to a time value.\n\n`str`: A string to be parsed to time.\n`format`: A time format pattern to follow.",
+ "try_to_timestamp"
+ "Parses the `s` with the `format` to a timestamp. The function always returns null on an\ninvalid input with`/`without ANSI SQL mode enabled. The result data type is consistent with\nthe value of configuration `spark.sql.timestampType`.",
+ "try_url_decode"
+ "This is a special version of `url_decode` that performs the same operation, but returns a\nNULL value instead of raising an error if the decoding cannot be performed.",
+ "try_validate_utf8"
+ "Returns the input value if it corresponds to a valid UTF-8 string, or NULL otherwise.",
+ "try_variant_get"
+ "Extracts a sub-variant from `v` according to `path` string, and then cast the sub-variant to\n`targetType`. Returns null if the path does not exist or the cast fails..\n\n`v`: a variant column.\n`path`: the extraction path. A valid path should start with `$` and is followed by zero or more segments like `[123]`, `.name`, `['name']`, or `[\"name\"]`.\n`target-type`: the target data type to cast into, in a DDL-formatted string.",
+ "tuple_difference_double"
+ "Subtracts two binary representations of Datasketches TupleSketch objects with double summary\ndata type in the input columns using a Datasketches AnotB object. Returns elements in the\nfirst sketch that are not in the second sketch.",
+ "tuple_difference_integer"
+ "Subtracts two binary representations of Datasketches TupleSketch objects with integer summary\ndata type in the input columns using a Datasketches AnotB object. Returns elements in the\nfirst sketch that are not in the second sketch.",
+ "tuple_difference_theta_double"
+ "Subtracts the binary representation of a Datasketches ThetaSketch from a TupleSketch with\ndouble summary data type in the input columns using a Datasketches AnotB object. Returns\nelements in the TupleSketch that are not in the ThetaSketch.",
+ "tuple_difference_theta_integer"
+ "Subtracts the binary representation of a Datasketches ThetaSketch from a TupleSketch with\ninteger summary data type in the input columns using a Datasketches AnotB object. Returns\nelements in the TupleSketch that are not in the ThetaSketch.",
+ "tuple_intersection_agg_double"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith a double type summary, generated by intersecting the Datasketches TupleSketch instances\nin the input column via a Datasketches Intersection instance. The mode parameter specifies\nthe aggregation mode for numeric summaries during intersection (sum, min, max, alwaysone).",
+ "tuple_intersection_agg_integer"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith an integer type summary, generated by intersecting the Datasketches TupleSketch\ninstances in the input column via a Datasketches Intersection instance. The mode parameter\nspecifies the aggregation mode for numeric summaries during intersection (sum, min, max,\nalwaysone).",
+ "tuple_intersection_double"
+ "Intersects two binary representations of Datasketches TupleSketch objects with double summary\ndata type in the input columns using a Datasketches Intersection object. The mode parameter\nspecifies the aggregation mode for numeric summaries during intersection (sum, min, max,\nalwaysone). It is configured with the default mode of 'sum'.",
+ "tuple_intersection_integer"
+ "Intersects two binary representations of Datasketches TupleSketch objects with integer\nsummary data type in the input columns using a Datasketches Intersection object. The mode\nparameter specifies the aggregation mode for numeric summaries during intersection (sum, min,\nmax, alwaysone). It is configured with the default mode of 'sum'.",
+ "tuple_intersection_theta_double"
+ "Intersects the binary representation of a Datasketches TupleSketch with double summary data\ntype with a Datasketches ThetaSketch in the input columns using a Datasketches Intersection\nobject. The mode parameter specifies the aggregation mode for numeric summaries during\nintersection (sum, min, max, alwaysone). It is configured with the default mode of 'sum'.",
+ "tuple_intersection_theta_integer"
+ "Intersects the binary representation of a Datasketches TupleSketch with integer summary data\ntype with a Datasketches ThetaSketch in the input columns using a Datasketches Intersection\nobject. The mode parameter specifies the aggregation mode for numeric summaries during\nintersection (sum, min, max, alwaysone). It is configured with the default mode of 'sum'.",
+ "tuple_sketch_agg_double"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith a double type summary built with the key and summary values in the input columns and\nconfigured with the `lgNomEntries` nominal entries and aggregation mode. The mode parameter\nspecifies the aggregation mode for numeric summaries (sum, min, max, alwaysone).",
+ "tuple_sketch_agg_integer"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith an integer type summary built with the key and summary values in the input columns and\nconfigured with the `lgNomEntries` nominal entries and aggregation mode. The mode parameter\nspecifies the aggregation mode for numeric summaries (sum, min, max, alwaysone).",
+ "tuple_sketch_estimate_double"
+ "Returns the estimated number of unique values given the binary representation of a\nDatasketches TupleSketch with double summary data type.",
+ "tuple_sketch_estimate_integer"
+ "Returns the estimated number of unique values given the binary representation of a\nDatasketches TupleSketch with integer summary data type.",
+ "tuple_sketch_summary_double"
+ "Aggregates the summary values from a Datasketches TupleSketch with double summary data type.\nThe mode parameter specifies the aggregation mode (sum, min, max, alwaysone). It is\nconfigured with the default mode of 'sum'.",
+ "tuple_sketch_summary_integer"
+ "Aggregates the summary values from a Datasketches TupleSketch with integer summary data type.\nThe mode parameter specifies the aggregation mode (sum, min, max, alwaysone). It is\nconfigured with the default mode of 'sum'.",
+ "tuple_sketch_theta_double"
+ "Returns the theta value (sampling rate) from a Datasketches TupleSketch with double summary\ndata type. The theta value represents the effective sampling rate of the sketch, between 0.0\nand 1.0.",
+ "tuple_sketch_theta_integer"
+ "Returns the theta value (sampling rate) from a Datasketches TupleSketch with integer summary\ndata type. The theta value represents the effective sampling rate of the sketch, between 0.0\nand 1.0.",
+ "tuple_union_agg_double"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith a double type summary, generated by the union of Datasketches TupleSketch instances in\nthe input column via a Datasketches Union instance. It allows the configuration of\n`lgNomEntries` log nominal entries for the union buffer and the aggregation mode for numeric\nsummaries (sum, min, max, alwaysone).",
+ "tuple_union_agg_integer"
+ "Aggregate function: returns the compact binary representation of the Datasketches TupleSketch\nwith an integer type summary, generated by the union of Datasketches TupleSketch instances in\nthe input column via a Datasketches Union instance. It allows the configuration of\n`lgNomEntries` log nominal entries for the union buffer and the aggregation mode for numeric\nsummaries (sum, min, max, alwaysone).",
+ "tuple_union_double"
+ "Unions two binary representations of Datasketches TupleSketch objects with double summary\ndata type in the input columns using a Datasketches Union object. It is configured with the\ndefault values of 12 for `lgNomEntries` and 'sum' for mode.",
+ "tuple_union_integer"
+ "Unions two binary representations of Datasketches TupleSketch objects with integer summary\ndata type in the input columns using a Datasketches Union object. It is configured with the\ndefault values of 12 for `lgNomEntries` and 'sum' for mode.",
+ "tuple_union_theta_double"
+ "Unions the binary representation of a Datasketches TupleSketch with double summary data type\nwith a Datasketches ThetaSketch in the input columns using a Datasketches Union object. It is\nconfigured with the default values of 12 for `lgNomEntries` and 'sum' for mode.",
+ "tuple_union_theta_integer"
+ "Unions the binary representation of a Datasketches TupleSketch with integer summary data type\nwith a Datasketches ThetaSketch in the input columns using a Datasketches Union object. It is\nconfigured with the default values of 12 for `lgNomEntries` and 'sum' for mode.",
+ "typeof"
+ "Return DDL-formatted type string for the data type of the input.",
+ "ucase" "Returns `str` with all characters changed to uppercase.",
+ "uniform"
+ "Returns a random value with independent and identically distributed (i.i.d.) values with the\nspecified range of numbers. The provided numbers specifying the minimum and maximum values of\nthe range must be constant. If both of these numbers are integers, then the result will also\nbe an integer. Otherwise if one or both of these are floating-point numbers, then the result\nwill also be a floating-point number.",
+ "unix_date" "Returns the number of days since 1970-01-01.",
+ "unix_micros"
+ "Returns the number of microseconds since 1970-01-01 00:00:00 UTC.",
+ "unix_millis"
+ "Returns the number of milliseconds since 1970-01-01 00:00:00 UTC. Truncates higher levels of\nprecision.",
+ "unix_seconds"
+ "Returns the number of seconds since 1970-01-01 00:00:00 UTC. Truncates higher levels of\nprecision.",
+ "unwrap_udt" "Unwrap UDT data type column into its underlying type.",
+ "url_decode"
+ "Decodes a `str` in 'application/x-www-form-urlencoded' format using a specific encoding\nscheme.",
+ "url_encode"
+ "Translates a string into 'application/x-www-form-urlencoded' format using a specific encoding\nscheme.",
+ "user" "Returns the user name of current execution context.",
+ "uuid"
+ "Returns an universally unique identifier (UUID) string. The value is returned as a canonical\nUUID 36-character string.",
+ "validate_utf8"
+ "Returns the input value if it corresponds to a valid UTF-8 string, or emits a\nSparkIllegalArgumentException exception otherwise.",
+ "variant_get"
+ "Extracts a sub-variant from `v` according to `path` string, and then cast the sub-variant to\n`targetType`. Returns null if the path does not exist. Throws an exception if the cast fails.\n\n`v`: a variant column.\n`path`: the extraction path. A valid path should start with `$` and is followed by zero or more segments like `[123]`, `.name`, `['name']`, or `[\"name\"]`.\n`target-type`: the target data type to cast into, in a DDL-formatted string.",
+ "weekday"
+ "Returns the day of the week for date/timestamp (0 = Monday, 1 = Tuesday, ..., 6 = Sunday).",
+ "width_bucket"
+ "Returns the bucket number into which the value of this expression would fall after being\nevaluated. Note that input arguments must follow conditions listed below; otherwise, the\nmethod will return null.\n\n`v`: value to compute a bucket number in the histogram\n`min`: minimum value of the histogram\n`max`: maximum value of the histogram\n`num-bucket`: the number of buckets",
+ "window_time"
+ "Extracts the event time from the window column.\n\nThe window column is of StructType { start: Timestamp, end: Timestamp } where start is\ninclusive and end is exclusive. Since event time can support microsecond precision,\nwindow_time(window) = window.end - 1 microsecond.\n\n`window-column`: The window column (typically produced by window aggregation) of type StructType { start: Timestamp, end: Timestamp }",
+ "xpath"
+ "Returns a string array of values within the nodes of xml that match the XPath expression.",
+ "xpath_boolean"
+ "Returns true if the XPath expression evaluates to true, or if a matching node is found.",
+ "xpath_double"
+ "Returns a double value, the value zero if no match is found, or NaN if a match is found but\nthe value is non-numeric.",
+ "xpath_float"
+ "Returns a float value, the value zero if no match is found, or NaN if a match is found but\nthe value is non-numeric.",
+ "xpath_int"
+ "Returns an integer value, or the value zero if no match is found, or a match is found but the\nvalue is non-numeric.",
+ "xpath_long"
+ "Returns a long integer value, or the value zero if no match is found, or a match is found but\nthe value is non-numeric.",
+ "xpath_number"
+ "Returns a double value, the value zero if no match is found, or NaN if a match is found but\nthe value is non-numeric.",
+ "xpath_short"
+ "Returns a short integer value, or the value zero if no match is found, or a match is found\nbut the value is non-numeric.",
+ "xpath_string"
+ "Returns the text contents of the first xml node that matches the XPath expression.",
+ "years"
+ "(Java-specific) A transform for timestamps and dates to partition data into years.",
+ "zeroifnull" "Returns zero if `col` is null, or `col` otherwise."}

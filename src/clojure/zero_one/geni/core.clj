@@ -11,10 +11,14 @@
                             abs
                             alias
                             assoc
+                            bit-and
+                            bit-or
+                            bit-xor
                             boolean
                             byte
                             case
                             cast
+                            char
                             concat
                             cond
                             condp
@@ -30,6 +34,7 @@
                             first
                             flatten
                             float
+                            get
                             group-by
                             hash
                             inc
@@ -47,10 +52,13 @@
                             not
                             odd?
                             pos?
+                            printf
                             rand
                             rand-nth
                             range
+                            reduce
                             remove
+                            repeat
                             replace
                             reverse
                             second
@@ -58,6 +66,7 @@
                             sequence
                             short
                             shuffle
+                            some
                             sort
                             str
                             struct
@@ -191,85 +200,149 @@
   ->date-col
   ->timestamp-col
   ->utc-timestamp
-   ;bucket
-   ;days
-   ;hours
-   ;months
-   ;years
   abs
   acos
+  acosh
   add-months
+  aes-decrypt
+  aes-encrypt
   aggregate
+  any
+  any-value
   approx-count-distinct
+  approx-percentile
   array
+  array-agg
+  array-append
+  array-compact
   array-contains
   array-distinct
   array-except
+  array-insert
   array-intersect
   array-join
   array-max
   array-min
   array-position
+  array-prepend
   array-remove
   array-repeat
+  array-size
   array-sort
   array-union
   arrays-overlap
   arrays-zip
   ascii
   asin
+  asinh
+  assert-true
   atan
   atan-2
   atan2
+  atanh
   base-64
   base64
   bin
+  bit-and
+  bit-count
+  bit-get
+  bit-length
+  bit-or
+  bit-xor
+  bitmap-and-agg
+  bitmap-bit-position
+  bitmap-bucket-number
+  bitmap-construct-agg
+  bitmap-count
+  bitmap-or-agg
   bitwise-not
+  bool-and
+  bool-or
   broadcast
   bround
+  btrim
+  bucket
+  call-function
+  call-udf
+  cardinality
   cbrt
   ceil
+  ceiling
+  char
+  char-length
+  character-length
+  chr
+  collate
+  collation
   collect-list
   collect-set
   concat
   concat-ws
   conv
+  convert-timezone
   cos
   cosh
+  cot
   count-distinct
+  count-if
   covar
   covar-pop
   covar-samp
   crc-32
   crc32
+  csc
   cube-root
   cume-dist
+  curdate
+  current-catalog
+  current-database
   current-date
+  current-path
+  current-schema
+  current-time
   current-timestamp
+  current-timezone
+  current-user
   date-add
   date-diff
   date-format
+  date-from-unix-date
+  date-part
   date-sub
   date-trunc
+  dateadd
   datediff
+  datepart
+  day
   day-of-month
   day-of-week
   day-of-year
+  dayname
   dayofmonth
   dayofweek
   dayofyear
+  days
   decode
   degrees
   dense-rank
+  e
   element-at
+  elt
   encode
+  endswith
+  equal-null
+  every
   exists
   exp
   explode
+  explode-outer
   expm-1
   expm1
   expr
+  extract
   factorial
+  find-in-set
+  first-value
   flatten
   floor
   forall
@@ -278,23 +351,78 @@
   from-csv
   from-json
   from-unixtime
+  from-utc-timestamp
+  from-xml
+  get
+  get-json-object
+  getbit
   greatest
   grouping
   grouping-id
   hash
   hex
+  histogram-numeric
+  hll-sketch-agg
+  hll-sketch-estimate
+  hll-union
+  hll-union-agg
   hour
+  hours
   hypot
+  ifnull
   initcap
+  inline
+  inline-outer
+  input-file-block-length
+  input-file-block-start
   input-file-name
   instr
+  is-valid-utf8
+  is-valid-variant
+  is-variant-null
+  isnan
+  isnotnull
+  isnull
+  java-method
+  json-array-length
+  json-object-keys
+  json-tuple
+  kll-merge-agg-bigint
+  kll-merge-agg-double
+  kll-merge-agg-float
+  kll-sketch-agg-bigint
+  kll-sketch-agg-double
+  kll-sketch-agg-float
+  kll-sketch-get-n-bigint
+  kll-sketch-get-n-double
+  kll-sketch-get-n-float
+  kll-sketch-get-quantile-bigint
+  kll-sketch-get-quantile-double
+  kll-sketch-get-quantile-float
+  kll-sketch-get-rank-bigint
+  kll-sketch-get-rank-double
+  kll-sketch-get-rank-float
+  kll-sketch-merge-bigint
+  kll-sketch-merge-double
+  kll-sketch-merge-float
+  kll-sketch-to-string-bigint
+  kll-sketch-to-string-double
+  kll-sketch-to-string-float
   kurtosis
   lag
   last-day
+  last-value
+  lcase
   lead
   least
+  left
+  len
   length
   levenshtein
+  listagg
+  listagg-distinct
+  ln
+  localtimestamp
   locate
   log
   log-10
@@ -306,8 +434,18 @@
   lower
   lpad
   ltrim
+  make-date
+  make-dt-interval
+  make-interval
+  make-time
+  make-timestamp
+  make-timestamp-ltz
+  make-timestamp-ntz
+  make-valid-utf8
+  make-ym-interval
   map
   map-concat
+  map-contains-key
   map-entries
   map-filter
   map-from-arrays
@@ -315,32 +453,79 @@
   map-keys
   map-values
   map-zip-with
+  mask
+  max-by
   md-5
   md5
+  min-by
   minute
+  mode
   monotonically-increasing-id
   month
+  monthname
+  months
   months-between
+  named-struct
   nanvl
   negate
+  negative
   next-day
   not
+  now
+  nth-value
   ntile
+  nullif
+  nullifzero
+  nvl
+  nvl2
+  octet-length
   overlay
+  parse-url
   percent-rank
+  percentile
+  percentile-approx
   pi
   pmod
   posexplode
   posexplode-outer
+  position
+  positive
   pow
+  power
+  printf
+  product
   quarter
+  quote
   radians
+  raise-error
   rand
   randn
+  random
+  randstr
   rank
+  reduce
+  reflect
+  regexp
+  regexp-count
   regexp-extract
+  regexp-extract-all
+  regexp-instr
+  regexp-like
   regexp-replace
+  regexp-substr
+  regr-avgx
+  regr-avgy
+  regr-count
+  regr-intercept
+  regr-r2
+  regr-slope
+  regr-sxx
+  regr-sxy
+  regr-syy
+  repeat
+  replace-substring
   reverse
+  right
   rint
   round
   row-number
@@ -348,8 +533,16 @@
   rtrim
   schema-of-csv
   schema-of-json
+  schema-of-variant
+  schema-of-variant-agg
+  schema-of-xml
+  sec
   second
+  sentences
   sequence
+  session-user
+  session-window
+  sha
   sha-1
   sha-2
   sha1
@@ -357,52 +550,177 @@
   shift-left
   shift-right
   shift-right-unsigned
+  shiftleft
+  shiftright
+  shiftrightunsigned
+  sign
   signum
   sin
   sinh
   size
   skewness
   slice
+  some
   sort-array
   soundex
   spark-partition-id
   split
+  split-part
   sqr
   sqrt
+  st-asbinary
+  st-geogfromwkb
+  st-geomfromwkb
+  st-setsrid
+  st-srid
+  stack
+  startswith
   std
   stddev
   stddev-pop
   stddev-samp
+  str-to-map
+  string-agg
+  string-agg-distinct
   struct
+  substr
   substring
   substring-index
   sum-distinct
   tan
   tanh
+  theta-difference
+  theta-intersection
+  theta-intersection-agg
+  theta-sketch-agg
+  theta-sketch-estimate
+  theta-union
+  theta-union-agg
+  time-bucket
+  time-diff
+  time-from-micros
+  time-from-millis
+  time-from-seconds
+  time-to-micros
+  time-to-millis
+  time-to-seconds
+  time-trunc
   time-window
+  timestamp-add
+  timestamp-diff
+  timestamp-micros
+  timestamp-millis
+  timestamp-seconds
+  to-binary
+  to-char
   to-csv
   to-date
+  to-number
+  to-time
   to-timestamp
+  to-timestamp-ltz
+  to-timestamp-ntz
+  to-unix-timestamp
   to-utc-timestamp
+  to-varchar
+  to-variant-object
+  to-xml
   transform
   transform-keys
   transform-values
   translate
   trim
+  trunc
+  try-add
+  try-aes-decrypt
+  try-avg
+  try-divide
+  try-element-at
+  try-make-interval
+  try-make-timestamp
+  try-make-timestamp-ltz
+  try-make-timestamp-ntz
+  try-mod
+  try-multiply
+  try-parse-json
+  try-parse-url
+  try-reflect
+  try-subtract
+  try-sum
+  try-to-binary
+  try-to-date
+  try-to-number
+  try-to-time
+  try-to-timestamp
+  try-url-decode
+  try-validate-utf8
+  try-variant-get
+  tuple-difference-double
+  tuple-difference-integer
+  tuple-difference-theta-double
+  tuple-difference-theta-integer
+  tuple-intersection-agg-double
+  tuple-intersection-agg-integer
+  tuple-intersection-double
+  tuple-intersection-integer
+  tuple-intersection-theta-double
+  tuple-intersection-theta-integer
+  tuple-sketch-agg-double
+  tuple-sketch-agg-integer
+  tuple-sketch-estimate-double
+  tuple-sketch-estimate-integer
+  tuple-sketch-summary-double
+  tuple-sketch-summary-integer
+  tuple-sketch-theta-double
+  tuple-sketch-theta-integer
+  tuple-union-agg-double
+  tuple-union-agg-integer
+  tuple-union-double
+  tuple-union-integer
+  tuple-union-theta-double
+  tuple-union-theta-integer
+  typeof
+  ucase
   unbase-64
   unbase64
   unhex
+  uniform
+  unix-date
+  unix-micros
+  unix-millis
+  unix-seconds
   unix-timestamp
+  unwrap-udt
   upper
+  url-decode
+  url-encode
+  user
+  uuid
+  validate-utf8
   var-pop
   var-samp
   variance
-  weekofyear
+  variant-get
   week-of-year
+  weekday
+  weekofyear
   when
+  width-bucket
+  window-time
+  xpath
+  xpath-boolean
+  xpath-double
+  xpath-float
+  xpath-int
+  xpath-long
+  xpath-number
+  xpath-short
+  xpath-string
   xxhash-64
   xxhash64
   year
+  years
+  zeroifnull
   zip-with])
 
 (import-vars
@@ -602,6 +920,7 @@
   alias
   as
   assoc
+  avg
   coalesce
   corr
   count

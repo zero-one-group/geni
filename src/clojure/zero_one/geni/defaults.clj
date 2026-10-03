@@ -43,6 +43,10 @@
     client reads the `SPARK_REMOTE` environment variable, or else connects to
     sc://localhost:15002.
   - `:configs`, a map of Spark SQL configs to set on the session.
+  - `:keep-classes`, true by default: from then on, Clojure writes the
+    classes that it compiles into a temporary directory, as `compile` does,
+    so that a UDF from a function defined at the REPL can go to the server.
+    See `g/udf`.
 
   Each call starts a new session on the server, which becomes Spark's default
   and active session, and the one that Geni uses, in place of any session

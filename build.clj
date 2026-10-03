@@ -231,16 +231,28 @@
 (defn- exit-code [command-args env]
   (:exit (b/process {:command-args command-args :env env})))
 
+(defn- without-clojure
+  "The basis without Clojure's jars and the project's own paths, so that a
+  Spark Connect server on it has never heard of Clojure, as a real one hasn't,
+  and the UDF tests check what Geni uploads to it."
+  [basis]
+  (update basis :classpath-roots
+          (fn [roots]
+            (remove (fn [root]
+                      (let [{:keys [lib-name path-key]} (get-in basis [:classpath root])]
+                        (or path-key (= "org.clojure" (some-> lib-name namespace)))))
+                    roots))))
+
 (defn- with-connect-server
   "Starts a Spark Connect server on :spark-4 in the background, on 127.0.0.1
-  at `port`, with its log in target/connect-server.log. Once it's up, calls
-  `f` with the environment that points a client at it, then stops the server.
-  Returns an exit code, as `f` does."
+  at `port`, with its log in target/connect-server.log, and without Clojure.
+  Once it's up, calls `f` with the environment that points a client at it,
+  then stops the server. Returns an exit code, as `f` does."
   [port f]
   (let [log     (io/file "target/connect-server.log")
         command (:command-args
                  (b/java-command
-                  {:basis     (basis :spark-4 :test :connect-server)
+                  {:basis     (without-clojure (basis :spark-4 :test :connect-server))
                    :main      'org.apache.spark.sql.connect.service.SparkConnectServer
                    :java-opts ["-Dspark.master=local[*]"
                                "-Dspark.connect.grpc.binding.address=127.0.0.1"
