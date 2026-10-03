@@ -5,7 +5,8 @@
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50 checkpoint-dir!]])
+   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50 checkpoint-dir! connect?
+                                         without-task-error-logs]])
   (:import
    (org.apache.spark.rdd RDD)
    (org.apache.spark.sql Dataset
@@ -716,3 +717,55 @@
          (g/collect (g/sql @spark "SELECT :d AS d" {:d (java.time.LocalDate/of 2026 10 2)}))))
   (is (thrown-with-msg? clojure.lang.ExceptionInfo #"as a map"
                         (g/sql @spark "SELECT 1" "1"))))
+
+(defn- spark-4? []
+  (clojure.string/starts-with? (.version @spark) "4."))
+
+(defn- reliable-checkpoints!
+  "A checkpoint directory for classic Spark. connect-tests starts its server
+  with one."
+  []
+  (when-not (connect?) (checkpoint-dir!)))
+
+(deftest local-checkpoint-test
+  (let [ids (g/repartition (g/range 100) 2)]
+    (is (= 100 (g/count (g/local-checkpoint ids))))
+    (is (= 100 (g/count (g/local-checkpoint ids false))))
+    (if (spark-4?)
+      (is (= 100 (g/count (g/local-checkpoint ids true g/memory-only))))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"from Spark 4.0"
+                            (g/local-checkpoint ids true g/memory-only))))))
+
+(deftest with-checkpoint-test
+  (let [ids  (g/repartition (g/range 100) 2)
+        kept (atom [])]
+    (reliable-checkpoints!)
+    (testing "local and reliable checkpoints, released afterwards"
+      (is (= [100 50]
+             (g/with-checkpoint [local    (g/local-checkpoint ids)
+                                 reliable (g/checkpoint (g/filter ids (g/< :id 50)))]
+               (swap! kept conj local reliable)
+               [(g/count local) (g/count reliable)])))
+      (without-task-error-logs
+       #(doseq [released @kept]
+          (is (thrown? Exception (g/count released))))))
+    (testing "released when the body throws"
+      (reset! kept [])
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"from the body"
+                            (g/with-checkpoint [local (g/local-checkpoint ids)]
+                              (swap! kept conj local)
+                              (throw (ex-info "from the body" {})))))
+      (without-task-error-logs
+       #(is (thrown? Exception (g/count (first @kept))))))
+    (testing "release-checkpoint! on its own, twice"
+      (let [local (g/local-checkpoint ids)]
+        (is (= 100 (g/count local)))
+        (g/release-checkpoint! local)
+        (g/release-checkpoint! local)
+        (without-task-error-logs
+         #(is (thrown? Exception (g/count local))))))
+    (testing "only a Dataset that a checkpoint returned"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
+                            (g/release-checkpoint! ids)))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"checkpoint or local-checkpoint returned"
+                            (g/release-checkpoint! (g/filter (g/local-checkpoint ids) (g/> :id 3))))))))
