@@ -276,14 +276,14 @@
                             (map iqr))))
 
 (defmulti median
-  "Column: Aggregate function: returns the median range of the values in a group.
+  "Column: Aggregate function: returns the exact median of the values in a
+   group, as Spark's `median` does. `g/percentile-approx` gives an approximate
+   one, with less memory.
 
-   RelationalGroupedDataset: Compute the median range for each numeric columns for each group."
+   RelationalGroupedDataset: Compute the median for each numeric columns for each group."
   (fn [head & _] (class head)))
-(defmethod median :default [col-name]
-  (let [median-expr (str "percentile_approx(" (name col-name) " , 0.5)")
-        median-name (str "median(" (name col-name) ")")]
-    (as (sql/expr median-expr) median-name)))
+(defmethod median :default [expr]
+  (functions/median (->column expr)))
 (defmethod median RelationalGroupedDataset [grouped & col-names]
   (dataset/agg grouped (map median col-names)))
 

@@ -3,7 +3,10 @@
            zero-one.geni.utils/import-vars             potemkin/import-vars
            zero-one.geni.core/with-checkpoint          clojure.core/with-open
            zero-one.geni.core.dataset/with-checkpoint  clojure.core/with-open}
- :hooks {:macroexpand {zero-one.geni.utils/import-fn zero-one.geni.kondo-hooks/import-fn}}
+ :hooks {:macroexpand {zero-one.geni.utils/import-fn
+                       zero-one.geni.kondo-hooks/import-fn
+                       zero-one.geni.core.function-table/def-spark-functions
+                       zero-one.geni.kondo-hooks/def-spark-functions}}
  ;; The with-dynamic-import tests define vars inside the macro on purpose.
  :config-in-ns {zero-one.geni.utils-test {:linters {:inline-def {:level :off}}}}
  :linters

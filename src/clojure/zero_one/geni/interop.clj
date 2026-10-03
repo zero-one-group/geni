@@ -53,6 +53,47 @@
   ^List [coll]
   (.toList (JavaConverters/asScalaBuffer (vec coll))))
 
+(def ^:private integer-classes #{Long Integer Short Byte})
+
+(defn- java-array-error [message value]
+  (throw (ex-info (str message " Got: " (pr-str value)) {:value value})))
+
+(defn ->java-array
+  "A Java array of the collection's values, which Spark's `lit` takes as an
+  array literal: whole numbers mixed with decimals become doubles, keywords
+  their names, nils stay, and a nested collection becomes a nested array. An
+  empty collection, one of only nils, one that holds maps, or one whose
+  values have different types throws, since Spark can't type its array."
+  [coll]
+  (let [elements (map #(cond
+                         (keyword? %) (name %)
+                         (map? %)     (java-array-error
+                                       (str "A collection that becomes an array literal can't "
+                                            "hold maps: build the array with g/array and g/map.")
+                                       coll)
+                         (coll? %)    (->java-array %)
+                         :else        %)
+                      coll)
+        classes  (set (map class (remove nil? elements)))
+        [element-class convert]
+        (cond
+          (empty? classes)
+          (java-array-error (str "Spark can't tell the element type of a collection that's empty "
+                                 "or all nils, so pass a typed Java array instead, such as "
+                                 "(long-array 0).")
+                            coll)
+
+          (= 1 (count classes))                                  [(first classes) identity]
+          (every? integer-classes classes)                       [Long long]
+          (every? (into integer-classes [Double Float]) classes) [Double double]
+          (every? (into integer-classes [BigDecimal]) classes)   [BigDecimal bigdec]
+
+          :else
+          (java-array-error (str "A collection that becomes an array literal needs values of one "
+                                 "type, or all numbers.")
+                            coll))]
+    (into-array element-class (map #(some-> % convert) elements))))
+
 (defn ->scala-list-map
   "An immutable Scala ListMap of the key-value pairs, which keeps their order,
   on Scala 2.12 and 2.13."

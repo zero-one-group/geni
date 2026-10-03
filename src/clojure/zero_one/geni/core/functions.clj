@@ -1,18 +1,28 @@
 (ns zero-one.geni.core.functions
   (:refer-clojure :exclude [abs
+                            bit-and
+                            bit-or
+                            bit-xor
+                            char
                             concat
                             flatten
+                            get
                             hash
                             map
                             not
+                            printf
                             rand
+                            reduce
+                            repeat
                             reverse
                             second
                             sequence
+                            some
                             struct
                             when])
   (:require
    [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.core.function-table :refer [def-spark-functions]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.spark :as spark]
@@ -39,6 +49,21 @@
                         (->column init)
                         (interop/->scala-function2 merge-fn)
                         (interop/->scala-function1 finish-fn))))
+(defn reduce
+  "Folds the array column `expr` from `init`: `merge-fn` takes the
+  accumulator and an element as columns, and `finish-fn`, when given, turns
+  the result into the final value, as `aggregate` does.
+
+  ```clojure
+  (g/reduce :scores (g/lit 0) g/+)
+  ```"
+  ([expr init merge-fn]
+   (functions/reduce (->column expr) (->column init) (interop/->scala-function2 merge-fn)))
+  ([expr init merge-fn finish-fn]
+   (functions/reduce (->column expr)
+                     (->column init)
+                     (interop/->scala-function2 merge-fn)
+                     (interop/->scala-function1 finish-fn))))
 (defn array-contains [expr value]
   (functions/array_contains (->column expr) value))
 (defn array-distinct [expr]
@@ -120,8 +145,6 @@
 (defn schema-of-json
   ([expr] (functions/schema_of_json (->column expr)))
   ([expr options] (functions/schema_of_json (->column expr) (->string-map options))))
-(defn sequence [start stop step]
-  (functions/sequence (->column start) (->column stop) (->column step)))
 (defn size [expr]
   (functions/size (->column expr)))
 (defn slice [expr start length]
@@ -169,8 +192,6 @@
 (defn last-day [expr] (functions/last_day (->column expr)))
 (defn minute [expr] (functions/minute (->column expr)))
 (defn month [expr] (functions/month (->column expr)))
-(defn months-between [l-expr r-expr]
-  (functions/months_between (->column l-expr) (->column r-expr)))
 (defn next-day [expr day-of-week]
   (functions/next_day (->column expr) day-of-week))
 (defn quarter [expr] (functions/quarter (->column expr)))
@@ -181,8 +202,6 @@
 (defn to-timestamp
   ([expr] (functions/to_timestamp (->column expr)))
   ([expr date-format] (functions/to_timestamp (->column expr) date-format)))
-(defn to-utc-timestamp [expr]
-  (functions/to_timestamp (->column expr)))
 (defn unix-timestamp
   ([] (functions/unix_timestamp))
   ([expr] (functions/unix_timestamp (->column expr)))
@@ -204,9 +223,7 @@
 (defn atan [expr] (functions/atan (->column expr)))
 (defn atan-2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
 (defn bin [expr] (functions/bin (->column expr)))
-(defn bround [expr] (functions/bround (->column expr)))
 (defn cbrt [expr] (functions/cbrt (->column expr)))
-(defn ceil [expr] (functions/ceil (->column expr)))
 (defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
 (defn cos [expr] (functions/cos (->column expr)))
 (defn cosh [expr] (functions/cosh (->column expr)))
@@ -214,10 +231,8 @@
 (defn exp [expr] (functions/exp (->column expr)))
 (defn expm-1 [expr] (functions/expm1 (->column expr)))
 (defn factorial [expr] (functions/factorial (->column expr)))
-(defn floor [expr] (functions/floor (->column expr)))
 (defn hex [expr] (functions/hex (->column expr)))
 (defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
-(defn log [expr] (functions/log (->column expr)))
 (defn log-10 [expr] (functions/log10 (->column expr)))
 (defn log-1p [expr] (functions/log1p (->column expr)))
 (defn log-2 [expr] (functions/log2 (->column expr)))
@@ -225,7 +240,6 @@
 (defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
 (defn radians [expr] (functions/radians (->column expr)))
 (defn rint [expr] (functions/rint (->column expr)))
-(defn round [expr] (functions/round (->column expr)))
 (defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
 (defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
 (defn shift-right-unsigned [expr num-bits] (functions/shiftRightUnsigned (->column expr) num-bits))
@@ -299,9 +313,6 @@
 (defn initcap [expr] (functions/initcap (->column expr)))
 (defn instr [expr substr] (functions/instr (->column expr) substr))
 (defn length [expr] (functions/length (->column expr)))
-(defn levenshtein [left-expr right-expr]
-  (functions/levenshtein (->column left-expr) (->column right-expr)))
-(defn locate [substr expr] (functions/locate substr (->column expr)))
 (defn lower [expr] (functions/lower (->column expr)))
 (defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
 (defn ltrim
@@ -322,7 +333,6 @@
   ([expr] (functions/rtrim (->column expr)))
   ([expr trim-string] (functions/rtrim (->column expr) trim-string)))
 (defn soundex [expr] (functions/soundex (->column expr)))
-(defn split [expr pattern] (functions/split (->column expr) pattern))
 (defn substring [expr pos len] (functions/substring (->column expr) pos len))
 (defn substring-index [expr delim cnt]
   (functions/substring-index (->column expr) delim cnt))
@@ -337,12 +347,6 @@
 ;;;; Window Functions
 (defn cume-dist [] (functions/cume_dist))
 (defn dense-rank [] (functions/dense_rank))
-(defn lag
-  ([expr offset] (functions/lag (->column expr) offset))
-  ([expr offset default] (functions/lag (->column expr) offset default)))
-(defn lead
-  ([expr offset] (functions/lead (->column expr) offset))
-  ([expr offset default] (functions/lead (->column expr) offset default)))
 (defn ntile [n] (functions/ntile n))
 (defn percent-rank [] (functions/percent_rank))
 (defn rank [] (functions/rank))
@@ -360,6 +364,340 @@
 (defn var-pop [expr] (functions/var_pop (->column expr)))
 (defn variance [expr] (functions/variance (->column expr)))
 
+;;;; Spark's functions, from a table
+;; A row per function: its name, its argument lists, and then :since for the
+;; Spark version that added it, after 3.5, and :spark for Spark's name, when
+;; it isn't the Geni name in snake case. See zero-one.geni.core.function-table,
+;; and zero-one.geni.function-docs in dev/ for the docstrings.
+(def-spark-functions
+  [acosh [e]]
+  [aes-decrypt [input key] [input key mode] [input key mode padding] [input key mode padding aad]]
+  [aes-encrypt [input key] [input key mode] [input key mode padding] [input key mode padding iv] [input key mode padding iv aad]]
+  [any [e]]
+  [any-value [e] [e ignore-nulls]]
+  [approx-percentile [e percentage accuracy]]
+  [array-agg [e]]
+  [array-append [column element]]
+  [array-compact [column]]
+  [array-insert [arr pos value]]
+  [array-prepend [column element]]
+  [array-size [e]]
+  [asinh [e]]
+  [assert-true [c] [c e]]
+  [atanh [e]]
+  [bit-and [e]]
+  [bit-count [e]]
+  [bit-get [e pos]]
+  [bit-length [e]]
+  [bit-or [e]]
+  [bit-xor [e]]
+  [bitmap-and-agg [col] :since "4.1"]
+  [bitmap-bit-position [col]]
+  [bitmap-bucket-number [col]]
+  [bitmap-construct-agg [col]]
+  [bitmap-count [col]]
+  [bitmap-or-agg [col]]
+  [bool-and [e]]
+  [bool-or [e]]
+  [bround [e] [e scale]]
+  [btrim [str] [str trim]]
+  [bucket [num-buckets e]]
+  [call-function [func-name & cols]]
+  [call-udf [udf-name & cols]]
+  [cardinality [e]]
+  [ceil [e] [e scale]]
+  [ceiling [e] [e scale]]
+  [char [n]]
+  [char-length [str]]
+  [character-length [str]]
+  [chr [n]]
+  [collate [e collation] :since "4.0"]
+  [collation [e] :since "4.0"]
+  [convert-timezone [target-tz source-ts] [source-tz target-tz source-ts]]
+  [cot [e]]
+  [count-if [e]]
+  [csc [e]]
+  [curdate []]
+  [current-catalog []]
+  [current-database []]
+  [current-path [] :since "4.2"]
+  [current-schema []]
+  [current-time [] [precision] :since "4.1"]
+  [current-timezone []]
+  [current-user []]
+  [date-from-unix-date [days]]
+  [date-part [field source]]
+  [dateadd [start days]]
+  [datepart [field source]]
+  [day [e]]
+  [dayname [time-exp] :since "4.0"]
+  [days [e]]
+  [e []]
+  [elt [& inputs]]
+  [endswith [str suffix]]
+  [equal-null [col1 col2]]
+  [every [e]]
+  [explode-outer [e]]
+  [extract [field source]]
+  [find-in-set [str str-array]]
+  [first-value [e] [e ignore-nulls]]
+  [floor [e] [e scale]]
+  [from-utc-timestamp [ts tz]]
+  [from-xml [e schema] :since "4.0"]
+  [get [column index]]
+  [get-json-object [e path]]
+  [getbit [e pos]]
+  [histogram-numeric [e n-bins]]
+  [hll-sketch-agg [e] [e lg-config-k]]
+  [hll-sketch-estimate [c]]
+  [hll-union [c1 c2] [c1 c2 allow-different-lg-config-k]]
+  [hll-union-agg [e] [e allow-different-lg-config-k]]
+  [hours [e]]
+  [ifnull [col1 col2]]
+  [inline [e]]
+  [inline-outer [e]]
+  [input-file-block-length []]
+  [input-file-block-start []]
+  [is-valid-utf8 [str] :since "4.0"]
+  [is-valid-variant [v] :since "4.2"]
+  [is-variant-null [v] :since "4.0"]
+  [isnan [e]]
+  [isnotnull [col]]
+  [isnull [e]]
+  [java-method [& cols]]
+  [json-array-length [e]]
+  [json-object-keys [e]]
+  [json-tuple [json & fields]]
+  [kll-merge-agg-bigint [e] [e k] :since "4.1.2"]
+  [kll-merge-agg-double [e] [e k] :since "4.1.2"]
+  [kll-merge-agg-float [e] [e k] :since "4.1.2"]
+  [kll-sketch-agg-bigint [e] [e k] :since "4.1"]
+  [kll-sketch-agg-double [e] [e k] :since "4.1"]
+  [kll-sketch-agg-float [e] [e k] :since "4.1"]
+  [kll-sketch-get-n-bigint [e] :since "4.1"]
+  [kll-sketch-get-n-double [e] :since "4.1"]
+  [kll-sketch-get-n-float [e] :since "4.1"]
+  [kll-sketch-get-quantile-bigint [sketch rank] :since "4.1"]
+  [kll-sketch-get-quantile-double [sketch rank] :since "4.1"]
+  [kll-sketch-get-quantile-float [sketch rank] :since "4.1"]
+  [kll-sketch-get-rank-bigint [sketch quantile] :since "4.1"]
+  [kll-sketch-get-rank-double [sketch quantile] :since "4.1"]
+  [kll-sketch-get-rank-float [sketch quantile] :since "4.1"]
+  [kll-sketch-merge-bigint [left right] :since "4.1"]
+  [kll-sketch-merge-double [left right] :since "4.1"]
+  [kll-sketch-merge-float [left right] :since "4.1"]
+  [kll-sketch-to-string-bigint [e] :since "4.1"]
+  [kll-sketch-to-string-double [e] :since "4.1"]
+  [kll-sketch-to-string-float [e] :since "4.1"]
+  [lag [e offset] [e offset default-value] [e offset default-value ignore-nulls]]
+  [last-value [e] [e ignore-nulls]]
+  [lcase [str]]
+  [lead [e offset] [e offset default-value] [e offset default-value ignore-nulls]]
+  [left [str len]]
+  [len [e]]
+  [levenshtein [l r] [l r threshold]]
+  [listagg [e] [e delimiter] :since "4.0"]
+  [listagg-distinct [e] [e delimiter] :since "4.0"]
+  [ln [e]]
+  [localtimestamp []]
+  [locate [substr str] [substr str pos]]
+  [log [e] [base a]]
+  [make-date [year month day]]
+  [make-dt-interval [] [days] [days hours] [days hours mins] [days hours mins secs]]
+  [make-interval [] [years] [years months] [years months weeks] [years months weeks days] [years months weeks days hours] [years months weeks days hours mins] [years months weeks days hours mins secs]]
+  [make-time [hour minute second] :since "4.1"]
+  [make-timestamp [date time] [date time timezone] [years months days hours mins secs] [years months days hours mins secs timezone]]
+  [make-timestamp-ltz [years months days hours mins secs] [years months days hours mins secs timezone]]
+  [make-timestamp-ntz [date time] [years months days hours mins secs]]
+  [make-valid-utf8 [str] :since "4.0"]
+  [make-ym-interval [] [years] [years months]]
+  [map-contains-key [column key]]
+  [mask [input] [input upper-char] [input upper-char lower-char] [input upper-char lower-char digit-char] [input upper-char lower-char digit-char other-char]]
+  [max-by [e ord] [e ord k]]
+  [min-by [e ord] [e ord k]]
+  [mode [e] [e deterministic]]
+  [monthname [time-exp] :since "4.0"]
+  [months [e]]
+  [months-between [end start] [end start round-off]]
+  [named-struct [& cols]]
+  [negative [e]]
+  [now []]
+  [nth-value [e offset] [e offset ignore-nulls]]
+  [nullif [col1 col2]]
+  [nullifzero [col] :since "4.0"]
+  [nvl [col1 col2]]
+  [nvl2 [col1 col2 col3]]
+  [octet-length [e]]
+  [parse-url [url part-to-extract] [url part-to-extract key]]
+  [percentile [e percentage] [e percentage frequency]]
+  [percentile-approx [e percentage accuracy]]
+  [posexplode-outer [e]]
+  [position [substr str] [substr str start]]
+  [positive [e]]
+  [power [l r]]
+  [printf [format & arguments]]
+  [product [e]]
+  [quote [str] :since "4.1"]
+  [raise-error [c]]
+  [random [] [seed]]
+  [randstr [length] [length seed] :since "4.0"]
+  [reflect [& cols]]
+  [regexp [str regexp]]
+  [regexp-count [str regexp]]
+  [regexp-extract-all [str regexp] [str regexp idx]]
+  [regexp-instr [str regexp] [str regexp idx]]
+  [regexp-like [str regexp]]
+  [regexp-substr [str regexp]]
+  [regr-avgx [y x]]
+  [regr-avgy [y x]]
+  [regr-count [y x]]
+  [regr-intercept [y x]]
+  [regr-r2 [y x]]
+  [regr-slope [y x]]
+  [regr-sxx [y x]]
+  [regr-sxy [y x]]
+  [regr-syy [y x]]
+  [repeat [str n]]
+  [replace-substring [src search] [src search replace] :spark "replace"]
+  [right [str len]]
+  [round [e] [e scale]]
+  [schema-of-variant [v] :since "4.0"]
+  [schema-of-variant-agg [v] :since "4.0"]
+  [schema-of-xml [xml] :since "4.0"]
+  [sec [e]]
+  [sentences [string] [string language] [string language country]]
+  [sequence [start stop] [start stop step]]
+  [session-user [] :since "4.0"]
+  [session-window [time-column gap-duration]]
+  [sha [col]]
+  [shiftleft [e num-bits]]
+  [shiftright [e num-bits]]
+  [shiftrightunsigned [e num-bits]]
+  [sign [e]]
+  [some [e]]
+  [split [str pattern] [str pattern limit]]
+  [split-part [str delimiter part-num]]
+  [st-asbinary [geo] [geo endianness] :since "4.1"]
+  [st-geogfromwkb [wkb] :since "4.1"]
+  [st-geomfromwkb [wkb] [wkb srid] :since "4.1"]
+  [st-setsrid [geo srid] :since "4.1"]
+  [st-srid [geo] :since "4.1"]
+  [stack [& cols]]
+  [startswith [str prefix]]
+  [str-to-map [text] [text pair-delim] [text pair-delim key-value-delim]]
+  [string-agg [e] [e delimiter] :since "4.0"]
+  [string-agg-distinct [e] [e delimiter] :since "4.0"]
+  [substr [str pos] [str pos len]]
+  [theta-difference [c1 c2] :since "4.1"]
+  [theta-intersection [c1 c2] :since "4.1"]
+  [theta-intersection-agg [e] :since "4.1"]
+  [theta-sketch-agg [e] [e lg-nom-entries] :since "4.1"]
+  [theta-sketch-estimate [c] :since "4.1"]
+  [theta-union [c1 c2] [c1 c2 lg-nom-entries] :since "4.1"]
+  [theta-union-agg [e] [e lg-nom-entries] :since "4.1"]
+  [time-bucket [bucket-size ts] [bucket-size ts origin] :since "4.2"]
+  [time-diff [unit start end] :since "4.1"]
+  [time-from-micros [e] :since "4.2"]
+  [time-from-millis [e] :since "4.2"]
+  [time-from-seconds [e] :since "4.2"]
+  [time-to-micros [e] :since "4.2"]
+  [time-to-millis [e] :since "4.2"]
+  [time-to-seconds [e] :since "4.2"]
+  [time-trunc [unit time] :since "4.1"]
+  [timestamp-add [unit quantity ts] :since "4.0"]
+  [timestamp-diff [unit start end] :since "4.0"]
+  [timestamp-micros [e]]
+  [timestamp-millis [e]]
+  [timestamp-seconds [e]]
+  [to-binary [e] [e f]]
+  [to-char [e format]]
+  [to-number [e format]]
+  [to-time [str] [str format] :since "4.1"]
+  [to-timestamp-ltz [timestamp] [timestamp format]]
+  [to-timestamp-ntz [timestamp] [timestamp format]]
+  [to-unix-timestamp [time-exp] [time-exp format]]
+  [to-utc-timestamp [ts tz]]
+  [to-varchar [e format]]
+  [to-variant-object [col] :since "4.0"]
+  [to-xml [e] :since "4.0"]
+  [trunc [date format]]
+  [try-add [left right]]
+  [try-aes-decrypt [input key] [input key mode] [input key mode padding] [input key mode padding aad]]
+  [try-avg [e]]
+  [try-divide [left right]]
+  [try-element-at [column value]]
+  [try-make-interval [years] [years months] [years months weeks] [years months weeks days] [years months weeks days hours] [years months weeks days hours mins] [years months weeks days hours mins secs] :since "4.0"]
+  [try-make-timestamp [date time] [date time timezone] [years months days hours mins secs] [years months days hours mins secs timezone] :since "4.0"]
+  [try-make-timestamp-ltz [years months days hours mins secs] [years months days hours mins secs timezone] :since "4.0"]
+  [try-make-timestamp-ntz [date time] [years months days hours mins secs] :since "4.0"]
+  [try-mod [left right] :since "4.0"]
+  [try-multiply [left right]]
+  [try-parse-json [json] :since "4.0"]
+  [try-parse-url [url part-to-extract] [url part-to-extract key] :since "4.0"]
+  [try-reflect [& cols] :since "4.0"]
+  [try-subtract [left right]]
+  [try-sum [e]]
+  [try-to-binary [e] [e f]]
+  [try-to-date [e] [e fmt] :since "4.0"]
+  [try-to-number [e format]]
+  [try-to-time [str] [str format] :since "4.1"]
+  [try-to-timestamp [s] [s format]]
+  [try-url-decode [str] :since "4.0"]
+  [try-validate-utf8 [str] :since "4.0"]
+  [try-variant-get [v path target-type] :since "4.0"]
+  [tuple-difference-double [c1 c2] :since "4.2"]
+  [tuple-difference-integer [c1 c2] :since "4.2"]
+  [tuple-difference-theta-double [c1 c2] :since "4.2"]
+  [tuple-difference-theta-integer [c1 c2] :since "4.2"]
+  [tuple-intersection-agg-double [e] [e mode] :since "4.2"]
+  [tuple-intersection-agg-integer [e] [e mode] :since "4.2"]
+  [tuple-intersection-double [c1 c2] [c1 c2 mode] :since "4.2"]
+  [tuple-intersection-integer [c1 c2] [c1 c2 mode] :since "4.2"]
+  [tuple-intersection-theta-double [c1 c2] [c1 c2 mode] :since "4.2"]
+  [tuple-intersection-theta-integer [c1 c2] [c1 c2 mode] :since "4.2"]
+  [tuple-sketch-agg-double [key summary] [key summary lg-nom-entries] [key summary lg-nom-entries mode] :since "4.2"]
+  [tuple-sketch-agg-integer [key summary] [key summary lg-nom-entries] [key summary lg-nom-entries mode] :since "4.2"]
+  [tuple-sketch-estimate-double [c] :since "4.2"]
+  [tuple-sketch-estimate-integer [c] :since "4.2"]
+  [tuple-sketch-summary-double [c] [c mode] :since "4.2"]
+  [tuple-sketch-summary-integer [c] [c mode] :since "4.2"]
+  [tuple-sketch-theta-double [c] :since "4.2"]
+  [tuple-sketch-theta-integer [c] :since "4.2"]
+  [tuple-union-agg-double [e] [e lg-nom-entries] [e lg-nom-entries mode] :since "4.2"]
+  [tuple-union-agg-integer [e] [e lg-nom-entries] [e lg-nom-entries mode] :since "4.2"]
+  [tuple-union-double [c1 c2] [c1 c2 lg-nom-entries] [c1 c2 lg-nom-entries mode] :since "4.2"]
+  [tuple-union-integer [c1 c2] [c1 c2 lg-nom-entries] [c1 c2 lg-nom-entries mode] :since "4.2"]
+  [tuple-union-theta-double [c1 c2] [c1 c2 lg-nom-entries] [c1 c2 lg-nom-entries mode] :since "4.2"]
+  [tuple-union-theta-integer [c1 c2] [c1 c2 lg-nom-entries] [c1 c2 lg-nom-entries mode] :since "4.2"]
+  [typeof [col]]
+  [ucase [str]]
+  [uniform [min max] [min max seed] :since "4.0"]
+  [unix-date [e]]
+  [unix-micros [e]]
+  [unix-millis [e]]
+  [unix-seconds [e]]
+  [unwrap-udt [column]]
+  [url-decode [str]]
+  [url-encode [str]]
+  [user []]
+  [uuid [] [seed]]
+  [validate-utf8 [str] :since "4.0"]
+  [variant-get [v path target-type] :since "4.0"]
+  [weekday [e]]
+  [width-bucket [v min max num-bucket]]
+  [window-time [window-column]]
+  [xpath [xml path]]
+  [xpath-boolean [xml path]]
+  [xpath-double [xml path]]
+  [xpath-float [xml path]]
+  [xpath-int [xml path]]
+  [xpath-long [xml path]]
+  [xpath-number [xml path]]
+  [xpath-short [xml path]]
+  [xpath-string [xml path]]
+  [years [e]]
+  [zeroifnull [col] :since "4.0"])
+
 ;; Docs
 (docs/alter-docs-in-ns!
  'zero-one.geni.core.functions
@@ -375,18 +713,15 @@
 (import-fn dayofmonth day-of-month)
 (import-fn dayofweek day-of-week)
 (import-fn dayofyear day-of-year)
-(import-fn explode explode-outer)
 (import-fn expm-1 expm1)
 (import-fn log-10 log10)
 (import-fn log-1p log1p)
 (import-fn log-2 log2)
 (import-fn md-5 md5)
 (import-fn not !)
-(import-fn posexplode posexplode-outer)
 (import-fn pow **)
 (import-fn sha-1 sha1)
 (import-fn sha-2 sha2)
-(import-fn signum sign)
 (import-fn stddev std)
 (import-fn stddev stddev-samp)
 (import-fn to-date ->date-col)

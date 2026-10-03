@@ -97,8 +97,8 @@
              (g/quantile [0.25 0.75] [:Price :Rooms])
              g/column-names)))
   (is (= [{:SellerG "Biggin"  (keyword "median(Price)") 1035000.0}
-          {:SellerG "Nelson"  (keyword "median(Price)") 1600000.0}
-          {:SellerG "Jellis"  (keyword "median(Price)") 941000.0}
+          {:SellerG "Nelson"  (keyword "median(Price)") 1618000.0}
+          {:SellerG "Jellis"  (keyword "median(Price)") 1070500.0}
           {:SellerG "Greg"    (keyword "median(Price)") 441000.0}
           {:SellerG "LITTLE"  (keyword "median(Price)") 1176500.0}
           {:SellerG "Collins" (keyword "median(Price)") 955000.0}]

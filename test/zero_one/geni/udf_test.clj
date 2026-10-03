@@ -1,18 +1,24 @@
-(ns ^:classic zero-one.geni.udf-test
-  "Spark SQL UDFs from Clojure functions."
+(ns zero-one.geni.udf-test
+  "Spark SQL UDFs from Clojure functions, on a local session and over Spark
+  Connect, whose test server has no Clojure."
   (:require
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.core.udf :as udf]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [spark]])
+   [zero-one.geni.test-resources :refer [connect? spark]])
   (:import
    (clojure.lang ExceptionInfo RT)
    (java.io ByteArrayInputStream ByteArrayOutputStream ObjectInputStream ObjectOutputStream
             ObjectStreamClass)
    (org.apache.spark.sql.api.java UDF1)
    (org.apache.spark.sql.types DataTypes)))
+
+;; Over Spark Connect, the session has to exist before the rest of this
+;; namespace compiles, so that Clojure keeps its functions' classes for the
+;; server, as g/connect's :keep-classes has it do.
+(when (connect?) @spark)
 
 ;; Spark evaluates a UDF over an in-memory table on the driver, so the tests
 ;; use g/range and g/repartition, whose tasks go through serialisation.
@@ -79,14 +85,18 @@
   (testing ":name names the column"
     (is (= ["plus_one(id)"]
            (g/column-names (g/select (ids 1) ((g/udf inc :long {:name "plus_one"}) :id))))))
-  (testing ":deterministic and :nullable reach Spark"
-    (let [df (g/select (ids 1) {:x ((g/udf inc :long {:deterministic false :nullable false}) :id)
-                                :y ((g/udf inc :long) :id)})
-          [x y] (-> df .queryExecution .analyzed .expressions interop/scala-seq->vec)]
-      (is (= [false true] [(.deterministic x) (.deterministic y)]))
+  (testing ":nullable reaches Spark"
+    (let [df (g/select (ids 1) {:x ((g/udf inc :long {:nullable false}) :id)
+                                :y ((g/udf inc :long) :id)})]
       (is (= [false true] (map #(.nullable %) (.fields (.schema df)))))))
   (testing "a Spark DataType works as the return type"
     (is (= [[1]] (select-vals (ids 1) ((g/udf inc DataTypes/LongType) :id))))))
+
+(deftest ^:classic deterministic-udf-test
+  (let [df (g/select (ids 1) {:x ((g/udf inc :long {:deterministic false}) :id)
+                              :y ((g/udf inc :long) :id)})
+        [x y] (-> df .queryExecution .analyzed .expressions interop/scala-seq->vec)]
+    (is (= [false true] [(.deterministic x) (.deterministic y)]))))
 
 (deftest udf-errors-test
   (is (thrown-with-msg? ExceptionInfo #"Unknown UDF return type :lonng"
@@ -130,6 +140,19 @@
       (.writeObject o x))
     (with-open [in (ObjectInputStream. (ByteArrayInputStream. (.toByteArray out)))]
       (.readObject in))))
+
+(deftest var-udf-test
+  (testing "a var goes by name, and the executors, or the server, load its namespace"
+    (is (= [[0] [2]] (select-vals (ids 2) ((g/udf #'doubled :long) :id))))))
+
+(deftest ^:connect connect-udf-test
+  (testing "a function compiled at the REPL after g/connect goes to the server"
+    (let [triple (eval '(fn [x] (* 3 x)))]
+      (is (= [[0] [3]] (select-vals (ids 2) ((g/udf triple :long) :id))))))
+  (testing "a function compiled without its class kept gets an error that says what to do"
+    (let [unkept (binding [*compile-files* false] (eval '(fn [x] (* 4 x))))]
+      (is (thrown-with-msg? ExceptionInfo #"compiled before Geni connected"
+                            (g/udf unkept :long))))))
 
 (deftest serialisation-test
   (testing "a var travels by name, so its function's class isn't needed"

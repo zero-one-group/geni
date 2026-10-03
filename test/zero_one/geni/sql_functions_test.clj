@@ -671,11 +671,12 @@
                (instance? java.sql.Timestamp x1)
                (instance? java.sql.Date x2)
                (instance? java.sql.Date x3))))
-    (is (= (mod (-> (df-1)
-                    (g/select (g/to-utc-timestamp (g/lit "2020-05-12")))
-                    g/collect-vals
-                    ffirst
-                    .getTime) 10000) 0))
+    (is (= ["2020-05-12 02:00"]
+           (-> (df-1)
+               (g/select {:utc (-> (g/to-timestamp (g/lit "2020-05-12 09:00:00"))
+                                   (g/to-utc-timestamp "Asia/Jakarta")
+                                   (g/date-format "yyyy-MM-dd HH:mm"))})
+               (g/collect-col :utc))))
     (let [ts 1
           dt (-> (Instant/ofEpochMilli 1)
                  (.atZone (ZoneId/systemDefault)))]

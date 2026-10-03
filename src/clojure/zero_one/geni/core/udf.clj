@@ -1,8 +1,10 @@
 (ns zero-one.geni.core.udf
-  "Spark SQL UDFs from Clojure functions, on classic Spark."
+  "Spark SQL UDFs from Clojure functions, on classic Spark and over Spark
+  Connect."
   (:require
    [zero-one.geni.core.column :refer [->col-array]]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.udf-artifacts :as udf-artifacts]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.spark :as spark])
   (:import
@@ -13,6 +15,7 @@
    (org.apache.spark.sql.types ArrayType ByteType DataType DecimalType DoubleType FloatType
                                IntegerType LongType MapType ShortType StringType StructField
                                StructType)
+   (scala.collection JavaConverters)
    (zero_one.geni.udf UdfFn)))
 
 (def ^:private max-arity
@@ -43,7 +46,8 @@
 (defn ^:no-doc result-converter
   "Returns a function that turns a UDF's result into the Java value that Spark
   expects for `data-type`: a number of the declared width, a string for a
-  keyword, a list for an array, a map for a map, and a Row for a struct, from
+  keyword, a Scala Seq for an array, a Scala Map for a map, and a Row for a
+  struct, from
   a map with keyword or string keys, or from the values in order. `nil` stays
   nil, and other values go to Spark as they are. `zero_one.geni.udf.UdfFn`
   calls it on each executor, the first time the UDF runs there."
@@ -57,19 +61,21 @@
                   FloatType   float
                   DecimalType bigdec
                   StringType  ->string
+                  ;; Scala collections, which a Spark Connect server's encoders
+                  ;; need, and classic Spark takes too.
                   ArrayType   (let [element (result-converter (.elementType ^ArrayType data-type))]
                                 (fn [values]
                                   (let [out (ArrayList.)]
                                     (doseq [value values]
                                       (.add out (element value)))
-                                    out)))
+                                    (JavaConverters/asScalaBuffer out))))
                   MapType     (let [k (result-converter (.keyType ^MapType data-type))
                                     v (result-converter (.valueType ^MapType data-type))]
                                 (fn [m]
                                   (let [out (HashMap.)]
                                     (doseq [[mk mv] m]
                                       (.put out (k mk) (v mv)))
-                                    out)))
+                                    (JavaConverters/mapAsScalaMap out))))
                   StructType  (struct-converter data-type result-converter)
                   identity)]
     (fn [value]
@@ -91,20 +97,23 @@
                            "DataType.")
                       {:return-type return-type})))))
 
-(defn- classic-only! []
-  (when (spark/connect-only?)
-    (throw (ex-info (str "UDFs need classic Spark for now: a Clojure UDF runs on the executors, "
-                         "and Geni doesn't yet upload what it needs to a Spark Connect server.")
-                    {}))))
+(defn- upload!
+  "Over Spark Connect, uploads what the server needs to run `f` to the
+  session, once per session."
+  [spark f]
+  (when-not (spark/classic-session? spark)
+    (udf-artifacts/upload-udf! spark f)))
 
 (defn- ->udf-fn
   "Wraps `f` for Spark, with the namespaces that the executors need to load
   to run it."
   ^UdfFn [f ^DataType data-type]
   (let [namespace-references (requiring-resolve 'zero-one.geni.rdd.function/namespace-references)
-        namespaces           (into #{"zero-one.geni.core.udf" "zero-one.geni.interop"}
-                                   (map str)
-                                   (namespace-references f))]
+        namespaces           (cond-> (into #{"zero-one.geni.core.udf" "zero-one.geni.interop"}
+                                           (map str)
+                                           (namespace-references f))
+                               ;; A var goes by name, so its namespace has to load.
+                               (var? f) (conj (str (ns-name (.ns ^clojure.lang.Var f)))))]
     (UdfFn. f data-type namespaces)))
 
 (defmacro ^:private spark-udf-of-arity
@@ -130,9 +139,12 @@
 
 (defn- caller
   "A function of columns that calls the UDF with as many arguments as it's
-  given columns."
-  [udf-for-arity]
+  given columns. Over Spark Connect, it uploads what the server needs to run
+  `f` to Geni's default session, unless that's there."
+  [f udf-for-arity]
   (fn [& exprs]
+    (when (spark/connect-only?)
+      (upload! @defaults/spark f))
     (let [^"[Lorg.apache.spark.sql.Column;" cols (->col-array exprs)
           ^UserDefinedFunction u                 (udf-for-arity (alength cols))]
       (.apply u cols))))
@@ -154,11 +166,13 @@
     values, so that Spark calls it once per row, as it's written;
   - `:nullable`, false when `f` never returns nil.
 
-  UDFs need classic Spark, and run on the executors. Functions defined at a
-  REPL, or in a script, work on a local session that Geni starts. On a
-  cluster, pass a var, such as `#'my-fn`, which the executors look up in its
-  namespace, or AOT-compile the namespace that defines `f`. The Clojure UDFs
-  guide has the details.
+  UDFs run on the executors. Functions defined at a REPL, or in a script,
+  work on a local session that Geni starts. On a cluster, pass a var, such as
+  `#'my-fn`, which the executors look up in its namespace, or AOT-compile the
+  namespace that defines `f`. Over Spark Connect, Geni uploads Clojure, Geni
+  and the code that `f` uses to the server, once per session, and a function
+  defined at the REPL works when it's defined after `g/connect`. The Clojure
+  UDFs guide has the details.
 
   ```clojure
   (def plus-one (g/udf inc :long))
@@ -170,10 +184,11 @@
   ```"
   ([f return-type] (udf f return-type {}))
   ([f return-type opts]
-   (classic-only!)
+   (when (spark/connect-only?)
+     (upload! @defaults/spark f))
    (let [data-type (->data-type return-type)
          udf-fn    (->udf-fn f data-type)]
-     (caller (memoize #(spark-udf udf-fn data-type % opts))))))
+     (caller f (memoize #(spark-udf udf-fn data-type % opts))))))
 
 (defn- fixed-arity
   "How many arguments `f` takes, when that's one number."
@@ -189,7 +204,7 @@
       (first arities))))
 
 (defn- register! [^SparkSession spark udf-name f return-type {:keys [arity] :as opts}]
-  (classic-only!)
+  (upload! spark f)
   (let [arity     (or arity
                       (fixed-arity f)
                       (throw (ex-info (str "Pass :arity, the number of arguments that SQL calls "
@@ -200,11 +215,11 @@
         udf-fn    (->udf-fn f data-type)
         u         (spark-udf udf-fn data-type arity (assoc opts :name udf-name))]
     (.register (.udf spark) (name udf-name) u)
-    (caller (fn [n]
-              (if (= n arity)
-                u
-                (throw (ex-info (str (name udf-name) " takes " arity " columns, and got " n ".")
-                                {:udf-name udf-name :arity arity :columns n})))))))
+    (caller f (fn [n]
+                (if (= n arity)
+                  u
+                  (throw (ex-info (str (name udf-name) " takes " arity " columns, and got " n ".")
+                                  {:udf-name udf-name :arity arity :columns n})))))))
 
 (defmulti register-udf!
   "Registers `f` as a Spark UDF called `udf-name` on the session, for
