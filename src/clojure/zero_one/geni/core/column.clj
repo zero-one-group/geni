@@ -12,7 +12,8 @@
   (:require
    [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.spark :as spark])
   (:import
    (org.apache.spark.sql Column
                          Dataset
@@ -113,6 +114,30 @@
 
 (defn cast [expr new-type] (.cast (col expr) new-type))
 
+(defn try-cast
+  "Casts the column to `new-type`, a type name such as `\"int\"` or a Spark
+  type, as `cast` does, but gives null where a value doesn't convert, rather
+  than an error under ANSI mode. Needs Spark 4.0.
+
+  ```clojure
+  (g/select dataframe {:price (g/try-cast :price-text \"double\")})
+  ```"
+  [expr new-type]
+  (spark/require-version! [4 0] "try-cast")
+  (.try_cast (col expr) new-type))
+
+(defn outer
+  "Marks the column as one from the outer query, in a Dataset that becomes a
+  subquery through `g/scalar`, `g/exists` or `g/isin`, or the right side of
+  `g/lateral-join`. Needs Spark 4.0.
+
+  ```clojure
+  (g/filter orders (g/exists (g/filter refunds (g/=== :order-id (g/outer :id)))))
+  ```"
+  [expr]
+  (spark/require-version! [4 0] "outer")
+  (.outer (col expr)))
+
 (defn contains [expr literal] (.contains (col expr) literal))
 
 (defn ends-with [expr literal] (.endsWith (col expr) literal))
@@ -154,7 +179,20 @@
 
 (defn is-null [expr] (.isNull (col expr)))
 
-(defn isin [expr coll] (.isin (col expr) (interop/->scala-seq coll)))
+(defn isin
+  "Returns a boolean column that is true where the column's value is in
+  `coll`, or in the one column of the Dataset `coll`, as an IN subquery, which
+  needs Spark 4.1.
+
+  ```clojure
+  (g/filter sales (g/isin :region [\"north\" \"south\"]))
+  (g/filter sales (g/isin :customer-id (g/select vip :id)))
+  ```"
+  [expr coll]
+  (if (instance? Dataset coll)
+    (do (spark/require-version! [4 1] "isin over a Dataset")
+        (.isin (col expr) coll))
+    (.isin (col expr) (interop/->scala-seq coll))))
 
 (defn like [expr literal] (.like (col expr) literal))
 

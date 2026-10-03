@@ -176,8 +176,10 @@
   null-count
   null-rate
   null?
+  outer
   rlike
   starts-with
+  try-cast
   with-field
   |
   ||])
@@ -465,6 +467,7 @@
   first-vals
   freq-items
   group-by
+  grouping-sets
   head
   head-vals
   hint
@@ -478,6 +481,7 @@
   join
   join-with
   last-vals
+  lateral-join
   limit
   local-checkpoint
   local?
@@ -485,6 +489,7 @@
   merge-in-place
   metadata-column
   might-contain
+  nearest-by-join
   observation
   observe
   observed
@@ -508,6 +513,7 @@
   same-semantics?
   sample
   sample-by
+  scalar
   select
   select-expr
   semantic-hash
@@ -527,6 +533,7 @@
   to
   to-byte-array
   total-count
+  transpose
   tree-string
   union
   union-by-name
@@ -537,7 +544,8 @@
   with-column
   with-column-renamed
   with-columns
-  with-metadata])
+  with-metadata
+  zip-with-index])
 
 (import-vars
  [zero-one.geni.core.udf
@@ -565,6 +573,7 @@
   read!
   read-avro!
   read-binary!
+  read-changes!
   read-csv!
   read-edn!
   read-jdbc!
@@ -574,6 +583,7 @@
   read-table!
   read-text!
   read-xlsx!
+  table-function
   write!
   write-avro!
   write-csv!

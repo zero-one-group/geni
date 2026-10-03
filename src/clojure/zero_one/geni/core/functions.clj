@@ -15,6 +15,7 @@
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
+   [zero-one.geni.spark :as spark]
    [zero-one.geni.utils :refer [->string-map import-fn]])
   (:import
    (org.apache.spark.sql Column functions)))
@@ -73,8 +74,20 @@
 (defn collect-list [expr] (functions/collect_list (->column expr)))
 (defn collect-set [expr] (functions/collect_set (->column expr)))
 (defn concat [& exprs] (functions/concat (->col-array exprs)))
-(defn exists [expr predicate]
-  (functions/exists (->column expr) (interop/->scala-function1 predicate)))
+(defn exists
+  "With a column and a predicate, returns whether the predicate holds for any
+  element of the array column. With a Dataset, returns a column for an EXISTS
+  subquery: true when the Dataset has rows, which needs Spark 4.0.
+
+  ```clojure
+  (g/exists :scores #(g/> % 90))
+  (g/filter orders (g/exists (g/filter refunds (g/=== :order-id (g/outer :id)))))
+  ```"
+  ([dataframe]
+   (spark/require-version! [4 0] "exists over a Dataset")
+   (.exists dataframe))
+  ([expr predicate]
+   (functions/exists (->column expr) (interop/->scala-function1 predicate))))
 (defn explode [expr] (functions/explode (->column expr)))
 (defn element-at [expr value]
   (functions/element_at (->column expr) (int value)))

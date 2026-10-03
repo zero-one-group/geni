@@ -5,6 +5,7 @@
    [clojure.java.io :as io]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.interop :as interop]
+   [zero-one.geni.spark :as spark]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.core.dataset :as dataset]
@@ -13,9 +14,14 @@
    (java.text Normalizer Normalizer$Form)
    (org.apache.spark.sql Column Dataset DataFrameWriter Encoders SparkSession)))
 
-(defn- configure-reader-or-writer [unconfigured options]
+(defn- configure-reader-or-writer
+  "Sets each option: a keyword key in camelCase, such as `:infer-schema` as
+  `inferSchema`, and a string key as it is, for options such as Iceberg's
+  `\"snapshot-id\"`. A keyword value goes as its name."
+  [unconfigured options]
   (reduce
-   (fn [r [k v]] (.option r (->camel-case k) v))
+   (fn [r [k v]]
+     (.option r (if (string? k) k (->camel-case k)) (if (keyword? v) (name v) v)))
    unconfigured
    options))
 
@@ -176,11 +182,11 @@
   (map name (ensure-coll cols)))
 
 (defn- bucket-writer [writer bucket-spec]
-  (let [[n-buckets cols]     bucket-spec
-        [col-name & others] (->names cols)]
+  (let [[n-buckets & cols]  (when (sequential? bucket-spec) bucket-spec)
+        [col-name & others] (->names (mapcat ensure-coll cols))]
     (when-not (and (integer? n-buckets) col-name)
       (throw (ex-info (str ":bucket-by takes the number of buckets and the columns, such as "
-                           "[8 [:id]]. Got: " (pr-str bucket-spec))
+                           "[8 :id]. Got: " (pr-str bucket-spec))
                       {:bucket-by bucket-spec})))
     (.bucketBy writer (int n-buckets) col-name (into-array String others))))
 
@@ -188,16 +194,24 @@
   (let [[col-name & others] (->names cols)]
     (.sortBy writer col-name (into-array String others))))
 
+(defn- cluster-writer [writer cols]
+  (let [[col-name & others] (->names cols)]
+    (.clusterBy writer col-name (into-array String others))))
+
 (defn- configure-base-writer ^DataFrameWriter
   [writer options]
-  (let [{:keys [format mode partition-by bucket-by sort-by]} options
+  (let [{:keys [format mode partition-by bucket-by sort-by cluster-by]} options
+        _      (when cluster-by (spark/require-version! [4 0] ":cluster-by"))
         writer (-> writer
                    (cond-> format (.format (name format)))
                    (cond-> mode (.mode (mode-name mode)))
                    (cond-> partition-by (.partitionBy (partition-by-arg partition-by)))
                    (cond-> bucket-by (bucket-writer bucket-by))
-                   (cond-> sort-by (sort-writer sort-by)))]
-    (configure-reader-or-writer writer (dissoc options :format :mode :partition-by :bucket-by :sort-by))))
+                   (cond-> sort-by (sort-writer sort-by))
+                   (cond-> cluster-by (cluster-writer cluster-by)))]
+    (configure-reader-or-writer
+     writer
+     (dissoc options :format :mode :partition-by :bucket-by :sort-by :cluster-by))))
 
 (defn- write-data! [format dataframe path options]
   (let [configured-writer (-> (.write dataframe)
@@ -361,7 +375,8 @@
   The options map takes `:format`, such as `\"parquet\"` or `\"delta\"`
   (Spark's `spark.sql.sources.default` without it), `:path` or `:paths`,
   `:schema`, as for the other readers, and `:kebab-columns`. Every other key is
-  a reader option, with a keyword key in camelCase, as for the other readers.
+  a reader option, as for the other readers: a keyword key in camelCase, such
+  as `:version-as-of`, and a string key as it is, such as `\"snapshot-id\"`.
   Without a path, it loads what the options name, as a JDBC source does.
 
   ```clojure
@@ -441,6 +456,60 @@
   ([dataframe col-name] (parse-csv dataframe col-name {}))
   ([dataframe col-name options] (parse-strings :csv dataframe col-name options)))
 
+(defmulti read-changes!
+  "Reads a table's change feed: the rows that changed between the versions or
+  timestamps that the options give, such as `:starting-version` and
+  `:ending-version`, as Delta Lake and Iceberg tables have it. Every key is a
+  reader option, as for `read-table!`. Needs Spark 4.2, and a catalog that
+  supports change data capture, which Spark's built-in one doesn't.
+
+  ```clojure
+  (g/read-changes! \"lake.orders\" {:starting-version 3 :ending-version 9})
+  ```"
+  (fn [head & _] (class head)))
+(defmethod read-changes! :default
+  ([table-name] (read-changes! @defaults/spark table-name {}))
+  ([table-name options] (read-changes! @defaults/spark table-name options)))
+(defmethod read-changes! SparkSession
+  ([spark table-name] (read-changes! spark table-name {}))
+  ([spark table-name options]
+   (spark/require-version! [4 2] "read-changes!")
+   (-> (.read spark)
+       (configure-reader-or-writer (dissoc options :kebab-columns))
+       (.changes (name table-name))
+       (cond-> (:kebab-columns options) ->kebab-columns))))
+
+(defn- table-function-name [fn-name]
+  (let [sql-name (string/replace (name fn-name) "-" "_")]
+    (if (re-matches #"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*" sql-name)
+      sql-name
+      (throw (ex-info (str "Expected a table-valued function's name, such as :explode. Got: "
+                           (pr-str fn-name))
+                      {:name fn-name})))))
+
+(defn table-function
+  "Calls a table-valued function, such as `:range`, `:explode`, `:inline`,
+  `:stack` or `:sql-keywords`, with `args`, and returns its table as a
+  DataFrame. The args go to Spark as named SQL parameters, so they're what
+  `g/sql` takes: a vector becomes an array, and from Spark 4.0, a column can
+  build the array of structs that `:inline` takes.
+
+  ```clojure
+  (g/table-function :explode [[1 2 3]])
+  (g/table-function spark :stack [(int 2) 1 \"a\" 2 \"b\"])
+  (g/table-function :inline [(g/array (g/struct (g/as (g/lit 1) :id)))])
+  ```"
+  {:arglists '([fn-name] [fn-name args] [spark fn-name] [spark fn-name args])}
+  [& spark-name-and-args]
+  (let [[spark fn-name args] (if (instance? SparkSession (first spark-name-and-args))
+                               spark-name-and-args
+                               (cons @defaults/spark spark-name-and-args))
+        params               (map #(keyword (str "arg" %)) (range (count args)))]
+    (spark/sql spark
+               (str "SELECT * FROM " (table-function-name fn-name)
+                    "(" (string/join ", " (map #(str (keyword %)) params)) ")")
+               (zipmap params args))))
+
 ; Hive/Managed Tables
 (defmulti read-table!
   "Reads a managed (hive) table and returns the result as a DataFrame. A map
@@ -451,7 +520,7 @@
   ([table-name] (read-table! @defaults/spark table-name))
   ([table-name options] (read-table! @defaults/spark table-name options)))
 (defmethod read-table! SparkSession
-  ([spark table-name] (.table spark table-name))
+  ([spark table-name] (.table spark (name table-name)))
   ([spark table-name options]
    (-> (.read spark)
        (configure-reader-or-writer (dissoc options :kebab-columns))
@@ -460,20 +529,21 @@
 
 (defn write-table!
   "Writes the dataset to a managed (hive) table. The options take `:format`,
-  `:mode`, `:partition-by`, and `:bucket-by` with the number of buckets and the
-  columns, such as `[8 [:id]]`, and `:sort-by` for the columns to sort each
-  bucket by. Every other key is a writer option.
+  `:mode`, `:partition-by`, `:bucket-by` with the number of buckets and the
+  columns, such as `[8 :id]` or `[8 :id :day]`, `:sort-by` for the columns to
+  sort each bucket by, and `:cluster-by` for the clustering columns
+  (Spark 4.0). Every other key is a writer option.
 
   ```clojure
   (g/write-table! dataframe \"sales\" {:format :parquet :bucket-by [8 :id] :sort-by :day})
   ```"
-  ([^Dataset dataframe ^String table-name]
+  ([^Dataset dataframe table-name]
    (write-table! dataframe table-name {}))
-  ([^Dataset dataframe ^String table-name options]
+  ([^Dataset dataframe table-name options]
    (-> dataframe
        (.write)
        (configure-base-writer options)
-       (.saveAsTable table-name))))
+       (.saveAsTable (name table-name)))))
 
 (defn insert-into!
   "Inserts the dataset's rows into an existing table, matching the columns by
@@ -503,16 +573,18 @@
   `:append`, `:overwrite`, which replaces the rows that the column
   `:condition` holds for, or `:overwrite-partitions`. When it creates a table,
   `:using` is its format, `:partitioned-by` its partition columns or
-  transforms, and `:table-properties` a map of its properties. Every other key
-  is a writer option. Spark's built-in session catalog only takes `:create`.
+  transforms, `:cluster-by` its clustering columns (Spark 4.0), and
+  `:table-properties` a map of its properties. Every other key is a writer
+  option. Spark's built-in session catalog only takes `:create`.
 
   ```clojure
   (g/write-to! dataframe \"lake.events\" {:mode :create :using \"delta\" :partitioned-by [:day]})
   (g/write-to! dataframe \"lake.events\" {:mode :overwrite :condition (g/=== :day \"2026-10-01\")})
   ```"
   [dataframe table-name options]
-  (let [{:keys [mode using partitioned-by table-properties condition]} options
+  (let [{:keys [mode using partitioned-by cluster-by table-properties condition]} options
         mode (some-> mode keyword)]
+    (when cluster-by (spark/require-version! [4 0] "write-to! with :cluster-by"))
     (when-not (write-to-modes mode)
       (throw (ex-info (str "write-to! takes a :mode, one of " (sort write-to-modes)
                            ". Got: " (pr-str (:mode options)))
@@ -525,8 +597,10 @@
           writer (-> (.writeTo dataframe (name table-name))
                      (cond-> using (.using (name using)))
                      (configure-reader-or-writer
-                      (dissoc options :mode :using :partitioned-by :table-properties :condition))
-                     (cond-> partition (.partitionedBy partition (into-array Column partitions))))
+                      (dissoc options :mode :using :partitioned-by :cluster-by :table-properties
+                              :condition))
+                     (cond-> partition (.partitionedBy partition (into-array Column partitions)))
+                     (cond-> cluster-by (cluster-writer cluster-by)))
           writer (reduce (fn [w [k v]] (.tableProperty w (->option-string k) (->option-string v)))
                          writer
                          table-properties)]

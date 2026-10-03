@@ -62,6 +62,10 @@
   (let [[spark more] (session-and-args args)
         conf         (runtime-conf spark)
         configs      (if (map? (first more)) (first more) {(first more) (second more)})]
+    (when-let [unset (seq (keep (fn [[k value]] (when (nil? value) k)) configs))]
+      (throw (ex-info (str "conf-set! takes a value for each config, and conf-unset! unsets one. "
+                           "Got none for: " (pr-str unset))
+                      {:configs configs})))
     (doseq [[k value] configs]
       (.set conf (name k) (conf-value value)))))
 

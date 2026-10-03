@@ -29,18 +29,29 @@ New:
   - `g/insert-into!` inserts a DataFrame's rows into an existing table, by position.
   - `g/write-to!` writes through Spark's DataFrameWriterV2, for catalogs such as Delta's and Iceberg's, with a `:mode` such as `:create`, `:append` or `:overwrite`. Spark's built-in session catalog only takes `:create`.
   - `g/parse-json` and `g/parse-csv` parse a column of JSON or CSV strings into a DataFrame.
-  - `g/sql` binds parameters to values: a map binds named ones, such as `:min`, and a vector binds `?` ones.
+  - `g/sql` binds parameters to values: a map binds named ones, such as `:min`, and a vector binds `?` ones. A collection becomes an array, of doubles when it mixes whole numbers and decimals.
   - `g/conf-get`, `g/conf-set!`, `g/conf-unset!` and `g/conf-modifiable?` read and set the session's runtime configs.
   - `zero-one.geni.catalog` has `list-catalogs`, `current-catalog` and `set-current-catalog`.
   - The writers' `:mode` can be a keyword, such as `:overwrite`, as well as a string.
 - Checkpoints that free what they hold, on Spark 3.5 and 4, and over Spark Connect:
   - `g/local-checkpoint` cuts a Dataset's plan with a checkpoint in the executors' storage, which needs no checkpoint directory, and from Spark 4.0 takes the storage level.
-  - `g/release-checkpoint!` frees a checkpoint: the blocks of a local one, and the files of a reliable one. Over Spark Connect, the server lets go of it.
+  - `g/release-checkpoint!` frees a checkpoint: the blocks of a local one, and the files of a reliable one. Over Spark Connect, the server lets go of it, for its context cleaner to free.
   - `g/with-checkpoint` binds checkpointed Datasets, as `with-open` does, and releases them when its body is done.
+- Spark 4's verbs, which on an older Spark throw an error that names the version they need:
+  - `g/transpose`, `g/grouping-sets`, and `g/lateral-join`, with `g/outer` for the left side's columns (Spark 4.0).
+  - Subqueries: `g/scalar`, and `g/exists` with a DataFrame (Spark 4.0), and `g/isin` with a DataFrame (Spark 4.1).
+  - `g/try-cast`, which gives null where a value doesn't convert (Spark 4.0).
+  - `g/zip-with-index` and `g/nearest-by-join` (Spark 4.2).
+  - `:cluster-by` for `g/write-table!` and `g/write-to!` (Spark 4.0).
+  - `g/read-changes!`, which reads a table's change feed, from a catalog that has one, such as Delta Lake's (Spark 4.2).
+- `g/table-function` calls a table-valued function, such as `:explode`, `:inline` or `:stack`, on any Spark.
 
 Fixes:
 
 - `zero-one.geni.core.column/not-equal`, which `g/` doesn't export, was null-safe equality, `g/<=>`, rather than `g/=!=`.
+- On Spark 4.1.0 to 4.1.3 and 4.2.0, which bind more than four positional SQL parameters in the wrong order (SPARK-58341), `g/sql` throws an error that says so for more than four, rather than returning wrong results. Named parameters work.
+- A reader or writer option with a string key, such as Iceberg's `"snapshot-id"`, goes to Spark as it is. It was turned into camelCase, as a keyword key is, so an option with a hyphen or an underscore in its name was lost. A keyword value, such as `:failfast` for `:mode`, goes as its name.
+- `g/read-table!` and `g/write-table!` take a keyword as the table's name.
 
 ## 0.3.0 (2026-10-01)
 

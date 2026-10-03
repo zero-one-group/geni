@@ -369,7 +369,13 @@
                                   :path          (path "c")
                                   :header        true
                                   :infer-schema  true
-                                  :kebab-columns true})))))
+                                  :kebab-columns true}))))
+      (testing "a string key goes as it is, and a keyword value as its name"
+        (is (= {:IdNum "IntegerType"}
+               (g/dtypes (g/read! {:format "csv" :path (path "c") "header" "true" "inferSchema" "true"}))))
+        (is (= {:IdNum "StringType"}
+               (g/dtypes (g/read! {:format "csv" :path (path "c") "header" "true" "infer-schema" "true"}))))
+        (is (= 1 (g/count (g/read! {:format "csv" :path (path "c") :header true :mode :failfast}))))))
     (testing "a keyword :mode for the other writers"
       (g/write-parquet! df (path "k") {:mode :overwrite})
       (g/write-parquet! df (path "k") {:mode :overwrite})
@@ -420,6 +426,10 @@
         (is (= {"Provider" "parquet" "Num Buckets" "2" "Bucket Columns" "[`id`]" "Sort Columns" "[`id`]"}
                (select-keys (described "bucketed")
                             ["Provider" "Num Buckets" "Bucket Columns" "Sort Columns"]))))
+      (testing "write-table! with buckets over several columns, and keyword names"
+        (g/write-table! df :bucketed2 {:format :parquet :bucket-by [2 :id :v]})
+        (is (= "[`id`, `v`]" (get (described "bucketed2") "Bucket Columns")))
+        (is (= 2 (g/count (g/read-table! :bucketed2)))))
       (testing "read-table! with options"
         (is (= [:id :v] (g/columns (g/read-table! "bucketed" {:kebab-columns true}))))
         (is (= 2 (g/count (g/read-table! @spark "bucketed" {"mergeSchema" "false"})))))
