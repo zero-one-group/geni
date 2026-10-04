@@ -537,6 +537,73 @@
     (is (= 3 (ml/rank (ml/fit (g/table->dataset @spark [[0 0 1.0] [0 1 2.0] [1 1 3.0]] [:user :item :rating])
                               (ml/als {:rank 3 :max-iter 2 :seed 1})))))))
 
+(defn- regression-df
+  "Six rows of a label and two features, for regressions."
+  []
+  (g/table->dataset @spark
+                    (for [[y a b] [[1.0 1.0 2.0] [2.0 2.0 1.0] [3.0 3.0 3.0] [4.0 4.0 2.0] [5.0 5.0 6.0] [6.1 6.0 1.0]]]
+                      [y (g/dense a b)])
+                    [:label :features]))
+
+(deftest ^:slow summaries-test
+  (let [small (small-df)]
+    (testing "a binary classifier's training summary, as a map"
+      (let [model   (ml/fit small (ml/logistic-regression {:max-iter 5}))
+            summary (ml/summary model)]
+        (is (= [1.0 1.0 [0.0 1.0]] ((juxt :accuracy :area-under-roc :labels) summary)))
+        (is (= 5 (:total-iterations summary)))
+        (is (= 6 (count (:objective-history summary))))
+        (is (every? #(instance? Dataset (% summary)) [:predictions :roc :pr :f-measure-by-threshold]))
+        (is (= summary (ml/binary-summary model)))
+        (testing "and one for new data, through evaluate, without the training's history"
+          (let [evaluated (ml/summary (ml/evaluate small model))]
+            (is (= 1.0 (:accuracy evaluated)))
+            (is (not (contains? evaluated :objective-history)))))))
+    (testing "a multilayer perceptron's, which isn't binary"
+      (let [summary (ml/summary (ml/fit small (ml/mlp-classifier {:layers [3 2] :max-iter 5})))]
+        (is (= [0.0 1.0] (:labels summary)))
+        (is (not (contains? summary :area-under-roc)))))
+    (testing "clustering models'"
+      (is (= [[4 4] 2] ((juxt :cluster-sizes :k) (ml/summary (ml/fit small (ml/k-means {:k 2 :seed 1}))))))
+      (let [summary (ml/summary (ml/fit small (ml/gaussian-mixture {:k 2 :seed 1})))]
+        (is (double? (:log-likelihood summary)))
+        (is (instance? Dataset (:probability summary)))))
+    (testing "and an error for a model without one, or anything else"
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"DecisionTreeClassificationModel has no summary"
+                            (ml/summary (ml/fit small (ml/decision-tree-classifier {})))))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"not a java.lang.String"
+                            (ml/summary "x")))))
+  (let [regression (regression-df)]
+    (testing "a linear regression's, with the coefficients' statistics from the normal solver"
+      (let [summary (ml/summary (ml/fit regression (ml/linear-regression {:solver "normal"})))]
+        (is (< 0.99 (:r2 summary) 1.0))
+        (is (= 6 (:num-instances summary)))
+        (is (= 3 (count (:p-values summary))))
+        (is (instance? Dataset (:residuals summary)))))
+    (testing "without them, which Spark can't give, from another solver"
+      (is (not (contains? (ml/summary (ml/fit regression (ml/linear-regression {:solver "l-bfgs"
+                                                                                :reg-param 0.1
+                                                                                :elastic-net-param 0.5})))
+                          :p-values))))
+    (testing "a generalised linear regression's"
+      (let [summary (ml/summary (ml/fit regression (ml/generalized-linear-regression {:max-iter 5})))]
+        (is (= "irls" (:solver summary)))
+        (is (= ["(Intercept)" "features_0" "features_1"]
+               (map :feature (:coefficients-with-statistics summary))))
+        (is (double? (:aic summary)))))))
+
+(deftest ^:slow summarizer-test
+  (let [stats (-> (small-df)
+                  (g/with-column :weight (g/lit 2.0))
+                  (g/agg {:plain    (ml/summarizer :features [:mean :count :num-non-zeros])
+                          :weighted (ml/summarizer :features [:mean] :weight)})
+                  g/collect
+                  first)]
+    (is (= [:count :mean :numNonZeros] (sort (keys (:plain stats)))))
+    (is (= [8 [8.0 6.0 6.0]] ((juxt :count :numNonZeros) (:plain stats))))
+    (doseq [means [(:mean (:plain stats)) (:mean (:weighted stats))]]
+      (is (every? #(< (Math/abs (double %)) 1e-12) (map - means [4.75 3.125 1.25]))))))
+
 (deftest instantiation-fpm-test
   (is (= (:max-pattern-length (ml/params (ml/prefix-span {:max-pattern-length 321}))) 321))
   (is (instance? PrefixSpan (ml/prefix-span {})))
@@ -840,6 +907,11 @@
                               (ml/chi-square-test "features" "label")
                               g/first-vals
                               first))))
+    (testing "and with a row per feature"
+      (is (= [0 1] (-> dataset
+                       (ml/chi-square-test "features" "label" true)
+                       (g/order-by :featureIndex)
+                       (g/collect-col :featureIndex)))))
     (testing "able to do KS test"
       (let [actual (-> (df-20)
                        (ml/kolmogorov-smirnov-test :Rooms "norm" [2.35 0.745])

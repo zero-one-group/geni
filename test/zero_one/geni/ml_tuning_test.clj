@@ -1,6 +1,7 @@
 (ns ^:classic zero-one.geni.ml-tuning-test
   (:require
    [clojure.test :refer [deftest is testing]]
+   [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [libsvm-df]])
@@ -40,6 +41,24 @@
           model      (ml/fit (libsvm-df) cv)]
       (is (instance? LogisticRegressionModel (ml/best-model model))))))
 
+(deftest ^:slow tuning-results-test
+  (let [log-reg    (ml/logistic-regression {:max-iter 1})
+        param-grid (ml/param-grid {log-reg {:reg-param [0.1 0.01]}})
+        options    {:estimator            log-reg
+                    :estimator-param-maps param-grid
+                    :evaluator            (ml/binary-classification-evaluator {})
+                    :seed                 1}
+        data       (g/limit (libsvm-df) 40)]
+    (testing "a cross-validator's metric per param map, and its sub-models, when it keeps them"
+      (let [model (ml/fit data (ml/cross-validator (assoc options :num-folds 2 :collect-sub-models true)))]
+        (is (= 2 (count (ml/avg-metrics model))))
+        (is (= [2 2] (map count (ml/sub-models model))))
+        (is (every? #(instance? LogisticRegressionModel %) (flatten (ml/sub-models model))))))
+    (testing "a train-validation split's"
+      (let [model (ml/fit data (ml/train-validation-split (assoc options :train-ratio 0.6)))]
+        (is (= 2 (count (ml/validation-metrics model))))
+        (is (nil? (ml/sub-models model)))))))
+
 (deftest cross-validator-test
   (testing "should be instantiatable"
     (is (instance? CrossValidator (ml/cross-validator {}))))
@@ -67,7 +86,9 @@
                          :evaluator (ml/binary-classification-evaluator {})
                          :estimator-param-maps (ml/param-grid {})
                          :seed 888
+                         :train-ratio 0.6
                          :parallelism 777})
           split-params (ml/params split)]
+      (is (= 0.6 (:train-ratio split-params)))
       (is (= 888 (:seed split-params)))
       (is (= 777 (:parallelism split-params))))))

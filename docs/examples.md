@@ -339,6 +339,21 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ;; => -0.5991460286401467
 ```
 
+`ml/summary` gives the model's training summary as a map, with the loss at each iteration, and for a binary classifier the area under the ROC curve, whose curve stays a DataFrame:
+
+```clojure
+(def lr-summary (ml/summary lr-model))
+
+(take 3 (:objective-history lr-summary))
+;; => (0.6833149135741672 0.6661906127558117 0.6207433672479603)
+
+(:area-under-roc lr-summary)
+;; => 1.0
+
+(g/column-names (:roc lr-summary))
+;; => ("FPR" "TPR")
+```
+
 #### Gradient Boosted Tree Classifier
 
 ```clojure
