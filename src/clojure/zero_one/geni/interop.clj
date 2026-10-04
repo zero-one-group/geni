@@ -215,8 +215,10 @@
 (defn dense-matrix? [value]
   (boolean (some-> ^Class @dense-matrix-class (.isInstance value))))
 
-(defn vector->seq [spark-vector]
-  (-> spark-vector .values seq))
+(defn vector->seq
+  "An MLlib vector's values, every one of them, a sparse vector's zeros too."
+  [spark-vector]
+  (-> spark-vector .toArray seq))
 
 (defn sparse-vector->seq [spark-sparse-vector]
   {:size (.size spark-sparse-vector)
@@ -367,17 +369,17 @@
                          " Its params are " (string/join ", " known) ".")
                     {:class cls :param k :params known}))))
 
-(defn instantiate
-  "Creates an instance of `cls`, sets `params` through its setters (e.g.
-  `{:input-col \"text\"}` through `setInputCol`), and returns the instance. A
-  key in `params` that has no setter throws, with the class's params in the
-  message. The keys in `defaults`, which are Geni's own, are set when the class
-  has a setter for them and skipped when it doesn't, since a default can be
-  missing from one Spark version."
-  ([cls params] (instantiate cls {} params))
-  ([^Class cls defaults params]
-   (let [setters  (setters-map cls)
-         instance (.newInstance cls)]
+(defn set-params!
+  "Sets `params` on `instance` through its setters (e.g. `{:input-col
+  \"text\"}` through `setInputCol`), and returns the instance. A key in
+  `params` that has no setter throws, with the class's params in the message.
+  The keys in `defaults`, which are Geni's own, are set when the class has a
+  setter for them and skipped when it doesn't, since a default can be missing
+  from one Spark version."
+  ([instance params] (set-params! instance {} params))
+  ([instance defaults params]
+   (let [cls     (class instance)
+         setters (setters-map cls)]
      (doseq [k (keys params)
              :when (not (contains? setters k))]
        (unknown-param! cls setters k))
@@ -387,6 +389,13 @@
              :when methods]
        (set-value (pick-setter methods v) instance v))
      instance)))
+
+(defn instantiate
+  "Creates an instance of `cls`, and sets `params` and `defaults` on it, as
+  `set-params!` does."
+  ([cls params] (instantiate cls {} params))
+  ([^Class cls defaults params]
+   (set-params! (.newInstance cls) defaults params)))
 
 (defn zero-arity? [^java.lang.reflect.Method method]
   (= 0 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method))))

@@ -1,4 +1,5 @@
 (ns zero-one.geni.ml
+  (:refer-clojure :exclude [range])
   (:require
    [clojure.walk :refer [keywordize-keys]]
    [zero-one.geni.utils :refer [->kebab-case import-fn import-vars]]
@@ -59,6 +60,7 @@
   chi-sq-selector
   count-vectoriser
   count-vectorizer
+  count-vectorizer-model
   dct
   discrete-cosine-transform
   elementwise-product
@@ -68,6 +70,7 @@
   imputer
   index-to-string
   interaction
+  load-default-stop-words
   max-abs-scaler
   min-hash-lsh
   min-max-scaler
@@ -79,6 +82,7 @@
   polynomial-expansion
   quantile-discretiser
   quantile-discretizer
+  r-formula
   regex-tokeniser
   regex-tokenizer
   robust-scaler
@@ -86,11 +90,16 @@
   standard-scaler
   stop-words-remover
   string-indexer
+  string-indexer-model
+  target-encoder
   tokeniser
   tokenizer
+  univariate-feature-selector
+  variance-threshold-selector
   vector-assembler
   vector-indexer
   vector-size-hint
+  vector-slicer
   word-2-vec
   word2vec])
 
@@ -150,6 +159,12 @@
   ([expr] (vector-to-array (column/->column expr) "float64"))
   ([expr dtype] (functions/vector_to_array (column/->column expr) dtype)))
 
+(defn array-to-vector
+  "A column of MLlib dense vectors from a column of arrays of numbers, as a
+  model's features column takes them. `vector-to-array` goes the other way."
+  [expr]
+  (functions/array_to_vector (column/->column expr)))
+
 (defn chi-square-test [dataframe features-col label-col]
   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
 
@@ -166,7 +181,13 @@
 (defn transform [dataframe transformer]
   (.transform transformer dataframe))
 
-(defn evaluate [dataframe evaluator]
+(defn evaluate
+  "The metric that `evaluator` gives `dataframe`'s predictions, such as the
+  area under the ROC curve. Given a model in place of an evaluator, a model
+  that has `evaluate`, such as a logistic or linear regression's, it's the
+  model's summary of how it does on `dataframe`, as `summary` gives for the
+  training data."
+  [dataframe evaluator]
   (.evaluate evaluator dataframe))
 
 (defn params [stage]
@@ -249,6 +270,198 @@
 (defn vocabulary [model] (seq (.vocabulary model)))
 (defn weights [model] (seq (.weights model)))
 
+;; Predictions for one row, and more of the models' attributes
+
+(defn- ->features
+  "One row's features, for a model's single prediction: a collection of
+  numbers as a dense vector, and a number, which isotonic regression takes,
+  as a double."
+  [features]
+  (cond
+    (number? features) (double features)
+    (coll? features)   (interop/->dense-vector features)
+    :else              features))
+
+(defn predict
+  "The model's prediction for one row's features, a vector of numbers or an
+  MLlib vector, as its `transform` makes it: a label for a classifier, a
+  value for a regressor, and a cluster for a clustering model. Isotonic
+  regression takes one number.
+
+  ```clojure
+  (ml/predict model [0.5 1.0 2.0])
+  ```"
+  [model features]
+  (.predict model (->features features)))
+
+(defn predict-raw
+  "A classifier's raw prediction for one row's features, such as the margin
+  of each class for logistic regression."
+  [model features]
+  (interop/vector->seq (.predictRaw model (->features features))))
+
+(defn predict-probability
+  "A probabilistic classifier's, or a Gaussian mixture's, probability of each
+  class, or cluster, for one row's features."
+  [model features]
+  (interop/vector->seq (.predictProbability model (->features features))))
+
+(defn predict-leaf
+  "The leaf that one row's features end in: its index for a decision tree,
+  and one index per tree for a forest or boosted trees."
+  [model features]
+  (let [leaf (.predictLeaf model (->features features))]
+    (if (number? leaf) leaf (interop/vector->seq leaf))))
+
+(defn predict-quantiles
+  "An AFT survival regression's quantiles for one row's features, at the
+  model's `:quantile-probabilities`."
+  [model features]
+  (interop/vector->seq (.predictQuantiles model (->features features))))
+
+(defn to-debug-string
+  "A tree model's trees as text, with each node's split and prediction."
+  [model]
+  (.toDebugString model))
+
+(defn evaluate-each-iteration
+  "A gradient-boosted trees model's loss on `dataset` after each iteration:
+  for a regressor, by the loss given, \"squared\" or \"absolute\"."
+  ([dataset model] (seq (.evaluateEachIteration model dataset)))
+  ([dataset model loss] (seq (.evaluateEachIteration model dataset (name loss)))))
+
+(defn explained-variance
+  "The share of the variance that each of a PCA model's components explains."
+  [model]
+  (interop/vector->seq (.explainedVariance model)))
+
+(defn doc-freq
+  "The number of documents that each term occurs in, by index, for an IDF
+  model."
+  [model]
+  (seq (.docFreq model)))
+
+(defn num-docs
+  "The number of documents that an IDF model was fitted on."
+  [model]
+  (.numDocs model))
+
+(defn find-synonyms
+  "The `n` words closest to a word, or to a vector of numbers, in a Word2Vec
+  model, as a DataFrame of `word` and `similarity`."
+  [model word-or-vector n]
+  (.findSynonyms model
+                 (if (coll? word-or-vector)
+                   (interop/->dense-vector word-or-vector)
+                   (name word-or-vector))
+                 (int n)))
+
+(defn get-vectors
+  "A Word2Vec model's words and their vectors, as a DataFrame of `word` and
+  `vector`."
+  [model]
+  (.getVectors model))
+
+(defn topics-matrix
+  "An LDA model's topics: a row per term, a column per topic. A distributed
+  model gathers it to the driver."
+  [model]
+  (interop/matrix->seqs (.topicsMatrix model)))
+
+(defn log-prior
+  "A distributed LDA model's log prior of its parameters, given its
+  hyperparameters."
+  [model]
+  (.logPrior model))
+
+(defn training-log-likelihood
+  "A distributed LDA model's log likelihood of the documents it was fitted
+  on."
+  [model]
+  (.trainingLogLikelihood model))
+
+(defn to-local
+  "A distributed LDA model as a local one, without the training data."
+  [model]
+  (.toLocal model))
+
+(defn get-checkpoint-files
+  "The checkpoint files that a distributed LDA model keeps, for its
+  `:keep-last-checkpoint` param."
+  [model]
+  (seq (.getCheckpointFiles model)))
+
+(defn median
+  "The median of each feature, for a RobustScaler model."
+  [model]
+  (interop/vector->seq (.median model)))
+
+(defn range
+  "The quantile range of each feature, for a RobustScaler model."
+  [model]
+  (interop/vector->seq (.range model)))
+
+(defn sigma
+  "A Gaussian naive Bayes model's variances, a row per class and a column per
+  feature."
+  [model]
+  (interop/matrix->seqs (.sigma model)))
+
+(defn factors
+  "A factorisation machine's factors, a row per feature."
+  [model]
+  (interop/matrix->seqs (.factors model)))
+
+(defn linear
+  "A factorisation machine's linear terms, one per feature."
+  [model]
+  (interop/vector->seq (.linear model)))
+
+(defn compute-cost
+  "A bisecting k-means model's sum of squared distances from the rows of
+  `dataset` to their nearest centre."
+  [dataset model]
+  (.computeCost model dataset))
+
+(defn rank
+  "The rank of an ALS model's factors."
+  [model]
+  (.rank model))
+
+(defn get-splits
+  "A Bucketizer's splits."
+  [model]
+  (seq (.getSplits model)))
+
+(defn get-splits-array
+  "A Bucketizer's splits for each of its `:input-cols`."
+  [model]
+  (map seq (.getSplitsArray model)))
+
+(defn labels-array
+  "A StringIndexer model's labels for each of its input columns, in the
+  order of their indices."
+  [model]
+  (map seq (.labelsArray model)))
+
+(defn has-summary
+  "Whether a model has a training summary, which a model loaded from disk
+  doesn't."
+  [model]
+  (.hasSummary model))
+
+(defn selected-features
+  "The indices of the features that a ChiSqSelector,
+  UnivariateFeatureSelector or VarianceThresholdSelector model keeps."
+  [model]
+  (seq (.selectedFeatures model)))
+
+(defn resolved-formula-string
+  "An RFormula model's formula, with its terms resolved against the columns
+  it was fitted on."
+  [model]
+  (str (.resolvedFormula model)))
+
 (defn write-stage!
   "Save a PipelineStage to the specified path, with Geni's default session."
   ([stage path] (write-stage! stage path {}))
@@ -304,6 +517,8 @@
 
 ;; Aliases
 (import-fn approx-nearest-neighbors approx-nearest-neighbours)
+(import-fn array-to-vector array->vector)
+(import-fn has-summary has-summary?)
 (import-fn find-frequent-sequential-patterns find-patterns)
 (import-fn freq-itemsets frequent-item-sets)
 (import-fn get-features-col features-col)

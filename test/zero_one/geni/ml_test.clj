@@ -5,6 +5,7 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
+   [zero-one.geni.spark :as geni-spark]
    [zero-one.geni.test-resources :refer [create-temp-file!
                                          df-20
                                          melbourne-df
@@ -56,6 +57,7 @@
                                 PCA
                                 PolynomialExpansion
                                 QuantileDiscretizer
+                                RFormula
                                 RegexTokenizer
                                 RobustScaler
                                 SQLTransformer
@@ -63,9 +65,12 @@
                                 StopWordsRemover
                                 StringIndexer
                                 Tokenizer
+                                UnivariateFeatureSelector
+                                VarianceThresholdSelector
                                 VectorAssembler
                                 VectorIndexer
                                 VectorSizeHint
+                                VectorSlicer
                                 Word2Vec)
    (org.apache.spark.ml.fpm FPGrowth
                             PrefixSpan)
@@ -79,6 +84,9 @@
                                    LinearRegression
                                    RandomForestRegressor)
    (org.apache.spark.sql Dataset)))
+
+(defn- spark-4? []
+  (= "4" (first (re-seq #"\d+" (geni-spark/classpath-version)))))
 
 (deftest reading-and-writing-test
   (let [stage     (ml/vector-assembler {})
@@ -382,6 +390,153 @@
       (is (every? double? (ml/weights model)))
       (is (instance? Dataset (ml/gaussians-df model))))))
 
+(defn- first-features
+  "The first row's features in libsvm-df, an MLlib vector."
+  []
+  (-> (libsvm-df) (g/select :features) .first (.get 0)))
+
+(defn- small-df
+  "Eight rows of a label and three non-negative features, which fit quickly."
+  []
+  (g/table->dataset @spark
+                    (for [[label a b c] [[0.0 1.0 0.0 2.0] [0.0 2.0 1.0 1.0] [0.0 1.0 1.0 3.0] [0.0 2.0 0.0 2.0]
+                                         [1.0 7.0 5.0 0.0] [1.0 8.0 6.0 1.0] [1.0 9.0 5.0 0.0] [1.0 8.0 7.0 1.0]]]
+                      [label (g/dense a b c)])
+                    [:label :features]))
+
+(deftest ^:slow feature-models-test
+  (let [df (g/table->dataset @spark
+                             [[1.0 "a" 2.0 0.0 0] [0.0 "b" 1.0 0.0 1] [1.0 "a" 3.0 0.0 0] [0.0 "c" 0.5 0.0 2]]
+                             [:y :t :x :z :cat])
+        assembled (ml/transform df (ml/vector-assembler {:input-cols [:x :z :y] :output-col :features}))]
+    (testing "r-formula, and its resolved formula"
+      (let [model (ml/fit df (ml/r-formula {:formula "y ~ t + x"}))]
+        (is (= [[[1.0 0.0 2.0] 1.0] [[0.0 1.0 1.0] 0.0]]
+               (take 2 (g/collect-vals (g/select (ml/transform df model) :features :label)))))
+        (is (= "ResolvedRFormula(label=y, terms=[t,x], hasIntercept=true)"
+               (ml/resolved-formula-string model)))))
+    (testing "selectors and the features they keep"
+      (is (= [0 2] (ml/selected-features
+                    (ml/fit assembled (ml/variance-threshold-selector {:output-col :selected})))))
+      (is (= [0] (ml/selected-features
+                  (ml/fit assembled (ml/univariate-feature-selector {:label-col :y
+                                                                     :output-col :selected
+                                                                     :feature-type "continuous"
+                                                                     :label-type "categorical"
+                                                                     :selection-threshold 1}))))))
+    (testing "vector-slicer"
+      (is (= [[2.0 1.0] [1.0 0.0]]
+             (->> (ml/transform assembled (ml/vector-slicer {:input-col :features :output-col :s :indices [0 2]}))
+                  g/collect-vals
+                  (map last)
+                  (take 2)))))
+    (testing "target-encoder, on Spark 4"
+      (when (spark-4?)
+        (is (= [1.0 0.0 1.0 0.0]
+               (-> df
+                   (ml/transform (ml/fit df (ml/target-encoder {:input-cols [:cat] :output-cols [:encoded]
+                                                                :label-col :y :target-type "binary"})))
+                   (g/collect-col :encoded)))))))
+  (testing "models from known labels and a known vocabulary"
+    (is (= [0.0 1.0 2.0]
+           (-> (g/table->dataset @spark [["low"] ["high"] ["mid"]] [:level])
+               (ml/transform (ml/string-indexer-model {:labels ["low" "high" "mid"] :input-col :level :output-col :i}))
+               (g/collect-col :i))))
+    (is (= [["a" "b"] ["c"]]
+           (ml/labels-array (ml/string-indexer-model {:labels-array [["a" "b"] ["c"]]
+                                                      :input-cols [:p :q] :output-cols [:pi :qi]}))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"either :labels or :labels-array"
+                          (ml/string-indexer-model {:input-col :x})))
+    (is (= [{:size 2 :indices [0 1] :values [2.0 1.0]}]
+           (-> (g/table->dataset @spark [[["a" "b" "a" "z"]]] [:words])
+               (ml/transform (ml/count-vectorizer-model {:vocabulary ["a" "b"] :input-col :words :output-col :counts}))
+               (g/collect-col :counts)))))
+  (testing "Spark's stop words by language"
+    (is (= ["au" "aux" "avec"] (take 3 (ml/load-default-stop-words :french)))))
+  (testing "arrays to vectors and back"
+    (is (= [[1.0 2.0]]
+           (-> (g/table->dataset @spark [[[1.0 2.0]]] [:a])
+               (g/select {:v (ml/array->vector :a)})
+               (g/select {:a (ml/vector->array :v)})
+               (g/collect-col :a))))))
+
+(deftest ^:slow model-accessors-test
+  (let [features (first-features)
+        libsvm   (g/limit (libsvm-df) 60)]
+    (testing "one row's predictions"
+      (let [model (ml/fit libsvm (ml/logistic-regression {:max-iter 5}))]
+        (is (= 0.0 (ml/predict model features)))
+        (is (= 1.0 (ml/predict model (vec (repeat 780 0.0)))))
+        (is (= 2 (count (ml/predict-raw model features))))
+        (is (< 0.99 (first (ml/predict-probability model features)) 1.0))
+        (is (= 780 (count (ml/coefficients model))) "every coefficient, sparse or not")
+        (is (true? (ml/has-summary? model)))
+        (is (= 1.0 (.accuracy (ml/evaluate libsvm model))) "a model's evaluate gives its summary")))
+    (testing "trees"
+      (let [small   (small-df)
+            tree    (ml/fit small (ml/decision-tree-classifier {:max-depth 2}))
+            boosted (ml/fit small (ml/gbt-classifier {:max-iter 2 :max-depth 2}))
+            gbtr    (ml/fit small (ml/gbt-regressor {:max-iter 2 :max-depth 2}))]
+        (is (double? (ml/predict-leaf tree [1.0 0.0 2.0])))
+        (is (= 2 (count (ml/predict-leaf boosted [1.0 0.0 2.0]))))
+        (is (includes? (ml/to-debug-string tree) "If (feature"))
+        (is (= 2 (count (ml/evaluate-each-iteration small boosted))))
+        (is (= 2 (count (ml/evaluate-each-iteration small gbtr "absolute"))))))
+    (testing "clustering"
+      (let [small     (small-df)
+            k-means   (ml/fit small (ml/k-means {:k 2 :max-iter 2 :seed 1}))
+            bisecting (ml/fit small (ml/bisecting-k-means {:k 2 :max-iter 2 :seed 1}))
+            mixture   (ml/fit small (ml/gaussian-mixture {:k 2 :max-iter 2 :seed 1}))]
+        (is (= (ml/predict k-means [1.0 0.0 2.0]) (ml/predict k-means [2.0 1.0 1.0])))
+        (is (not= (ml/predict k-means [1.0 0.0 2.0]) (ml/predict k-means [8.0 6.0 1.0])))
+        (is (double? (ml/compute-cost small bisecting)))
+        (is (= 2 (count (ml/predict-probability mixture [1.0 0.0 2.0]))))))
+    (testing "LDA, distributed"
+      (let [model (ml/fit (small-df) (ml/lda {:k 2 :max-iter 2 :seed 1 :optimizer "em"}))]
+        (is (= [3 2] [(count (ml/topics-matrix model)) (count (first (ml/topics-matrix model)))]))
+        (is (double? (ml/log-prior model)))
+        (is (double? (ml/training-log-likelihood model)))
+        (is (false? (ml/distributed? (ml/to-local model))))
+        (is (nil? (ml/get-checkpoint-files model))))))
+  (let [df        (g/table->dataset @spark [[2.0 0.0 1.0] [1.0 0.0 0.0] [3.0 0.0 1.0] [0.5 0.0 0.0]] [:x :z :y])
+        assembled (ml/transform df (ml/vector-assembler {:input-cols [:x :z :y] :output-col :features}))]
+    (testing "feature models"
+      (is (= 2 (count (ml/explained-variance (ml/fit assembled (ml/pca {:input-col :features :output-col :p :k 2}))))))
+      (let [scaler (ml/fit assembled (ml/robust-scaler {:input-col :features :output-col :r}))]
+        (is (= [[1.0 0.0 0.0] [1.5 0.0 1.0]] [(ml/median scaler) (ml/range scaler)])))
+      (is (= [[##-Inf 0.0 ##Inf] [##-Inf 1.0 ##Inf]]
+             (ml/get-splits-array (ml/bucketizer {:splits-array [[##-Inf 0.0 ##Inf] [##-Inf 1.0 ##Inf]]
+                                                  :input-cols [:a :b] :output-cols [:c :d]}))))
+      (is (= [##-Inf 0.0 ##Inf] (ml/get-splits (ml/bucketizer {:splits [##-Inf 0.0 ##Inf]}))))))
+  (let [words (g/table->dataset @spark [[["a" "b" "c"]] [["a" "b"]] [["b" "c" "d"]]] [:words])]
+    (testing "text features"
+      (let [tf  (ml/transform words (ml/hashing-tf {:input-col :words :output-col :tf :num-features 16}))
+            idf (ml/fit tf (ml/idf {:input-col :tf :output-col :idf}))]
+        (is (= 16 (count (ml/doc-freq idf))))
+        (is (= 8 (reduce + (ml/doc-freq idf))))
+        (is (= 3 (ml/num-docs idf))))
+      (let [model (ml/fit words (ml/word2vec {:input-col :words :output-col :v :vector-size 3 :min-count 1 :seed 1}))]
+        (is (= ["word" "similarity"] (g/column-names (ml/find-synonyms model "a" 2))))
+        (is (= 2 (g/count (ml/find-synonyms model [0.1 0.2 0.3] 2))))
+        (is (= 4 (g/count (ml/get-vectors model)))))))
+  (testing "Gaussian naive Bayes, factorisation machines, AFT, isotonic and ALS"
+    (let [small (small-df)]
+      (is (= [3 3] (map count (ml/sigma (ml/fit small (ml/naive-bayes {:model-type "gaussian"}))))))
+      (let [fm (ml/fit small (ml/fm-classifier {:max-iter 2 :factor-size 2}))]
+        (is (= [3 2 3] [(count (ml/factors fm)) (count (first (ml/factors fm))) (count (ml/linear fm))])))
+      (is (= 0.0 (ml/predict (ml/fit small (ml/isotonic-regression {})) 1.0))))
+    (let [aft (ml/fit (g/table->dataset @spark
+                                        [[1.218 1.0 (g/dense [1.560 -0.605])]
+                                         [2.949 0.0 (g/dense [0.346 2.158])]
+                                         [3.627 0.0 (g/dense [1.380 0.231])]
+                                         [0.273 1.0 (g/dense [0.520 1.151])]
+                                         [4.199 0.0 (g/dense [0.795 -0.226])]]
+                                        [:label :censor :features])
+                      (ml/aft-survival-regression {:quantile-probabilities [0.3 0.6] :max-iter 5}))]
+      (is (= 2 (count (ml/predict-quantiles aft [1.0 0.5])))))
+    (is (= 3 (ml/rank (ml/fit (g/table->dataset @spark [[0 0 1.0] [0 1 2.0] [1 1 3.0]] [:user :item :rating])
+                              (ml/als {:rank 3 :max-iter 2 :seed 1})))))))
+
 (deftest instantiation-fpm-test
   (is (= (:max-pattern-length (ml/params (ml/prefix-span {:max-pattern-length 321}))) 321))
   (is (instance? PrefixSpan (ml/prefix-span {})))
@@ -584,7 +739,24 @@
   (is (instance? Word2Vec (ml/word2vec {})))
 
   (is (= (:pattern (ml/params (ml/regex-tokeniser {:pattern "\\W"}))) "\\W"))
-  (is (instance? RegexTokenizer (ml/regex-tokenizer {}))))
+  (is (instance? RegexTokenizer (ml/regex-tokenizer {})))
+
+  (is (= "y ~ ." (:formula (ml/params (ml/r-formula {:formula "y ~ ."})))))
+  (is (instance? RFormula (ml/r-formula {})))
+
+  (is (= 3.0 (:selection-threshold (ml/params (ml/univariate-feature-selector {:selection-threshold 3})))))
+  (is (instance? UnivariateFeatureSelector (ml/univariate-feature-selector {})))
+
+  (is (= 0.5 (:variance-threshold (ml/params (ml/variance-threshold-selector {:variance-threshold 0.5})))))
+  (is (instance? VarianceThresholdSelector (ml/variance-threshold-selector {})))
+
+  (is (= [1 2] (:indices (ml/params (ml/vector-slicer {:indices [1 2]})))))
+  (is (instance? VectorSlicer (ml/vector-slicer {})))
+
+  (if (spark-4?)
+    (is (= "binary" (:target-type (ml/params (ml/target-encoder {:target-type "binary"})))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"ml/target-encoder needs Spark 4\.0"
+                          (ml/target-encoder {})))))
 
 (deftest ^:slow pipeline-test
   (testing "should be able to fit the example stages"
