@@ -16,7 +16,6 @@ New:
   - `g/replace-substring` is Spark's `replace`, since `g/replace` replaces values. With only a column, `g/parse-json` is Spark's `parse_json`, and with a column first, `g/count-min-sketch` is Spark's aggregate; with a DataFrame first, they're what they were. `g/reduce` folds an array column, and `g/call-function` calls a SQL function by name.
 - `g/lit` takes a collection of mixed numbers, of nils, or of collections, as `g/sql` does.
 - `g/udf` and `g/register-udf!` work over Spark Connect. Geni uploads Clojure's and Geni's jars, and the code of the namespaces that a function uses, to the session, once. `g/connect` takes `:keep-classes`, true by default, which has Clojure keep the classes that it compiles from then on, so that a function defined at the REPL after it can go to the server. The [UDFs guide](docs/udfs.md) has the details.
-
 - Results as tech.ml.dataset datasets, dtype-next tensors and Arrow, from Spark's own Arrow batches, on classic Spark and over Spark Connect. The [collecting guide](docs/collect.md) has the details.
   - `g/to-tmd` collects a result as one tech.ml.dataset dataset, with a column per Spark column that keeps its type: DATE as LocalDates, TIMESTAMP as Instants, TIMESTAMP_NTZ as LocalDateTimes, day-time intervals as Durations of any length, year-month intervals as Periods, arrays as vectors, structs and maps as maps, and nulls as missing values. Each column keeps its Spark type, as DDL, in its metadata. A calendar interval, a geometry or a geography throws, naming its column, as do two columns that `:key-fn` names alike, before a job runs, and rows without columns. It needs `techascent/tech.ml.dataset` on the classpath.
   - `g/stream` reads a result as a dataset per Arrow batch, as a reducible that stops reading when a reduce is done, stops early or throws. On classic Spark, each partition runs as a job of its own when the reduce gets to it. It's seqable too, and a seq reads a batch at a time.
@@ -58,6 +57,12 @@ New:
   - `:cluster-by` for `g/write-table!` and `g/write-to!` (Spark 4.0).
   - `g/read-changes!`, which reads a table's change feed, from a catalog that has one, such as Delta Lake's (Spark 4.2).
 - `g/table-function` calls a table-valued function, such as `:explode`, `:inline` or `:stack`, on any Spark.
+- More of Spark ML, on classic Spark:
+  - `ml/r-formula`, `ml/univariate-feature-selector`, `ml/variance-threshold-selector`, `ml/vector-slicer`, and `ml/target-encoder`, which needs Spark 4.0.
+  - `ml/string-indexer-model` and `ml/count-vectorizer-model` make those models from known labels or a known vocabulary, without fitting. `ml/load-default-stop-words` gives Spark's stop words for a language, and `ml/array-to-vector` turns arrays into vectors.
+  - Predictions for one row's features: `ml/predict`, `ml/predict-raw`, `ml/predict-probability`, `ml/predict-leaf` and `ml/predict-quantiles`.
+  - More of the models' attributes: `ml/selected-features`, `ml/resolved-formula-string`, `ml/to-debug-string`, `ml/evaluate-each-iteration`, `ml/explained-variance`, `ml/doc-freq`, `ml/num-docs`, `ml/find-synonyms`, `ml/get-vectors`, LDA's `ml/topics-matrix`, `ml/log-prior`, `ml/training-log-likelihood`, `ml/to-local` and `ml/get-checkpoint-files`, RobustScaler's `ml/median` and `ml/range`, `ml/sigma`, `ml/factors`, `ml/linear`, `ml/compute-cost`, ALS's `ml/rank`, `ml/get-splits`, `ml/get-splits-array`, `ml/labels-array` and `ml/has-summary?`.
+  - `ml/evaluate` with a model in place of an evaluator gives the model's summary for new data.
 
 Fixes:
 
@@ -65,6 +70,7 @@ Fixes:
 - On Spark 4.1.0 to 4.1.3 and 4.2.0, which bind more than four positional SQL parameters in the wrong order (SPARK-58341), `g/sql` throws an error that says so for more than four, rather than returning wrong results. Named parameters work.
 - A reader or writer option with a string key, such as Iceberg's `"snapshot-id"`, goes to Spark as it is. It was turned into camelCase, as a keyword key is, so an option with a hyphen or an underscore in its name was lost. A keyword value, such as `:failfast` for `:mode`, goes as its name.
 - `g/read-table!` and `g/write-table!` take a keyword as the table's name.
+- `ml/coefficients`, `ml/coefficient-matrix` and the other model functions that give a vector's values gave only the stored values of a sparse vector, so a logistic regression's coefficients could come back as 414 numbers for 780 features. They give every value now.
 - `g/posexplode-outer` was `g/posexplode`, which drops the rows whose array or map is null or empty, and `zero-one.geni.core.functions/explode-outer` was `explode`. They're Spark's outer ones now, and `g/explode-outer` is in `g/`.
 - `g/records->dataset`, `g/map->dataset` and `g/table->dataset` give a column of decimals room for all its values, at the top or in arrays and structs: `DecimalType(38,18)` for BigDecimals and `DecimalType(38,0)` for whole numbers as before, when the values fit, and otherwise as many digits after the point as the values have, with 38 in all. A value that didn't fit became a null on Spark 3.5, and on Spark 4 threw or was rounded. A column that no DECIMAL holds throws an error that names it.
 
