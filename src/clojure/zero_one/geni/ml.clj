@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [range])
   (:require
    [clojure.walk :refer [keywordize-keys]]
-   [zero-one.geni.utils :refer [->kebab-case import-fn import-vars]]
+   [zero-one.geni.utils :refer [->camel-case ->kebab-case import-fn import-vars]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.polymorphic :as polymorphic]
    [zero-one.geni.defaults :as defaults]
@@ -15,6 +15,7 @@
    [zero-one.geni.ml.fpm]
    [zero-one.geni.ml.recommendation]
    [zero-one.geni.ml.regression]
+   [zero-one.geni.ml.summary]
    [zero-one.geni.ml.tuning]
    [zero-one.geni.ml.xgb])
   (:import
@@ -22,7 +23,8 @@
                         PipelineStage
                         functions)
    (org.apache.spark.ml.stat ChiSquareTest
-                             KolmogorovSmirnovTest)))
+                             KolmogorovSmirnovTest
+                             Summarizer)))
 
 (import-vars
  [zero-one.geni.ml.xgb
@@ -150,10 +152,18 @@
 
 (import-vars
  [zero-one.geni.ml.tuning
+  avg-metrics
   cross-validator
   param-grid
   param-grid-builder
-  train-validation-split])
+  sub-models
+  train-validation-split
+  validation-metrics])
+
+(import-vars
+ [zero-one.geni.ml.summary
+  binary-summary
+  summary])
 
 (defn vector-to-array
   ([expr] (vector-to-array (column/->column expr) "float64"))
@@ -165,8 +175,33 @@
   [expr]
   (functions/array_to_vector (column/->column expr)))
 
-(defn chi-square-test [dataframe features-col label-col]
-  (ChiSquareTest/test dataframe (name features-col) (name label-col)))
+(defn chi-square-test
+  "Pearson's chi-squared test of independence of each feature in
+  `features-col`, a vector column, against `label-col`: a DataFrame of one
+  row with the p-values, the degrees of freedom and the statistics, as
+  vectors. With `flatten` true, a row per feature instead."
+  ([dataframe features-col label-col]
+   (ChiSquareTest/test dataframe (name features-col) (name label-col)))
+  ([dataframe features-col label-col flatten]
+   (ChiSquareTest/test dataframe (name features-col) (name label-col) (boolean flatten))))
+
+(defn summarizer
+  "An aggregate column of a vector column's statistics, as a struct with a
+  field per metric: `:mean`, `:sum`, `:variance`, `:std`, `:count`,
+  `:num-non-zeros`, `:max`, `:min`, `:norm-l2` and `:norm-l1`, each a vector
+  but `:count`. The fields take Spark's names, such as `numNonZeros`. With
+  `weight-col`, the metrics are weighted by it.
+
+  ```clojure
+  (g/agg dataframe {:stats (ml/summarizer :features [:mean :variance])})
+  ```"
+  ([features-col metrics]
+   (.summary (Summarizer/metrics ^"[Ljava.lang.String;" (into-array String (map ->camel-case metrics)))
+             (column/->column features-col)))
+  ([features-col metrics weight-col]
+   (.summary (Summarizer/metrics ^"[Ljava.lang.String;" (into-array String (map ->camel-case metrics)))
+             (column/->column features-col)
+             (column/->column weight-col))))
 
 (defn kolmogorov-smirnov-test [dataframe sample-col dist-name params]
   (KolmogorovSmirnovTest/test dataframe (name sample-col) dist-name (interop/->scala-seq params)))
@@ -210,7 +245,6 @@
   ([dataset-a dataset-b model threshold dist-col]
    (.approxSimilarityJoin model dataset-a dataset-b threshold dist-col)))
 (defn association-rules [model] (.associationRules model))
-(defn binary-summary [model] (.binarySummary model))
 (defn best-model [model] (.bestModel model))
 (defn boundaries [model] (interop/->clojure (.boundaries model)))
 (defn category-maps [model] (->> model .categoryMaps interop/scala-map->map))
@@ -256,7 +290,6 @@
 (defn pi [model] (interop/vector->seq (.pi model)))
 (defn root-node [model] (.rootNode model))
 (defn scale [model] (.scale model))
-(defn summary [model] (.summary model))
 (defn supported-optimizers [model] (seq (.supportedOptimizers model)))
 (defn stages [model] (seq (.stages model)))
 (defn std [model] (interop/vector->seq (.std model)))

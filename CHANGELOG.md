@@ -6,6 +6,7 @@ Breaking changes:
 
 - `g/median` on a column is Spark's exact `median`, rather than `percentile_approx(col, 0.5)`, so a group with an even count gets the mean of its two middle values. `g/percentile-approx` gives the approximate one, with less memory.
 - `g/to-utc-timestamp`, also called `g/->utc-timestamp`, is Spark's `to_utc_timestamp`, which takes the time zone to convert from. It was `g/to-timestamp` by another name.
+- `ml/summary` and `ml/binary-summary` give a summary's values as a map, such as `:accuracy`, `:area-under-roc` and `:objective-history`, with the ROC curve and the predictions as DataFrames, rather than Spark's summary object, which `(.summary model)` still gives. They take a model, or a summary for new data, as `ml/evaluate` gives with a model.
 
 New:
 
@@ -63,6 +64,8 @@ New:
   - Predictions for one row's features: `ml/predict`, `ml/predict-raw`, `ml/predict-probability`, `ml/predict-leaf` and `ml/predict-quantiles`.
   - More of the models' attributes: `ml/selected-features`, `ml/resolved-formula-string`, `ml/to-debug-string`, `ml/evaluate-each-iteration`, `ml/explained-variance`, `ml/doc-freq`, `ml/num-docs`, `ml/find-synonyms`, `ml/get-vectors`, LDA's `ml/topics-matrix`, `ml/log-prior`, `ml/training-log-likelihood`, `ml/to-local` and `ml/get-checkpoint-files`, RobustScaler's `ml/median` and `ml/range`, `ml/sigma`, `ml/factors`, `ml/linear`, `ml/compute-cost`, ALS's `ml/rank`, `ml/get-splits`, `ml/get-splits-array`, `ml/labels-array` and `ml/has-summary?`.
   - `ml/evaluate` with a model in place of an evaluator gives the model's summary for new data.
+  - `ml/avg-metrics`, `ml/validation-metrics` and `ml/sub-models` give a tuned model's metric for each param map, and the models fitted for them. `ml/cross-validator` and `ml/train-validation-split` take `:collect-sub-models`, and `ml/train-validation-split` takes `:train-ratio`.
+  - `ml/summarizer` aggregates a vector column's statistics, such as the mean and variance of each feature, and `ml/chi-square-test` takes `flatten`, for a row per feature.
 
 Fixes:
 
