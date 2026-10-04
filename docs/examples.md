@@ -329,7 +329,10 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 ; |1.0  |[0.2354815309564311,0.7645184690435689] |
 ; +-----+----------------------------------------+
 
-(take 3 (ml/coefficients lr-model))
+(count (ml/coefficients lr-model))
+;; => 692
+
+(->> (ml/coefficients lr-model) (remove zero?) (take 3))
 ;; => (-7.520689871383902E-5 -8.11577314684679E-5 3.814692771846554E-5)
 
 (ml/intercept lr-model)
