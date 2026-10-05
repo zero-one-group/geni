@@ -253,6 +253,12 @@
   (spark/require-version! [4 0] "ml/target-encoder")
   (interop/instantiate (class-named "org.apache.spark.ml.feature.TargetEncoder") params))
 
+(defn- ->strings
+  "Labels or terms as a String array: keywords by name, and anything else by
+  `str`, as a number label's string."
+  ^"[Ljava.lang.String;" [values]
+  (into-array String (map #(if (keyword? %) (name %) (str %)) values)))
+
 (defn string-indexer-model
   "A StringIndexer model made from known labels rather than fitted: index 0
   for the first label, and so on. It takes `:labels` and `:input-col`, or
@@ -267,10 +273,10 @@
     (throw (ex-info "string-indexer-model takes either :labels or :labels-array." {})))
   (interop/set-params!
    (if labels
-     (StringIndexerModel. ^"[Ljava.lang.String;" (into-array String (map name labels)))
+     (StringIndexerModel. (->strings labels))
      (StringIndexerModel. ^"[[Ljava.lang.String;"
       (into-array (Class/forName "[Ljava.lang.String;")
-                  (map #(into-array String (map name %)) labels-array))))
+                  (map ->strings labels-array))))
    (dissoc params :labels :labels-array)))
 
 (defn count-vectorizer-model
@@ -286,7 +292,7 @@
   (when-not (seq vocabulary)
     (throw (ex-info "count-vectorizer-model takes a :vocabulary." {})))
   (interop/set-params!
-   (CountVectorizerModel. ^"[Ljava.lang.String;" (into-array String (map name vocabulary)))
+   (CountVectorizerModel. (->strings vocabulary))
    (dissoc params :vocabulary)))
 
 (defn load-default-stop-words

@@ -445,6 +445,7 @@
     (is (= [["a" "b"] ["c"]]
            (ml/labels-array (ml/string-indexer-model {:labels-array [["a" "b"] ["c"]]
                                                       :input-cols [:p :q] :output-cols [:pi :qi]}))))
+    (is (= ["1" "2"] (first (ml/labels-array (ml/string-indexer-model {:labels [1 2] :input-col :n})))))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"either :labels or :labels-array"
                           (ml/string-indexer-model {:input-col :x})))
     (is (= [{:size 2 :indices [0 1] :values [2.0 1.0]}]
@@ -591,6 +592,28 @@
         (is (= ["(Intercept)" "features_0" "features_1"]
                (map :feature (:coefficients-with-statistics summary))))
         (is (double? (:aic summary)))))))
+
+(deftest ^:slow clusters-correlation-and-evaluators-test
+  (testing "power iteration clustering's clusters, which it assigns rather than fits"
+    (let [edges    (g/table->dataset @spark
+                                     [[0 1 1.0] [1 2 1.0] [0 2 1.0] [3 4 1.0] [4 5 1.0] [3 5 1.0] [2 3 0.01]]
+                                     [:src :dst :weight])
+          clusters (->> (ml/assign-clusters edges (ml/power-iteration-clustering {:k 2 :weight-col "weight"
+                                                                                  :max-iter 10}))
+                        g/collect
+                        (map (juxt :id :cluster))
+                        (into (sorted-map)))]
+      (is (= (range 6) (keys clusters)))
+      (is (apply = (map clusters [0 1 2])))
+      (is (apply = (map clusters [3 4 5])))
+      (is (not= (clusters 0) (clusters 3)))))
+  (testing "a vector column's correlation matrix, by Spearman's rank too"
+    (let [matrix (-> (small-df) (ml/correlation :features "spearman") g/first-vals first)]
+      (is (= [3 3] [(count matrix) (count (first matrix))]))
+      (is (every? #(< (Math/abs (- 1.0 %)) 1e-12) (map-indexed #(nth %2 %1) matrix)))))
+  (testing "whether an evaluator's larger metric is better"
+    (is (true? (ml/larger-better? (ml/binary-classification-evaluator {}))))
+    (is (false? (ml/larger-better? (ml/regression-evaluator {:metric-name "rmse"}))))))
 
 (deftest ^:slow summarizer-test
   (let [stats (-> (small-df)
