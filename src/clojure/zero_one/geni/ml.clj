@@ -23,6 +23,7 @@
                         PipelineStage
                         functions)
    (org.apache.spark.ml.stat ChiSquareTest
+                             Correlation
                              KolmogorovSmirnovTest
                              Summarizer)))
 
@@ -258,6 +259,33 @@
 (defn feature-importances [model] (interop/->clojure (.featureImportances model)))
 (defn find-frequent-sequential-patterns [dataset prefix-span]
   (.findFrequentSequentialPatterns prefix-span dataset))
+
+(defn assign-clusters
+  "Power iteration clustering's clusters for the vertices of a graph, whose
+  edges are the rows of `dataset`, with the columns that the
+  `power-iteration-clustering` names, `src`, `dst` and an optional weight: a
+  DataFrame of `id` and `cluster`.
+
+  ```clojure
+  (ml/assign-clusters edges (ml/power-iteration-clustering {:k 2}))
+  ```"
+  [dataset power-iteration-clustering]
+  (.assignClusters power-iteration-clustering dataset))
+
+(defn larger-better?
+  "Whether a larger metric is a better one, for an evaluator as it's set up,
+  as for `avg-metrics`: true for the area under the ROC curve, and false for
+  RMSE."
+  [evaluator]
+  (.isLargerBetter evaluator))
+
+(defn correlation
+  "The correlation matrix of a vector column, by `method`, \"pearson\" by
+  default or \"spearman\": a DataFrame of one row, whose one value is the
+  matrix."
+  ([dataframe col] (correlation dataframe col "pearson"))
+  ([dataframe col method]
+   (Correlation/corr dataframe (name col) (name method))))
 (defn freq-itemsets [model] (.freqItemsets model))
 (defn gaussians-df [model] (.gaussiansDF model))
 (defn get-features-col [model] (.getFeaturesCol model))
