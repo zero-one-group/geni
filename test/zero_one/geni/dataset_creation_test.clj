@@ -312,20 +312,24 @@
            (g/dtypes (g/records->dataset @tr/spark [{:x 1.5M :n 12345678901234567890N} {:x -2.25M :n nil}])))))
   (testing "and otherwise the digits after the point that the column needs, with room before it"
     (let [dataset (g/records->dataset @tr/spark [{:big 123456789012345678901234567890M
-                                                  :fine 0.123456789012345678901234567890M}
+                                                  :fine 0.123456789012345678901234567891M}
                                                  {:big -0.5M :fine nil}])]
       (is (= {:big "DecimalType(38,8)" :fine "DecimalType(38,30)"} (g/dtypes dataset)))
-      (is (= [[123456789012345678901234567890M 0.123456789012345678901234567890M] [-0.5M nil]]
+      (is (= [[123456789012345678901234567890M 0.123456789012345678901234567891M] [-0.5M nil]]
              (g/collect-vals dataset)))))
   (testing "in arrays and structs too"
     (let [dataset (g/records->dataset @tr/spark [{:xs [{:a 1M}]} {:xs [{:a 0.12345678901234567890123M}]}])]
       (is (= {:xs "ArrayType(StructType(StructField(a,DecimalType(38,23),true)),true)"} (g/dtypes dataset)))
       (is (= [[{:a 1M}] [{:a 0.12345678901234567890123M}]] (g/collect-col dataset :xs)))))
+  (testing "leaving out trailing zeros, which need no room"
+    (let [dataset (g/records->dataset @tr/spark [{:x 1.000000000000000000000M} {:x 123456789012345678M}])]
+      (is (= {:x "DecimalType(38,18)"} (g/dtypes dataset)))
+      (is (= [1M 123456789012345678M] (g/collect-col dataset :x)))))
   (testing "and an error, naming the column, when no DECIMAL holds them"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo
                           #"column \"x\" has numbers with up to 30 digits before the point and 10 after it"
                           (g/records->dataset @tr/spark [{:x 123456789012345678901234567890M}
-                                                         {:x 0.1234567890M}])))))
+                                                         {:x 0.1234567891M}])))))
 
 (deftest table-dataset-test
   (testing "should create the right dataset"

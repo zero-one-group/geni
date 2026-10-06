@@ -130,7 +130,12 @@
     (is (= [{:a 1 :b 2 :c 3 :d 4 :e 5}]
            (g/collect (g/sql @spark "SELECT ? AS a, ? AS b, ? AS c, ? AS d, ? AS e" [1 2 3 4 5])))))
   (is (= [{:a 1 :b 2 :c 3 :d 4}]
-         (g/collect (g/sql @spark "SELECT ? AS a, ? AS b, ? AS c, ? AS d" [1 2 3 4])))))
+         (g/collect (g/sql @spark "SELECT ? AS a, ? AS b, ? AS c, ? AS d" [1 2 3 4]))))
+  (testing "the versions it covers, with a vendor's version without a patch number as its first"
+    (let [misbound? #(#'spark/positional-args-misbound? % 5)]
+      (is (every? misbound? ["4.1.0" "4.1.3" "4.1" "4.2.0" "4.2" "4.2.0-vendor"]))
+      (is (not-any? misbound? ["3.5.9" "4.0.1" "4.1.4" "4.2.1"]))
+      (is (not (#'spark/positional-args-misbound? "4.2" 4))))))
 
 (deftest clustered-tables-test
   (let [clustering (fn [table-name]

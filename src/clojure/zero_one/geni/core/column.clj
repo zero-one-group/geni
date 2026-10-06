@@ -22,8 +22,10 @@
 ;;;; Coercions
 (defn lit
   "Returns a column of the literal value `arg`. A collection becomes an array,
-  as `interop/->java-array` describes: of doubles when it mixes whole numbers
-  and decimals, and of arrays when it nests."
+  as `interop/->java-array` describes: of arrays when it nests, with its
+  numbers widened at any depth as Clojure's arithmetic widens them, such as to
+  doubles with a double among them. Spark types an array of decimals
+  DECIMAL(38, 18), so a decimal that it can't hold exactly throws."
   [arg]
   (functions/lit (if (and (coll? arg) (not (map? arg))) (interop/->java-array arg) arg)))
 

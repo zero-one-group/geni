@@ -151,14 +151,10 @@
 (defn- signature [^Method method]
   (str "(" (string/join ", " (map #(.getSimpleName ^Class %) (.getParameterTypes method))) ")"))
 
-(defn invoke
+(defn- invoke-method
   "Calls Spark's `functions` method `spark-name` with `args`, through the
-  overload that fits them best, after checking that the Spark on the
-  classpath is at least `since`, `[major minor]` or `[major minor patch]`,
-  when that's given."
-  [spark-name since geni-name args]
-  (when since
-    (spark/require-version! since (str geni-name)))
+  overload that fits them best."
+  [spark-name geni-name args]
   (let [methods (methods-named spark-name)
         best    (->> methods
                      (keep #(fit % args))
@@ -174,6 +170,28 @@
                            (string/join ", " (sort (map signature methods)))
                            ". Got: " (pr-str args))
                       {:function geni-name :args args})))))
+
+(defn- column-ish? [x]
+  (or (instance? Column x) (keyword? x) (symbol? x)))
+
+(defn invoke
+  "Calls Spark's `functions` method `spark-name` with `args`, through the
+  overload that fits them best, after checking that the Spark on the
+  classpath is at least `since`, `[major minor]` or `[major minor patch]`,
+  when that's given. `checks` gives the versions that some calls need:
+  `:arity-since`, by the number of arguments, the version and the arglist,
+  and `:columns-since`, the version that takes a column, rather than only a
+  value, after the first argument, as Spark 4.0 added to `split`."
+  ([spark-name since geni-name args]
+   (invoke spark-name since geni-name args nil))
+  ([spark-name since geni-name args {:keys [arity-since columns-since]}]
+   (when since
+     (spark/require-version! since (str geni-name)))
+   (when-let [[needed arglist] (get arity-since (count args))]
+     (spark/require-version! needed (str geni-name " " arglist)))
+   (when (and columns-since (some column-ish? (rest args)))
+     (spark/require-version! columns-since (str geni-name " with a column after its first argument")))
+   (invoke-method spark-name geni-name args)))
 
 ;;;; The table
 
@@ -194,31 +212,59 @@
   (into {}
         (for [n       (all-ns)
               [sym v] (ns-publics n)
-              :let [{::keys [spark since row] :keys [arglists]} (meta v)]
+              :let [{::keys [spark since arity-since columns-since row] :keys [arglists]} (meta v)]
               :when (and spark (= row sym))]
-          [sym {:name sym :spark spark :since since :arglists (vec arglists)}])))
+          [sym {:name          sym
+                :spark         spark
+                :since         since
+                :arity-since   arity-since
+                :columns-since columns-since
+                :arglists      (vec arglists)}])))
 
 (defn- version-vector [since]
   (when since
     (mapv parse-long (string/split since #"\."))))
 
 (defn- parse-row
-  "A row: the Geni name, its argument lists, and then options, `:since` for
-  the Spark version that added it, after 3.5, and `:spark` for Spark's name,
-  when it isn't the Geni name in snake case."
+  "A row: the Geni name, its argument lists, and then options: `:since` for
+  the Spark version that added it, after 3.5, `:arity-since` for the
+  versions that added some of its arities, by the number of arguments,
+  `:columns-since` for the version that takes a column after its first
+  argument, and `:spark` for Spark's name, when it isn't the Geni name in
+  snake case."
   [[geni-name & more]]
   (let [arglists (vec (take-while vector? more))
         opts     (apply hash-map (drop-while vector? more))]
-    {:name     geni-name
-     :spark    (or (:spark opts) (string/replace (name geni-name) "-" "_"))
-     :since    (:since opts)
-     :arglists arglists}))
+    {:name          geni-name
+     :spark         (or (:spark opts) (string/replace (name geni-name) "-" "_"))
+     :since         (:since opts)
+     :arity-since   (:arity-since opts)
+     :columns-since (:columns-since opts)
+     :arglists      arglists}))
 
-(defn- docstring [{:keys [spark since]}]
+(defn- docstring [{:keys [spark since arity-since columns-since arglists]}]
   (str (or (get @docs spark)
            (str "Spark's `" spark "` function."))
        "\n\nSpark's `functions." spark "`"
-       (if since (str ", which needs Spark " since ".") ".")))
+       (if since (str ", which needs Spark " since ".") ".")
+       (apply str (for [arglist arglists
+                        :let [needs (get arity-since (count arglist))]
+                        :when needs]
+                    (str " " (pr-str arglist) " needs Spark " needs ".")))
+       (when columns-since
+         (str " A column after the first argument needs Spark " columns-since "."))))
+
+(defn- checks
+  "What `invoke` checks for a row, besides its version, or nil."
+  [{:keys [arity-since columns-since arglists]}]
+  (let [arities (into {}
+                      (for [arglist arglists
+                            :let [needs (get arity-since (count arglist))]
+                            :when needs]
+                        [(count arglist) [(version-vector needs) (pr-str arglist)]]))]
+    (not-empty (cond-> {}
+                 (seq arities) (assoc :arity-since arities)
+                 columns-since (assoc :columns-since (version-vector columns-since))))))
 
 (defmacro def-spark-functions
   "Defines a function for each row of the table, with the row's Spark name
@@ -228,12 +274,20 @@
   hold."
   [& rows]
   `(do
-     ~@(for [{:keys [name spark since arglists] :as row} (map parse-row rows)]
+     ~@(for [{:keys [name spark since arity-since columns-since arglists] :as row}
+             (map parse-row rows)
+             :let [args (gensym "args")]]
          `(defn ~name
             ~(docstring row)
-            {:arglists    '~(map (fn [arglist] (vec arglist)) arglists)
-             ::spark      ~spark
-             ::since      ~since
-             ::row        '~name}
-            [& args#]
-            (invoke ~spark ~(version-vector since) '~name args#)))))
+            ;; Only the keys that a row has, since an AOT'd namespace's
+            ;; top-level code shares one method's 64 KB.
+            ~(cond-> {:arglists (list 'quote (map vec arglists))
+                      ::spark   spark
+                      ::since   since
+                      ::row     (list 'quote name)}
+               arity-since   (assoc ::arity-since arity-since)
+               columns-since (assoc ::columns-since columns-since))
+            [& ~args]
+            ~(if-let [c (checks row)]
+               `(invoke ~spark ~(version-vector since) '~name ~args '~c)
+               `(invoke ~spark ~(version-vector since) '~name ~args))))))

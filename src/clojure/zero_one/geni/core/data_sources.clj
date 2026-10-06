@@ -230,13 +230,17 @@
   ([dataframe path options] (write-data! "parquet" dataframe path options)))
 
 (defn write-csv!
-  "Writes a CSV file at the specified path.
+  "Writes a CSV file at the specified path, with a header row unless the
+   options say `:header false`.
 
    Spark's DataFrameWriter options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  ([dataframe path] (write-csv! dataframe path {"header" "true"}))
-  ([dataframe path options] (write-data! "csv" dataframe path (merge options {"header" "true"}))))
+  ([dataframe path] (write-csv! dataframe path {}))
+  ([dataframe path options]
+   (write-data! "csv" dataframe path (if (some #{:header "header"} (keys options))
+                                       options
+                                       (assoc options "header" "true")))))
 
 (defn write-libsvm!
   "Writes a LIBSVM file at the specified path.

@@ -344,12 +344,15 @@
                       {:needs needs :spark-version version})))))
 
 (defn- positional-args-misbound?
-  "Whether the session's Spark binds more than four positional SQL parameters
-  in the wrong order: 4.1.0 to 4.1.3 and 4.2.0 (SPARK-58341)."
-  [^SparkSession spark n-args]
-  (let [[major minor patch] (version-numbers (.version spark))]
+  "Whether a session of this Spark version binds more than four positional
+  SQL parameters in the wrong order: 4.1.0 to 4.1.3 and 4.2.0 (SPARK-58341).
+  A version without a patch number, such as a vendor's \"4.2\", counts as
+  its first."
+  [version n-args]
+  (let [[major minor patch] (version-numbers version)
+        patch               (or patch 0)]
     (and (< 4 n-args)
-         (or (and (= [major minor] [4 1]) (<= (or patch 0) 3))
+         (or (and (= [major minor] [4 1]) (<= patch 3))
              (= [major minor patch] [4 2 0])))))
 
 (defn- map-arg-error [value]
@@ -378,8 +381,9 @@
   With `args`, the query's parameters are bound to values rather than spliced
   into the text: a map binds the named parameters, such as `:min`, and a
   vector binds the `?` ones in order. A value is a literal, a column such as
-  `(g/lit ...)`, or a collection, which becomes an array: of doubles when it
-  mixes whole numbers and decimals, and of arrays when it nests. From Spark
+  `(g/lit ...)`, or a collection, which becomes an array as `g/lit` makes
+  one: of arrays when it nests, with its numbers widened as Clojure's
+  arithmetic widens them, and of DECIMAL(38, 18) for decimals. From Spark
   4.0, a value can also be a column that builds an array, a map or a struct of
   literals, such as `(g/map (g/lit \"k\") (g/lit 1))`. Spark 4.1.0 to 4.1.3 and
   4.2.0 bind more than four `?` parameters in the wrong order (SPARK-58341),
@@ -399,7 +403,7 @@
      (let [named (java.util.HashMap. ^java.util.Map (update-keys (update-vals args sql-arg) name))]
        (.sql spark sql-text ^java.util.Map named))
 
-     (and (sequential? args) (positional-args-misbound? spark (count args)))
+     (and (sequential? args) (positional-args-misbound? (.version spark) (count args)))
      (throw (ex-info (str "Spark " (.version spark) " binds more than four positional parameters "
                           "in the wrong order (SPARK-58341), so use named ones, such as :a, "
                           "with a map of args.")

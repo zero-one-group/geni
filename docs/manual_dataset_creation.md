@@ -118,6 +118,6 @@ The three shortcuts infer each column's type from its first value that isn't nil
 
 A value of any other class, such as the ratio `1/3`, throws an error that names its column, so convert it first.
 
-A decimal column's type has room for all its values, at the top or inside arrays and structs. It has 38 digits, Spark's most, with 18 of them after the point for BigDecimals and none for whole numbers when the values fit that, and otherwise as many after the point as the values have, leaving room for their digits before it. A column that no DECIMAL holds, such as one with a 30-digit whole number and a number with 10 digits after the point, throws an error that names it.
+A decimal column's type has room for all its values, at the top or inside arrays and structs. It has 38 digits, Spark's most, with 18 of them after the point for BigDecimals and none for whole numbers when the values fit that, and otherwise as many after the point as the values need, without trailing zeros, leaving room for their digits before it. A column that no DECIMAL holds, such as one with a 30-digit whole number and a number with 10 digits after the point, throws an error that names it.
 
 `g/create-dataframe` also takes a [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) dataset, whose columns get their Spark types from the metadata that `g/to-tmd` keeps, from their datatypes, or from `:schema`, and whose columns of other objects get theirs inferred the same way. The [collecting guide](collect.md#back-to-spark) has the details.

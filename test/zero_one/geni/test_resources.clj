@@ -147,6 +147,17 @@
     (do (g/connect) (clean-catalog!))
     (g/create-spark-session {:configs {:spark.sql.warehouse.dir (rand-wh-path)}})))
 
+(defn observed-within
+  "What g/observed gives for the observation, or :timed-out when it's still
+  waiting after `ms`. A daemon thread waits, so that a failing test doesn't
+  keep the JVM running."
+  [observation ms]
+  (let [result (promise)]
+    (doto (Thread. #(deliver result (g/observed observation)))
+      (.setDaemon true)
+      (.start))
+    (deref result ms :timed-out)))
+
 (defn checkpoint-dir!
   "Gives the running session a checkpoint directory, which Geni's default
   session doesn't have, and returns the directory."

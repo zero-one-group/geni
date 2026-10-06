@@ -446,6 +446,10 @@
            (ml/labels-array (ml/string-indexer-model {:labels-array [["a" "b"] ["c"]]
                                                       :input-cols [:p :q] :output-cols [:pi :qi]}))))
     (is (= ["1" "2"] (first (ml/labels-array (ml/string-indexer-model {:labels [1 2] :input-col :n})))))
+    (is (= [1.0 0.0 1.0]
+           (-> (g/table->dataset @spark [[2] [1] [2]] [:n])
+               (ml/transform (ml/string-indexer-model {:labels [1 2] :input-col :n :output-col :i}))
+               (g/collect-col :i))))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"either :labels or :labels-array"
                           (ml/string-indexer-model {:input-col :x})))
     (is (= [{:size 2 :indices [0 1] :values [2.0 1.0]}]
@@ -470,6 +474,10 @@
         (is (= 1.0 (ml/predict model (vec (repeat 780 0.0)))))
         (is (= 2 (count (ml/predict-raw model features))))
         (is (< 0.99 (first (ml/predict-probability model features)) 1.0))
+        (testing "from a sparse vector's map, as g/collect gives it"
+          (let [collected (-> libsvm (g/select :features) g/first-vals first)]
+            (is (= [:size :indices :values] (keys collected)))
+            (is (= (ml/predict-raw model features) (ml/predict-raw model collected)))))
         (is (= 780 (count (ml/coefficients model))) "every coefficient, sparse or not")
         (is (true? (ml/has-summary? model)))
         (is (= 1.0 (.accuracy (ml/evaluate libsvm model))) "a model's evaluate gives its summary")))
@@ -519,6 +527,8 @@
       (let [model (ml/fit words (ml/word2vec {:input-col :words :output-col :v :vector-size 3 :min-count 1 :seed 1}))]
         (is (= ["word" "similarity"] (g/column-names (ml/find-synonyms model "a" 2))))
         (is (= 2 (g/count (ml/find-synonyms model [0.1 0.2 0.3] 2))))
+        (is (= (g/collect (ml/find-synonyms model [0.1 0.2 0.3] 2))
+               (g/collect (ml/find-synonyms model (g/dense 0.1 0.2 0.3) 2))))
         (is (= 4 (g/count (ml/get-vectors model)))))))
   (testing "Gaussian naive Bayes, factorisation machines, AFT, isotonic and ALS"
     (let [small (small-df)]
@@ -581,6 +591,15 @@
         (is (= 6 (:num-instances summary)))
         (is (= 3 (count (:p-values summary))))
         (is (instance? Dataset (:residuals summary)))))
+    (testing "without the p-values, which Spark can't give for more features than rows"
+      (let [wide    (g/table->dataset @spark
+                                      (for [[y a b c d] [[1.0 1.0 2.0 0.0 1.0] [2.0 2.0 1.0 1.0 0.0] [3.0 3.0 3.0 1.0 1.0]]]
+                                        [y (g/dense a b c d)])
+                                      [:label :features])
+            summary (ml/summary (ml/fit wide (ml/linear-regression {:solver "normal" :reg-param 0.1})))]
+        (is (double? (:r2 summary)))
+        (is (= 3 (:num-instances summary)))
+        (is (not (contains? summary :p-values)))))
     (testing "without them, which Spark can't give, from another solver"
       (is (not (contains? (ml/summary (ml/fit regression (ml/linear-regression {:solver "l-bfgs"
                                                                                 :reg-param 0.1
@@ -608,24 +627,33 @@
       (is (apply = (map clusters [3 4 5])))
       (is (not= (clusters 0) (clusters 3)))))
   (testing "a vector column's correlation matrix, by Spearman's rank too"
-    (let [matrix (-> (small-df) (ml/correlation :features "spearman") g/first-vals first)]
-      (is (= [3 3] [(count matrix) (count (first matrix))]))
-      (is (every? #(< (Math/abs (- 1.0 %)) 1e-12) (map-indexed #(nth %2 %1) matrix)))))
+    (let [ranks   (g/table->dataset @spark (for [[a b] [[1.0 1.0] [2.0 4.0] [3.0 9.0] [4.0 100.0]]]
+                                             [(g/dense a b)])
+                                    [:features])
+          by      #(-> ranks (ml/correlation :features %) g/first-vals first)
+          pearson (by "pearson")
+          matrix  (by "spearman")]
+      (is (= ["spearman(features)"] (g/column-names (ml/correlation ranks :features "spearman"))))
+      (is (= [2 2] [(count matrix) (count (first matrix))]))
+      (is (< (Math/abs (- 1.0 (-> matrix first second))) 1e-12) "the same ranks")
+      (is (< (-> pearson first second) 0.9) "where Pearson's is lower")))
   (testing "whether an evaluator's larger metric is better"
     (is (true? (ml/larger-better? (ml/binary-classification-evaluator {}))))
     (is (false? (ml/larger-better? (ml/regression-evaluator {:metric-name "rmse"}))))))
 
 (deftest ^:slow summarizer-test
   (let [stats (-> (small-df)
-                  (g/with-column :weight (g/lit 2.0))
+                  ;; 1 for label 0 and 3 for label 1.
+                  (g/with-column :weight (g/+ 1.0 (g/* 2.0 :label)))
                   (g/agg {:plain    (ml/summarizer :features [:mean :count :num-non-zeros])
                           :weighted (ml/summarizer :features [:mean] :weight)})
                   g/collect
                   first)]
     (is (= [:count :mean :numNonZeros] (sort (keys (:plain stats)))))
     (is (= [8 [8.0 6.0 6.0]] ((juxt :count :numNonZeros) (:plain stats))))
-    (doseq [means [(:mean (:plain stats)) (:mean (:weighted stats))]]
-      (is (every? #(< (Math/abs (double %)) 1e-12) (map - means [4.75 3.125 1.25]))))))
+    (doseq [[means expected] [[(:mean (:plain stats)) [4.75 3.125 1.25]]
+                              [(:mean (:weighted stats)) [6.375 4.4375 0.875]]]]
+      (is (every? #(< (Math/abs (double %)) 1e-12) (map - means expected))))))
 
 (deftest instantiation-fpm-test
   (is (= (:max-pattern-length (ml/params (ml/prefix-span {:max-pattern-length 321}))) 321))

@@ -7,6 +7,7 @@
    [tech.v3.dataset :as ds]
    [tech.v3.dataset.column :as ds-col]
    [tech.v3.datatype :as dtype]
+   [tech.v3.datatype.array-buffer :as array-buffer]
    [tech.v3.tensor :as dtt]
    [zero-one.geni.core :as g]
    [zero-one.geni.spark :as spark]
@@ -182,7 +183,11 @@
     (let [dataset (g/to-tmd (g/table->dataset @tr/spark
                                               [[(g/dense 1.0 2.0)] [(g/sparse 3 [1] [5.0])]]
                                               [:v]))]
-      (is (= [[1.0 2.0] {:size 3 :indices [1] :values [5.0]}] (vec (dataset :v)))))))
+      (is (= [[1.0 2.0] {:size 3 :indices [1] :values [5.0]}] (vec (dataset :v))))))
+  (testing "inside arrays too, with no Spark type in the metadata, so that they go back as arrays"
+    (let [dataset (g/to-tmd (g/table->dataset @tr/spark [[[(g/dense 1.0 2.0)]]] [:vs]))]
+      (is (nil? (:zero-one.geni/spark-type (meta (dataset :vs)))))
+      (is (= [[[1.0 2.0]]] (g/collect-col (g/create-dataframe @tr/spark dataset) :vs))))))
 
 (def ^:private three-partitions
   (delay (g/sql @tr/spark "SELECT id FROM RANGE(0, 10, 1, 3)")))
@@ -215,6 +220,22 @@
     (with-open [batches (g/stream @three-partitions)]
       (is (= 3 (ds/row-count (first batches))))
       (is (= 3 (count (seq batches)))))))
+
+(deftest observed-results-test
+  (testing "an observation gets its metrics from to-tmd, to-tensors and a reduce over stream"
+    (doseq [[what read] {"to-tmd"     g/to-tmd
+                         "to-tensors" g/to-tensors
+                         "stream"     #(transduce (map ds/row-count) + (g/stream %))}]
+      (testing what
+        (let [observation (g/observation)]
+          (read (g/observe (g/range 0 5 1 2) observation {:n (g/count "*")}))
+          (is (= {:n 5} (tr/observed-within observation 10000))))))))
+
+(deftest stream-reduce-without-init-test
+  (testing "a reduce without an init, as reduce does with a collection"
+    (is (= 10 (ds/row-count (reduce ds/concat (g/stream @three-partitions)))))
+    (is (= [0 1 2] (vec ((reduce (fn [batch _] (reduced batch)) (g/stream @three-partitions)) :id))))
+    (is (= 0 (reduce + (g/stream (g/limit @three-partitions 0)))))))
 
 (deftest ^:classic stream-early-stop-test
   (let [one-good-partition #(g/sql @tr/spark (str "SELECT IF(id < 1, id, raise_error('boom')) id "
@@ -319,16 +340,16 @@
   (testing "decimals of a dataset made by hand, with room for all of a column's values"
     (let [back (g/create-dataframe @tr/spark
                                    (ds/->dataset {:big   [123456789012345678901234567890M nil -1.5M]
-                                                  :fine  [0.123456789012345678901234567890M -2M nil]
+                                                  :fine  [0.123456789012345678901234567891M -2M nil]
                                                   :plain [1.5M 2.25M nil]}))]
       (is (= {:big "decimal(38,8)" :fine "decimal(38,30)" :plain "decimal(38,18)"} (simple-types back)))
-      (is (= [[123456789012345678901234567890M 0.123456789012345678901234567890M 1.5M]
+      (is (= [[123456789012345678901234567890M 0.123456789012345678901234567891M 1.5M]
               [nil -2M 2.25M]
               [-1.5M nil nil]]
              (g/collect-vals back))))
     (is (thrown-with-msg? ExceptionInfo
                           #"column \"x\" has numbers with up to 12 digits before the point and 30 after it"
-                          (g/create-dataframe @tr/spark (ds/->dataset {:x [0.123456789012345678901234567890M
+                          (g/create-dataframe @tr/spark (ds/->dataset {:x [0.123456789012345678901234567891M
                                                                            123456789012M]})))))
   (testing ":schema gives columns their types"
     (let [dataset (ds/->dataset {:price [1.5M 2.25M nil] :n [1 2 3]})]
@@ -347,6 +368,21 @@
       (testing "and only the dataset's columns"
         (is (thrown-with-msg? ExceptionInfo #"doesn't have: \[\"nope\"\]"
                               (g/create-dataframe @tr/spark dataset {:schema {:nope :int}}))))))
+  (testing "doubles in a DECIMAL, as their shortest decimals, when it holds them"
+    (let [dataset (ds/->dataset {:price [1.5 2.25 nil]})]
+      (is (= [[1.5M] [2.25M] [nil]]
+             (g/collect-vals (g/create-dataframe @tr/spark dataset {:schema {:price "DECIMAL(12, 2)"}}))))
+      (is (thrown-with-msg? ExceptionInfo #"column \"price\" has the value 0.30000000000000004"
+                            (g/create-dataframe @tr/spark (ds/->dataset {:price [(+ 0.1 0.2)]})
+                                                {:schema {:price "DECIMAL(12, 2)"}})))))
+  (testing "a Duration beyond a day-time interval's range throws, naming the column"
+    (let [dataset (ds/new-dataset [{:tech.v3.dataset/name            :w
+                                    :tech.v3.dataset/data            (array-buffer/array-buffer
+                                                                      (object-array [(Duration/ofDays 200000000)])
+                                                                      :duration)
+                                    :tech.v3.dataset/force-datatype? true}])]
+      (is (thrown-with-msg? ExceptionInfo #"column \"w\" has the value .*, which INTERVAL DAY TO SECOND can't hold"
+                            (g/create-dataframe @tr/spark dataset)))))
   (testing "a dataset of plain Clojure data, on the default session"
     (let [back (g/create-dataframe (ds/->dataset {:n [1 2 nil] :s ["x" nil "z"] :k [:p :q :r]}))]
       (is (= {:n "LongType" :s "StringType" :k "StringType"} (g/dtypes back)))

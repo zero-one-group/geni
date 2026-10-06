@@ -166,14 +166,15 @@
     TIMESTAMP_NTZ, `:duration` a day-time interval, and so on, packed or
     not. `:decimal` is a DECIMAL of 38 digits, 18 of them after the point,
     as Spark has for a BigDecimal, unless the values need more digits
-    before the point or have more after it;
+    before the point or after it;
   - the values, as `records->dataset` infers them, for columns of other
     objects, such as vectors and maps.
 
-  A missing value is a null. A value that its column's type can't hold
-  exactly, such as a number with more digits after the point than its
-  DECIMAL has, throws, naming the column, rather than being rounded or
-  becoming a null. A dataset has no rows without a column, so neither does
+  A missing value is a null. A float or a double goes into a DECIMAL as its
+  shortest decimal, as Spark's `Decimal` reads a double. A value that its
+  column's type can't hold exactly, such as a number with more digits after
+  the point than its DECIMAL has, throws, naming the column, rather than
+  being rounded or becoming a null. A dataset has no rows without a column, so neither does
   the DataFrame. `to-tmd` goes the other way.
 
   ```clojure
@@ -298,10 +299,12 @@
 
 (defn- digits
   "A BigDecimal's digits before the point and after it, as a DECIMAL needs
-  room for them: none before the point for a number under one, and none
-  after it for a negative scale, such as 1E+5's."
+  room for them: none before the point for a number under one, none after
+  it for a negative scale, such as 1E+5's, and none for trailing zeros, such
+  as 1.50's second."
   [^BigDecimal d]
-  (let [d (if (neg? (.scale d)) (.setScale d 0) d)]
+  (let [d (.stripTrailingZeros d)
+        d (if (neg? (.scale d)) (.setScale d 0) d)]
     [(max 0 (- (.precision d) (.scale d))) (.scale d)]))
 
 (defn- field-name
@@ -698,11 +701,21 @@
                        "with create-dataframe's :schema, or convert the value first.")
                   {:column col-name :value value :type (.sql dt)})))
 
+(defn- exact-decimal
+  "A number as a BigDecimal: a whole number or a BigDecimal as it is, and a
+  float or a double as its shortest decimal, as Spark's `Decimal` reads a
+  double, or nil for anything else, an infinity or a NaN."
+  ^BigDecimal [value]
+  (cond
+    (instance? Double value) (when (Double/isFinite value) (BigDecimal/valueOf (double value)))
+    (instance? Float value)  (when (Float/isFinite value) (BigDecimal. (Float/toString value)))
+    :else                    (->big-decimal value)))
+
 (defn- decimal-value
   "`value` as a BigDecimal at the DECIMAL's scale, when the DECIMAL holds it
   exactly."
   [col-name ^DecimalType dt value]
-  (let [d      (->big-decimal value)
+  (let [d      (exact-decimal value)
         fitted (when d
                  (try (.setScale d (.scale dt) RoundingMode/UNNECESSARY)
                       (catch ArithmeticException _ nil)))]
@@ -729,12 +742,22 @@
   "The microseconds in each of a day-time interval's fields, by its index."
   [86400000000 3600000000 60000000 1])
 
+(defn- whole-micros?
+  "Whether the Duration is a whole number of microseconds that a long holds,
+  as Spark keeps a day-time interval."
+  [^Duration d]
+  (and (zero? (rem (.getNano d) 1000))
+       (try
+         (Math/addExact (Math/multiplyExact (.getSeconds d) 1000000) (quot (.getNano d) 1000))
+         true
+         (catch ArithmeticException _ false))))
+
 (defn- day-time-value
   "A Duration that the day-time interval holds exactly: to its last field,
-  and to the microsecond."
+  to the microsecond, and within its range."
   [col-name ^DayTimeIntervalType dt value]
   (if (and (instance? Duration value)
-           (zero? (rem (.getNano ^Duration value) 1000))
+           (whole-micros? value)
            (let [unit (micros-per-unit (int (.endField dt)))]
              (or (= 1 unit)
                  (and (zero? (.getNano ^Duration value))

@@ -23,6 +23,12 @@
         version (mapv parse-long (re-seq #"\d+" (spark/classpath-version)))]
     (not (neg? (compare (vec (take (count needed) version)) needed)))))
 
+(defn- needed
+  "The Spark version that the function needs for this many arguments, or nil."
+  [sym args]
+  (let [{:keys [since arity-since]} (get @rows sym)]
+    (get arity-since (count args) since)))
+
 (defn- fixture
   "Three rows, with a column of each kind that the examples use."
   []
@@ -52,7 +58,7 @@
   names it."
   [[fn-sym args sql wrap] run]
   (let [f     @(ns-resolve 'zero-one.geni.core fn-sym)
-        since (:since (get @rows fn-sym))]
+        since (needed fn-sym args)]
     (if (and since (not (at-least? since)))
       (is (thrown-with-msg? ExceptionInfo #"needs Spark" (apply f args)) (str fn-sym))
       (try
@@ -460,8 +466,8 @@
   [[sym args & more]]
   (into [sym (mapv #(if (delay? %) @% %) args)] more))
 
-(defn- this-sparks? [[sym]]
-  (let [since (:since (get @rows sym))]
+(defn- this-sparks? [[sym args]]
+  (let [since (needed sym args)]
     (or (nil? since) (at-least? since))))
 
 (defn- check-older-sparks
@@ -578,6 +584,60 @@
   (let [vectors (g/table->dataset @spark [[(g/dense 1.0 2.0)]] [:v])]
     (is (= [{:type 1 :size nil :indices nil :values [1.0 2.0]}]
            (g/collect-col (g/select vectors {:u (g/unwrap-udt :v)}) :u)))))
+
+;;;; Versions of arities and arguments
+
+(defn- takes?
+  "Whether one of Spark's `functions` methods called `spark-name`, that Geni
+  can call, takes the arglist's arguments: as many, or, for a Java varargs
+  method, at least its fixed ones, which a Geni arglist with `&` needs."
+  [spark-name arglist]
+  (let [rest?   (some #{'&} arglist)
+        n-fixed (count (take-while #(not= '& %) arglist))]
+    (some (fn [^Method method]
+            (let [n (count (.getParameterTypes method))]
+              (if (.isVarArgs method)
+                (<= (dec n) n-fixed)
+                (and (not rest?) (= n n-fixed)))))
+          (@#'function-table/methods-named spark-name))))
+
+(deftest arity-versions-test
+  (doseq [[sym {:keys [spark since arity-since arglists]}] @rows
+          :when (or (nil? since) (at-least? since))
+          arglist arglists
+          :let [needs (when-not (some #{'&} arglist) (get arity-since (count arglist)))]]
+    (if (or (nil? needs) (at-least? needs))
+      (is (takes? spark arglist) (str sym " " arglist " isn't this Spark's, and has no version"))
+      (do
+        (is (not (takes? spark arglist)) (str sym " " arglist " is this Spark's, before " needs))
+        (is (thrown-with-msg? ExceptionInfo (re-pattern (str "\\Q" sym " " arglist "\\E needs Spark "
+                                                             (string/replace needs "." "\\.")))
+                              (apply @(ns-resolve 'zero-one.geni.core sym)
+                                     (repeat (count arglist) (g/lit 1)))))))))
+
+(deftest column-arguments-test
+  (let [df (g/sql @spark "SELECT 'a-b-c' AS s, '-' AS delim, 2 AS n, 1.25D AS d")]
+    (testing "a value after the first argument works on any Spark"
+      (is (= [["a" "b" "c"] "a-b-ca-b-c" 1.3]
+             (first (g/collect-vals (g/select df (g/split :s "-") (g/repeat :s 2) (g/round :d 1)))))))
+    (if (at-least? "4.0")
+      (testing "a column after the first argument, from Spark 4.0"
+        (is (= [["a" "b" "c"] "a-b-ca-b-c" 1.3 1.2]
+               (first (g/collect-vals (g/select df
+                                                (g/split :s :delim)
+                                                (g/repeat :s :n)
+                                                (g/round :d (g/lit 1))
+                                                (g/bround :d (g/lit 1))))))))
+      (testing "a column after the first argument, before Spark 4.0, which would take a keyword as text"
+        (doseq [column [#(g/split :s :delim) #(g/split :s :delim 2) #(g/repeat :s :n)
+                        #(g/round :d (g/lit 1)) #(g/bround :d (g/lit 1))]]
+          (is (thrown-with-msg? ExceptionInfo #"with a column after its first argument needs Spark 4\.0"
+                                (column))))))
+    (testing "an arity that a later Spark added names it"
+      (if (at-least? "4.1")
+        (is (= [36] (g/collect-col (g/select df {:n (g/length (g/uuid 42))}) :n)))
+        (is (thrown-with-msg? ExceptionInfo #"uuid \[seed\] needs Spark 4\.1 or later"
+                              (g/uuid 42)))))))
 
 ;;;; Coverage
 

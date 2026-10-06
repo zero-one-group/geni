@@ -133,13 +133,19 @@
 
 (def ^:private unavailable
   "What a value that Spark can't give for this model is: its standard
-  errors without the normal solver, say, which Spark refuses."
+  errors without the normal solver, say, which Spark refuses, or its
+  p-values with no residual degrees of freedom, as a fit of more features
+  than rows has, which Spark's `require` refuses."
   ::unavailable)
 
 (defn- value-of [summary method]
   (try
     (->value (Reflector/invokeNoArgInstanceMember summary method false))
-    (catch UnsupportedOperationException _ unavailable)))
+    (catch UnsupportedOperationException _ unavailable)
+    (catch IllegalArgumentException e
+      (if (some-> (ex-message e) (.startsWith "requirement failed"))
+        unavailable
+        (throw e)))))
 
 (defn summary->map
   "A summary's values as a map, for the summary classes that `summary-values`
@@ -179,7 +185,8 @@
   clustering model, its cluster sizes and cost; and the objective's history
   where the model has one. ROC and PR curves, residuals and predictions stay
   DataFrames. A value that Spark can't give for the model, such as a linear
-  regression's standard errors without the normal solver, is left out.
+  regression's standard errors without the normal solver, or its p-values for
+  more features than rows, is left out.
 
   Spark computes most of the metrics from the predictions, so the map takes
   a job or two to make. `(.summary model)` gives Spark's own summary.

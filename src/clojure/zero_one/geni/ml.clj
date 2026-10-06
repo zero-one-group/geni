@@ -335,17 +335,21 @@
 
 (defn- ->features
   "One row's features, for a model's single prediction: a collection of
-  numbers as a dense vector, and a number, which isotonic regression takes,
-  as a double."
+  numbers as a dense vector, a sparse vector's map, as `g/collect` gives it,
+  as a sparse vector, and a number, which isotonic regression takes, as a
+  double."
   [features]
   (cond
     (number? features) (double features)
+    (map? features)    (let [{:keys [size indices values]} features]
+                         (interop/->sparse-vector size indices values))
     (coll? features)   (interop/->dense-vector features)
     :else              features))
 
 (defn predict
-  "The model's prediction for one row's features, a vector of numbers or an
-  MLlib vector, as its `transform` makes it: a label for a classifier, a
+  "The model's prediction for one row's features, a vector of numbers, an
+  MLlib vector or a sparse vector's map, as `g/collect` gives one, as its
+  `transform` makes it: a label for a classifier, a
   value for a regressor, and a cluster for a clustering model. Isotonic
   regression takes one number.
 
@@ -408,13 +412,16 @@
   (.numDocs model))
 
 (defn find-synonyms
-  "The `n` words closest to a word, or to a vector of numbers, in a Word2Vec
-  model, as a DataFrame of `word` and `similarity`."
+  "The `n` words closest to a word, or to a vector, of numbers or an MLlib
+  vector, in a Word2Vec model, as a DataFrame of `word` and `similarity`."
   [model word-or-vector n]
   (.findSynonyms model
-                 (if (coll? word-or-vector)
-                   (interop/->dense-vector word-or-vector)
-                   (name word-or-vector))
+                 (cond
+                   (coll? word-or-vector)                     (interop/->dense-vector word-or-vector)
+                   (or (string? word-or-vector)
+                       (keyword? word-or-vector)
+                       (symbol? word-or-vector))              (name word-or-vector)
+                   :else                                      word-or-vector)
                  (int n)))
 
 (defn get-vectors

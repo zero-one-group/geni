@@ -13,7 +13,7 @@
   (:import
    (clojure.lang ExceptionInfo)
    (java.nio ByteBuffer ByteOrder)
-   (java.util Iterator)))
+   (java.util Iterator TimeZone)))
 
 (defn- continuation-marker?
   "Whether an Arrow IPC stream starts as one does: with the continuation
@@ -41,6 +41,34 @@
                                                       "FROM RANGE(0, 3, 1, 2)")))]
       (is (= [[0 "s0" 0.0] [1 "s1" nil] [2 "s2" 3.0]]
              (mapcat read-rows streams))))))
+
+(deftest ^:classic to-arrow-time-zone-test
+  (testing "a TIMESTAMP's time zone is the session's, which is the JVM's when it isn't set"
+    (when-not (.contains (.conf @tr/spark) "spark.sql.session.timeZone")
+      (let [time-zones (requiring-resolve 'zero-one.geni.arrow-rows/time-zones)
+            before     (TimeZone/getDefault)]
+        (try
+          (TimeZone/setDefault (TimeZone/getTimeZone "Asia/Jakarta"))
+          (is (= ["Asia/Jakarta"]
+                 (time-zones (first (g/to-arrow (g/sql @tr/spark "SELECT TIMESTAMP'2026-01-01 12:00:00' ts"))))))
+          (finally
+            (TimeZone/setDefault before)))))))
+
+(deftest observed-to-arrow-test
+  (testing "an observation gets its metrics from to-arrow, as from collect"
+    (let [observation (g/observation)
+          df          (g/observe (g/range 0 5 1 2) observation {:n (g/count "*")})]
+      (g/to-arrow df)
+      (is (= {:n 5} (tr/observed-within observation 10000))))))
+
+(deftest twice-named-fields-test
+  (testing "a struct with two fields of one name throws, naming its column, before a job runs"
+    (let [df (g/sql @tr/spark "SELECT 1 id, ARRAY(NAMED_STRUCT('a', 1, 'a', 2)) xs")]
+      (is (thrown-with-msg? ExceptionInfo
+                            #"to-tmd can't convert the column \"xs\", which has a struct with two fields named \"a\""
+                            (g/to-tmd df)))
+      (is (thrown-with-msg? ExceptionInfo #"stream can't convert the column \"xs\""
+                            (g/stream df))))))
 
 (def ^:private glimpse-df
   (delay (g/sql @tr/spark (str "SELECT id, CONCAT('s', id) name, "
@@ -130,8 +158,9 @@
   ;; that counts its reads, with each stream decoded as one batch.
   (let [reads   (atom 0)
         closed  (atom 0)
-        batches #(#'results/batches nil :lazy vector)]
-    (with-redefs [results/open-streams (counting-source reads closed)]
+        batches #(#'results/batches nil "stream" :lazy vector)]
+    (with-redefs [results/open-streams     (counting-source reads closed)
+                  results/as-sql-execution (fn [_df _fn-name f] (f))]
       (testing "first reads one batch, where Clojure's seq of an Iterable reads 32 ahead"
         (with-open [b (batches)]
           (is (= 0 (first b)))
@@ -150,4 +179,11 @@
       (testing "and to the end"
         (reset! reads 0)
         (is (= 100 (count (into [] (batches)))))
-        (is (= 100 @reads))))))
+        (is (= 100 @reads)))
+      (testing "a reduce without an init does as reduce does with a collection, and closes the run"
+        (reset! reads 0)
+        (reset! closed 0)
+        (is (= 4950 (reduce + (batches))))
+        (is (= :stop (reduce (fn [_ _] (reduced :stop)) (batches))))
+        (is (= [102 2] [@reads @closed]))
+        (is (= 0 (reduce + (#'results/batches nil "stream" :lazy (constantly [])))))))))

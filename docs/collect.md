@@ -110,9 +110,9 @@ The data comes over as Arrow batches, which the executors make, as they do for P
 | VARIANT | Spark's VariantVal, whose string is the value as JSON |
 | MLlib's vectors | what `collect` gives: a vector of doubles for a dense one, and a map for a sparse one |
 
-A null becomes a missing value. Spark's calendar intervals, geometries and geographies have no equivalent, so `to-tmd` throws for them. Columns get keyword names, and `:key-fn` names them otherwise, as `{:key-fn identity}` does with strings. Two columns of one name throw before a job runs, and so do two that `:key-fn` names alike, as `{:key-fn (comp keyword clojure.string/lower-case)}` would `a` and `A`. A dataset holds rows only in its columns, so a result with rows but no columns throws too.
+A null becomes a missing value. Spark's calendar intervals, geometries and geographies have no equivalent, so `to-tmd` throws for them, and so it does for a struct with two fields of one name, which a map can't hold. Columns get keyword names, and `:key-fn` names them otherwise, as `{:key-fn identity}` does with strings. Two columns of one name throw before a job runs, and so do two that `:key-fn` names alike, as `{:key-fn (comp keyword clojure.string/lower-case)}` would `a` and `A`. A dataset holds rows only in its columns, so a result with rows but no columns throws too.
 
-Each column keeps its Spark type, as DDL, in its metadata, which `create-dataframe` uses on the way back:
+Each column keeps its Spark type, as DDL, in its metadata, which `create-dataframe` uses on the way back, except a column that holds MLlib vectors, whose DDL would be their storage's:
 
 ```clojure
 (-> housing :Price meta :zero-one.geni/spark-type)
@@ -128,7 +128,7 @@ Each column keeps its Spark type, as DDL, in its metadata, which `create-datafra
 ;; => 13580
 ```
 
-`stream` returns a reducible, so `reduce`, `transduce`, `into` and `run!` read the batches as they go, and stop reading when they're done, when they stop early, as with `(take 2)`, and when they throw. On classic Spark, each partition runs as a job of its own when the reduce gets to it, so only one partition's batches are on the driver at a time. That makes a reduce the way to read it. It's also seqable, for `seq`, `first` and `doseq`, which read a batch at a time as the seq is realised, but can stop before the end, so close it with `with-open` for those:
+`stream` returns a reducible, so `reduce`, `transduce`, `into` and `run!` read the batches as they go, and stop reading when they're done, when they stop early, as with `(take 2)`, and when they throw. On classic Spark, each partition runs as a job of its own when the reduce gets to it, so only one partition's batches are on the driver at a time. That makes a reduce the way to read it. A reduce is also one of Spark's SQL executions, as a `collect` is, so an observation from `g/observe` gets its metrics when it ends, as it does from `to-tmd`, `to-tensors` and `to-arrow`. It's also seqable, for `seq`, `first` and `doseq`, which read a batch at a time as the seq is realised, but can stop before the end, so close it with `with-open` for those:
 
 ```clojure
 (with-open [batches (g/stream (g/repartition dataframe 4))]
@@ -148,7 +148,7 @@ Each column keeps its Spark type, as DDL, in its metadata, which `create-datafra
 ;; => {:Suburb "StringType", :Rooms "LongType"}
 ```
 
-Any other column gets its Spark type from its datatype, such as `:int32` INT and `:local-date` DATE, or, for vectors, maps and other objects, from its values, as `records->dataset` infers them, so a map becomes a struct. BigDecimals become a DECIMAL of 38 digits, 18 of them after the point, unless the column's values need more digits before the point or have more after it. `:schema` gives columns their types, as DataTypes, DDL strings or what `g/->schema` takes:
+Any other column gets its Spark type from its datatype, such as `:int32` INT and `:local-date` DATE, or, for vectors, maps and other objects, from its values, as `records->dataset` infers them, so a map becomes a struct. BigDecimals become a DECIMAL of 38 digits, 18 of them after the point, unless the column's values need more digits before the point or after it. `:schema` gives columns their types, as DataTypes, DDL strings or what `g/->schema` takes:
 
 ```clojure
 (-> (ds/->dataset {:price [1.5M 2.25M]})
@@ -157,7 +157,7 @@ Any other column gets its Spark type from its datatype, such as `:int32` INT and
 ;; => {:price "DecimalType(5,2)"}
 ```
 
-A value that its column's type can't hold exactly throws, naming the column, rather than being rounded or becoming a null: a number with more digits than its DECIMAL has room for, a whole number too large for its INT, or a Duration that doesn't fit its interval's fields.
+A value that its column's type can't hold exactly throws, naming the column, rather than being rounded or becoming a null: a number with more digits than its DECIMAL has room for, a whole number too large for its INT, or a Duration that doesn't fit its interval's fields or range. A double goes into a DECIMAL as its shortest decimal, as Spark's `Decimal` reads one, so 1.5 fits a DECIMAL(12, 2), and `(+ 0.1 0.2)`, which is 0.30000000000000004, doesn't.
 
 ## Collect as tensors
 
