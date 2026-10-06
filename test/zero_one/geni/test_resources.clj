@@ -2,6 +2,7 @@
   (:require
    [clojure.string :refer [split-lines split] :as string]
    [zero-one.geni.core :as g]
+   [zero-one.geni.core.udf-artifacts :as udf-artifacts]
    [zero-one.geni.defaults]
    [zero-one.geni.spark]
    [zero-one.geni.utils :refer [class-named]]
@@ -113,6 +114,12 @@
   classpath in place of classic Spark."
   []
   (zero-one.geni.spark/connect-only?))
+
+;; Over Spark Connect, Clojure keeps the classes that it compiles from here
+;; on, as g/connect's :keep-classes has it do, so that the functions of the
+;; test namespaces that load after this one can go to the server as UDFs.
+(when (connect?)
+  (udf-artifacts/keep-classes!))
 
 (defn clean-catalog!
   "Drops the databases, tables and global temp views that earlier tests left

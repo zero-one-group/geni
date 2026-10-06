@@ -48,10 +48,16 @@
       (class? (resolve (symbol (str/replace (str enclosing) "-" "_")))) (type-namespace enclosing)
       :else                                                         enclosing)))
 
+(defn- record-or-type?
+  "Whether `obj` is a record's or a type's, whose class its namespace makes."
+  [obj]
+  (or (instance? clojure.lang.IRecord obj) (instance? clojure.lang.IType obj)))
+
 (defn walk-object-vars
-  "Adds to `references` the namespaces of the vars, and of the functions, that
-  `obj` holds, as its fields or as the elements of a collection, however
-  deeply. `visited` keeps it from walking an object twice."
+  "Adds to `references` the namespaces of the vars, the functions, and the
+  records and types, that `obj` holds, as its fields or as the elements of a
+  collection, however deeply. `visited` keeps it from walking an object
+  twice."
   [^Set references ^Set visited obj]
   (when-not (or (nil? obj)
                 (boolean? obj)
@@ -78,16 +84,22 @@
 
       ;; Vectors, maps, sets, records and Java collections.
       (collection? obj)
-      (doseq [entry obj]
-        (walk-object-vars references visited entry))
+      (do
+        (when (record-or-type? obj)
+          (some->> (type-namespace (symbol (Compiler/demunge (.getName (class obj))))) (.add references)))
+        (doseq [entry obj]
+          (walk-object-vars references visited entry)))
 
       ;; Other objects: only the Clojure functions and collections they hold,
       ;; rather than all of an object graph such as a SparkContext's.
       :else
-      (doseq [^Field field (.getDeclaredFields (class obj))]
-        (let [value (access-field field obj)]
-          (when (or (ifn? value) (coll? value))
-            (walk-object-vars references visited value)))))))
+      (do
+        (when (record-or-type? obj)
+          (some->> (type-namespace (symbol (Compiler/demunge (.getName (class obj))))) (.add references)))
+        (doseq [^Field field (.getDeclaredFields (class obj))]
+          (let [value (access-field field obj)]
+            (when (or (ifn? value) (coll? value))
+              (walk-object-vars references visited value))))))))
 
 (defn namespace-references
   "The namespaces that the executors need to load to run `obj`, a function:

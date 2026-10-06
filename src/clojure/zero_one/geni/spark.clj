@@ -269,13 +269,16 @@
 (defn connect-session
   "A new session on a Spark Connect server, which becomes Spark's default and
   active session. See `g/connect`, which also makes Geni use it."
-  ^SparkSession [url {:keys [configs keep-classes] :or {keep-classes true}}]
+  ^SparkSession [url {:keys [configs keep-classes]}]
   (when-not (class-named "org.apache.spark.sql.connect.SparkSession")
     (throw (ex-info (str "Spark Connect needs Spark 4's JVM client, "
                          "org.apache.spark/spark-connect-client-jvm_2.13, on the classpath "
                          "in place of spark-sql.")
                     ;; Not the URL, which can hold a token.
                     {})))
+  (when keep-classes
+    ;; Before the session, which a failure would leave open.
+    ((requiring-resolve 'zero-one.geni.core.udf-artifacts/check-keep-classes!)))
   (let [builder (-> (SparkSession/builder) (.config "spark.api.mode" "connect"))
         builder (if url (.remote builder url) builder)
         builder (reduce (fn [b [k v]] (.config b (name k) v)) builder configs)
@@ -285,6 +288,7 @@
       (warn! (missing-flags-message missing)))
     (when keep-classes
       ((requiring-resolve 'zero-one.geni.core.udf-artifacts/keep-classes!)))
+    ((requiring-resolve 'zero-one.geni.core.udf-artifacts/register-session!) session)
     (SparkSession/setDefaultSession session)
     (SparkSession/setActiveSession session)
     session))

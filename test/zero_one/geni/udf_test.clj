@@ -2,23 +2,24 @@
   "Spark SQL UDFs from Clojure functions, on a local session and over Spark
   Connect, whose test server has no Clojure."
   (:require
+   [clojure.java.io :as io]
    [clojure.string :as string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.core.udf :as udf]
+   [zero-one.geni.core.udf-artifacts :as udf-artifacts]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [connect? spark]])
+   [zero-one.geni.test-resources :as tr :refer [spark]])
   (:import
    (clojure.lang ExceptionInfo RT)
    (java.io ByteArrayInputStream ByteArrayOutputStream ObjectInputStream ObjectOutputStream
             ObjectStreamClass)
+   (java.sql Timestamp)
+   (java.time Instant LocalDate)
+   (java.util.concurrent ExecutionException)
+   (org.apache.spark.sql SparkSession)
    (org.apache.spark.sql.api.java UDF1)
    (org.apache.spark.sql.types DataTypes)))
-
-;; Over Spark Connect, the session has to exist before the rest of this
-;; namespace compiles, so that Clojure keeps its functions' classes for the
-;; server, as g/connect's :keep-classes has it do.
-(when (connect?) @spark)
 
 ;; Spark evaluates a UDF over an in-memory table on the driver, so the tests
 ;; use g/range and g/repartition, whose tasks go through serialisation.
@@ -145,14 +146,123 @@
   (testing "a var goes by name, and the executors, or the server, load its namespace"
     (is (= [[0] [2]] (select-vals (ids 2) ((g/udf #'doubled :long) :id))))))
 
+(deftest datetime-udf-test
+  (testing "dates and timestamps go out from java.time or java.sql values"
+    (let [day     (LocalDate/of 2026 1 2)
+          instant (Instant/parse "2026-01-02T03:04:05Z")
+          [[d1 d2 t1 t2]]
+          (select-vals (ids 1)
+                       ((g/udf (fn [_] day) :date) :id)
+                       ((g/udf (fn [_] (java.sql.Date/valueOf day)) :date) :id)
+                       ((g/udf (fn [_] instant) :timestamp) :id)
+                       ((g/udf (fn [_] (Timestamp/from instant)) :timestamp) :id))]
+      (is (= [day day] (map #(.toLocalDate ^java.sql.Date %) [d1 d2])))
+      (is (= [instant instant] (map #(.toInstant ^Timestamp %) [t1 t2]))))))
+
+(deftest uses-test
+  (testing "the namespaces that a namespace's file requires, with an alias or without"
+    (is (contains? (#'udf-artifacts/uses 'zero-one.geni.udf-fixture) 'clojure.set)))
+  (testing "an ns form's libs, from prefix lists too, but not those with :as-alias alone"
+    (is (= '#{a b.c b.d e g f h.i}
+           (#'udf-artifacts/required-libs
+            '(ns x "A namespace." {:k 1}
+                 (:require a [b c [d :as d]] [e :as e] [i :as-alias i] [g :as-alias g :refer [x]]
+                           :reload)
+                 (:use f [h i])
+                 (:import (java.io File))))))))
+
+(defn- define-at-repl
+  "Evaluates `form` in a namespace without a file, as the REPL would."
+  [form]
+  (binding [*ns* (create-ns 'zero-one.geni.udf-test-repl)]
+    (refer-clojure)
+    (eval form)))
+
+(defn- unwrap [f]
+  (try (f) (catch ExecutionException e (throw (.getCause e)))))
+
+(defn- keeping-default
+  "Calls `f`, and then makes the default session the default again, since
+  g/connect makes each new session the default."
+  [f]
+  (let [session @spark]
+    (try
+      (f)
+      (finally
+        (SparkSession/setDefaultSession session)
+        (SparkSession/setActiveSession session)))))
+
 (deftest ^:connect connect-udf-test
   (testing "a function compiled at the REPL after g/connect goes to the server"
     (let [triple (eval '(fn [x] (* 3 x)))]
       (is (= [[0] [3]] (select-vals (ids 2) ((g/udf triple :long) :id))))))
   (testing "a function compiled without its class kept gets an error that says what to do"
     (let [unkept (binding [*compile-files* false] (eval '(fn [x] (* 4 x))))]
-      (is (thrown-with-msg? ExceptionInfo #"compiled before Geni connected"
-                            (g/udf unkept :long))))))
+      (is (thrown-with-msg? ExceptionInfo #"was compiled at run time.*before g/connect's :keep-classes"
+                            (g/udf unkept :long)))))
+  (testing "a var of a namespace without a file gets an error, since it goes by name"
+    (is (thrown-with-msg? ExceptionInfo #"has no file for the server to load"
+                          (g/udf (define-at-repl '(defn same [x] x)) :long)))))
+
+(deftest ^:connect keep-classes-test
+  (keeping-default
+   (fn []
+     (testing "g/connect keeps classes only when it's asked to"
+       (let [calls (atom 0)]
+         (with-redefs [udf-artifacts/keep-classes! #(swap! calls inc)]
+           (.close (g/connect))
+           (.close (g/connect nil {:keep-classes true})))
+         (is (= 1 @calls))))
+     (testing "from a future, which has its caller's bindings, it throws before it connects"
+       (is (thrown-with-msg? ExceptionInfo #"another thread's bindings"
+                             (binding [*compile-path* *compile-path*]
+                               (unwrap #(deref (future (g/connect nil {:keep-classes true})))))))))))
+
+(deftest ^:connect changed-function-test
+  (let [old (define-at-repl '(defn shift [x] (+ x 1)))
+        u   (g/udf @old :long)]
+    (is (= [[1] [2]] (select-vals (ids 2) (u :id))))
+    (let [new @(define-at-repl '(defn shift [x] (+ x 2)))]
+      (testing "a function redefined after its class went to the session throws"
+        (is (thrown-with-msg? ExceptionInfo #"udf-test-repl/shift.*changed after it went"
+                              (g/udf new :long))))
+      (testing "while the UDF of the function as it was still works"
+        (is (= [[1] [2]] (select-vals (ids 2) (u :id))))))))
+
+(deftest ^:connect new-session-udf-test
+  ;; One new session, which the server loads Clojure and Geni for, for the
+  ;; checks that need a session that nothing has gone to yet. It isn't the
+  ;; default one, so the UDFs have to find it.
+  (let [default @spark]
+    (with-open [fresh (g/connect)]
+      (SparkSession/setDefaultSession default)
+      (SparkSession/setActiveSession default)
+      ;; Loaded without its classes kept, as before g/connect, and then added
+      ;; to at the REPL, so that only some of its classes are kept.
+      (binding [*compile-files* false]
+        (require 'zero-one.geni.udf-fixture :reload))
+      (let [on-fresh    #(g/collect-vals (g/select (g/range fresh 2) {:x %}))
+            plus-offset (resolve 'zero-one.geni.udf-fixture/plus-offset)
+            new-keys    @(resolve 'zero-one.geni.udf-fixture/new-keys)
+            twice       (binding [*ns* (the-ns 'zero-one.geni.udf-fixture)]
+                          (eval '(fn [x] (* 2 (plus-offset x)))))]
+        (testing "a UDF goes to each open session, and the server loads a namespace from its file"
+          (is (= [[200] [202]] (on-fresh ((g/udf twice :long) :id))))
+          (is (= [[100] [101]] (on-fresh ((g/udf plus-offset :long) :id))))
+          (is (= [[["b"]] [["b"]]]
+                 (on-fresh ((g/udf (fn [x] (new-keys {"a" x "b" x} #{"a"})) [:string]) :id))))
+          (let [offset ((resolve 'zero-one.geni.udf-fixture/->Offset) 5)]
+            (is (= [[5] [6]] (on-fresh ((g/udf (fn [x] (+ x (:n offset))) :long) :id))))))
+        (testing "a file that changed after it went to the session throws"
+          (let [u      (g/udf plus-offset :long)
+                file   (io/file "test/zero_one/geni/udf_fixture.clj")
+                before (.lastModified file)]
+            (try
+              (.setLastModified file (+ (System/currentTimeMillis) 60000))
+              (is (thrown-with-msg? ExceptionInfo #"udf-fixture.*changed after it went"
+                                    (u :id)))
+              (finally
+                (.setLastModified file before)))))))))
 
 (deftest serialisation-test
   (testing "a var travels by name, so its function's class isn't needed"
