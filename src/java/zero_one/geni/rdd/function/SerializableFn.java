@@ -141,19 +141,25 @@ public abstract class SerializableFn implements Serializable {
      * @param namespace string designating the namespace to load
      */
     private static void requireNamespace(String namespace) {
-        try {
-            Symbol sym = Symbol.intern(namespace);
-            // A namespace made at run time, such as `user` at a REPL, has no
-            // file to load, so requiring it would only fail and warn.
-            if (Namespace.find(sym) != null && !hasSource(namespace)) {
-                return;
+        Symbol sym = Symbol.intern(namespace);
+        // A namespace made at run time, such as `user` at a REPL, has no
+        // file to load, so requiring it would only fail.
+        if (!hasSource(namespace)) {
+            if (Namespace.find(sym) == null) {
+                logger.warn("No file to load the namespace " + namespace + " from");
             }
+            return;
+        }
+        try {
             logger.trace("(require " + namespace + ")");
             synchronized (RT.REQUIRE_LOCK) {
                 require.invoke(sym);
             }
         } catch (Exception ex) {
-            logger.warn("Error loading namespace " + namespace, ex);
+            // Rather than an unbound var later, as when the file requires a
+            // namespace that isn't here.
+            throw new IllegalStateException("Couldn't load the namespace " + namespace
+                                            + ", which the function uses", ex);
         }
     }
 

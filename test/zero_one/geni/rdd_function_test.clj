@@ -34,6 +34,9 @@
     (testing "with a function defined in a record's method"
       (is (= #{'zero-one.geni.rdd-function-test}
              (function/namespace-references (make-fn (->FnMaker))))))
+    (testing "with a record in what a function closes over, whose class its namespace makes"
+      (is (= #{'zero-one.geni.rdd-function-test}
+             (function/namespace-references (partial identity (->FnMaker))))))
     (testing "without realising a lazy seq that a function closes over"
       (let [numbers (range)]
         (is (= #{'zero-one.geni.rdd-function-test}

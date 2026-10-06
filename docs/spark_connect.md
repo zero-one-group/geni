@@ -99,7 +99,7 @@ Spark Connect analyses a query when it needs its schema or its rows, rather than
 ;; => (1 2 3)
 ```
 
-A function defined at the REPL needs its class on the server, so `g/connect` has Clojure keep the classes that it compiles from then on, in a temporary directory, unless it's given `{:keep-classes false}`. Define such a function after `g/connect`, or reload its namespace then. A var, such as `#'my.app/grade`, goes by name, and the server loads its namespace. The first UDF on a session takes a few seconds, while the server loads Clojure and Geni.
+The server loads the namespaces that a UDF uses from their files, so a var, such as `#'my.app/grade`, or a function that a namespace in a file defines with `defn`, works as it is. A function defined at the REPL needs its class on the server: `(g/connect url {:keep-classes true})` has Clojure keep the classes that it compiles from then on, in a temporary directory, for the whole JVM, and a function defined after that works. A session keeps the code that it got first, so connect again after changing a function or a file that went to it. The first UDF on a session takes a few seconds, while the server loads Clojure and Geni. The [UDFs guide](udfs.md) has the details.
 
 ## What needs classic Spark
 

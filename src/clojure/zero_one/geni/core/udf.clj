@@ -9,12 +9,15 @@
    [zero-one.geni.spark :as spark])
   (:import
    (java.lang.reflect Method)
+   (java.sql Timestamp)
+   (java.time Instant LocalDate)
    (java.util ArrayList HashMap)
    (org.apache.spark.sql Row RowFactory SparkSession functions)
    (org.apache.spark.sql.expressions UserDefinedFunction)
-   (org.apache.spark.sql.types ArrayType ByteType DataType DecimalType DoubleType FloatType
-                               IntegerType LongType MapType ShortType StringType StructField
-                               StructType)
+   (org.apache.spark.sql.internal SqlApiConf)
+   (org.apache.spark.sql.types ArrayType ByteType DataType DateType DecimalType DoubleType
+                               FloatType IntegerType LongType MapType ShortType StringType
+                               StructField StructType TimestampNTZType TimestampType)
    (scala.collection JavaConverters)
    (zero_one.geni.udf UdfFn)))
 
@@ -43,14 +46,48 @@
                                      ks names convs)))
         :else                 (RowFactory/create (object-array (map #(%1 %2) convs value)))))))
 
+(defn- java8-datetimes?
+  "Whether Spark takes java.time values for DATE and TIMESTAMP, rather than
+  java.sql ones, as spark.sql.datetime.java8API.enabled says where the UDF
+  runs. A Spark Connect server's encoders take only the one that it says,
+  where classic Spark takes either."
+  []
+  (.datetimeJava8ApiEnabled (SqlApiConf/get)))
+
+(defn- date-converter []
+  (if (java8-datetimes?)
+    (fn [value]
+      (if (instance? java.sql.Date value) (.toLocalDate ^java.sql.Date value) value))
+    (fn [value]
+      (cond
+        (instance? LocalDate value)      (java.sql.Date/valueOf ^LocalDate value)
+        (instance? java.sql.Date value)  value
+        (instance? java.util.Date value) (java.sql.Date. (.getTime ^java.util.Date value))
+        :else                            value))))
+
+(defn- timestamp-converter []
+  (if (java8-datetimes?)
+    (fn [value]
+      (if (instance? java.util.Date value) (.toInstant ^java.util.Date value) value))
+    (fn [value]
+      (cond
+        (instance? Instant value)        (Timestamp/from value)
+        (instance? Timestamp value)      value
+        (instance? java.util.Date value) (Timestamp. (.getTime ^java.util.Date value))
+        :else                            value))))
+
+(defn- timestamp-ntz-value [value]
+  (if (instance? Timestamp value) (.toLocalDateTime ^Timestamp value) value))
+
 (defn ^:no-doc result-converter
   "Returns a function that turns a UDF's result into the Java value that Spark
   expects for `data-type`: a number of the declared width, a string for a
-  keyword, a Scala Seq for an array, a Scala Map for a map, and a Row for a
-  struct, from
-  a map with keyword or string keys, or from the values in order. `nil` stays
-  nil, and other values go to Spark as they are. `zero_one.geni.udf.UdfFn`
-  calls it on each executor, the first time the UDF runs there."
+  keyword, a date or a timestamp as java.time or java.sql values, as the
+  session takes them, a Scala Seq for an array, a Scala Map for a map, and a
+  Row for a struct, from a map with keyword or string keys, or from the
+  values in order. `nil` stays nil, and other values go to Spark as they
+  are. `zero_one.geni.udf.UdfFn` calls it on each executor, the first time
+  the UDF runs there."
   [^DataType data-type]
   (let [convert (condp instance? data-type
                   IntegerType int
@@ -61,6 +98,10 @@
                   FloatType   float
                   DecimalType bigdec
                   StringType  ->string
+                  ;; As the session takes them.
+                  DateType         (date-converter)
+                  TimestampType    (timestamp-converter)
+                  TimestampNTZType timestamp-ntz-value
                   ;; Scala collections, which a Spark Connect server's encoders
                   ;; need, and classic Spark takes too.
                   ArrayType   (let [element (result-converter (.elementType ^ArrayType data-type))]
@@ -104,6 +145,22 @@
   (when-not (spark/classic-session? spark)
     (udf-artifacts/upload-udf! spark f)))
 
+(defn- upload-everywhere!
+  "Over Spark Connect, uploads what the server needs to run `f` to the
+  default session, and to every other open one that `g/connect` made, since
+  a UDF's column can go into a DataFrame of any of them. Only the default
+  session's errors throw: another one may be a session left open after
+  connecting again, or on a server that's gone."
+  [f]
+  (when (spark/connect-only?)
+    (let [default @defaults/spark]
+      (upload! default f)
+      (doseq [session (udf-artifacts/open-sessions)
+              :when (not (identical? session default))]
+        (try
+          (upload! session f)
+          (catch Exception _ nil))))))
+
 (defn- ->udf-fn
   "Wraps `f` for Spark, with the namespaces that the executors need to load
   to run it."
@@ -140,11 +197,10 @@
 (defn- caller
   "A function of columns that calls the UDF with as many arguments as it's
   given columns. Over Spark Connect, it uploads what the server needs to run
-  `f` to Geni's default session, unless that's there."
+  `f` to the sessions that don't have it, as `upload-everywhere!` does."
   [f udf-for-arity]
   (fn [& exprs]
-    (when (spark/connect-only?)
-      (upload! @defaults/spark f))
+    (upload-everywhere! f)
     (let [^"[Lorg.apache.spark.sql.Column;" cols (->col-array exprs)
           ^UserDefinedFunction u                 (udf-for-arity (alength cols))]
       (.apply u cols))))
@@ -174,9 +230,12 @@
   work on a local session that Geni starts. On a cluster, pass a var, such as
   `#'my-fn`, which the executors look up in its namespace, or AOT-compile the
   namespace that defines `f`. Over Spark Connect, Geni uploads Clojure, Geni
-  and the code that `f` uses to the server, once per session, and a function
-  defined at the REPL works when it's defined after `g/connect`. The Clojure
-  UDFs guide has the details.
+  and the code that `f` uses to the server, once per session, and the server
+  loads each namespace that has a file from that file. A function defined at
+  the REPL works when it's defined after `(g/connect url {:keep-classes
+  true})`. Code that changed after it went to a session throws an error, since
+  the server keeps what it got first. The Clojure UDFs guide has the
+  details.
 
   ```clojure
   (def plus-one (g/udf inc :long))
@@ -188,8 +247,7 @@
   ```"
   ([f return-type] (udf f return-type {}))
   ([f return-type opts]
-   (when (spark/connect-only?)
-     (upload! @defaults/spark f))
+   (upload-everywhere! f)
    (let [data-type (->data-type return-type)
          udf-fn    (->udf-fn f data-type)]
      (caller f (memoize #(spark-udf udf-fn data-type % opts))))))
