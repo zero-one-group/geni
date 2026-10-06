@@ -724,12 +724,39 @@
     (is (= [{:n 0}] (g/collect (g/sql @spark "SELECT size(?) AS n" [(long-array 0)]))))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"typed Java array"
                           (g/sql @spark "SELECT :a" {:a []})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"typed Java array"
+                          (g/sql @spark "SELECT :a" {:a [[] [nil]]})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"one type"
                           (g/sql @spark "SELECT :a" {:a [1 "x"]})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"can't hold maps"
                           (g/sql @spark "SELECT :a" {:a [{:k 1}]})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"map in its args only as a column"
-                          (g/sql @spark "SELECT :a" {:a {:k 1}})))))
+                          (g/sql @spark "SELECT :a" {:a {:k 1}}))))
+  (testing "numbers widened as Clojure's arithmetic widens them, at any depth"
+    (let [[{:keys [a b c d e]}]
+          (g/collect (g/sql @spark "SELECT :a AS a, :b AS b, :c AS c, :d AS d, :e AS e"
+                            {:a [[1 2] [3.5]] :b [1 2N] :c [[1 2] [] nil] :d [1/2 1] :e [1.5M 2]}))
+          stripped #(mapv (fn [^BigDecimal x] (.stripTrailingZeros x)) %)]
+      (is (= [[1.0 2.0] [3.5]] a))
+      (is (= [1 2] b))
+      (is (= [[1 2] [] nil] c))
+      (is (every? decimal? (concat d e)))
+      (is (= [0.5M 1M] (stripped d)))
+      (is (= [1.5M 2M] (stripped e))))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"no exact decimal"
+                          (g/sql @spark "SELECT :a" {:a [1/3 1]})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"one type"
+                          (g/sql @spark "SELECT :a" {:a [[1 2] 3]}))))
+  (testing "decimals that an array literal's DECIMAL(38, 18) can't hold"
+    (doseq [value [[1.1234567890123456789M] [123456789012345678901M 1M] [[1] [123456789012345678901N]]]]
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"DECIMAL\(38, 18\)"
+                            (g/sql @spark "SELECT :a" {:a value})))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"DECIMAL\(38, 18\)"
+                            (g/lit value))))
+    (let [fits [1.123456789012345678M 12345678901234567890.123456789012345678M]]
+      (is (= [fits]
+             (map #(mapv (fn [^BigDecimal x] (.stripTrailingZeros x)) %)
+                  (g/collect-col (g/sql @spark "SELECT :a AS a" {:a fits}) :a)))))))
 
 (defn- spark-4? []
   (clojure.string/starts-with? (.version @spark) "4."))

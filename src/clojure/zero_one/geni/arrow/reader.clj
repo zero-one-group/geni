@@ -54,7 +54,9 @@
     (Reflector/invokeStaticMethod
      "org.apache.spark.sql.util.ArrowUtils" "toArrowSchema"
      (object-array [(.schema ^org.apache.spark.sql.Dataset df)
-                    (conf spark "spark.sql.session.timeZone" "UTC")
+                    ;; Without a default, Spark's own: the JVM's time zone.
+                    (.get (.conf ^org.apache.spark.sql.SparkSession spark)
+                          "spark.sql.session.timeZone")
                     (= "legacy" (conf spark "spark.sql.execution.pandas.structHandlingMode" "legacy"))
                     large]))))
 

@@ -11,7 +11,7 @@
    [zero-one.geni.spark :as spark]
    [zero-one.geni.utils :refer [class-named]])
   (:import
-   (clojure.lang IReduceInit Reflector)
+   (clojure.lang IReduce Reflector)
    (java.util Iterator NoSuchElementException)
    (org.apache.spark.sql Row)
    (org.apache.spark.sql.types ArrayType CalendarIntervalType DataType MapType StructField
@@ -94,14 +94,30 @@
     {:iterator ((reader "classic-streams") df mode) :close (fn [])}
     (connect-streams df)))
 
-(defn- all-streams [df]
-  (let [{:keys [^Iterator iterator close]} (open-streams df :all)]
-    (try
-      (loop [out []]
-        (if (.hasNext iterator)
-          (recur (conj out (.next iterator)))
-          out))
-      (finally (close)))))
+(defn- as-sql-execution
+  "Calls `f`, which reads the result of `df`, as one of Spark's SQL
+  executions, named `fn-name`, as `collect` reads it, so that the query's
+  listeners see it end: an Observation from `observe` gets its metrics, and
+  Spark's UI lists the query. A Spark Connect server does that itself."
+  [df fn-name f]
+  (if (classic? df)
+    ;; SQLExecution is in Spark's execution package, which isn't its API.
+    (Reflector/invokeInstanceMethod
+     (Reflector/getStaticField "org.apache.spark.sql.execution.SQLExecution$" "MODULE$")
+     "withNewExecutionId"
+     (object-array [(.queryExecution df) (scala.Some. fn-name) (interop/->scala-function0 f)]))
+    (f)))
+
+(defn- all-streams [df fn-name]
+  (as-sql-execution
+   df fn-name
+   #(let [{:keys [^Iterator iterator close]} (open-streams df :all)]
+      (try
+        (loop [out []]
+          (if (.hasNext iterator)
+            (recur (conj out (.next iterator)))
+            out))
+        (finally (close))))))
 
 ;; The types that a dataset can't hold
 
@@ -167,15 +183,35 @@
                          "one column first.")
                     {:rows row-count}))))
 
+(defn- twice-named-field
+  "A name that two fields of one struct have, inside a value of Spark type
+  `dt`, or nil. A map's struct fields are named by Spark's names, so the
+  second would be lost."
+  [^DataType dt]
+  (cond
+    (instance? ArrayType dt)  (twice-named-field (.elementType ^ArrayType dt))
+    (instance? MapType dt)    (or (twice-named-field (.keyType ^MapType dt))
+                                  (twice-named-field (.valueType ^MapType dt)))
+    (instance? StructType dt) (let [fields (.fields ^StructType dt)]
+                                (or (some (fn [[n k]] (when (< 1 k) n))
+                                          (frequencies (map #(.name ^StructField %) fields)))
+                                    (some #(twice-named-field (.dataType ^StructField %)) fields)))
+    :else                     nil))
+
 (defn- check-types!
   "Throws when the result has a column of a type that has no tech.ml.dataset
-  equivalent."
+  equivalent, or a struct with two fields of one name."
   [fn-name ^StructType schema]
   (doseq [^StructField field (.fields schema)]
     (when-let [what (refused (.dataType field))]
       (throw (ex-info (str fn-name " can't convert the column \"" (.name field) "\", which holds "
                            what ". Cast it to another type first, such as a string.")
-                      {:column (.name field)})))))
+                      {:column (.name field)})))
+    (when-let [twice (twice-named-field (.dataType field))]
+      (throw (ex-info (str fn-name " can't convert the column \"" (.name field) "\", which has "
+                           "a struct with two fields named \"" twice "\". Rename one first, "
+                           "such as with g/struct.")
+                      {:column (.name field) :field twice})))))
 
 ;; tech.ml.dataset and dtype-next
 
@@ -222,15 +258,29 @@
                                     :missing (when (seq missing) (int-array missing)))))
                          (map :columns batches))})))
 
+(defn- user-defined?
+  "Whether a value of Spark type `dt` holds a user-defined type's, such as an
+  MLlib vector, at the top or inside."
+  [^DataType dt]
+  (cond
+    (instance? UserDefinedType dt) true
+    (instance? ArrayType dt)       (user-defined? (.elementType ^ArrayType dt))
+    (instance? MapType dt)         (or (user-defined? (.keyType ^MapType dt))
+                                       (user-defined? (.valueType ^MapType dt)))
+    (instance? StructType dt)      (boolean (some #(user-defined? (.dataType ^StructField %))
+                                                  (.fields ^StructType dt)))
+    :else                          false))
+
 (defn- tmd-columns
   "Each of the result's columns as a dataset gets it: its name, as `key-fn`
   gives it, and its Spark type as DDL in its metadata, under
-  `:zero-one.geni/spark-type`, for create-dataframe, except for an MLlib
-  vector, whose DDL is its storage's."
+  `:zero-one.geni/spark-type`, for create-dataframe, except for one that
+  holds MLlib vectors, at the top or inside, whose DDL would be their
+  storage's."
   [fn-name ^StructType schema key-fn]
   (mapv (fn [k ^StructField field]
           {:name     k
-           :metadata (when-not (instance? UserDefinedType (.dataType field))
+           :metadata (when-not (user-defined? (.dataType field))
                        {:zero-one.geni/spark-type (.sql (.dataType field))})})
         (output-names fn-name schema key-fn)
         (.fields schema)))
@@ -273,18 +323,30 @@
     (let [result (f acc item)]
       (if (reduced? result) (reduced result) result))))
 
-(deftype Batches [df mode decode open-runs]
-  IReduceInit
+(deftype Batches [df fn-name mode decode open-runs]
+  ;; A reduce reads the batches as one of Spark's SQL executions.
+  IReduce
   (reduce [_ f init]
-    (let [{:keys [^Iterator iterator close]} (open-streams df mode)
-          f (preserving-reduced f)]
-      (try
-        (loop [acc init]
-          (if (.hasNext iterator)
-            (let [acc (reduce f acc (decode (.next iterator)))]
-              (if (reduced? acc) @acc (recur acc)))
-            acc))
-        (finally (close)))))
+    (as-sql-execution
+     df fn-name
+     #(let [{:keys [^Iterator iterator close]} (open-streams df mode)
+            f (preserving-reduced f)]
+        (try
+          (loop [acc init]
+            (if (.hasNext iterator)
+              (let [acc (reduce f acc (decode (.next iterator)))]
+                (if (reduced? acc) @acc (recur acc)))
+              acc))
+          (finally (close))))))
+
+  ;; Without an init, as `reduce` does a collection: `f` of the first two
+  ;; items, the first item when it's the only one, and `(f)` when there are
+  ;; none.
+  (reduce [this f]
+    (let [result (.reduce this
+                          (fn [acc item] (if (identical? acc ::none) item (f acc item)))
+                          ::none)]
+      (if (identical? result ::none) (f) result)))
 
   ;; A seq reads a batch at a time, where Clojure's seq of an Iterable would
   ;; read 32 ahead.
@@ -322,8 +384,8 @@
     (doseq [close @open-runs] (close))
     (reset! open-runs #{})))
 
-(defn- batches [df mode decode]
-  (Batches. df mode decode (atom #{})))
+(defn- batches [df fn-name mode decode]
+  (Batches. df fn-name mode decode (atom #{})))
 
 ;; The public functions
 
@@ -338,7 +400,7 @@
   (10,000 by default). Over Spark Connect, they're the ones the server sends.
   Like `collect`, the whole result comes to the driver."
   [dataframe]
-  (all-streams dataframe))
+  (all-streams dataframe "to-arrow"))
 
 (defn to-tmd
   "The result of `dataframe` as one tech.ml.dataset dataset, which needs
@@ -354,11 +416,15 @@
   vector, and a struct or a map a map, with keyword keys for a struct's
   fields. VARIANT becomes Spark's VariantVal, and an MLlib vector what
   `collect` gives. Each column keeps its Spark type, as DDL, in its metadata
-  under `:zero-one.geni/spark-type`, which `create-dataframe` uses.
+  under `:zero-one.geni/spark-type`, which `create-dataframe` uses, but for
+  one that holds MLlib vectors.
 
-  A calendar interval, a geometry or a geography throws, as do two columns
-  of one name, or two that `:key-fn` names alike, before a job runs. So do
-  rows without columns, which a dataset can't hold.
+  A calendar interval, a geometry or a geography throws, as do a struct with
+  two fields of one name, two columns of one name, and two that `:key-fn`
+  names alike, before a job runs. So do rows without columns, which a
+  dataset can't hold. On classic Spark, it runs as one of Spark's SQL
+  executions, as `collect` does, so an Observation from `observe` gets its
+  metrics.
 
   Over Spark Connect, it needs `org.apache.arrow/arrow-vector` and
   `arrow-memory-netty` on the classpath, since the client's Arrow is shaded."
@@ -369,7 +435,7 @@
          columns (tmd-columns "to-tmd" schema key-fn)
          decode  (reader "decode")
          _       (tmd 'tech.v3.dataset/new-dataset)]
-     (-> (mapcat #(decode % schema) (all-streams dataframe))
+     (-> (mapcat #(decode % schema) (all-streams dataframe "to-tmd"))
          concat-batches
          (->tmd-dataset "to-tmd" columns)))))
 
@@ -390,9 +456,11 @@
   ```
 
   On classic Spark, each partition runs as a job of its own, as a reduce
-  gets to it, so only one partition's batches are on the driver at a time.
-  Over Spark Connect, the server sends the batches as it makes them, and
-  stopping releases the execution."
+  gets to it, so only one partition's batches are on the driver at a time,
+  and a reduce is one of Spark's SQL executions, as `collect` is, so an
+  Observation from `observe` gets its metrics at its end, which a seq
+  doesn't give it. Over Spark Connect, the server sends the batches as it
+  makes them, and stopping releases the execution."
   ([dataframe] (stream dataframe {}))
   ([dataframe {:keys [key-fn] :or {key-fn keyword}}]
    (let [schema  (.schema dataframe)
@@ -400,7 +468,7 @@
          columns (tmd-columns "stream" schema key-fn)
          decode  (reader "decode")
          _       (tmd 'tech.v3.dataset/new-dataset)]
-     (batches dataframe :lazy
+     (batches dataframe "stream" :lazy
               (fn [ipc]
                 (->> (decode ipc schema)
                      (filter #(pos? (:row-count %)))
@@ -444,7 +512,7 @@
    (let [{:keys [dataframe schema names indices]} (tensor-columns "to-tensors" dataframe columns key-fn)
          decode  (reader "decode-tensors")
          _       (tmd 'tech.v3.tensor/reshape)
-         decoded (->> (all-streams dataframe)
+         decoded (->> (all-streams dataframe "to-tensors")
                       (mapcat #(decode % schema indices "to-tensors"))
                       (filter #(pos? (:row-count %))))]
      (when (empty? decoded)
@@ -479,7 +547,7 @@
    (let [{:keys [dataframe schema names indices]} (tensor-columns "stream-tensors" dataframe columns key-fn)
          decode (reader "decode-tensors")
          _      (tmd 'tech.v3.tensor/reshape)]
-     (batches dataframe :lazy
+     (batches dataframe "stream-tensors" :lazy
               (fn [ipc]
                 (->> (decode ipc schema indices "stream-tensors")
                      (filter #(pos? (:row-count %)))

@@ -53,46 +53,119 @@
   ^List [coll]
   (.toList (JavaConverters/asScalaBuffer (vec coll))))
 
-(def ^:private integer-classes #{Long Integer Short Byte})
-
 (defn- java-array-error [message value]
   (throw (ex-info (str message " Got: " (pr-str value)) {:value value})))
 
+(defn- array-coll?
+  "Whether `x` becomes a nested array: a collection other than a map."
+  [x]
+  (and (coll? x) (not (map? x))))
+
+(defn- array-leaves
+  "The values in a collection that aren't collections, however deeply."
+  [coll]
+  (mapcat #(if (array-coll? %) (array-leaves %) [%]) coll))
+
+(def ^:private same-class-numbers #{Long Integer Short Byte Double Float BigDecimal})
+
+(defn- mixed-types! [coll]
+  (java-array-error (str "A collection that becomes an array literal needs values of one type, "
+                         "or all numbers.")
+                    coll))
+
+(defn- leaf-type
+  "The element class of an array of these values, at any depth, and the
+  function that converts each to it, as Clojure's arithmetic would widen
+  them: to doubles with a float or a double among them, to BigDecimals with a
+  BigDecimal or a ratio, to longs for whole numbers that fit, and otherwise
+  to BigDecimals. Other values need one class."
+  [coll leaves]
+  (let [classes (set (map class leaves))]
+    (cond
+      (empty? classes)
+      (java-array-error (str "Spark can't tell the element type of a collection that's empty "
+                             "or all nils, so pass a typed Java array instead, such as "
+                             "(long-array 0), or (into-array [(long-array 0)]) for an array "
+                             "of arrays.")
+                        coll)
+
+      (not-every? number? leaves)
+      (if (= 1 (count classes))
+        [(first classes) identity]
+        (mixed-types! coll))
+
+      ;; Numbers of one class that Spark's lit takes keep it.
+      (and (= 1 (count classes)) (same-class-numbers (first classes)))
+      [(first classes) identity]
+
+      (some #(or (instance? Double %) (instance? Float %)) leaves)
+      [Double double]
+
+      (some #(or (decimal? %) (ratio? %)) leaves)
+      [BigDecimal #(try
+                     (bigdec %)
+                     (catch ArithmeticException _
+                       (java-array-error (str "A collection that becomes an array literal of "
+                                              "decimals can't hold " (pr-str %) ", which has no "
+                                              "exact decimal.")
+                                         coll)))]
+
+      (every? #(or (instance? Long %) (instance? Integer %) (instance? Short %)
+                   (instance? Byte %) (<= Long/MIN_VALUE % Long/MAX_VALUE))
+              leaves)
+      [Long long]
+
+      :else
+      [BigDecimal bigdec])))
+
+(defn- check-decimal!
+  "Throws when Spark's DECIMAL(38,18), which it gives an array literal of
+  decimals, can't hold `d` exactly: it would round it, or make it a null."
+  [coll ^BigDecimal d]
+  (let [d (.stripTrailingZeros d)]
+    (when (or (< 18 (.scale d)) (< 20 (- (.precision d) (max 0 (.scale d)))))
+      (java-array-error (str "Spark gives an array literal of decimals the type DECIMAL(38, 18), "
+                             "which can't hold " (.toPlainString d) " exactly. Use doubles, or "
+                             "build the array with g/array of g/lit values, which keeps their "
+                             "digits, as g/sql's args take it from Spark 4.0.")
+                        coll))
+    d))
+
 (defn ->java-array
   "A Java array of the collection's values, which Spark's `lit` takes as an
-  array literal: whole numbers mixed with decimals become doubles, keywords
-  their names, nils stay, and a nested collection becomes a nested array. An
-  empty collection, one of only nils, one that holds maps, or one whose
-  values have different types throws, since Spark can't type its array."
+  array literal: keywords become their names, nils stay, a nested collection
+  becomes a nested array, and numbers widen as Clojure's arithmetic widens
+  them, at any depth: to doubles with a double among them, to BigDecimals
+  with a BigDecimal or a ratio, and otherwise to longs. A decimal that
+  Spark's DECIMAL(38,18) for such an array can't hold exactly throws, and so
+  does a collection that's empty or all nils, one that holds maps, and one
+  whose values have different types, since Spark can't type its array."
   [coll]
-  (let [elements (map #(cond
-                         (keyword? %) (name %)
-                         (map? %)     (java-array-error
-                                       (str "A collection that becomes an array literal can't "
-                                            "hold maps: build the array with g/array and g/map.")
-                                       coll)
-                         (coll? %)    (->java-array %)
-                         :else        %)
-                      coll)
-        classes  (set (map class (remove nil? elements)))
-        [element-class convert]
-        (cond
-          (empty? classes)
-          (java-array-error (str "Spark can't tell the element type of a collection that's empty "
-                                 "or all nils, so pass a typed Java array instead, such as "
-                                 "(long-array 0).")
-                            coll)
-
-          (= 1 (count classes))                                  [(first classes) identity]
-          (every? integer-classes classes)                       [Long long]
-          (every? (into integer-classes [Double Float]) classes) [Double double]
-          (every? (into integer-classes [BigDecimal]) classes)   [BigDecimal bigdec]
-
-          :else
-          (java-array-error (str "A collection that becomes an array literal needs values of one "
-                                 "type, or all numbers.")
-                            coll))]
-    (into-array element-class (map #(some-> % convert) elements))))
+  (when (some map? (tree-seq array-coll? seq coll))
+    (java-array-error (str "A collection that becomes an array literal can't hold maps: build "
+                           "the array with g/array and g/map.")
+                      coll))
+  (let [leaves             (map #(if (keyword? %) (name %) %) (remove nil? (array-leaves coll)))
+        [leaf-class convert] (leaf-type coll leaves)
+        convert            (if (= BigDecimal leaf-class)
+                             (comp #(check-decimal! coll %) convert)
+                             convert)
+        build              (fn build [c]
+                             (if (some array-coll? c)
+                               (let [arrays  (map #(cond
+                                                     (nil? %)        nil
+                                                     (array-coll? %) (build %)
+                                                     :else           (mixed-types! coll))
+                                                  c)
+                                     classes (set (map class (remove nil? arrays)))]
+                                 (when (< 1 (count classes))
+                                   (mixed-types! coll))
+                                 (into-array ^Class (first classes) arrays))
+                               (into-array leaf-class
+                                           (map #(when (some? %)
+                                                   (convert (if (keyword? %) (name %) %)))
+                                                c))))]
+    (build coll)))
 
 (defn ->scala-list-map
   "An immutable Scala ListMap of the key-value pairs, which keeps their order,

@@ -259,7 +259,13 @@
   (let [temp-file (.toString (create-temp-file! ".csv"))
         read-df  (do (g/write-csv! write-df temp-file {:mode "overwrite"})
                      (g/read-csv! temp-file {}))]
-    (is (= (g/column-names write-df) (g/column-names read-df)))))
+    (is (= (g/column-names write-df) (g/column-names read-df))))
+  (testing "without a header, when the options say so"
+    (doseq [options [{:header false} {"header" "false"}]]
+      (let [temp-file (.toString (create-temp-file! ".csv"))
+            read-df   (do (g/write-csv! write-df temp-file (assoc options :mode "overwrite"))
+                          (g/read-csv! temp-file {:header false}))]
+        (is (= (g/collect-vals write-df) (g/collect-vals read-df)) (pr-str options))))))
 
 (deftest can-read-and-write-avro-test
   (let [temp-file (.toString (create-temp-file! ".avro"))

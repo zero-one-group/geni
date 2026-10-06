@@ -6,7 +6,18 @@
    (org.apache.arrow.memory RootAllocator)
    (org.apache.arrow.vector FieldVector VectorSchemaRoot)
    (org.apache.arrow.vector.ipc ArrowStreamReader)
+   (org.apache.arrow.vector.types.pojo ArrowType$Timestamp Field)
    (org.apache.arrow.vector.util Text)))
+
+(defn time-zones
+  "The time zones of the timestamp fields in an Arrow IPC stream's schema."
+  [^bytes stream]
+  (with-open [allocator (RootAllocator.)
+              reader    (ArrowStreamReader. (ByteArrayInputStream. stream) allocator)]
+    (vec (for [^Field field (.getFields (.getSchema (.getVectorSchemaRoot reader)))
+               :let [t (.getType field)]
+               :when (instance? ArrowType$Timestamp t)]
+           (.getTimezone ^ArrowType$Timestamp t)))))
 
 (defn read-rows
   "The rows in an Arrow IPC stream, as vectors of their values."
