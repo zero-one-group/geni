@@ -24,11 +24,14 @@ clojure -X:spark:test :exclude :slow                         # skip the slow tes
 clojure -X:spark:test :only '[zero-one.geni.dataset-test]'   # one namespace
 clojure -X:spark:test:cli:tmd                                # what the CI runs
 clojure -T:build xgb-tests                                   # the XGBoost tests and guide
+clojure -T:build graph-tests                                 # the GraphFrames tests and guide
 ```
 
 Each namespace gets one line, and each failure one more. The full reports, with stack traces, are in `target/test.log`. The `:cli` and `:tmd` aliases add the tests for the Geni CLI and tech.ml.dataset, along with their deps.
 
 `xgb-tests` runs the tests in `test-xgb/` and the XGBoost guide's examples, with XGBoost4J-Spark on the classpath: the `:xgb` alias on `:spark`, and `:xgb-2.13` on the Spark builds on Scala 2.13, as in `clojure -T:build xgb-tests :spark :spark-4` after the matching `prep`. XGBoost's native library needs OpenMP, which is `brew install libomp` on macOS. Every other run skips the tests marked `^:xgb`, and a run on Spark 4 skips the ones marked `^:spark-3`, such as the guide's Spark ML stage example.
+
+`graph-tests` does the same for GraphFrames: the tests in `test-graph/` and the graphs guide's examples, with the `:graphframes` alias on `:spark` and `:graphframes-4` on `:spark-4`. `check-all` runs it on both, and every other run skips the tests marked `^:graphframes`.
 
 `:spark` is Spark 3.5 on Scala 2.12. To run the tests on Spark 3.5 on Scala 2.13, or on Spark 4, swap in `:spark-3.5-2.13` or `:spark-4`, after a `prep` for the same alias:
 
@@ -56,7 +59,7 @@ From a REPL started with `clj -M:spark:test`, this reloads a test namespace and 
 
 The tests run with Spark's code generation off (see the `:test` alias), which makes their many small queries faster. Adding `:canary` after `:test` turns it back on, which is how the weekly canary runs them, on the newest Spark patches.
 
-On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64, the suite over Spark Connect, and `xgb-tests` on `:spark` (x64 and arm64) and `:spark-4`. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
+On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two shards with `:shard '[1 2]'` and `:shard '[2 2]'`, plus `:spark` on arm64, the suite over Spark Connect, `xgb-tests` on `:spark` (x64 and arm64) and `:spark-4`, and `graph-tests` on `:spark` and `:spark-4`. A push to `develop` also covers JDK 17 and `:spark-3.5-2.13`. Each run also installs the library jar and uses it from the README's `deps.edn`, on Clojure 1.11.4 and JDK 17, the oldest that Geni supports.
 
 ## Spark's functions
 

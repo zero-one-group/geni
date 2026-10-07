@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+New:
+
+- `zero-one.geni.graph` builds graphs from DataFrames of vertices and edges with GraphFrames, an optional dependency, on classic Spark 3.5 and 4 (#321). It has their degrees and triplets, filters, motif finding with `graph/find`, breadth-first search and shortest paths, PageRank, connected and strongly connected components, label propagation, triangle counts, and message passing with `graph/aggregate-messages` and `graph/pregel`. Each algorithm takes an option map, with GraphFrames' setters in kebab case, and gives a DataFrame, but for PageRank, which gives a graph. Without GraphFrames on the classpath, or over Spark Connect, the functions throw an error that says what's needed. The [graphs guide](docs/graphs.md) has the details.
+
 ## 0.4.0 (2026-10-07)
 
 Breaking changes:
