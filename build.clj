@@ -8,7 +8,7 @@
    [deps-deploy.deps-deploy :as dd]))
 
 (def lib 'zero.one/geni)
-(def version "0.3.0")
+(def version "0.4.0")
 
 (def class-dir "target/classes")
 (def test-class-dir "target/test-classes")

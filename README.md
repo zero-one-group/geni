@@ -14,7 +14,7 @@
 
 Geni (*/gɜni/* or "gurney" without the r) is a [Clojure](https://clojure.org/) dataframe library that runs on [Apache Spark](https://spark.apache.org/). The name means "fire" in Javanese.
 
-> **Geni is being revived, and 0.3.0 is out, with Clojure UDFs and XGBoost4J-Spark 3.** The [changelog](CHANGELOG.md) lists what changed since 0.0.42, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan for what comes next.
+> **Geni is being revived, and 0.4.0 is out, with over 300 more of Spark's SQL functions, results as tech.ml.dataset datasets, tensors and Arrow, and Clojure UDFs over Spark Connect.** The [changelog](CHANGELOG.md) lists what changed since 0.0.42, breaking changes included, and [#359](https://github.com/zero-one-group/geni/issues/359) has the plan for what comes next.
 
 ## Overview
 
@@ -169,7 +169,7 @@ Geni is `zero.one/geni` on Clojars. Clojure 1.11 or newer is its only dependency
 On these JDKs, Spark needs the JVM flags that its own launcher sets. Each setup below is a `deps.edn` alias with Spark's deps and those flags, the same as the alias that Geni's tests run with. This `deps.edn` starts a REPL on Spark 3.5 with `clj -M:spark`:
 
 ```edn
-{:deps {zero.one/geni {:mvn/version "0.3.0"}}
+{:deps {zero.one/geni {:mvn/version "0.4.0"}}
 
  :aliases
  {:spark
@@ -317,14 +317,14 @@ RDDs, MLlib and the other parts that need a SparkContext stay with classic Spark
 
 ## The Geni CLI
 
-The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The uberjar is on the [0.3.0 release](https://github.com/zero-one-group/geni/releases/tag/v0.3.0), and runs on JDK 17 or 21:
+The Geni CLI is an uberjar with Geni, Spark 3.5 and a REPL. It starts a Spark session and an nREPL server, writes an `.nrepl-port` file for your editor, and drops into a REPL with Geni's namespaces required. The uberjar is on the [0.4.0 release](https://github.com/zero-one-group/geni/releases/tag/v0.4.0), and runs on JDK 17 or 21:
 
 ```bash
-curl -fLO https://github.com/zero-one-group/geni/releases/download/v0.3.0/geni-repl-uberjar-0.3.0.jar
-java -jar geni-repl-uberjar-0.3.0.jar
+curl -fLO https://github.com/zero-one-group/geni/releases/download/v0.4.0/geni-repl-uberjar-0.4.0.jar
+java -jar geni-repl-uberjar-0.4.0.jar
 ```
 
-Its manifest carries the JVM flags that Spark needs, and it logs at WARN, as `spark-shell` does. Given a file, as in `java -jar geni-repl-uberjar-0.3.0.jar script.clj`, it runs the file instead of the REPL.
+Its manifest carries the JVM flags that Spark needs, and it logs at WARN, as `spark-shell` does. Given a file, as in `java -jar geni-repl-uberjar-0.4.0.jar script.clj`, it runs the file instead of the REPL.
 
 The `geni` script downloads the uberjar of the latest stable release to `~/.geni`, and runs it:
 
