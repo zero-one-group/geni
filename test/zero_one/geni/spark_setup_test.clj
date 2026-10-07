@@ -39,6 +39,19 @@
   (let [jvm-args (set (.getInputArguments (ManagementFactory/getRuntimeMXBean)))]
     (is (= [] (remove jvm-args (clojure.string/split (JavaModuleOptions/defaultModuleOptions) #" "))))))
 
+(deftest datasketches-jdk-check-test
+  ;; Spark 4.2's spark-catalyst has its own copy of a datasketches-memory
+  ;; class, whose JDK check takes JDK 25. It only works ahead of
+  ;; datasketches-memory on the classpath, which the Spark 4 setups make sure
+  ;; of by listing spark-catalyst. Without it, Spark's sketch functions fail on
+  ;; JDK 25. Spark 3.5 has no copy.
+  (let [copies (->> "org/apache/datasketches/memory/internal/ResourceImpl.class"
+                    (.getResources (ClassLoader/getSystemClassLoader))
+                    enumeration-seq
+                    (mapv str))]
+    (is (or (< (count copies) 2) (clojure.string/includes? (first copies) "spark-catalyst"))
+        (str "datasketches' own JDK check comes first: " copies))))
+
 (deftest launcher-opens-test
   (testing "Geni's copy of the launcher's --add-opens, for the Spark Connect client, is Spark's"
     (is (= (sort (re-seq #"--add-opens=\S+" (JavaModuleOptions/defaultModuleOptions)))

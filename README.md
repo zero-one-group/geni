@@ -231,9 +231,10 @@ Spark 4 has flags of its own:
 ```edn
 {:aliases
  {:spark-4
-  {:extra-deps {org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}
-                org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
-                org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}}
+  {:extra-deps {org.apache.spark/spark-sql_2.13      {:mvn/version "4.2.0"}
+                org.apache.spark/spark-mllib_2.13    {:mvn/version "4.2.0"}
+                org.apache.spark/spark-avro_2.13     {:mvn/version "4.2.0"}
+                org.apache.spark/spark-catalyst_2.13 {:mvn/version "4.2.0"}}
    :jvm-opts   ["-XX:+IgnoreUnrecognizedVMOptions"
                 "--add-modules=jdk.incubator.vector"
                 "--add-opens=java.base/java.lang=ALL-UNNAMED"
@@ -262,6 +263,7 @@ A few differences between the setups show up in practice:
 
 - Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21 or newer, so `g/collect-to-arrow` fails there. The Arrow 13 deps in the Spark 3.5 aliases fix that, and do no harm on JDK 17.
 - Spark 4 turns ANSI mode on by default, so an invalid cast or an overflow throws instead of returning null.
+- On JDK 25, Spark's sketch functions, such as `g/hll-sketch-agg`, need `spark-catalyst` ahead of `datasketches-memory` on the classpath. Spark 4.2 ships its own copy of datasketches' JDK check, which takes JDK 25, while datasketches' own copy rejects it. Listing `spark-catalyst` in the setup, as above, puts Spark's copy first.
 - On Spark 4, a JDBC write fails when the table doesn't exist yet and Spark has no dialect for the database, as with SQLite. Creating the table first works.
 
 From Leiningen, the same deps go in `:dependencies` (Spark can sit in the `:provided` profile) and the flags in `:jvm-opts`.

@@ -71,9 +71,13 @@
   ;; Spark 4, on Scala 2.13, with the flags from its own JavaModuleOptions.
   :spark-4
   {:extra-deps
-   {org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}
-    org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
-    org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}}
+   {org.apache.spark/spark-avro_2.13     {:mvn/version "4.2.0"}
+    ;; Listed so that it comes before datasketches-memory on the classpath:
+    ;; its copy of datasketches' JDK check takes JDK 25, and the original
+    ;; doesn't, so Spark's sketch functions fail on JDK 25 without it.
+    org.apache.spark/spark-catalyst_2.13 {:mvn/version "4.2.0"}
+    org.apache.spark/spark-mllib_2.13    {:mvn/version "4.2.0"}
+    org.apache.spark/spark-sql_2.13      {:mvn/version "4.2.0"}}
    :jvm-opts
    ["-XX:+IgnoreUnrecognizedVMOptions"
     "--add-modules=jdk.incubator.vector"
