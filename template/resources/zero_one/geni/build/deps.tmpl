@@ -35,9 +35,11 @@
   ;; Spark 4 on Scala 2.13, in place of :spark.
   :spark-4
   {:extra-deps
-   {org.apache.spark/spark-avro_2.13  {:mvn/version "4.2.0"}
-    org.apache.spark/spark-mllib_2.13 {:mvn/version "4.2.0"}
-    org.apache.spark/spark-sql_2.13   {:mvn/version "4.2.0"}}
+   {org.apache.spark/spark-avro_2.13     {:mvn/version "4.2.0"}
+    ;; Ahead of datasketches-memory, for Spark's sketch functions on JDK 25.
+    org.apache.spark/spark-catalyst_2.13 {:mvn/version "4.2.0"}
+    org.apache.spark/spark-mllib_2.13    {:mvn/version "4.2.0"}
+    org.apache.spark/spark-sql_2.13      {:mvn/version "4.2.0"}}
    :jvm-opts
    ["-XX:+IgnoreUnrecognizedVMOptions"
     "--add-modules=jdk.incubator.vector"
