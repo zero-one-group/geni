@@ -240,6 +240,25 @@
                  "-Dspark.sql.codegen.factoryMode=FALLBACK"]
    :exec-args   {:dirs ["target/xgb-docs/test-doc-blocks/test"]}}
 
+  ;; GraphFrames, for zero-one.geni.graph, and its tests in test-graph/:
+  ;; :graphframes for :spark, and :graphframes-4 for :spark-4.
+  ;; clojure -T:build graph-tests runs them.
+  :graphframes
+  {:extra-paths ["test-graph"]
+   :extra-deps  {io.graphframes/graphframes-spark3_2.12 {:mvn/version "0.12.3"}}}
+  :graphframes-4
+  {:extra-paths ["test-graph"]
+   :extra-deps  {io.graphframes/graphframes-spark4_2.13 {:mvn/version "0.12.3"}}}
+
+  ;; The graphs guide's examples, run as the doc tests are, after :graphframes.
+  :graph-docs
+  {:extra-paths ["target/graph-docs/test-doc-blocks/test"]
+   :jvm-opts    ["-Dspark.master=local[2]"
+                 "-Duser.timezone=UTC"
+                 "-Dspark.sql.codegen.wholeStage=true"
+                 "-Dspark.sql.codegen.factoryMode=FALLBACK"]
+   :exec-args   {:dirs ["target/graph-docs/test-doc-blocks/test"]}}
+
   ;; For scripts/scrape-spark-docs.clj, which writes resources/spark-docs.edn.
   :scrape
   {:extra-deps {enlive/enlive {:mvn/version "1.1.6"}}}

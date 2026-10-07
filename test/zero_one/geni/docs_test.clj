@@ -3,6 +3,7 @@
    [clojure.test :refer [deftest is]]
    [zero-one.geni.core]
    [zero-one.geni.docs :as docs]
+   [zero-one.geni.graph]
    [zero-one.geni.ml]
    [zero-one.geni.rdd]))
 
@@ -26,4 +27,5 @@
 (deftest ^:docs frequently-required-namespaces-must-have-complete-test
   (is (empty? (docs/docless-vars 'zero-one.geni.core)))
   (is (empty? (docs/docless-vars 'zero-one.geni.ml)))
-  (is (empty? (docs/docless-vars 'zero-one.geni.rdd))))
+  (is (empty? (docs/docless-vars 'zero-one.geni.rdd)))
+  (is (empty? (docs/docless-vars 'zero-one.geni.graph))))

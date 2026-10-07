@@ -45,7 +45,7 @@
 
 (defn- classpath-dirs
   "The project's own directories on the classpath, so that each alias (e.g.
-  :cli, :tmd or :xgb) brings its tests along."
+  :cli, :tmd, :xgb or :graphframes) brings its tests along."
   []
   (->> (.split (System/getProperty "java.class.path") java.io.File/pathSeparator)
        (remove #(or (string/starts-with? % "target")
@@ -87,8 +87,8 @@
   "The tests that this run skips, by the metadata that marks them, with why:
   the ^:classic ones over Spark Connect, when Spark's JVM client is on the
   classpath without classic Spark, and the ^:connect ones otherwise, the
-  ^:xgb ones without XGBoost4J-Spark 3 on the classpath, and the ^:spark-3
-  ones on Spark 4."
+  ^:xgb ones without XGBoost4J-Spark 3 on the classpath, the ^:graphframes
+  ones without GraphFrames, and the ^:spark-3 ones on Spark 4."
   []
   (let [class-named (requiring-resolve 'zero-one.geni.utils/class-named)]
     (cond-> (if ((requiring-resolve 'zero-one.geni.spark/connect-only?))
@@ -96,6 +96,9 @@
               {:connect "Spark Connect only"})
       (not (class-named "ml.dmlc.xgboost4j.scala.spark.XGBoostRanker"))
       (assoc :xgb "needs XGBoost4J-Spark 3")
+
+      (not (class-named "org.graphframes.GraphFrame"))
+      (assoc :graphframes "needs GraphFrames")
 
       (string/starts-with? (:spark (running-spark)) "4.")
       (assoc :spark-3 "Spark 3.5 only"))))
@@ -274,8 +277,8 @@
   Over Spark Connect, that is with Spark's JVM client on the classpath in
   place of classic Spark, it skips the namespaces and tests marked ^:classic.
   Otherwise, it skips the ones marked ^:connect. Without XGBoost4J-Spark 3 on
-  the classpath, it skips the ones marked ^:xgb, and on Spark 4 the ones
-  marked ^:spark-3."
+  the classpath, it skips the ones marked ^:xgb, without GraphFrames the ones
+  marked ^:graphframes, and on Spark 4 the ones marked ^:spark-3."
   [{:keys [shard] :as opts}]
   (when-let [problem (prep-problem)]
     (println problem)

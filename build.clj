@@ -127,8 +127,8 @@
         (println "Failed:" (string/join " " args)))
       (System/exit exit))))
 
-(def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
-(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "dev" "build.clj"])
+(def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "test-graph" "dev" "build.clj"])
+(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "test-graph" "dev" "build.clj"])
 
 (def ^:private lint-commands
   [(into ["clojure" "-M:kondo" "--lint"] lint-paths)
@@ -177,6 +177,20 @@
          ":docs" "[\"docs/xgboost.md\"]"
          ":target-root" "\"target/xgb-docs\"")
     (sh! "clojure" (str aliases ":xgb-docs"))))
+
+(defn graph-tests
+  "Runs the GraphFrames tests in test-graph/, then the graphs guide's
+  examples, with GraphFrames on the classpath: :graphframes on :spark, and
+  :graphframes-4 on :spark-4, as in `clojure -T:build graph-tests :spark
+  :spark-4`. Run `prep` with the same Spark first."
+  [{:keys [spark] :or {spark :spark}}]
+  (let [graphframes (if (= spark :spark-4) ":graphframes-4" ":graphframes")
+        aliases     (str "-X:" (name spark) ":test" graphframes)]
+    (sh! "clojure" aliases ":dirs" "[\"test-graph\"]")
+    (sh! "clojure" "-X:gen-doc-tests"
+         ":docs" "[\"docs/graphs.md\"]"
+         ":target-root" "\"target/graph-docs\"")
+    (sh! "clojure" (str aliases ":graph-docs"))))
 
 (defn- run-all!
   "Runs the commands one after another, until one fails, with their output,
@@ -326,18 +340,20 @@
 
 (defn check-all
   "Everything that `check` runs, plus the tests on :spark-4 and over Spark
-  Connect: lint, then the tests and `connect-tests` on :spark-4, then the
-  tests and the doc tests on :spark. It preps each Spark itself, and stops at
-  the first failure. It ends prepped for :spark, as `check` expects. The
-  XGBoost tests and the cookbook stay separate, as `xgb-tests` and
-  `cookbook`."
+  Connect, and the GraphFrames tests: lint, then the tests, `graph-tests` and
+  `connect-tests` on :spark-4, then the tests, `graph-tests` and the doc
+  tests on :spark. It preps each Spark itself, and stops at the first
+  failure. It ends prepped for :spark, as `check` expects. The XGBoost tests
+  and the cookbook stay separate, as `xgb-tests` and `cookbook`."
   [_]
   (lint nil)
   (prep {:spark :spark-4})
   (sh! "clojure" "-X:spark-4:test:cli:tmd")
+  (graph-tests {:spark :spark-4})
   (connect-tests {})
   (prep {})
   (sh! "clojure" "-X:spark:test:cli:tmd")
+  (graph-tests {})
   (docs nil))
 
 (defn jar
