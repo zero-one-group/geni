@@ -31,5 +31,6 @@
    ["9. Reading from and writing to SQL databases" {:file "docs/cookbook/part_09_reading_from_and_writing_to_sql_databases.md"}]
    ["10. Avoiding repeated computations with caching" {:file "docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md"}]
    ["11. Basic ML pipelines" {:file "docs/cookbook/part_11_basic_ml_pipelines.md"}]
-   ["12. Customer segmentation with NMF" {:file "docs/cookbook/part_12_customer_segmentation_with_nmf.md"}]]
+   ["12. Customer segmentation with NMF" {:file "docs/cookbook/part_12_customer_segmentation_with_nmf.md"}]
+   ["13. Text classification with Spark NLP" {:file "docs/cookbook/part_13_text_classification_with_spark_nlp.md"}]]
   ["Contributing" {:file "CONTRIBUTING.md"}]]}

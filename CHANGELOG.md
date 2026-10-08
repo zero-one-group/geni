@@ -4,6 +4,7 @@
 
 New:
 
+- `ml/stage` makes a Spark ML stage of any class from a map of params, as Geni's own stages take one, so that a stage Geni has no function for, such as one of Spark NLP's annotators, goes into `ml/pipeline` without interop. It takes a class, a class name, or a stage made already, such as a pretrained model, whose params it sets in place. The new cookbook part, [text classification with Spark NLP](docs/cookbook/part_13_text_classification_with_spark_nlp.md), uses it (#323).
 - `zero-one.geni.graph` builds graphs from DataFrames of vertices and edges with GraphFrames, an optional dependency, on classic Spark 3.5 and 4 (#321). It has their degrees and triplets, filters, motif finding with `graph/find`, breadth-first search and shortest paths, PageRank, connected and strongly connected components, label propagation, triangle counts, and message passing with `graph/aggregate-messages` and `graph/pregel`. Each algorithm takes an option map, with GraphFrames' setters in kebab case, and gives a DataFrame, but for PageRank, which gives a graph. Without GraphFrames on the classpath, or over Spark Connect, the functions throw an error that says what's needed. The [graphs guide](docs/graphs.md) has the details.
 
 ## 0.4.0 (2026-10-07)

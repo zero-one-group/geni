@@ -92,7 +92,8 @@ After `prep`, run the README and reference examples with `clojure -T:build docs`
 `clojure -T:build cookbook` runs the cookbook separately. The first run downloads
 its public datasets into `data/cookbook/` and generates part 10's 12 million rows
 there, about 500 MB in all, and takes a few minutes. Part 5 uses the weather data
-written by part 4.
+written by part 4. Part 13 uses Spark NLP, which the `:cookbook` alias brings, and
+downloads its model into `~/cache_pretrained/`.
 The weekly workflow runs the cookbook and checks Markdown links.
 
 `test-doc-blocks` turns Clojure fences into tests, in document order. Put

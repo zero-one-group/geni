@@ -9,7 +9,8 @@ name: Weekly
 #   break Geni;
 # - the links in the Markdown files, code blocks included, so that a moved
 #   dataset shows up here;
-# - the cookbook, run as tests on :spark, with its datasets cached.
+# - the cookbook, run as tests on :spark, with its datasets and Spark NLP's
+#   model cached.
 #
 # GitHub emails the last person to touch this file when a scheduled run fails,
 # and turns the schedule off after 60 days without commits, so it may need
@@ -100,22 +101,27 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@13
         with:
           cli: 1.12.6.1673
+      # A key of its own, so that Spark NLP's jars stay out of the docs job's
+      # cache.
       - uses: actions/cache@v6
         with:
           path: |
             ~/.m2/repository
             ~/.gitlibs
-          key: docs-${{ hashFiles('deps.edn') }}
-          restore-keys: deps-spark-
-      # The downloads, which the cookbook skips when they're there already.
-      # Part 10's generated data and part 12's checkpoints stay out of it:
-      # they're large, and cheap to recreate.
+          key: cookbook-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            cookbook-
+            deps-spark-
+      # The downloads, which the cookbook skips when they're there already,
+      # and part 13's Spark NLP model. Part 10's generated data and part 12's
+      # checkpoints stay out of it: they're large, and cheap to recreate.
       - uses: actions/cache@v6
         with:
           path: |
             data/cookbook
             !data/cookbook/dummy-retail
             !data/cookbook/checkpoint
+            ~/cache_pretrained
           key: cookbook-data-${{ hashFiles('docs/cookbook/*.md') }}
           restore-keys: cookbook-data-
       - run: clojure -T:build prep
