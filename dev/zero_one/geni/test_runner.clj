@@ -143,7 +143,7 @@
 
 (defn- run-namespace
   "Loads one namespace and runs its tests, keeping their output for the log."
-  [ns-sym {:keys [include exclude reload skip]} ^java.io.Writer log]
+  [ns-sym {:keys [reload skip]} ^java.io.Writer log]
   (let [out      (java.io.StringWriter.)
         failures (atom [])
         timings  (atom {})
@@ -169,8 +169,6 @@
         vars     (when-not load-err
                    (->> (vals (ns-interns ns-sym))
                         (filter (comp :test meta))
-                        (filter #(or (nil? include) (include (meta %))))
-                        (remove #(and exclude (exclude (meta %))))
                         (remove #(skip-reason skip (meta %)))
                         (sort-by (comp :line meta))))]
     (when-not load-err
@@ -268,8 +266,6 @@
     :dirs     the directories to scan (default: the project's classpath dirs),
               e.g. [\"target/test-doc-blocks/test\"] for the doc tests
     :only     the namespaces to run, e.g. [zero-one.geni.dataset-test]
-    :include  only run tests with this metadata, e.g. :slow
-    :exclude  skip tests with this metadata, e.g. :slow
     :shard    run every nth namespace from the ith, e.g. [1 3]
     :slowest  how many of the slowest tests to list (default: 5)
     :log      the file for the full reports (default: target/test.log)

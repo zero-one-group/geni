@@ -86,7 +86,7 @@ After timing a personal run, the Python-Pandas version took 24 seconds, whereas 
 
 ## Data Wrangling Performance
 
-One downside to the Python-Pandas combination is that the latter is single-threaded. This means that Pandas performance is very slow compared to other libraries for easily parallelisable tasks. To illustrate this point, consider [the dummy retail data](../examples/performance_benchmark_data.clj) with 24 million transactions and over one million customers. Suppose that we would like to know how many transactions do the top brands have:
+One downside to the Python-Pandas combination is that the latter is single-threaded. This means that Pandas performance is very slow compared to other libraries for easily parallelisable tasks. To illustrate this point, consider [the dummy retail data](simple_performance_benchmark.md#dummy-retail-data) with 24 million transactions and over one million customers. Suppose that we would like to know how many transactions do the top brands have:
 
 <table>
     <tr>

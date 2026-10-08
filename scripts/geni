@@ -8,14 +8,13 @@ set -euo pipefail
 
 print_help() {
     echo "Runs the Geni REPL and starts an nREPL server with an .nrepl-port file."
-    echo -e
+    echo
     echo "Downloads the uberjar of the latest stable release to"
     echo "~/.geni/geni-repl-uberjar-<version>.jar the first time it's needed."
     echo "Without a network, runs the uberjar downloaded last time."
-    echo -e
+    echo
     echo "Usage:"
     echo "geni [--force-download] [--submit script.clj]"
-    exit 1
 }
 
 script_path=false
@@ -35,12 +34,12 @@ do
             ;;
         --help)
             print_help
-            shift
+            exit 0
             ;;
         *)
-            echo "Unrecognised option!"
-            echo -e
-            print_help
+            echo "Unrecognised option: $1" >&2
+            echo >&2
+            print_help >&2
             exit 1
     esac
 done

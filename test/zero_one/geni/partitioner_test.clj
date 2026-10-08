@@ -3,7 +3,7 @@
    [clojure.test :refer [deftest is]]
    [zero-one.geni.partitioner :as partitioner]))
 
-(deftest ^:rdd partitioner-fields-test
+(deftest partitioner-fields-test
   (let [partitioner (partitioner/hash-partitioner 12)]
     (is (= 12 (partitioner/num-partitions partitioner)))
     (is (int? (partitioner/get-partition partitioner 123)))

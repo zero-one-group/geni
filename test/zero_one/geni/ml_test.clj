@@ -5,8 +5,8 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
-   [zero-one.geni.spark :as geni-spark]
    [zero-one.geni.test-resources :refer [create-temp-file!
+                                         spark-at-least?
                                          df-20
                                          melbourne-df
                                          k-means-df
@@ -85,14 +85,12 @@
                                    RandomForestRegressor)
    (org.apache.spark.sql Dataset)))
 
-(defn- spark-4? []
-  (= "4" (first (re-seq #"\d+" (geni-spark/classpath-version)))))
-
 (deftest reading-and-writing-test
   (let [stage     (ml/vector-assembler {})
         temp-file (.toString (create-temp-file! ".xml"))]
     (is (nil? (ml/write-stage! stage temp-file {:mode "overwrite"})))
     (is (thrown? Exception (ml/write-stage! stage temp-file)))
+    (is (nil? (ml/write-stage! stage temp-file {:mode :overwrite})))
     (is (nil? (ml/write-stage! stage temp-file {:mode "overwrite"
                                                 :persistSubModels "true"})))))
 
@@ -170,7 +168,7 @@
                  (g/select :kept)
                  g/collect))))))
 
-(deftest ^:slow stages-without-a-session-test
+(deftest stages-without-a-session-test
   (testing "write-stage! and read-stage! use Geni's default session, rather than Spark's
             getOrCreate, which needs a master URL"
     (let [temp-file (.toString (create-temp-file! ".stage"))
@@ -180,7 +178,7 @@
       (stop-session!)
       (is (= ["a" "b"] (seq (.getInputCols (ml/read-stage! VectorAssembler temp-file))))))))
 
-(deftest ^:slow feature-extraction-test
+(deftest feature-extraction-test
   (let [indexer (ml/fit (libsvm-df) (ml/string-indexer {:input-col :label
                                                         :output-col :indexed-label}))]
     (is (= ["1.0" "0.0"] (ml/labels indexer))))
@@ -269,7 +267,7 @@
                             :output-cols ["ImputedBuildingArea"]}))]
     (is (instance? Dataset (ml/surrogate-df model)))))
 
-(deftest ^:slow clustering-test
+(deftest clustering-test
   (let [estimator   (ml/k-means {:k 3})
         model       (ml/fit (k-means-df) estimator)
         predictions (ml/transform (k-means-df) model)
@@ -285,7 +283,7 @@
       (is (seq (.list (java.io.File. temp-file))))
       (is (instance? KMeansModel (ml/read-stage! KMeansModel temp-file))))))
 
-(deftest ^:slow multinomial-classification-test
+(deftest multinomial-classification-test
   (let [estimator   (ml/logistic-regression
                      {:thresholds [0.5 1.0]
                       :max-iter 10
@@ -319,7 +317,7 @@
     (is (= "x" (ml/input-col estimator)))
     (is (= "y" (ml/output-col estimator)))))
 
-(deftest ^:slow binary-classification-test
+(deftest binary-classification-test
   (let [estimator   (ml/logistic-regression
                      {:thresholds [0.5 1.0]
                       :max-iter 10
@@ -343,7 +341,7 @@
       (is (= "probability" (ml/probability-col model)))
       (is (= [0.5 1.0] (ml/thresholds model))))))
 
-(deftest ^:slow decision-tree-classifier-test
+(deftest decision-tree-classifier-test
   (let [estimator   (ml/decision-tree-classifier {})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
@@ -351,7 +349,7 @@
       (is (= 5 (ml/num-nodes model)))
       (is (not (nil? (ml/root-node model)))))))
 
-(deftest ^:slow random-forest-classifier-test
+(deftest random-forest-classifier-test
   (let [estimator   (ml/random-forest-classifier {:num-trees 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
@@ -359,7 +357,7 @@
       (is (int? (ml/total-num-nodes model)))
       (is (seq? (ml/trees model))))))
 
-(deftest ^:slow gradient-boosted-tree-classifier-test
+(deftest gradient-boosted-tree-classifier-test
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
@@ -369,7 +367,7 @@
       (is (int? (ml/get-num-trees model)))
       (is (every? double? (ml/tree-weights model))))))
 
-(deftest ^:slow naive-bayes-classifier-test
+(deftest naive-bayes-classifier-test
   (let [estimator   (ml/naive-bayes {})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
@@ -378,13 +376,13 @@
                  (every? double? (flatten actual)))))
       (is (every? double? (ml/pi model))))))
 
-(deftest ^:slow isotonic-regressor-test
+(deftest isotonic-regressor-test
   (let [estimator   (ml/isotonic-regression {})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
       (is (every? double? (ml/boundaries model))))))
 
-(deftest ^:slow aft-survival-regression-test
+(deftest aft-survival-regression-test
   (let [dataset   (g/table->dataset
                    @spark
                    [[1.218 1.0 (g/dense [1.560 -0.605])]
@@ -398,7 +396,7 @@
     (testing "Attributes are callable"
       (is (pos? (ml/scale model))))))
 
-(deftest ^:slow k-means-clustering-test
+(deftest k-means-clustering-test
   (let [estimator   (ml/k-means {:max-iter 2})
         model       (ml/fit (k-means-df) estimator)]
     (testing "Attributes are callable"
@@ -406,7 +404,7 @@
         (is (and (every? seq? actual)
                  (every? double? (flatten actual))))))))
 
-(deftest ^:slow lda-clustering-test
+(deftest lda-clustering-test
   (let [estimator   (ml/lda {:max-iter 2})
         model       (ml/fit (k-means-df) estimator)]
     (testing "Attributes are callable"
@@ -418,7 +416,7 @@
       (is (every? string? (ml/supported-optimisers model)))
       (is (int? (ml/vocab-size model))))))
 
-(deftest ^:slow gmm-clustering-test
+(deftest gmm-clustering-test
   (let [estimator   (ml/gmm {:max-iter 2})
         model       (ml/fit (k-means-df) estimator)]
     (testing "Attributes are callable"
@@ -439,7 +437,7 @@
                       [label (g/dense a b c)])
                     [:label :features]))
 
-(deftest ^:slow feature-models-test
+(deftest feature-models-test
   (let [df (g/table->dataset @spark
                              [[1.0 "a" 2.0 0.0 0] [0.0 "b" 1.0 0.0 1] [1.0 "a" 3.0 0.0 0] [0.0 "c" 0.5 0.0 2]]
                              [:y :t :x :z :cat])
@@ -466,7 +464,7 @@
                   (map last)
                   (take 2)))))
     (testing "target-encoder, on Spark 4"
-      (when (spark-4?)
+      (when (spark-at-least? "4.0")
         (is (= [1.0 0.0 1.0 0.0]
                (-> df
                    (ml/transform (ml/fit df (ml/target-encoder {:input-cols [:cat] :output-cols [:encoded]
@@ -500,7 +498,7 @@
                (g/select {:a (ml/vector->array :v)})
                (g/collect-col :a))))))
 
-(deftest ^:slow model-accessors-test
+(deftest model-accessors-test
   (let [features (first-features)
         libsvm   (g/limit (libsvm-df) 60)]
     (testing "one row's predictions"
@@ -591,7 +589,7 @@
                       [y (g/dense a b)])
                     [:label :features]))
 
-(deftest ^:slow summaries-test
+(deftest summaries-test
   (let [small (small-df)]
     (testing "a binary classifier's training summary, as a map"
       (let [model   (ml/fit small (ml/logistic-regression {:max-iter 5}))
@@ -647,7 +645,7 @@
                (map :feature (:coefficients-with-statistics summary))))
         (is (double? (:aic summary)))))))
 
-(deftest ^:slow clusters-correlation-and-evaluators-test
+(deftest clusters-correlation-and-evaluators-test
   (testing "power iteration clustering's clusters, which it assigns rather than fits"
     (let [edges    (g/table->dataset @spark
                                      [[0 1 1.0] [1 2 1.0] [0 2 1.0] [3 4 1.0] [4 5 1.0] [3 5 1.0] [2 3 0.01]]
@@ -676,7 +674,7 @@
     (is (true? (ml/larger-better? (ml/binary-classification-evaluator {}))))
     (is (false? (ml/larger-better? (ml/regression-evaluator {:metric-name "rmse"}))))))
 
-(deftest ^:slow summarizer-test
+(deftest summarizer-test
   (let [stats (-> (small-df)
                   ;; 1 for label 0 and 3 for label 1.
                   (g/with-column :weight (g/+ 1.0 (g/* 2.0 :label)))
@@ -906,12 +904,12 @@
   (is (= [1 2] (:indices (ml/params (ml/vector-slicer {:indices [1 2]})))))
   (is (instance? VectorSlicer (ml/vector-slicer {})))
 
-  (if (spark-4?)
+  (if (spark-at-least? "4.0")
     (is (= "binary" (:target-type (ml/params (ml/target-encoder {:target-type "binary"})))))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"ml/target-encoder needs Spark 4\.0"
                           (ml/target-encoder {})))))
 
-(deftest ^:slow pipeline-test
+(deftest pipeline-test
   (testing "should be able to fit the example stages"
     (let [dataset     (g/table->dataset
                        @spark
@@ -1005,7 +1003,7 @@
         (is (and (< 0.01 (first actual) 0.1)
                  (< 0.25 (second actual) 0.35)))))))
 
-(deftest ^:slow correlation-test
+(deftest correlation-test
   (let [dataset     (g/table->dataset
                      @spark
                      [[1.0 0.0 -2.0 0.0]

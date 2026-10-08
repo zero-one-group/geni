@@ -3,11 +3,10 @@
   clojure -T:build xgb-tests."
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.ml :as ml]
-   [zero-one.geni.test-resources :refer [create-temp-dir! libsvm-df]])
+   [zero-one.geni.test-resources :refer [create-temp-dir! libsvm-df spark-at-least?]])
   (:import
    (clojure.lang ExceptionInfo)
    (ml.dmlc.xgboost4j.scala.spark XGBoostClassificationModel
@@ -54,9 +53,6 @@
   (is (instance? XGBoostClassifier (ml/xgboost-classifier {})))
   (is (instance? XGBoostRegressor (ml/xgboost-regressor {}))))
 
-(defn- spark-4? []
-  (str/starts-with? (g/version) "4."))
-
 (defn- round-trips?
   "Whether the model writes as a Spark ML stage and reads back with the same
   predictions."
@@ -66,7 +62,7 @@
     (= (g/collect-col (ml/transform (training-df) model) :prediction)
        (g/collect-col (ml/transform (training-df) (ml/read-stage! model-class path)) :prediction))))
 
-(deftest ^:slow classifier-test
+(deftest classifier-test
   (let [model       (ml/fit (training-df) (ml/xgboost-classifier small))
         predictions (ml/transform (training-df) model)]
     (is (instance? XGBoostClassificationModel model))
@@ -75,7 +71,7 @@
     ;; XGBoost4J-Spark 3.4.0 is built against Spark 3.5's json4s, so it can't
     ;; write a stage on Spark 4.
     (testing "saves and loads as a Spark ML stage, except on Spark 4"
-      (if (spark-4?)
+      (if (spark-at-least? "4.0")
         (is (thrown? NoSuchMethodError (ml/write-stage! model (temp-path "classifier")))
             "XGBoost4J-Spark now saves stages on Spark 4: update the guide and the changelog")
         (is (round-trips? model XGBoostClassificationModel "classifier"))))
@@ -84,15 +80,15 @@
         (ml/write-native-model! model path)
         (is (pos? (.length (io/file path))))))))
 
-(deftest ^:slow regressor-test
+(deftest regressor-test
   (let [model       (ml/fit (training-df) (ml/xgboost-regressor small))
         predictions (ml/transform (training-df) model)]
     (is (instance? XGBoostRegressionModel model))
     (is (every? double? (g/collect-col predictions :prediction)))
-    (when-not (spark-4?)
+    (when-not (spark-at-least? "4.0")
       (is (round-trips? model XGBoostRegressionModel "regressor")))))
 
-(deftest ^:slow ranker-test
+(deftest ranker-test
   (let [queries (g/with-column (training-df) :query (g/int (g/mod (g/monotonically-increasing-id) 4)))
         model   (ml/fit queries (ml/xgboost-ranker (assoc small :group-col "query")))]
     (is (instance? XGBoostRankerModel model))

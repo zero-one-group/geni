@@ -393,7 +393,6 @@
         (configure "pregel"
                    (merge checkpoints
                           {:max-iter                               ["setMaxIter" int]
-                           :checkpoint-interval                    ["setCheckpointInterval" int]
                            :early-stopping                         ["setEarlyStopping" boolean]
                            :stop-if-all-non-active-vertices        ["setStopIfAllNonActiveVertices" boolean]
                            :initial-active-vertex-expression       ["setInitialActiveVertexExpression" column/col]

@@ -5,7 +5,7 @@
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [spark]]))
 
-(deftest ^:slow prefix-span-training-test
+(deftest prefix-span-training-test
   (let [dataset     (-> (g/table->dataset
                          @spark
                          [[['(1 2) '(3)]]
@@ -21,7 +21,7 @@
                (ml/find-patterns prefix-span)
                g/column-names)))))
 
-(deftest ^:slow fp-growth-training-test
+(deftest fp-growth-training-test
   (let [dataset   (-> (g/table->dataset
                        @spark
                        [[["1" "2" "5"]]

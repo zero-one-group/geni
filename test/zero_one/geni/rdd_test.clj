@@ -18,7 +18,7 @@
 (def dummy-pair-rdd
   (rdd/map-to-pair dummy-rdd aot/to-pair))
 
-(deftest ^:rdd variadic-functions-test
+(deftest variadic-functions-test
   (testing "expected 0-adic and 1-adic returns"
     (doall
      (for [variadic-fn [rdd/cartesian rdd/union rdd/intersection rdd/subtract]]
@@ -39,7 +39,7 @@
       (is (= [2] (rdd/collect (rdd/subtract left mid right))))
       (is (empty? (rdd/collect (rdd/subtract left mid right (rdd/parallelise [2]))))))))
 
-(deftest ^:rdd javasparkcontext-methods-test
+(deftest javasparkcontext-methods-test
   (testing "expected static fields"
     (is (= "Geni App" (rdd/app-name)))
     (is (= [1 2 3] (rdd/value (rdd/broadcast [1 2 3]))))
@@ -58,7 +58,7 @@
     (is (instance? SparkContext (rdd/sc)))
     (is (= (.version @zero-one.geni.defaults/spark) (rdd/version)))))
 
-(deftest ^:rdd repartitioning-test
+(deftest repartitioning-test
   (testing "partition-by works"
     (is (= 11
            (-> dummy-rdd
@@ -79,7 +79,7 @@
                      distinct)]
       (is (= actual (reverse (sort actual)))))))
 
-(deftest ^:rdd basic-pairrdd-transformations-test
+(deftest basic-pairrdd-transformations-test
   (testing "cogroup work"
     (let [left  (rdd/flat-map-to-pair dummy-rdd aot/split-spaces-and-pair)
           mid   (rdd/filter left aot/first-equals-lewis-or-carroll)
@@ -256,7 +256,7 @@
       (is (= 22 (-> left (rdd/subtract-by-key right) rdd/distinct rdd/count)))
       (is (= 4 (-> left (rdd/subtract-by-key right 4) rdd/num-partitions))))))
 
-(deftest ^:rdd basic-rdd-saving-and-loading-test
+(deftest basic-rdd-saving-and-loading-test
   (testing "binary-files works"
     (is (= 1 (rdd/count (rdd/binary-files "test/resources/housing.parquet/*.parquet"))))
     (is (= 1
@@ -273,7 +273,7 @@
       (is (pos? (rdd/count (rdd/whole-text-files (str temp-file)))))
       (is (< 1 (rdd/count (rdd/whole-text-files (str temp-file) 2)))))))
 
-(deftest ^:rdd basic-rdd-fields-test
+(deftest basic-rdd-fields-test
   (let [rdd (rdd/parallelise-doubles [1])]
     (is (instance? JavaSparkContext (rdd/context rdd)))
     (is (integer? (rdd/id rdd)))
@@ -281,21 +281,20 @@
     (is (not (rdd/checkpointed? rdd)))
     (is (rdd/empty? (rdd/parallelise [])))
     (is (not (rdd/empty? rdd)))
-    (is (not (rdd/empty? rdd)))
     (is (nil? (rdd/partitioner rdd)))
     (is (not (nil? (-> dummy-rdd
                        (rdd/map-to-pair aot/to-pair)
                        (rdd/group-by-key (partitioner/hash-partitioner 123))
                        rdd/partitioner))))))
 
-(deftest ^:rdd basic-partialresult-test
+(deftest basic-partialresult-test
   (let [result (rdd/count-approx dummy-rdd 1000)]
     (is (every? (rdd/initial-value result) [:mean :low :high :confidence]))
     (is (every? (rdd/final-value result) [:mean :low :high :confidence]))
     (is (boolean? (rdd/final? result))))
   (is (< 100 (-> (rdd/count-approx dummy-rdd 1000 0.9) rdd/initial-value :low))))
 
-(deftest ^:rdd basic-rdd-actions-test
+(deftest basic-rdd-actions-test
   (testing "collect-async works"
     (is (= [1] @(rdd/collect-async (rdd/parallelise [1])))))
   (testing "collect-partitions works"
@@ -345,9 +344,13 @@
     (let [rdd (rdd/parallelise (into [] (range 100)))]
       (is (= (-> (rdd/take-sample rdd false 10) distinct count) 10)))
     (let [rdd (rdd/parallelise (into [] (range 100)))]
-      (is (< (-> (rdd/take-sample rdd true 100 1) distinct count) 100)))))
+      (is (< (-> (rdd/take-sample rdd true 100 1) distinct count) 100)))
+    ;; Without the seed, two samples of 10 from 100 would match less than
+    ;; once in 10^19 runs.
+    (let [rdd (rdd/parallelise (into [] (range 100)))]
+      (is (= (rdd/take-sample rdd false 10 42) (rdd/take-sample rdd false 10 42))))))
 
-(deftest ^:rdd basic-rdd-transformations-actions-test
+(deftest basic-rdd-transformations-actions-test
   (is (= ["of anyone anywhere" "of anyone anywhere"] (-> dummy-rdd (rdd/top 2))))
   (is (= [3 2]
          (-> (rdd/parallelise [1 2 3])
@@ -529,7 +532,7 @@
   (testing "glom works"
     (is (< (-> dummy-rdd rdd/glom rdd/count) 126))))
 
-(deftest ^:rdd functions-compiled-at-run-time-test
+(deftest functions-compiled-at-run-time-test
   (testing "a local session that Geni starts runs functions that weren't compiled ahead of time"
     (is (= [10 20 30]
            (-> (rdd/parallelise [1 2 3])
@@ -545,7 +548,7 @@
 
 (defrecord Point [x y])
 
-(deftest ^:rdd clojure-data-test
+(deftest clojure-data-test
   (testing "collecting keeps Clojure collections as they were"
     (let [collected (rdd/collect (rdd/parallelise [{:a 1} [1 2] #{3} (sorted-map :b 2 :a 1) (->Point 1 2)]))]
       (is (= [{:a 1} [1 2] #{3} {:a 1 :b 2} (->Point 1 2)] collected))

@@ -20,7 +20,6 @@ The tests use `clojure.test`, with a small runner in `dev/`:
 
 ```bash
 clojure -X:spark:test                                        # the main suite
-clojure -X:spark:test :exclude :slow                         # skip the slow tests
 clojure -X:spark:test :only '[zero-one.geni.dataset-test]'   # one namespace
 clojure -X:spark:test:cli:tmd                                # what the CI runs
 clojure -T:build xgb-tests                                   # the XGBoost tests and guide

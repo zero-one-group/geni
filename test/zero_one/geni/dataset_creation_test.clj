@@ -10,10 +10,11 @@
    (java.util UUID)
    (org.apache.spark.sql Dataset
                          Row)
-   (org.apache.spark.sql.types StructField
+   (org.apache.spark.sql.types DataTypes
+                               StructField
                                StructType)))
 
-(deftest ^:empty-dataset creation-of-empty-dataset-test
+(deftest creation-of-empty-dataset-test
   (testing "correct creation"
     (is (g/empty? (g/create-dataframe [] {})))
     (is (g/empty? (g/table->dataset @tr/spark [] [])))
@@ -25,7 +26,7 @@
            (g/dtypes
             (g/create-dataframe @tr/spark [] (g/struct-type (g/struct-field :j :float true))))))))
 
-(deftest ^:schema can-instantiate-dataframe-with-data-oriented-test
+(deftest can-instantiate-dataframe-with-data-oriented-test
   (testing "of simple data type fields"
     (is (= {:number "IntegerType"
             :word "StringType"}
@@ -389,6 +390,19 @@
     (let [ds (g/range 0 100 1 5)]
       (is (= ["id"] (g/column-names ds)))
       (is (= (range 100) (g/collect ds))))))
+
+(deftest range-with-any-integer-test
+  (is (= [0 1 2] (g/collect (g/range (count [:a :b :c])))))
+  (is (= [3 4] (g/collect (g/range (int 3) (short 5)))))
+  (is (= [0 1] (g/collect (g/range @tr/spark (int 2)))))
+  (is (thrown? IllegalArgumentException (g/range 2.5))))
+
+(deftest nested-map-schema-test
+  (testing "a map's values can be structs and arrays"
+    (is (= (DataTypes/createMapType DataTypes/StringType (g/->schema {:a :int}))
+           (g/->schema [:string {:a :int}])))
+    (is (= (DataTypes/createMapType DataTypes/StringType (g/->schema [:int]))
+           (g/->schema [:string [:int]])))))
 
 (deftest ^:classic range-partitions-test
   (is (= 5 (count (g/partitions (g/range 0 100 1 5))))))

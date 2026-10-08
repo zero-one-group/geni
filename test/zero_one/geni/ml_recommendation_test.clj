@@ -5,7 +5,7 @@
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [ratings-df]]))
 
-(deftest ^:slow recommendation-test
+(deftest recommendation-test
   (let [estimator   (ml/als {:max-iter        1
                              :num-user-blocks 1
                              :num-item-blocks 1

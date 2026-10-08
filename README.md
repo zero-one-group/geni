@@ -156,7 +156,7 @@ Spark ML, with an example from [Spark's programming guide](https://spark.apache.
 ; +---+------------------+----------------------------------------+----------+
 ```
 
-More examples are in the [guides](docs/examples.md), the [cookbook](#cookbook) and [`examples/`](examples).
+More examples are in the [guides](docs/examples.md) and the [cookbook](#cookbook).
 
 ## Installation
 
@@ -400,7 +400,6 @@ Geni is licensed under Apache License v2.0, see [LICENSE](LICENSE).
 Some parts of the project have been taken from or inspired by:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
-* [LispCast](https://lispcast.com/) for [exponential backoff](https://lispcast.com/exponential-backoff/).
 * Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/clojure/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.

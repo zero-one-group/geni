@@ -28,7 +28,7 @@
       (.execute stmt "CREATE TABLE housing (Type TEXT)"))
     url))
 
-(deftest ^:schema data-oriented-schema-test
+(deftest data-oriented-schema-test
   (let [dummy-df (-> (melbourne-df)
                      (g/limit 2)
                      g/->kebab-columns
@@ -77,8 +77,8 @@
                             :rooms {:rooms :float :bathroom :long}}})
                  g/dtypes))))))
 
-(deftest ^:binary binary-data-test
-  (let [binary-file "test/resources/geni.png"
+(deftest binary-data-test
+  (let [binary-file "test/resources/with_sql_date.parquet"
         selected [:path :length :modificationTime :content]
         result (-> (g/read-binary! binary-file)
                    (g/select selected))]
@@ -89,13 +89,13 @@
               :content "BinaryType"}
              (-> result g/dtypes))))
     (testing "Read binary data - check for size"
-      (is (= 52053
+      (is (= 2790
              (-> result
                  g/collect
                  first
                  :length))))))
 
-(deftest ^:schema schema-option-test
+(deftest schema-option-test
   (let [csv-path "test/resources/sample_csv_data.csv"
         selected [:InvoiceDate :Price]]
     (testing "correct schemaless baseline"
@@ -116,7 +116,7 @@
                  (g/select selected)
                  g/dtypes))))))
 
-(deftest ^:excel excel-test
+(deftest excel-test
   (let [temp-file  (.toString (create-temp-file! ".xlsx"))
         read-df    (do
                      (g/write-xlsx! write-df temp-file {:mode "overwrite"})
@@ -134,7 +134,7 @@
       (is (= 6 (g/count headerless)))
       (is (= {:c-0 "Method" :c-1 "Type"} (g/first headerless))))))
 
-(deftest ^:edn edn-test
+(deftest edn-test
   (let [write-df  (-> (melbourne-df) (g/select :Price :Rooms) (g/limit 3))
         temp-file (.toString (create-temp-file! ".edn"))]
     (testing "write-edn! works as expected"
@@ -160,7 +160,7 @@
              (g/collect (g/read-edn! temp-file))))
       (is (= ["price" "rooms"] (g/column-names (g/read-edn! temp-file {:kebab-columns true})))))))
 
-(deftest ^:slow options-test
+(deftest options-test
   (testing "infer-schema can be turned off"
     (is (= {:Price "StringType" :Rooms "StringType"}
            (let [write-df  (-> (melbourne-df) (g/select :Price :Rooms) (g/limit 5))
@@ -206,7 +206,7 @@
            (-> (g/read-parquet! "test/resources/melbourne_housing_snapshot.parquet" {:kebab-columns true})
                g/columns)))))
 
-(deftest ^:slow writer-defaults-to-error-test
+(deftest writer-defaults-to-error-test
   (doall
    (for [write-fn! [g/write-avro!
                     g/write-csv!
@@ -227,7 +227,7 @@
     (g/write-jdbc! write-df (assoc options :mode "overwrite"))
     (is (thrown? AnalysisException (g/write-jdbc! write-df options)))))
 
-(deftest ^:slow can-read-with-options-test
+(deftest can-read-with-options-test
   (let [read-df (g/read-parquet!
                  "test/resources/melbourne_housing_snapshot.parquet"
                  {"mergeSchema" "true"})]
@@ -308,7 +308,7 @@
                       (g/read-text! temp-file))]
     (is (= (g/collect-vals read-df) (g/collect-vals write-df)))))
 
-(deftest ^:slow can-read-and-write-jdbc-test
+(deftest can-read-and-write-jdbc-test
   (let [write-df (g/select write-df :Type)
         options  {:driver  "org.sqlite.JDBC"
                   :url     (sqlite-with-housing-table)
@@ -318,7 +318,7 @@
                    (g/read-jdbc! options))]
     (is (= (g/collect-vals read-df) (g/collect-vals write-df)))))
 
-(deftest ^:slow read-jdbc-with-kebab-columns-test
+(deftest read-jdbc-with-kebab-columns-test
   (let [url (str "jdbc:sqlite:" (create-temp-file! ".db"))]
     (with-open [conn (DriverManager/getConnection url)
                 stmt (.createStatement conn)]
@@ -330,7 +330,7 @@
                                      :dbtable       "tracks"
                                      :kebab-columns true}))))))
 
-(deftest ^:slow can-write-parquet-with-partition-by-test
+(deftest can-write-parquet-with-partition-by-test
   (let [temp-file (.toString (create-temp-file! ".parquet"))
         read-df  (do (g/write-parquet!
                       write-df
@@ -395,7 +395,7 @@
       (is (thrown-with-msg? AnalysisException #"bucketBy"
                             (g/write! df {:format "parquet" :path (path "b") :bucket-by [2 :id]}))))))
 
-(deftest ^:slow generic-jdbc-test
+(deftest generic-jdbc-test
   (let [options {:format  "jdbc"
                  :driver  "org.sqlite.JDBC"
                  :url     (sqlite-with-housing-table)

@@ -103,7 +103,7 @@
 
 (defn- set-null-or-value [arrow-vector ^long idx value col-type]
   (if (nil? value)
-    (typed-action :set-null col-type {:vector arrow-vector :idx 0 :value nil} nil nil nil)
+    (typed-action :set-null col-type {:vector arrow-vector :idx idx :value nil} nil nil nil)
     (typed-set arrow-vector idx value col-type)))
 
 (defn- fill-vector! [arrow-vector values col-type]

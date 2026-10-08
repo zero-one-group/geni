@@ -50,6 +50,7 @@ jobs:
           fi
       - name: Run a script through scripts/geni, online and offline
         run: |
+          scripts/geni --help | grep -q "Usage:"
           # A home with a space in it, and the new uberjar under the released
           # version's name, so that the script finds it there.
           export HOME="$RUNNER_TEMP/geni home"

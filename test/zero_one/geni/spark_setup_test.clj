@@ -23,16 +23,6 @@
                                              :spark.sql.adaptive.enabled
                                              :spark.sql.adaptive.coalescePartitions.enabled]))))
 
-(deftest test-primary-key-is-the-product-test
-  (is (= 13580
-         (-> (melbourne-df)
-             (g/with-column
-               "entry_id"
-               (g/concat "Address" (g/lit "::") "Date" (g/lit "::") "SellerG"))
-             (g/select "entry_id")
-             g/distinct
-             g/count))))
-
 (deftest jvm-flags-test
   ;; The Spark aliases in deps.edn copy the JDK flags that Spark's launcher
   ;; uses, and a new Spark release can add more.

@@ -1,6 +1,4 @@
-.geni-stdout
 .nrepl-history
-*.cast
 spark-warehouse/
 spark-warehouses/
 
@@ -8,11 +6,8 @@ spark-warehouses/
 .clj-kondo/.cache
 
 pom.xml
-pom.xml.asc
 *.jar
 *.class
-/lib/
-/classes/
 /target/
 .nrepl-port
 .cpcache/

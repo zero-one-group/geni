@@ -7,6 +7,24 @@ New:
 - `ml/stage` makes a Spark ML stage of any class from a map of params, as Geni's own stages take one, so that a stage Geni has no function for, such as one of Spark NLP's annotators, goes into `ml/pipeline` without interop. It takes a class, a class name, or a stage made already, such as a pretrained model, whose params it sets in place. The new cookbook part, [text classification with Spark NLP](docs/cookbook/part_13_text_classification_with_spark_nlp.md), uses it (#323).
 - `zero-one.geni.graph` builds graphs from DataFrames of vertices and edges with GraphFrames, an optional dependency, on classic Spark 3.5 and 4 (#321). It has their degrees and triplets, filters, motif finding with `graph/find`, breadth-first search and shortest paths, PageRank, connected and strongly connected components, label propagation, triangle counts, and message passing with `graph/aggregate-messages` and `graph/pregel`. Each algorithm takes an option map, with GraphFrames' setters in kebab case, and gives a DataFrame, but for PageRank, which gives a graph. Without GraphFrames on the classpath, or over Spark Connect, the functions throw an error that says what's needed. The [graphs guide](docs/graphs.md) has the details.
 
+Fixes:
+
+- `g/->schema` takes a struct or an array as the type of a map's values, as in `[:string {:a :int}]` and `[:string [:int]]`, which threw.
+- `g/range` takes any whole numbers, such as `(g/range (count xs))`, where it took only longs.
+- `g/from-json`, `g/from-csv`, `g/schema-of-json`, `g/schema-of-csv`, `g/to-json` and `g/to-csv` take options with values that aren't strings, such as `{:allowComments true}`, which threw a ClassCastException.
+- `g/collect-vals`, `g/head-vals`, `g/take-vals` and `g/tail-vals` give each column its own values when two columns share a name, where both got the last one's.
+- `rdd/take-sample` with a seed uses it. It ran a second sample without the seed, and returned that.
+- `ml/param-grid` takes params with "set" inside their names, such as `:feature-subset-strategy` and `:offset-col`, which threw a NullPointerException.
+- `ml/write-stage!` overwrites with `{:mode :overwrite}`, as it did with `{:mode "overwrite"}`.
+- `g/collect-to-arrow` keeps the first row's value in a column with a null in a later row of the same file, where it wrote a null.
+- `g/lit` has its own docstring again, which Spark 3.0.1's had replaced.
+- `geni --help` exits with status 0.
+
+Changes:
+
+- The docstrings from Spark's Scaladoc no longer end with a link to Spark 3.0.1's docs and a timestamp, and the jar leaves out the 3,000 or so that no var used, about 1 MB.
+- Vars and classes that nothing used are gone: `zero-one.geni.core.column`'s `equal-to`, `eq-null-safe`, `not-equal`, `lt`, `leq`, `gt` and `geq`, which `g/` never exported (`g/===`, `g/<=>`, `g/=!=` and the comparison functions stay), `zero-one.geni.core.window/current-row`, the `zero-one.geni.ml.default-stop-words` namespace, whose words are Spark's own defaults, and the `Fn3` and `ComparatorFn` classes.
+
 ## 0.4.0 (2026-10-07)
 
 Breaking changes:

@@ -44,32 +44,9 @@
   "
   [& args]
   (println (repl/spark-welcome-note (.version @spark)))
-  (let [script-path (if (empty? args) nil (first args))]
+  (let [script-path (first args)]
     (repl/launch-repl (merge {:port (+ 65001 (rand-int 500))
                               :custom-eval init-eval}
                              (when script-path
                                {:input-stream (custom-stream script-path)}))))
   (System/exit 0))
-
-(comment
-
-  (require '[zero-one.geni.test-resources :refer [melbourne-df]])
-
-  (def dataframe (melbourne-df))
-  (-> dataframe g/count)
-  (-> dataframe g/print-schema)
-
-  (require '[zero-one.geni.core])
-  (require '[zero-one.geni.docs :as docs])
-  (docs/docless-vars 'zero-one.geni.repl)
-
-  (require '[clojure.pprint])
-  (require '[clojure.reflect :as r])
-  (->> (r/reflect Long)
-       ;;:members
-       ;;(filter #(= (:name %) 'socketTextStream))
-       ;;(mapv :name)
-       ;;sort
-       clojure.pprint/pprint)
-
-  0)

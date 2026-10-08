@@ -3,7 +3,6 @@
    [clojure.string]
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
-   [zero-one.geni.core.column :as column]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20]]))
 
@@ -31,7 +30,7 @@
               (g/get-item :xs (int 1)))
              g/collect-vals))))
 
-(deftest ^:slow comparison-and-boolean-functions-test
+(deftest comparison-and-boolean-functions-test
   (testing "null checks"
     (is (= [[false true true false]]
            (-> (df-1)
@@ -96,7 +95,7 @@
                 (g/is-in-collection 1 [2 3]))
                g/collect-vals)))))
 
-(deftest ^:slow sorting-functions-test
+(deftest sorting-functions-test
   (is (nil?
        (-> (df-20)
            (g/order-by (g/asc-nulls-first :BuildingArea))
@@ -118,7 +117,7 @@
            (g/collect-col :BuildingArea)
            last))))
 
-(deftest ^:slow clojure-idioms-test
+(deftest clojure-idioms-test
   (is (= [[2 0 true false true false false true]]
          (-> (df-1)
              (g/select
@@ -149,7 +148,7 @@
                :g (g/byte 1)})
              g/dtypes))))
 
-(deftest ^:slow string-methods-test
+(deftest string-methods-test
   (testing "rlike should filter correctly"
     (let [includes-east-or-north? #(or (clojure.string/includes? % "East")
                                        (clojure.string/includes? % "North"))]
@@ -203,6 +202,6 @@
 
 (deftest not-equal-test
   (is (= [0 2] (-> (g/range 3)
-                   (g/filter (column/not-equal :id 1))
+                   (g/filter (g/=!= :id 1))
                    (g/order-by :id)
                    (g/collect-col :id)))))

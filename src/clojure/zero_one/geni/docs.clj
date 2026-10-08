@@ -6,7 +6,7 @@
    (java.io PushbackReader)))
 
 (def spark-docs
-  "Docstrings scraped from Spark's Scaladoc, see scripts/scrape-spark-docs.clj."
+  "Docstrings from Spark 3.0.1's Scaladoc, for the vars that have none of their own."
   (with-open [reader (-> "spark-docs.edn" io/resource io/reader PushbackReader.)]
     (edn/read reader)))
 

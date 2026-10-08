@@ -27,9 +27,14 @@
                        log-reg    {:reg-param [0.1 0.01] :max-iter [1 2 3]}})]
       (is (-> param-grid class .isArray))
       (is (= 18 (count param-grid)))
-      (is (every? #(= (.size %) 3) param-grid)))))
+      (is (every? #(= (.size %) 3) param-grid))))
+  (testing "takes params whose names have \"set\" in the middle"
+    (is (= 2 (count (ml/param-grid
+                     {(ml/random-forest-classifier {}) {:feature-subset-strategy ["auto" "sqrt"]}}))))
+    (is (= 2 (count (ml/param-grid
+                     {(ml/generalized-linear-regression {}) {:offset-col ["a" "b"]}}))))))
 
-(deftest ^:slow cross-validator-fitting-test
+(deftest cross-validator-fitting-test
   (testing "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
           param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
@@ -41,7 +46,7 @@
           model      (ml/fit (libsvm-df) cv)]
       (is (instance? LogisticRegressionModel (ml/best-model model))))))
 
-(deftest ^:slow tuning-results-test
+(deftest tuning-results-test
   (let [log-reg    (ml/logistic-regression {:max-iter 1})
         param-grid (ml/param-grid {log-reg {:reg-param [0.1 0.01]}})
         options    {:estimator            log-reg

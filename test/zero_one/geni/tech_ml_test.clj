@@ -7,7 +7,7 @@
 (def dummy-df
   (-> (melbourne-df) (g/select :Method) (g/limit 5)))
 
-(deftest ^:slow rand-nth-test
+(deftest rand-nth-test
   (is (map? (g/rand-nth dummy-df)))
   (is (map? (g/rand-nth (melbourne-df))))
   (is (map? (g/rand-nth (g/limit (melbourne-df) 1))))
@@ -37,7 +37,7 @@
                        :always-ten)
              g/columns))))
 
-(deftest ^:slow dataset-test
+(deftest dataset-test
   (testing "->dataset with sequence of maps"
     (is (= [{:a 1 :b 2 :c nil} {:a 2 :b nil :c 3}] (g/collect (g/->dataset [{:a 1 :b 2} {:a 2 :c 3}])))))
 

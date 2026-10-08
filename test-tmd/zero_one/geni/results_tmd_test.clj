@@ -17,8 +17,6 @@
    (java.time Duration Instant LocalDate LocalDateTime LocalTime Period)
    (java.time.temporal ChronoUnit)))
 
-(defn- spark-4? [] (boolean (re-find #"^4\." (g/version))))
-
 (defn- classic? [] (spark/classic-session? @tr/spark))
 
 (defn- datatypes [dataset]
@@ -105,12 +103,12 @@
         (is (= [0 1 2] (missing dataset :nothing)))
         (is (= [] (missing dataset :id))))))
   (testing "VARIANT, as Spark's VariantVal"
-    (when (spark-4?)
+    (when (tr/spark-at-least? "4.0")
       (let [value (first ((g/to-tmd (g/sql @tr/spark "SELECT PARSE_JSON('{\"a\": [1, 2]}') v")) :v))]
         (is (= "org.apache.spark.unsafe.types.VariantVal" (.getName (class value))))
         (is (= "{\"a\":[1,2]}" (str value))))))
   (testing "TIME, as a LocalTime, on classic Spark 4.1 and later, which can make one"
-    (when (and (classic?) (spark-4?) (not (re-find #"^4\.0\." (g/version))))
+    (when (and (classic?) (tr/spark-at-least? "4.1"))
       (is (= [(LocalTime/parse "12:34:56.789")]
              (vec ((g/to-tmd (g/sql @tr/spark "SELECT TIME'12:34:56.789' t")) :t))))))
   (testing "column names through :key-fn"
@@ -392,7 +390,7 @@
     (is (= [{:a 1 :b nil} {:a nil :b "x"}]
            (g/collect-col (g/create-dataframe @tr/spark (ds/->dataset {:m [{:a 1} {:b "x"}]})) :m))))
   (testing "VARIANT on Spark 4"
-    (when (spark-4?)
+    (when (tr/spark-at-least? "4.0")
       (let [df (g/sql @tr/spark "SELECT PARSE_JSON('{\"a\": 1}') v")]
         (is (= {:v "VariantType"} (g/dtypes (g/create-dataframe @tr/spark (g/to-tmd df)))))
         (is (= ["{\"a\":1}"]

@@ -25,11 +25,6 @@
  'zero-one.geni.partitioner
  [(-> docs/spark-docs :methods :hash-partitioner)])
 
-; FIXME
-;(docs/add-doc!
-  ;(var hash-partitioner)
-  ;(-> docs/spark-docs :classes :hash-partitioner :hash-partitioner))
-
 ;; Aliases
 (import-fn equals equals?)
 

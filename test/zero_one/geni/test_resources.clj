@@ -17,6 +17,14 @@
 
 (def spark zero-one.geni.defaults/spark)
 
+(defn spark-at-least?
+  "Whether the Spark on the classpath, the Spark Connect client's over Spark
+  Connect, is at least `version`, such as \"4.1\"."
+  [version]
+  (let [needed (mapv parse-long (split version #"\."))
+        actual (mapv parse-long (re-seq #"\d+" (zero-one.geni.spark/classpath-version)))]
+    (not (neg? (compare (vec (take (count needed) actual)) needed)))))
+
 (def ^:private fixtures (atom {}))
 
 (defn- per-session

@@ -7,8 +7,7 @@
    [clojure.walk :as walk]
    [zero-one.geni.core :as g]
    [zero-one.geni.core.function-table :as function-table]
-   [zero-one.geni.spark :as spark]
-   [zero-one.geni.test-resources :refer [spark without-task-error-logs]])
+   [zero-one.geni.test-resources :refer [spark spark-at-least? without-task-error-logs]])
   (:import
    (clojure.lang ExceptionInfo)
    (java.lang.reflect Method Modifier)
@@ -17,11 +16,6 @@
 (def ^:private rows
   "The table's rows, by function."
   (delay (function-table/table)))
-
-(defn- at-least? [since]
-  (let [needed  (mapv parse-long (string/split since #"\."))
-        version (mapv parse-long (re-seq #"\d+" (spark/classpath-version)))]
-    (not (neg? (compare (vec (take (count needed) version)) needed)))))
 
 (defn- needed
   "The Spark version that the function needs for this many arguments, or nil."
@@ -59,7 +53,7 @@
   [[fn-sym args sql wrap] run]
   (let [f     @(ns-resolve 'zero-one.geni.core fn-sym)
         since (needed fn-sym args)]
-    (if (and since (not (at-least? since)))
+    (if (and since (not (spark-at-least? since)))
       (is (thrown-with-msg? ExceptionInfo #"needs Spark" (apply f args)) (str fn-sym))
       (try
         (let [[geni sql-result] (run ((or wrap identity) (apply f args)) (g/expr sql))]
@@ -468,7 +462,7 @@
 
 (defn- this-sparks? [[sym args]]
   (let [since (needed sym args)]
-    (or (nil? since) (at-least? since))))
+    (or (nil? since) (spark-at-least? since))))
 
 (defn- check-older-sparks
   "Checks that the examples' functions that need a newer Spark throw an error
@@ -530,7 +524,7 @@
 
 (deftest scalar-functions-test
   ;; Spark 4.1 and 4.2 have the TIME type behind a flag.
-  (let [time-type? (at-least? "4.1")]
+  (let [time-type? (spark-at-least? "4.1")]
     (when time-type? (g/conf-set! "spark.sql.timeType.enabled" true))
     (try
       (run-batched scalar-examples #(g/collect (g/select (fixture) %)) (select-run (fixture)))
@@ -543,7 +537,7 @@
 (deftest merge-aggregate-functions-test
   (doseq [[sym args sql wrap sketches] merge-agg-examples
           :let [since (:since (get @rows sym))]]
-    (if (and since (not (at-least? since)))
+    (if (and since (not (spark-at-least? since)))
       (is (thrown-with-msg? ExceptionInfo #"needs Spark"
                             (apply @(ns-resolve 'zero-one.geni.core sym) args))
           (str sym))
@@ -603,10 +597,10 @@
 
 (deftest arity-versions-test
   (doseq [[sym {:keys [spark since arity-since arglists]}] @rows
-          :when (or (nil? since) (at-least? since))
+          :when (or (nil? since) (spark-at-least? since))
           arglist arglists
           :let [needs (when-not (some #{'&} arglist) (get arity-since (count arglist)))]]
-    (if (or (nil? needs) (at-least? needs))
+    (if (or (nil? needs) (spark-at-least? needs))
       (is (takes? spark arglist) (str sym " " arglist " isn't this Spark's, and has no version"))
       (do
         (is (not (takes? spark arglist)) (str sym " " arglist " is this Spark's, before " needs))
@@ -620,7 +614,7 @@
     (testing "a value after the first argument works on any Spark"
       (is (= [["a" "b" "c"] "a-b-ca-b-c" 1.3]
              (first (g/collect-vals (g/select df (g/split :s "-") (g/repeat :s 2) (g/round :d 1)))))))
-    (if (at-least? "4.0")
+    (if (spark-at-least? "4.0")
       (testing "a column after the first argument, from Spark 4.0"
         (is (= [["a" "b" "c"] "a-b-ca-b-c" 1.3 1.2]
                (first (g/collect-vals (g/select df
@@ -634,7 +628,7 @@
           (is (thrown-with-msg? ExceptionInfo #"with a column after its first argument needs Spark 4\.0"
                                 (column))))))
     (testing "an arity that a later Spark added names it"
-      (if (at-least? "4.1")
+      (if (spark-at-least? "4.1")
         (is (= [36] (g/collect-col (g/select df {:n (g/length (g/uuid 42))}) :n)))
         (is (thrown-with-msg? ExceptionInfo #"uuid \[seed\] needs Spark 4\.1 or later"
                               (g/uuid 42)))))))
@@ -643,21 +637,12 @@
 
 (def ^:private covered-elsewhere
   "Spark functions that Geni has under another name."
-  {"approxCountDistinct"       'approx-count-distinct
-   "bitwiseNOT"                'bitwise-not
-   "callUDF"                   'call-udf
-   "column"                    'col
-   "countDistinct"             'count-distinct
-   "monotonicallyIncreasingId" 'monotonically-increasing-id
-   "replace"                   'replace-substring
-   "shiftLeft"                 'shift-left
-   "shiftRight"                'shift-right
-   "shiftRightUnsigned"        'shift-right-unsigned
-   "sumDistinct"               'sum-distinct
-   "toDegrees"                 'degrees
-   "toRadians"                 'radians
-   "typedLit"                  'lit
-   "typedlit"                  'lit})
+  {"column"    'col
+   "replace"   'replace-substring
+   "toDegrees" 'degrees
+   "toRadians" 'radians
+   "typedLit"  'lit
+   "typedlit"  'lit})
 
 (def ^:private out-of-scope
   "Spark functions that Geni leaves out, and why."
@@ -681,7 +666,7 @@
         geni-names  (set (map str (keys (ns-publics 'zero-one.geni.core))))]
     (testing "the table's functions are this Spark's, from their versions"
       (doseq [[sym {:keys [spark since]}] @rows
-              :when (or (nil? since) (at-least? since))]
+              :when (or (nil? since) (spark-at-least? since))]
         (is (spark-names spark) (str sym " has no Spark function " spark))))
     (testing "the other names exist"
       (doseq [[spark-name sym] covered-elsewhere]

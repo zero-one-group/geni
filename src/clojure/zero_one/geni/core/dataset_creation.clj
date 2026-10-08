@@ -55,21 +55,20 @@
     vector-udt (assoc :vector vector-udt)))
 
 (defn- ->spark-type
-  "The Spark type for a type keyword. Without spark-mllib, as with a Spark
-  Connect client, :vector says what it needs."
+  "The Spark type for a type keyword, or a Spark type as it is. Without
+  spark-mllib, as with a Spark Connect client, :vector says what it needs."
   [data-type]
-  (or (data-type->spark-type data-type)
-      (when (= :vector data-type)
-        (interop/mllib-class "org.apache.spark.ml.linalg.VectorUDT"))))
+  (if (instance? DataType data-type)
+    data-type
+    (or (data-type->spark-type data-type)
+        (when (= :vector data-type)
+          (interop/mllib-class "org.apache.spark.ml.linalg.VectorUDT")))))
 
 (defn struct-field
   "Creates a StructField by specifying the name `col-name`, data type `data-type`
   and whether values of this field can be null values `nullable`."
   [col-name data-type nullable]
-  (let [spark-type (if (instance? DataType data-type)
-                     data-type
-                     (->spark-type data-type))]
-    (DataTypes/createStructField (name col-name) spark-type nullable)))
+  (DataTypes/createStructField (name col-name) (->spark-type data-type) nullable))
 
 (defn struct-type
   "Creates a StructType with the given list of StructFields `fields`."
@@ -80,14 +79,11 @@
   "Creates an ArrayType by specifying the data type of elements `val-type` and
    whether the array contains null values `nullable`."
   [val-type nullable]
-  (let [spark-type (if (instance? DataType val-type)
-                     val-type
-                     (->spark-type val-type))]
-    (DataTypes/createArrayType spark-type nullable)))
+  (DataTypes/createArrayType (->spark-type val-type) nullable))
 
 (defn map-type
-  "Creates a MapType by specifying the data type of keys `key-type`, the data type
-   of values `val-type`, and whether values contain any null value `nullable`."
+  "Creates a MapType by specifying the data type of keys `key-type` and the data
+   type of values `val-type`."
   [key-type val-type]
   (DataTypes/createMapType
    (->spark-type key-type)
@@ -890,7 +886,7 @@
                        ^java.util.List
                        (mapv #(DataTypes/createStructField %1 %2 true) names types)))))
 
-(defmulti range
+(defn range
   "Creates a `Dataset` with a single `LongType` column named `id`.
 
   The `Dataset` contains elements in a range from `start` (default 0) to `end` (exclusive)
@@ -898,29 +894,27 @@
 
   If `num-partitions` is specified, the dataset will be distributed into the specified number
   of partitions. Otherwise, spark uses internal logic to determine the number of partitions."
-  (fn [& args] (mapv class args)))
-(defmethod range [Long]
-  [^Long end]
-  (range @defaults/spark end))
-(defmethod range [Long Long]
-  [^Long start ^Long end]
-  (range @defaults/spark start end))
-(defmethod range [Long Long Long]
-  [^Long start ^Long end ^Long step]
-  (range @defaults/spark start end step))
-(defmethod range [Long Long Long Long]
-  [^Long start ^Long end ^Long step ^Integer num-partitions]
-  (range @defaults/spark start end step num-partitions))
-(defmethod range [SparkSession Long]
-  [^SparkSession spark ^Long end]
-  (.range spark end))
-(defmethod range [SparkSession Long Long]
-  [^SparkSession spark ^Long start ^Long end]
-  (.range spark start end))
-(defmethod range [SparkSession Long Long Long]
-  [^SparkSession spark ^Long start ^Long end ^Long step]
-  (.range spark start end step))
-(defmethod range [SparkSession Long Long Long Long]
-  [^SparkSession spark ^Long start ^Long end ^Long step ^Integer num-partitions]
-  (.range spark start end step num-partitions))
+  {:arglists '([end]
+               [start end]
+               [start end step]
+               [start end step num-partitions]
+               [spark end]
+               [spark start end]
+               [spark start end step]
+               [spark start end step num-partitions])}
+  [& args]
+  (let [[spark nums] (if (instance? SparkSession (first args))
+                       [(first args) (rest args)]
+                       [@defaults/spark args])
+        [a b c d]    nums]
+    (when-not (and (<= 1 (count nums) 4) (every? int? nums))
+      (throw (IllegalArgumentException.
+              (str "g/range takes an end, or a start and an end, then optionally a step and a "
+                   "number of partitions, all integers, after an optional session. Got: "
+                   (pr-str args)))))
+    (case (count nums)
+      1 (.range ^SparkSession spark (long a))
+      2 (.range ^SparkSession spark (long a) (long b))
+      3 (.range ^SparkSession spark (long a) (long b) (long c))
+      4 (.range ^SparkSession spark (long a) (long b) (long c) (int d)))))
 
