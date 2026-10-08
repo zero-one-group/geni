@@ -11,7 +11,7 @@
 
 (def temp-dir (System/getProperty "java.io.tmpdir"))
 
-(deftest ^:arrow typed-action-test
+(deftest typed-action-test
   (testing "must not allow unknown type"
     (is (thrown? IllegalArgumentException (arrow/typed-action :get :unknown-type nil nil nil nil))))
   (testing "must not allow unknown action"
@@ -20,7 +20,7 @@
        (is (thrown? IllegalArgumentException (arrow/typed-action :unknown-action col-type nil nil nil nil))))
      [:string :double :float :long :integer :boolean :date])))
 
-(deftest ^:arrow empty-dataframe-test
+(deftest empty-dataframe-test
   (testing "writes arrow file with 0 rows and no schema"
     (is (= 0
            (-> (g/create-dataframe [] {:long    :long
@@ -35,7 +35,7 @@
                (tmd-arrow/read-stream-dataset-copying)
                (ds/row-count))))))
 
-(deftest ^:arrow melbourne-df-test
+(deftest melbourne-df-test
 
   (is (= 2
          (-> (melbourne-df)
@@ -64,7 +64,7 @@
     (is (= [21 10000] (ds/shape melbourne-ds-1)))
     (is (= [21 3580] (ds/shape melbourne-ds-2)))))
 
-(deftest ^:arrow crashes-and-failures-test
+(deftest crashes-and-failures-test
   (testing "does not crash"
     (g/collect-to-arrow (ratings-df) 10000 temp-dir)
     (-> (g/read-csv! "test/resources/boolean_data.csv")
@@ -77,7 +77,7 @@
     (is (thrown? IllegalArgumentException (-> (libsvm-df)
                                               (g/collect-to-arrow 10000 temp-dir))))))
 
-(deftest ^:arrow dates-test
+(deftest dates-test
   (testing "dates are corect"
     (let [with-date  (g/read-parquet! "test/resources/with_sql_date.parquet")
           ds
@@ -121,3 +121,12 @@
             (tmd-arrow/read-stream-dataset-copying)
             (ds/row-count))))))
 
+(deftest nulls-after-the-first-row-test
+  (testing "a null in a later row leaves the first row's value"
+    (let [dataset (-> (g/create-dataframe [(g/row 1 "a") (g/row nil nil)]
+                                          {:long :long :string :string})
+                      (g/collect-to-arrow 10 temp-dir)
+                      first
+                      tmd-arrow/read-stream-dataset-copying)]
+      (is (= [1 nil] (vec (get dataset "long"))))
+      (is (= ["a" nil] (map #(some-> % str) (get dataset "string")))))))

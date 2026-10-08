@@ -21,7 +21,7 @@
              (g/collect-col :SellerG)
              (set)))))
 
-(deftest ^:slow cut-test
+(deftest cut-test
   (is (= #{"Price[-Infinity, 1000000.0]"
            "Price[1000000.0, Infinity]"}
          (-> (df-20)
@@ -30,7 +30,7 @@
              set)))
   (is (thrown? AssertionError (g/cut :Price [1.1e6 1e6]))))
 
-(deftest ^:slow qcut-test
+(deftest qcut-test
   (is (= #{"Price[0.0, 0.25]"
            "Price[0.25, 0.5]"
            "Price[0.5, 0.75]"
@@ -49,7 +49,7 @@
   (is (thrown? AssertionError (g/qcut :Price [0.9 0.1])))
   (is (thrown? AssertionError (g/qcut :Price [0.8 1.2]))))
 
-(deftest ^:slow interquartile-range-test
+(deftest interquartile-range-test
   (is (= [{:SellerG "Biggin" (keyword "iqr(Price)") 615000.0}
           {:SellerG "Nelson" (keyword "iqr(Price)") 0.0}]
          (-> (df-20)
@@ -74,7 +74,7 @@
              (g/iqr [:Price :Rooms])
              g/dtypes))))
 
-(deftest ^:slow quantile-and-median-test
+(deftest quantile-and-median-test
   (is (= {:SellerG "StringType"
           (keyword "quantile(Price, 0.25)") "DoubleType"}
          (-> (df-20)
@@ -113,7 +113,7 @@
              (g/median :Price :Rooms)
              g/column-names))))
 
-(deftest ^:slow nlargest-nsmallest-and-nunique-test
+(deftest nlargest-nsmallest-and-nunique-test
   (is (= [1876000.0 1636000.0 1600000.0]
          (-> (df-20)
              (g/nlargest 3 :Price)
@@ -128,7 +128,7 @@
              g/nunique
              g/first))))
 
-(deftest ^:slow value-counts-test
+(deftest value-counts-test
   (is (= [{:SellerG "Biggin"  :Suburb "Abbotsford" :count 9}
           {:SellerG "Jellis"  :Suburb "Abbotsford" :count 4}
           {:SellerG "Nelson"  :Suburb "Abbotsford" :count 4}

@@ -1,6 +1,5 @@
 {:skip-comments true
- :lint-as {serializable.fn/fn                         clojure.core/fn
-           zero-one.geni.utils/import-vars             potemkin/import-vars
+ :lint-as {zero-one.geni.utils/import-vars             potemkin/import-vars
            zero-one.geni.core/with-checkpoint          clojure.core/with-open
            zero-one.geni.core.dataset/with-checkpoint  clojure.core/with-open}
  :hooks {:macroexpand {zero-one.geni.utils/import-fn

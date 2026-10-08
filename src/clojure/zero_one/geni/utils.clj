@@ -39,10 +39,11 @@
         p (.getParameterTypes m)]
     (alength p)))
 
-(defn ->string-map [m]
-  (->> m
-       (map (fn [[k v]] [(name k) (name v)]))
-       (into {})))
+(defn ->string-map
+  "Spark's options as strings: keywords and symbols by name, and other values,
+  such as `true`, through `str`."
+  [m]
+  (into {} (map (fn [[k v]] [(name k) (if (ident? v) (name v) (str v))])) m))
 
 ;; Case conversions. These split words the same way camel-snake-kebab does,
 ;; so column and param names come out as they did before.

@@ -26,7 +26,7 @@ In mid-2020, we worked on a customer segmentation project for one of Indonesia's
     (g/with-column :date (g/to-date date-col)))
 ```
 
-The full dataset is stored in twelve partitions - one for each month of the year. The full data-simulation script can be found [here](../examples/performance_benchmark_data.clj).
+The full dataset is stored in twelve partitions - one for each month of the year. [Cookbook part 10](cookbook/part_10_avoiding_repeated_computations_with_caching.md) has the full script, which it runs at half the size.
 
 ## A Group-By + Aggregate Operation
 

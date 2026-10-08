@@ -566,7 +566,7 @@
    (let [unconfigured-writer (-> stage
                                  .write
                                  (.session @defaults/spark)
-                                 (cond-> (= (:mode options) "overwrite")
+                                 (cond-> (= "overwrite" (some-> (:mode options) name))
                                    .overwrite))
          configured-writer    (reduce
                                (fn [w [k v]] (.option w (name k) v))
@@ -633,17 +633,3 @@
 (import-fn polymorphic/corr corr)
 (import-fn supported-optimizers supported-optimisers)
 (import-fn vector-to-array vector->array)
-
-(comment
-
-  (require '[zero-one.geni.docs :as docs])
-  (docs/invalid-doc-vars *ns*)
-
-  (count (docs/docless-vars *ns*))
-  (-> docs/spark-docs :classes :ml :stat sort)
-
-  (import '(org.apache.spark.ml.classification GBTRegressor))
-  (params (GBTRegressor))
-
-  true)
-

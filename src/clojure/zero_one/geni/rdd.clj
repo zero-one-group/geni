@@ -211,7 +211,6 @@
 (defn persist [rdd storage]
   (.persist rdd storage))
 
-;; TODO: unmangle name
 (defn random-split
   ([rdd weights] (seq (.randomSplit rdd (double-array weights))))
   ([rdd weights seed] (seq (.randomSplit rdd (double-array weights) seed))))
@@ -348,8 +347,8 @@
 (defn take-sample
   ([rdd with-replacement n]
    (-> rdd (.takeSample with-replacement n) seq interop/->clojure))
-  ([rdd with-replacement n seed] (.takeSample rdd with-replacement n seed)
-                                 (-> rdd (.takeSample with-replacement n) seq interop/->clojure)))
+  ([rdd with-replacement n seed]
+   (-> rdd (.takeSample with-replacement n seed) seq interop/->clojure)))
 
 (defn top
   ([rdd n] (-> rdd (.top n) seq interop/->clojure))

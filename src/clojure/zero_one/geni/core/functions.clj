@@ -293,13 +293,6 @@
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
-;;;; Partition Transform Functions
-;(defn bucket [num-buckets expr] (functions/bucket num-buckets (->column expr)))
-;(defn days [expr] (functions/days (->column expr)))
-;(defn hours [expr] (functions/hours (->column expr)))
-;(defn months [expr] (functions/months (->column expr)))
-;(defn years [expr] (functions/years (->column expr)))
-
 ;;;; String Functions
 (defn ascii [expr] (functions/ascii (->column expr)))
 (defn base-64 [expr] (functions/base64 (->column expr)))

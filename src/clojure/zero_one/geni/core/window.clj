@@ -34,8 +34,6 @@
 
 (def unbounded-preceding (Window/unboundedPreceding))
 
-(def current-row (Window/currentRow))
-
 (defn windowed
   "Shortcut to create WindowSpec that takes a map as the argument.
 

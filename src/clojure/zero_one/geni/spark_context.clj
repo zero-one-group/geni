@@ -73,7 +73,6 @@
   ([] (master @defaults/spark))
   ([spark] (-> spark java-spark-context .master)))
 
-;; TODO: support min-partitions arg
 (defn parallelize
   ([data] (parallelize @defaults/spark data))
   ([spark data] (-> spark

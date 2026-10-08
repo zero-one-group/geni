@@ -11,7 +11,7 @@
 (defn nrepl-message [port]
   (str "nREPL server started on port " port "\n"))
 
-(deftest ^:repl repl-test
+(deftest repl-test
   (testing "correct prompts"
     (is (= "geni-repl (xyz)\nλ " (repl/geni-prompt "xyz"))))
 

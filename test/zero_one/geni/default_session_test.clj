@@ -104,9 +104,9 @@
     (testing "and leaves out the URL, which can hold a token"
       (is (not (string/includes? (pr-str (ex-data e)) "secret"))))))
 
-;; Requiring Geni can only be checked in a new JVM. It runs without
-;; log4j2-test.properties, so that Spark falls back to its own log profile, and
-;; its stderr goes to target/fresh-jvm.log.
+;; Requiring Geni and the missing JVM flags can only be checked in new JVMs.
+;; They run without log4j2-test.properties, so that Spark falls back to its own
+;; log profile, and their stderr goes to target/fresh-jvm-*.log.
 
 (def ^:private fresh-jvm-probe
   '(do
@@ -119,7 +119,7 @@
        (shutdown-agents)
        (System/exit 0))))
 
-(defn- run-in-fresh-jvm [form & {:keys [drop-flag?] :or {drop-flag? (constantly false)}}]
+(defn- run-in-fresh-jvm [form log & {:keys [drop-flag?] :or {drop-flag? (constantly false)}}]
   (let [java      (str (io/file (System/getProperty "java.home") "bin" "java"))
         jvm-opts  (->> (.getInputArguments (ManagementFactory/getRuntimeMXBean))
                        (remove #(re-find #"^-(javaagent|agentlib|agentpath)" %))
@@ -130,7 +130,7 @@
                        (string/join java.io.File/pathSeparator))
         command   (concat [java] jvm-opts ["-cp" classpath "clojure.main" "-e" (pr-str form)])
         process   (-> (ProcessBuilder. ^java.util.List command)
-                      (.redirectError (io/file "target/fresh-jvm.log"))
+                      (.redirectError (io/file log))
                       .start)
         out       (future (slurp (.getInputStream process)))]
     (when-not (.waitFor process 120 TimeUnit/SECONDS)
@@ -152,25 +152,31 @@
          (shutdown-agents)
          (System/exit 0)))))
 
-(deftest ^:slow requiring-geni-test
-  (let [{:keys [started-on-require? log-level] :as result} (run-in-fresh-jvm fresh-jvm-probe)]
-    (is (map? result) "The new JVM failed. See target/fresh-jvm.log.")
+(def ^:private fresh-jvms
+  "Both new JVMs, started together, since each takes seconds to start Spark."
+  (delay
+    {:require (future (run-in-fresh-jvm fresh-jvm-probe "target/fresh-jvm-require.log"))
+     :flags   (future (run-in-fresh-jvm missing-flags-probe "target/fresh-jvm-flags.log"
+                                        :drop-flag? #(string/starts-with? % "--add-opens=")))}))
+
+(deftest requiring-geni-test
+  (let [{:keys [started-on-require? log-level] :as result} @(:require @fresh-jvms)]
+    (is (map? result) "The new JVM failed. See target/fresh-jvm-require.log.")
     (is (false? started-on-require?))
     (testing "Geni's own session logs at WARN when Spark would log at INFO"
       (is (= "WARN" log-level)))
     (testing "from the start, so that Spark's INFO lines as it starts don't show"
-      (is (not (re-find #" INFO " (slurp "target/fresh-jvm.log")))))))
+      (is (not (re-find #" INFO " (slurp "target/fresh-jvm-require.log")))))))
 
-(deftest ^:slow missing-jvm-flags-test
+(deftest missing-jvm-flags-test
   ;; Without the --add-opens flags, Spark 3.5 doesn't start, and Spark 4.2
   ;; starts but can fail later.
-  (let [{:keys [started? message missing] :as result}
-        (run-in-fresh-jvm missing-flags-probe :drop-flag? #(string/starts-with? % "--add-opens="))
+  (let [{:keys [started? message missing] :as result} @(:flags @fresh-jvms)
         flag "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"]
-    (is (map? result) "The new JVM failed. See target/fresh-jvm.log.")
+    (is (map? result) "The new JVM failed. See target/fresh-jvm-flags.log.")
     (if started?
       (testing "Geni warns about the flags that Spark's launcher sets and the JVM lacks"
-        (let [log (slurp "target/fresh-jvm.log")]
+        (let [log (slurp "target/fresh-jvm-flags.log")]
           (is (re-find #"WARN .*The JVM lacks flags" log))
           (is (string/includes? log flag))))
       (testing "Spark's error names the flags that its launcher sets and the JVM lacks"

@@ -88,25 +88,18 @@
      (map vector exprs (rest exprs)))))
 
 (def === (partial compare-columns #(.equalTo %1 %2)))
-(def equal-to ===)
 
 (def <=> (partial compare-columns #(.eqNullSafe %1 %2)))
-(def eq-null-safe <=>)
 
 (def =!= (partial compare-columns #(.notEqual %1 %2)))
-(def not-equal =!=)
 
 (def < (partial compare-columns #(.lt %1 %2)))
-(def lt <)
 
 (def <= (partial compare-columns #(.leq %1 %2)))
-(def leq <=)
 
 (def > (partial compare-columns #(.gt %1 %2)))
-(def gt >)
 
 (def >= (partial compare-columns #(.geq %1 %2)))
-(def geq >=)
 
 (defn bitwise-and [left-expr right-expr]
   (.bitwiseAND (col left-expr) (col right-expr)))
@@ -264,10 +257,6 @@
 (docs/add-doc!
  (var col)
  (-> docs/spark-docs :methods :core :functions :col))
-
-(docs/add-doc!
- (var lit)
- (-> docs/spark-docs :methods :core :functions :lit))
 
 ;; Aliases
 (import-fn bitwise-and &)

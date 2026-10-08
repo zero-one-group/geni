@@ -45,13 +45,6 @@ public abstract class SerializableFn implements Serializable {
 
 
     /**
-     * Default empty constructor.
-     */
-    private SerializableFn() {
-    }
-
-
-    /**
      * Construct a new serializable wrapper for the function with an explicit
      * set of required namespaces.
      *

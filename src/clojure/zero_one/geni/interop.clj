@@ -353,7 +353,7 @@
 (defn method-keyword [^java.lang.reflect.Method method]
   (-> method
       .getName
-      (replace-first #"set" "")
+      (replace-first #"^set" "")
       ->kebab-case
       keyword))
 

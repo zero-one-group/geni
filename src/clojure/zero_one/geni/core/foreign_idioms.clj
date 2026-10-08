@@ -197,7 +197,6 @@
   "Create a Dataset from a path or a collection of records."
   (fn [head & _] (class head)))
 
-;; TODO: support excel files
 (defmethod ->dataset java.lang.String
   ([path]
    (cond

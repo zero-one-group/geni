@@ -3,7 +3,6 @@
    [zero-one.geni.utils :refer [class-named import-fn]]
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.ml.default-stop-words :refer [default-stop-words]]
    [zero-one.geni.spark :as spark])
   (:import
    (org.apache.spark.ml.feature Binarizer
@@ -48,7 +47,6 @@
 
 (defn stop-words-remover [params]
   (let [defaults {:locale         "en_US",
-                  :stop-words     default-stop-words
                   :case-sensitive false}]
     (interop/instantiate StopWordsRemover defaults params)))
 

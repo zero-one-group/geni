@@ -5,7 +5,7 @@
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.test-resources :refer [spark melbourne-df df-1 df-20 df-50 checkpoint-dir! connect?
+   [zero-one.geni.test-resources :refer [spark spark-at-least? melbourne-df df-1 df-20 df-50 checkpoint-dir! connect?
                                          without-task-error-logs]])
   (:import
    (org.apache.spark.rdd RDD)
@@ -18,7 +18,7 @@
     (is (= (g/collect dataframe) (g/collect (g/to-df dataframe))))
     (is (= [:suburb :price] (g/columns (g/to-df dataframe [:suburb :price]))))))
 
-(deftest ^:slow ^:classic dataset-hints-test
+(deftest ^:classic dataset-hints-test
   (is (clojure.string/includes? (-> (df-1)
                                     (g/hint "myHint" 100 true)
                                     .queryExecution
@@ -80,7 +80,7 @@
   (testing "On replace"
     (is ((-> (df-50) (g/replace-na :Rooms {1 -999}) (g/collect-col :Rooms) set) -999))))
 
-(deftest ^:slow agg-methods-test
+(deftest agg-methods-test
   (let [grouped (-> (df-50) (g/group-by :SellerG))]
     (is (= ["SellerG" "avg(Price)" "avg(Rooms)"] (-> grouped (g/mean :Price :Rooms) g/column-names)))
     (is (= ["SellerG" "min(Price)" "min(Rooms)"] (-> grouped (g/min :Price :Rooms) g/column-names)))
@@ -89,7 +89,7 @@
     (is (= ["SellerG" "count"] (-> grouped g/count g/column-names)))))
 
 ;; The Spark Connect client can't send a struct as a literal.
-(deftest ^:slow ^:classic sample-by-struct-test
+(deftest ^:classic sample-by-struct-test
   (is (= [{:rooms 2 :seller "Biggin"} {:rooms 2 :seller "Jellis"}]
          (-> (df-20)
              (g/select {:seller :SellerG :rooms :Rooms})
@@ -100,7 +100,7 @@
                           36)
              g/collect))))
 
-(deftest ^:slow stats-functions-test
+(deftest stats-functions-test
   (testing "On count-min-sketch"
     (let [count-min (g/count-min-sketch (melbourne-df) :Suburb 10 10 10)]
       (is (nil? (g/add count-min "abc")))
@@ -165,7 +165,7 @@
                      (g/approx-quantile [:Price] [0.1 0.9] 0.2))]
       (is (< (ffirst actual) (second (first actual)))))))
 
-(deftest ^:slow random-split-test
+(deftest random-split-test
   (let [[train-df val-df] (-> (df-50) (g/random-split [90 10]))]
     (is (true? (< (g/count val-df)
                   (g/count train-df)))))
@@ -207,7 +207,7 @@
              g/collect)))
   (is (= (-> (df-1) g/to-json g/collect) (-> (df-1) g/to-json g/collect))))
 
-(deftest ^:slow pivot-test
+(deftest pivot-test
   (testing "pivot should return the expected cols"
     (let [pivotted (-> (df-20)
                        (g/group-by :SellerG)
@@ -307,7 +307,7 @@
                    g/columns
                    set) :SellerG)))))
 
-(deftest ^:slow actions-test
+(deftest actions-test
   (testing "correct collection of lits"
     (is (= [1 "a" [2.0] ["b"]]
            (-> (df-1)
@@ -331,13 +331,19 @@
       (is (and (= (count actual) 5) (every? map? actual))))
     (let [actual (g/tail-vals (df-20) 10)]
       (is (and (= (count actual) 10) (every? vector? actual)))))
+  (testing "values come by position, so two columns of one name keep their own"
+    (let [df (g/select (df-1) (g/as (g/lit 1) "x") (g/as (g/lit 2) "x"))]
+      (is (= [[1 2]] (g/collect-vals df)))
+      (is (= [1 2] (g/head-vals df)))
+      (is (= [[1 2]] (g/take-vals df 1)))
+      (is (= [[1 2]] (g/tail-vals df 1)))))
   (testing "first works"
     (is (= {:Address "85 Turner St"} (-> (df-20) (g/select :Address) g/first)))
     (is (= ["85 Turner St"] (-> (df-20) (g/select :Address) g/first-vals)))
     (is (= {:Address "42 Valiant St"} (-> (df-20) (g/select :Address) g/last)))
     (is (= ["42 Valiant St"] (-> (df-20) (g/select :Address) g/last-vals)))))
 
-(deftest ^:slow drop-test
+(deftest drop-test
   (testing "dropped columns should no longer exist"
     (let [original-columns (-> (melbourne-df) g/columns set)
           columns-to-drop  #{:Suburb :Price :YearBuilt}
@@ -360,7 +366,7 @@
                (g/drop-duplicates :SellerG)
                g/count)))))
 
-(deftest ^:slow except-and-intercept-test
+(deftest except-and-intercept-test
   (testing "except should exclude the row"
     (is (= 19
            (-> (df-20)
@@ -383,9 +389,9 @@
            (-> (df-20)
                (g/union (df-20))
                (g/intersect-all (df-1))
-               g/count))))) ; TODO: this should be 2
+               g/count)))))
 
-(deftest ^:slow union-test
+(deftest union-test
   (testing "Union should double the rows preserve distinctness"
     (let [unioned (g/union (df-20) (df-20) (df-20))]
       (is (= 60 (g/count unioned)))
@@ -396,7 +402,7 @@
                  right (-> (df-1) (g/select :SellerG :Suburb))]
              (-> left (g/union-by-name right right) g/distinct g/count))))))
 
-(deftest ^:slow describe-test
+(deftest describe-test
   (testing "describe should have the right shape"
     (let [summary (-> (df-20) (g/describe :Price))]
       (is (= ["summary" "Price"] (g/column-names summary)))
@@ -408,7 +414,7 @@
                (g/summary "count" "min")
                g/collect-vals)))))
 
-(deftest ^:slow sample-test
+(deftest sample-test
   ;; Each query can sample differently, so each check collects once.
   (let [with-rep    (g/collect (g/sample (df-50) 0.8 true))
         without-rep (g/collect (g/sample (df-50) 0.8))]
@@ -417,7 +423,7 @@
     (testing "Sampling with replacement should have less unique rows"
       (is (< (count (distinct with-rep)) 40)))))
 
-(deftest ^:slow order-by-test
+(deftest order-by-test
   (let [df (-> (df-20) (g/select (g/as (g/->date-col :Date "d/MM/yyyy") :Date)))]
     (testing "should correctly order dates - desc"
       (let [records (-> df (g/order-by (g/desc :Date)) g/collect)
@@ -428,7 +434,7 @@
             dates   (map #(str (% :Date)) records)]
         (is (every? (complement pos?) (map compare dates (rest dates))))))))
 
-(deftest ^:slow caching-test
+(deftest caching-test
 
   (let [df (-> (df-1) g/cache)]
     (is (true? (.useMemory (g/storage-level df)))))
@@ -445,7 +451,7 @@
            (g/storage-level df))))
   (is (seq? (g/input-files (melbourne-df)))))
 
-(deftest ^:slow ^:classic rdd-and-checkpoint-test
+(deftest ^:classic rdd-and-checkpoint-test
   (is (instance? RDD (g/rdd (melbourne-df))))
   (let [checkpointed? (fn [df] (-> df
                                    .queryExecution
@@ -457,7 +463,7 @@
     (is (checkpointed? (g/checkpoint (df-1))))
     (is (checkpointed? (g/checkpoint (df-1) true)))))
 
-(deftest ^:slow ^:classic repartition-test
+(deftest ^:classic repartition-test
   (testing "able to repartition by a number"
     (is (= 2
            (-> (df-20)
@@ -495,7 +501,7 @@
                g/partitions
                count)))))
 
-(deftest ^:slow sort-within-partitions-test
+(deftest sort-within-partitions-test
   (testing "sort within partitions is differnt to sort"
     (let [sorted  (-> (df-20)
                       (g/select :Method :SellerG)
@@ -509,7 +515,7 @@
       (is (false? (= sorted sorted-within)))
       (is (= (set sorted-within) (set sorted))))))
 
-(deftest ^:slow join-test
+(deftest join-test
   (testing "joining with join exprs"
     (let [left (df-1)
           right (df-50)]
@@ -539,7 +545,7 @@
                (g/cross-join (-> (df-20) (g/select :Method)))
                g/count)))))
 
-(deftest ^:slow group-by-and-agg-test
+(deftest group-by-and-agg-test
   (testing "group-by with map"
     (is (= [:seller :rooms :mean-price]
            (-> (df-20)
@@ -758,9 +764,6 @@
              (map #(mapv (fn [^BigDecimal x] (.stripTrailingZeros x)) %)
                   (g/collect-col (g/sql @spark "SELECT :a AS a" {:a fits}) :a)))))))
 
-(defn- spark-4? []
-  (clojure.string/starts-with? (.version @spark) "4."))
-
 (defn- reliable-checkpoints!
   "A checkpoint directory for classic Spark. connect-tests starts its server
   with one."
@@ -771,7 +774,7 @@
   (let [ids (g/repartition (g/range 100) 2)]
     (is (= 100 (g/count (g/local-checkpoint ids))))
     (is (= 100 (g/count (g/local-checkpoint ids false))))
-    (if (spark-4?)
+    (if (spark-at-least? "4.0")
       (is (= 100 (g/count (g/local-checkpoint ids true g/memory-only))))
       (is (thrown-with-msg? clojure.lang.ExceptionInfo #"needs Spark 4.0"
                             (g/local-checkpoint ids true g/memory-only))))))

@@ -127,12 +127,11 @@
         (println "Failed:" (string/join " " args)))
       (System/exit exit))))
 
-(def ^:private lint-paths ["src" "test/zero_one" "cli" "test-tmd" "test-xgb" "test-graph" "dev" "build.clj"])
-(def ^:private fmt-paths ["src" "test" "cli" "test-tmd" "test-xgb" "test-graph" "dev" "build.clj"])
+(def ^:private source-paths ["src" "test" "cli" "test-tmd" "test-xgb" "test-graph" "dev" "build.clj"])
 
 (def ^:private lint-commands
-  [(into ["clojure" "-M:kondo" "--lint"] lint-paths)
-   (into ["clojure" "-M:fmt" "check"] fmt-paths)])
+  [(into ["clojure" "-M:kondo" "--lint"] source-paths)
+   (into ["clojure" "-M:fmt" "check"] source-paths)])
 
 (defn lint
   "Runs clj-kondo, then cljfmt's check, as the CI does."
@@ -142,7 +141,7 @@
 (defn fmt
   "Reformats the sources with cljfmt."
   [_]
-  (apply sh! "clojure" "-M:fmt" "fix" fmt-paths))
+  (apply sh! "clojure" "-M:fmt" "fix" source-paths))
 
 (def ^:private doc-commands
   [["clojure" "-X:gen-doc-tests"]

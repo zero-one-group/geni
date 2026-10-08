@@ -17,15 +17,19 @@
    [zero-one.geni.utils :refer [class-named ensure-coll import-fn]])
   (:import
    (clojure.lang Reflector)
-   (org.apache.spark.sql Column Observation)
+   (org.apache.spark.sql Column Observation Row)
    (org.apache.spark.sql.types Metadata StructType)))
 
 ;;;; Actions
 (defn- collected->maps [collected]
   (map interop/->clojure collected))
 
-(defn- collected->vectors [collected cols]
-  (map (apply juxt cols) (collected->maps collected)))
+(defn- collected->vectors
+  "Rows as vectors of their values, by position, so that two columns of one
+  name keep their own values."
+  [collected]
+  (map (fn [^Row row] (mapv interop/->clojure (interop/scala-seq->vec (.toSeq row))))
+       collected))
 
 (defn collect [dataframe]
   (->> dataframe .collect collected->maps))
@@ -787,29 +791,24 @@
 (defn collect-vals
   "Returns the vector values of the Dataset collected."
   [dataframe]
-  (let [cols (columns dataframe)]
-    (-> dataframe .collect (collected->vectors cols))))
+  (-> dataframe .collect collected->vectors))
 
 (defn head-vals
   "Returns the vector values of the first n rows in the Dataset collected."
   ([dataframe]
-   (let [cols (columns dataframe)]
-     (-> dataframe (.head 1) (collected->vectors cols) first)))
+   (-> dataframe (.head 1) collected->vectors first))
   ([dataframe n-rows]
-   (let [cols (columns dataframe)]
-     (-> dataframe (.head n-rows) (collected->vectors cols)))))
+   (-> dataframe (.head n-rows) collected->vectors)))
 
 (defn take-vals
   "Returns the vector values of the first n rows in the Dataset collected."
   [dataframe n-rows]
-  (let [cols (columns dataframe)]
-    (-> dataframe (.take n-rows) (collected->vectors cols))))
+  (-> dataframe (.take n-rows) collected->vectors))
 
 (defn tail-vals
   "Returns the vector values of the last n rows in the Dataset collected."
   [dataframe n-rows]
-  (let [cols (columns dataframe)]
-    (-> dataframe (.tail n-rows) (collected->vectors cols))))
+  (-> dataframe (.tail n-rows) collected->vectors))
 
 (defn collect-col
   "Returns a vector that contains all rows in the column of the Dataset."

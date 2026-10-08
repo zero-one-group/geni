@@ -261,10 +261,6 @@
                  "-Dspark.sql.codegen.factoryMode=FALLBACK"]
    :exec-args   {:dirs ["target/graph-docs/test-doc-blocks/test"]}}
 
-  ;; For scripts/scrape-spark-docs.clj, which writes resources/spark-docs.edn.
-  :scrape
-  {:extra-deps {enlive/enlive {:mvn/version "1.1.6"}}}
-
   ;; clojure -T:build prep | jar | install | deploy
   :build
   {:deps       {io.github.clojure/tools.build {:mvn/version "0.10.14"}

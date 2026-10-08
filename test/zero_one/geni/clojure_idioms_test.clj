@@ -10,7 +10,7 @@
              (g/update :i g/+ 1 2 3)
              (g/collect-col :i)))))
 
-(deftest ^:slow cond-test
+(deftest cond-test
   (is (= #{"high" "medium" "low"}
          (-> (df-20)
              (g/with-column :cond (g/cond
@@ -20,7 +20,7 @@
              (g/collect-col :cond)
              set))))
 
-(deftest ^:slow condp-test
+(deftest condp-test
   (is (= [{:idx 1, :fb "1"}
           {:idx 2, :fb "2"}
           {:idx 3, :fb "fizz"}
@@ -58,7 +58,7 @@
              (g/remove (g/null? :fb))
              g/collect))))
 
-(deftest ^:slow case-test
+(deftest case-test
   (is (= #{{:SellerG "Biggin" :case 0}
            {:SellerG "Jellis" :case 2}
            {:SellerG "Nelson" :case 1}}
@@ -95,7 +95,7 @@
              g/collect
              set))))
 
-(deftest ^:slow if-test
+(deftest if-test
   (is (= #{"high" "low"}
          (-> (df-20)
              (g/with-column :if (g/if (g/< :Price 1e6)

@@ -6,36 +6,33 @@
    [zero-one.geni.catalog :as c]
    [zero-one.geni.core :as g]
    [zero-one.geni.spark :as spark]
-   [zero-one.geni.test-resources :refer [spark with-fresh-session]])
+   [zero-one.geni.test-resources :refer [spark spark-at-least? with-fresh-session]])
   (:import
    (clojure.lang ExceptionInfo)
+   (java.util.regex Pattern)
    (org.apache.spark.sql AnalysisException)))
-
-(defn- at-least? [needed]
-  (let [[major minor] (map parse-long (re-seq #"\d+" (spark/classpath-version)))]
-    (not (neg? (compare [major minor] needed)))))
 
 (defmacro ^:private with-spark-at-least
   "Runs `body` when the Spark on the classpath is at least `needed`, and
   otherwise checks that `form` throws an error naming that version."
   [needed form & body]
-  `(if (at-least? ~needed)
+  `(if (spark-at-least? ~needed)
      (do ~@body)
      (is (~'thrown-with-msg? ExceptionInfo
-                             ~(re-pattern (str "needs Spark " (first needed) "\\." (second needed)))
+                             ~(re-pattern (str "needs Spark " (Pattern/quote needed)))
                              ~form))))
 
 (defn- sales []
   (g/records->dataset @spark [{:k "a" :x 1 :y 3} {:k "b" :x 2 :y 4}]))
 
 (deftest transpose-test
-  (with-spark-at-least [4 0] (g/transpose (sales))
+  (with-spark-at-least "4.0" (g/transpose (sales))
     (is (= [{:key "x" :a 1 :b 2} {:key "y" :a 3 :b 4}] (-> (sales) g/transpose (g/order-by :key) g/collect)))
     (is (= [{:key "x" :a 1 :b 2} {:key "y" :a 3 :b 4}]
            (-> (sales) (g/transpose :k) (g/order-by :key) g/collect)))))
 
 (deftest grouping-sets-test
-  (with-spark-at-least [4 0] (g/grouping-sets (sales) [[:k] []] :k)
+  (with-spark-at-least "4.0" (g/grouping-sets (sales) [[:k] []] :k)
     (is (= [{:k nil :total 3} {:k "a" :total 1} {:k "b" :total 2}]
            (-> (sales)
                (g/grouping-sets [[:k] []] :k)
@@ -44,7 +41,7 @@
                g/collect)))))
 
 (deftest lateral-join-test
-  (with-spark-at-least [4 0] (g/outer :x)
+  (with-spark-at-least "4.0" (g/outer :x)
     (let [rows (fn [n] (g/select (g/range n) {:z (g/+ :id (g/outer :x))}))]
       (is (= [[1 1] [1 2] [2 2] [2 3]]
              (-> (sales) (g/lateral-join (rows 2)) (g/order-by :x :z) (g/select :x :z) g/collect-vals)))
@@ -67,7 +64,7 @@
                    g/collect-vals)))))))
 
 (deftest subquery-test
-  (with-spark-at-least [4 0] (g/scalar (sales))
+  (with-spark-at-least "4.0" (g/scalar (sales))
     (is (= ["b"] (-> (sales) (g/filter (g/> :x (g/scalar (g/agg (sales) (g/min :x))))) (g/collect-col :k))))
     (is (= ["a"] (-> (sales)
                      (g/filter (g/exists (g/filter (g/range 2) (g/=== :id (g/outer :x)))))
@@ -76,17 +73,17 @@
     (is (= [true] (-> (g/records->dataset @spark [{:xs [1 5]}])
                       (g/select {:big (g/exists :xs #(g/> % 3))})
                       (g/collect-col :big)))))
-  (with-spark-at-least [4 1] (g/isin :x (g/range 2))
+  (with-spark-at-least "4.1" (g/isin :x (g/range 2))
     (is (= ["a"] (-> (sales) (g/filter (g/isin :x (g/select (g/range 2) :id))) (g/collect-col :k))))))
 
 (deftest try-cast-test
-  (with-spark-at-least [4 0] (g/try-cast :s "int")
+  (with-spark-at-least "4.0" (g/try-cast :s "int")
     (is (= [1 nil] (-> (g/records->dataset @spark [{:s "1"} {:s "x"}])
                        (g/select {:n (g/try-cast :s "int")})
                        (g/collect-col :n))))))
 
 (deftest zip-with-index-test
-  (with-spark-at-least [4 2] (g/zip-with-index (sales))
+  (with-spark-at-least "4.2" (g/zip-with-index (sales))
     (is (= [["a" 0] ["b" 1]]
            (-> (sales) (g/order-by :k) g/zip-with-index (g/select :k :index) g/collect-vals)))
     (is (= [:k :x :y :row] (g/columns (g/zip-with-index (sales) :row))))))
@@ -96,7 +93,7 @@
         items    (g/records->dataset @spark [{:item 10 :v 0.9} {:item 11 :v 4.0} {:item 12 :v 6.0}])
         distance (g/abs (g/- :q :v))
         options  {:num-results 1 :mode :exact :direction :distance}]
-    (with-spark-at-least [4 2] (g/nearest-by-join queries items distance options)
+    (with-spark-at-least "4.2" (g/nearest-by-join queries items distance options)
       (is (= [[1 10] [2 11]]
              (-> (g/nearest-by-join queries items distance options)
                  (g/order-by :qid)
@@ -116,7 +113,7 @@
   (is (= [1 2] (g/collect-col (g/table-function @spark :range [1 3]) :id)))
   (is (= [[1 "a"] [2 "b"]] (g/collect-vals (g/table-function :stack [(int 2) 1 "a" 2 "b"]))))
   (is (pos? (g/count (g/table-function :sql-keywords))))
-  (when (at-least? [4 0])
+  (when (spark-at-least? "4.0")
     (is (= [{:a 1 :b "x"}]
            (g/collect (g/table-function :inline [(g/array (g/struct (g/as (g/lit 1) :a)
                                                                     (g/as (g/lit "x") :b)))])))))
@@ -142,8 +139,8 @@
                      (->> (g/collect (g/sql @spark (str "SHOW TBLPROPERTIES " table-name)))
                           (filter #(= "clusteringColumns" (:key %)))
                           (map :value)))]
-    (with-spark-at-least [4 0] (g/write-table! (sales) "clustered" {:cluster-by :k}))
-    (with-spark-at-least [4 0] (g/write-to! (sales) "v2" {:mode :create :cluster-by :k})
+    (with-spark-at-least "4.0" (g/write-table! (sales) "clustered" {:cluster-by :k}))
+    (with-spark-at-least "4.0" (g/write-to! (sales) "v2" {:mode :create :cluster-by :k})
       (with-fresh-session
         (g/write-table! (sales) "clustered" {:format :parquet :cluster-by :k})
         (is (= ["[[\"k\"]]"] (clustering "clustered")))
@@ -152,7 +149,7 @@
         (is (c/table-exists? "v2"))))))
 
 (deftest read-changes-test
-  (with-spark-at-least [4 2] (g/read-changes! "anything")
+  (with-spark-at-least "4.2" (g/read-changes! "anything")
     (with-fresh-session
       (g/write-table! (sales) "plain")
       (is (thrown-with-msg? AnalysisException #"Change Data Capture"

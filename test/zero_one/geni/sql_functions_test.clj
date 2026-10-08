@@ -16,8 +16,10 @@
           :schema-2 "ARRAY<STRUCT<col: BIGINT>>"
           :from-1   {:a 1 :b 0.8}
           :from-2   {:time (Timestamp. 1440547200000)}
+          :from-3   {:a 1}
           :to-1 "{\"a\":1,\"b\":2}"
-          :to-2 "{\"time\":\"26/08/2015\"}"}
+          :to-2 "{\"time\":\"26/08/2015\"}"
+          :to-3 "{\"a\":1,\"b\":null}"}
          (-> (df-1)
              (g/select
               {:schema-1 (g/schema-of-json (g/lit "[{\"col\":0}]"))
@@ -26,9 +28,13 @@
                :from-2   (g/from-json (g/lit "{\"time\":\"26/08/2015 00:00:00 GMT\"}")
                                       (g/lit "time Timestamp")
                                       {:timestampFormat "dd/MM/yyyy HH:mm:ss z"})
+               :from-3   (g/from-json (g/lit "/* a comment */ {\"a\": 1}") (g/lit "a INT")
+                                      {:allowComments true})
                :to-1     (g/to-json (g/struct {:a 1 :b 2}))
                :to-2     (g/to-json (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
-                                    {:timestampFormat "dd/MM/yyyy"})})
+                                    {:timestampFormat "dd/MM/yyyy"})
+               :to-3     (g/to-json (g/struct {:a 1 :b (g/cast (g/lit nil) "int")})
+                                    {:ignoreNullFields false})})
              g/collect
              first))))
 
@@ -38,7 +44,8 @@
           :from-1   {:a 1 :b 0.8}
           :from-2   {:time (Timestamp. 1440547200000)}
           :to-1     "1,2"
-          :to-2     "26/08/2015"}
+          :to-2     "26/08/2015"
+          :to-3     "\"1\",\"2\""}
          (-> (df-1)
              (g/select
               {:schema-1 (g/schema-of-csv (g/lit "1,abc"))
@@ -49,7 +56,8 @@
                                      {:timestampFormat "dd/MM/yyyy HH:mm:ss z"})
                :to-1     (g/to-csv (g/struct {:a 1 :b 2}))
                :to-2     (g/to-csv (g/struct {:time (g/to-timestamp (g/lit "2015-08-26") "yyyy-MM-dd")})
-                                   {:timestampFormat "dd/MM/yyyy"})})
+                                   {:timestampFormat "dd/MM/yyyy"})
+               :to-3     (g/to-csv (g/struct {:a 1 :b 2}) {:quoteAll true})})
              g/collect
              first))))
 
@@ -187,7 +195,7 @@
               (g/pmod 10 -3))
              g/collect-vals))))
 
-(deftest ^:slow string-functions-test
+(deftest string-functions-test
   (testing "correct ascii"
     (is (= [65 10 19 4 "foobaz" "Abc" 3 "1122" "Ababcsford" "Abxyzotsford"]
            (-> (df-1)
@@ -223,7 +231,7 @@
                g/distinct
                g/collect-vals)))))
 
-(deftest ^:slow agg-functions-test
+(deftest agg-functions-test
   (is (= ["Biggin" "Northern Metropolitan" 0]
          (-> (df-20)
              (g/cube :SellerG :Regionname)
@@ -272,7 +280,7 @@
 (deftest broadcast-test
   (is (instance? Dataset (-> (melbourne-df) g/broadcast))))
 
-(deftest ^:slow array-functions-test
+(deftest array-functions-test
   (is (= (range 20)
          (-> (df-20)
              (g/select
@@ -360,7 +368,7 @@
              (g/select (-> (g/sequence 1 3 1) (g/as :range)))
              (g/collect-col :range)))))
 
-(deftest ^:slow random-functions-test
+(deftest random-functions-test
   (is (= [[0.0 -1.0 0.0]]
          (-> (df-20)
              (g/select
@@ -402,7 +410,7 @@
                flatten)]
     (is (every? #(< (Math/abs %) 0.001) xs))))
 
-(deftest ^:slow partition-id-test
+(deftest partition-id-test
   (is (= 3
          (-> (df-20)
              (g/repartition 3)
@@ -506,7 +514,7 @@
               (g/log10 10))
              g/collect-vals))))
 
-(deftest ^:slow group-by-agg-functions-test
+(deftest group-by-agg-functions-test
   (let [summary (-> (df-20)
                     (g/agg
                      (g/count (g/->column :BuildingArea))
@@ -558,7 +566,7 @@
                                      :suburb :Suburb}))
                  g/column-names))))))
 
-(deftest ^:slow window-functions-test
+(deftest window-functions-test
   (let [window  (g/window {:partition-by :SellerG :order-by :Price})]
     (is (every? double? (flatten (-> (df-20)
                                      (g/select
@@ -597,7 +605,7 @@
                (g/order-by :SellerG)
                (g/collect-col :SellerG))))))
 
-(deftest ^:slow windowing-test
+(deftest windowing-test
   (testing "can instantiate empty WindowSpec"
     (is (instance? WindowSpec (g/window {}))))
   (let [records    (-> (df-20)
@@ -764,7 +772,7 @@
                  g/collect
                  first))))))
 
-(deftest ^:slow hashing-should-give-unique-rows-test
+(deftest hashing-should-give-unique-rows-test
   (let [n-sellers (-> (df-20) (g/select :SellerG) g/distinct g/count)]
     (is (= n-sellers (-> (df-20) (g/select (g/xxhash64 :SellerG)) g/distinct g/count)))
     (is (= n-sellers (-> (df-20) (g/select (g/md5 :SellerG)) g/distinct g/count)))
