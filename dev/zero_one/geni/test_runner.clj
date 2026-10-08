@@ -88,7 +88,8 @@
   the ^:classic ones over Spark Connect, when Spark's JVM client is on the
   classpath without classic Spark, and the ^:connect ones otherwise, the
   ^:xgb ones without XGBoost4J-Spark 3 on the classpath, the ^:graphframes
-  ones without GraphFrames, and the ^:spark-3 ones on Spark 4."
+  ones without GraphFrames, the ^:azure ones without hadoop-azure, and the
+  ^:spark-3 ones on Spark 4."
   []
   (let [class-named (requiring-resolve 'zero-one.geni.utils/class-named)]
     (cond-> (if ((requiring-resolve 'zero-one.geni.spark/connect-only?))
@@ -99,6 +100,9 @@
 
       (not (class-named "org.graphframes.GraphFrame"))
       (assoc :graphframes "needs GraphFrames")
+
+      (not (class-named "org.apache.hadoop.fs.azurebfs.AzureBlobFileSystem"))
+      (assoc :azure "needs hadoop-azure")
 
       (string/starts-with? (:spark (running-spark)) "4.")
       (assoc :spark-3 "Spark 3.5 only"))))
@@ -278,7 +282,8 @@
   place of classic Spark, it skips the namespaces and tests marked ^:classic.
   Otherwise, it skips the ones marked ^:connect. Without XGBoost4J-Spark 3 on
   the classpath, it skips the ones marked ^:xgb, without GraphFrames the ones
-  marked ^:graphframes, and on Spark 4 the ones marked ^:spark-3."
+  marked ^:graphframes, without hadoop-azure the ones marked ^:azure, and on
+  Spark 4 the ones marked ^:spark-3."
   [{:keys [shard] :as opts}]
   (when-let [problem (prep-problem)]
     (println problem)

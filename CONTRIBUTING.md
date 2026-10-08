@@ -33,6 +33,8 @@ Each namespace gets one line, and each failure one more. The full reports, with 
 
 `graph-tests` does the same for GraphFrames: the tests in `test-graph/` and the graphs guide's examples, with the `:graphframes` alias on `:spark` and `:graphframes-4` on `:spark-4`. `check-all` runs it on both, and every other run skips the tests marked `^:graphframes`.
 
+`clojure -T:build cloud-docs` runs the cloud storage guide's examples against a real Azure storage account, which needs `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_CONTAINER` and `AZURE_STORAGE_KEY` set, and runs the service principal's example too when `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` are. It adds `hadoop-azure`: the `:azure` alias on `:spark`, and `:azure-4` on `:spark-4`. It writes under `geni-docs/` in the container. The CI doesn't run it, and every other run skips the guide's examples, which are marked `^:azure`.
+
 `:spark` is Spark 3.5 on Scala 2.12. To run the tests on Spark 3.5 on Scala 2.13, or on Spark 4, swap in `:spark-3.5-2.13` or `:spark-4`, after a `prep` for the same alias:
 
 ```bash

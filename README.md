@@ -354,6 +354,7 @@ The guides:
 - [Pandas, NumPy and other idioms](docs/pandas_numpy_and_other_idioms.md)
 - [Optional XGBoost support](docs/xgboost.md)
 - [Graphs with GraphFrames](docs/graphs.md)
+- [Cloud storage](docs/cloud_storage.md)
 - [Spark Connect](docs/spark_connect.md)
 - [Using Kubernetes](docs/kubernetes_basic.md), written for Spark 3.0
 - [A simple performance benchmark](docs/simple_performance_benchmark.md), from 2020

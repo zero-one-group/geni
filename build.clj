@@ -192,6 +192,35 @@
          ":target-root" "\"target/graph-docs\"")
     (sh! "clojure" (str aliases ":graph-docs"))))
 
+(def ^:private azure-env
+  "What the cloud storage guide's examples read: the storage account, a
+  container in it and the account's key."
+  ["AZURE_STORAGE_ACCOUNT" "AZURE_STORAGE_CONTAINER" "AZURE_STORAGE_KEY"])
+
+(def ^:private azure-service-principal-env
+  ["AZURE_TENANT_ID" "AZURE_CLIENT_ID" "AZURE_CLIENT_SECRET"])
+
+(defn cloud-docs
+  "Runs the cloud storage guide's examples against a real Azure storage
+  account, from AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_CONTAINER and
+  AZURE_STORAGE_KEY, and its service principal's example too when
+  AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_CLIENT_SECRET are set. They
+  write under geni-docs/ in the container. On :spark with :azure, or on
+  :spark-4 with :azure-4, as in `clojure -T:build cloud-docs :spark :spark-4`.
+  The CI doesn't run it. Run `prep` with the same Spark first."
+  [{:keys [spark] :or {spark :spark}}]
+  (when-let [missing (seq (remove #(System/getenv %) azure-env))]
+    (println "Set" (string/join ", " missing) "first.")
+    (System/exit 1))
+  (let [azure   (if (= spark :spark-4) ":azure-4" ":azure")
+        aliases (str "-X:" (name spark) ":test" azure ":cloud-docs")]
+    (sh! "clojure" "-X:gen-doc-tests"
+         ":docs" "[\"docs/cloud_storage.md\"]"
+         ":target-root" "\"target/cloud-docs\"")
+    (apply sh! "clojure" aliases
+           (when-not (every? #(System/getenv %) azure-service-principal-env)
+             [":exclude" ":azure-sp"]))))
+
 (defn- run-all!
   "Runs the commands one after another, until one fails, with their output,
   stderr included, appended to `file`. Returns the last exit code."

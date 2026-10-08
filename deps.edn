@@ -259,6 +259,24 @@
                  "-Dspark.sql.codegen.factoryMode=FALLBACK"]
    :exec-args   {:dirs ["target/graph-docs/test-doc-blocks/test"]}}
 
+  ;; Azure Data Lake Storage's connector, at the Hadoop version that Spark
+  ;; ships: 3.3.4 for :spark, and 3.5.0 for :spark-4 as :azure-4. For the
+  ;; cloud storage guide: clojure -T:build cloud-docs.
+  :azure
+  {:extra-deps {org.apache.hadoop/hadoop-azure {:mvn/version "3.3.4"}}}
+  :azure-4
+  {:extra-deps {org.apache.hadoop/hadoop-azure {:mvn/version "3.5.0"}}}
+
+  ;; The cloud storage guide's examples, run as the doc tests are, against a
+  ;; real storage account.
+  :cloud-docs
+  {:extra-paths ["target/cloud-docs/test-doc-blocks/test"]
+   :jvm-opts    ["-Dspark.master=local[2]"
+                 "-Duser.timezone=UTC"
+                 "-Dspark.sql.codegen.wholeStage=true"
+                 "-Dspark.sql.codegen.factoryMode=FALLBACK"]
+   :exec-args   {:dirs ["target/cloud-docs/test-doc-blocks/test"]}}
+
   ;; For scripts/scrape-spark-docs.clj, which writes resources/spark-docs.edn.
   :scrape
   {:extra-deps {enlive/enlive {:mvn/version "1.1.6"}}}
