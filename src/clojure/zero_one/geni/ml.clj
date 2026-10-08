@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [range])
   (:require
    [clojure.walk :refer [keywordize-keys]]
-   [zero-one.geni.utils :refer [->camel-case ->kebab-case import-fn import-vars]]
+   [zero-one.geni.utils :refer [->camel-case ->kebab-case class-named import-fn import-vars]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.polymorphic :as polymorphic]
    [zero-one.geni.defaults :as defaults]
@@ -22,6 +22,7 @@
    (org.apache.spark.ml Pipeline
                         PipelineStage
                         functions)
+   (org.apache.spark.ml.param Params)
    (org.apache.spark.ml.stat ChiSquareTest
                              Correlation
                              KolmogorovSmirnovTest
@@ -210,6 +211,34 @@
 (defn pipeline [& stages]
   (-> (Pipeline.)
       (.setStages (into-array PipelineStage stages))))
+
+(defn stage
+  "A Spark ML stage of any class, with `params` set through its setters as
+  Geni's own stages have them: `{:input-cols [:document] :output-col :token}`
+  calls `setInputCols` and `setOutputCol`. This covers stages that Geni has no
+  function for, such as Spark NLP's annotators. `cls` is a class, a class name,
+  or a stage made already, such as a pretrained model, whose params are set in
+  place. A param that the class has no setter for throws, naming the closest.
+
+  ```clojure
+  (ml/stage \"com.johnsnowlabs.nlp.DocumentAssembler\"
+            {:input-col :text :output-col :document})
+  (ml/stage (LemmatizerModel/pretrained) {:input-cols [:token] :output-col :lemma})
+  ```"
+  ([cls] (stage cls {}))
+  ([cls params]
+   (cond
+     (class? cls)              (interop/instantiate cls params)
+     (or (string? cls)
+         (symbol? cls))        (if-let [found (class-named (str cls))]
+                                 (interop/instantiate found params)
+                                 (throw (ex-info (str "There's no class " cls " on the classpath."
+                                                      " Add the library that has it to your deps.")
+                                                 {:class-name (str cls)})))
+     (instance? Params cls)    (interop/set-params! cls params)
+     :else                     (throw (IllegalArgumentException.
+                                       (str "ml/stage takes a class, a class name or a stage, not "
+                                            (pr-str cls) "."))))))
 
 (defn fit [dataframe estimator]
   (.fit estimator dataframe))

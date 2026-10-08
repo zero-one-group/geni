@@ -377,6 +377,7 @@ The cookbook follows the syllabus of Julia Evans' [Pandas Cookbook](https://gith
 10. [Avoiding repeated computations with caching](docs/cookbook/part_10_avoiding_repeated_computations_with_caching.md)
 11. [Basic ML pipelines](docs/cookbook/part_11_basic_ml_pipelines.md)
 12. [Customer segmentation with NMF](docs/cookbook/part_12_customer_segmentation_with_nmf.md)
+13. [Text classification with Spark NLP](docs/cookbook/part_13_text_classification_with_spark_nlp.md)
 
 ## Contributing
 

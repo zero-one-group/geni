@@ -135,6 +135,41 @@
     (is (false? (.getStandardization (ml/logistic-regression {:standardisation false}))))
     (is (false? (.getStandardization (ml/linear-regression {:standardisation false}))))))
 
+(deftest stage-test
+  (testing "a stage from its class, its name as a string or a symbol, with Geni's params"
+    (doseq [cls [Tokenizer
+                 "org.apache.spark.ml.feature.Tokenizer"
+                 'org.apache.spark.ml.feature.Tokenizer]]
+      (let [stage (ml/stage cls {:input-col :text :output-col :words})]
+        (is (instance? Tokenizer stage))
+        (is (= {:input-col "text" :output-col "words"} (ml/params stage))))))
+  (testing "a stage made already gets its params in place"
+    (let [tokenizer (Tokenizer.)]
+      (is (identical? tokenizer (ml/stage tokenizer {:input-col :text})))
+      (is (= "text" (.getInputCol tokenizer)))))
+  (testing "a class that isn't on the classpath, a param the class lacks, and a value
+            that isn't a stage throw"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"There's no class com\.example\.NoSuchStage on the classpath\."
+                          (ml/stage "com.example.NoSuchStage" {})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"Tokenizer has no param :input-cols\. Did you mean :input-col\?"
+                          (ml/stage Tokenizer {:input-cols [:text]})))
+    (is (thrown-with-msg? IllegalArgumentException
+                          #"ml/stage takes a class, a class name or a stage, not :tokenizer\."
+                          (ml/stage :tokenizer {}))))
+  (testing "its stages go into a pipeline"
+    (let [dataset  (g/table->dataset @spark [["Spark and Geni"]] [:text])
+          pipeline (ml/pipeline
+                    (ml/stage Tokenizer {:input-col :text :output-col :words})
+                    (ml/stage "org.apache.spark.ml.feature.StopWordsRemover"
+                              {:input-col :words :output-col :kept}))]
+      (is (= [{:kept ["spark" "geni"]}]
+             (-> dataset
+                 (ml/transform (ml/fit dataset pipeline))
+                 (g/select :kept)
+                 g/collect))))))
+
 (deftest ^:slow stages-without-a-session-test
   (testing "write-stage! and read-stage! use Geni's default session, rather than Spark's
             getOrCreate, which needs a master URL"

@@ -182,9 +182,11 @@
    :exec-args   {:dirs ["target/test-doc-blocks/test"]}}
 
   ;; The same for the cookbook, which downloads its datasets into
-  ;; data/cookbook: clojure -T:build cookbook.
+  ;; data/cookbook: clojure -T:build cookbook. Part 13 needs Spark NLP, for
+  ;; :spark's Scala 2.12, and downloads its model into ~/cache_pretrained.
   :cookbook
   {:extra-paths ["target/cookbook/test-doc-blocks/test"]
+   :extra-deps  {com.johnsnowlabs.nlp/spark-nlp_2.12 {:mvn/version "7.0.0"}}
    :jvm-opts    ["-Dspark.master=local[2]"
                  "-Duser.timezone=UTC"
                  "-Dspark.sql.codegen.wholeStage=true"
