@@ -56,20 +56,20 @@
   (.mod (col left-expr) (col right-expr)))
 (def mod %)
 
+(defn- fold
+  "The columns folded with `f` from the left, without a seed, so that
+  `(g/+ :a :b)` is `(a + b)`, or `none` when there are none."
+  [f none cols]
+  (if (seq cols) (reduce f cols) none))
+
 (defn && [& exprs]
-  (reduce #(.and (col %1) (col %2))
-          (lit true)
-          (->col-array exprs)))
+  (fold #(.and ^Column %1 %2) (lit true) (->col-array exprs)))
 
 (defn * [& exprs]
-  (reduce #(.multiply (col %1) (col %2))
-          (lit 1)
-          (->col-array exprs)))
+  (fold #(.multiply ^Column %1 %2) (lit 1) (->col-array exprs)))
 
 (defn + [& exprs]
-  (reduce #(.plus (col %1) (col %2))
-          (lit 0)
-          (->col-array exprs)))
+  (fold #(.plus ^Column %1 %2) (lit 0) (->col-array exprs)))
 
 (defn minus [& exprs]
   (reduce #(.minus (col %1) (col %2))
@@ -79,13 +79,10 @@
   (reduce #(.divide (col %1) (col %2))
           (->col-array exprs)))
 
-(defn- compare-columns [compare-fn expr-0 & exprs]
-  (let [exprs (-> exprs (conj expr-0))]
-    (reduce
-     (fn [acc-col [l-expr r-expr]]
-       (&& acc-col (compare-fn (col l-expr) (col r-expr))))
-     (lit true)
-     (map vector exprs (rest exprs)))))
+(defn- compare-columns [compare-fn & exprs]
+  (fold #(.and ^Column %1 %2)
+        (lit true)
+        (map (fn [l-expr r-expr] (compare-fn (col l-expr) (col r-expr))) exprs (rest exprs))))
 
 (def === (partial compare-columns #(.equalTo %1 %2)))
 
@@ -209,9 +206,7 @@
 (defn starts-with [expr literal] (.startsWith (col expr) literal))
 
 (defn || [& exprs]
-  (reduce #(.or (col %1) (col %2))
-          (lit false)
-          (->col-array exprs)))
+  (fold #(.or ^Column %1 %2) (lit false) (->col-array exprs)))
 
 ;;;; Sorting Functions
 (defn asc [expr] (.asc (col expr)))

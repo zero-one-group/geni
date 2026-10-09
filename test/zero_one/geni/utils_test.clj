@@ -7,31 +7,10 @@
                                 ->kebab-case
                                 ensure-coll
                                 import-fn
-                                import-vars
-                                with-dynamic-import]])
+                                import-vars]])
   (:import
    (org.apache.spark.sql.types DataTypes)
    (scala.collection Seq)))
-
-(deftest dynamic-imports-test
-  (testing "succeeds with valid import forms"
-    (is (and (= (with-dynamic-import
-                  [[org.apache.spark.sql functions]]
-                  (def adf-def 123)) :succeeded) (= adf-def 123)))
-    (is (= :succeeded
-           (with-dynamic-import
-             [org.apache.spark.sql.Column]
-             (def ghi-jkl 123))))) ;#(and (= % :succeeded) (= ghi-jkl 123))))
-  (testing "fails gracefully"
-    (is (and (= (with-dynamic-import
-                  [[some.non-existent.namespace non-existent-class]]
-                  (def mno-pqr 123)) :failed) (nil? (resolve 'mno-pqr))))
-    (is (and (= (with-dynamic-import
-                  [some.non-existent.namespace.NonExistentClass]
-                  (def stu-vwx 123)) :failed) (nil? (resolve 'stu-vwx))))
-    (is (and (= (with-dynamic-import
-                  (+ 1 1)
-                  (def xyz 123)) :failed) (nil? (resolve 'xyz))))))
 
 (deftest ensure-coll-test
   (testing "should not change collections"

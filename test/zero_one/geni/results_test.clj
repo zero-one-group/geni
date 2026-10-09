@@ -1,6 +1,6 @@
 (ns zero-one.geni.results-test
   "The result functions that need neither tech.ml.dataset nor Apache Arrow:
-  to-arrow, glimpse and to-html, and what the rest say when what they need
+  to-arrow, collect-to-arrow, glimpse and to-html, and what the rest say when what they need
   is missing. test-tmd/ has the others."
   (:require
    [clojure.java.io :as io]
@@ -13,6 +13,7 @@
   (:import
    (clojure.lang ExceptionInfo)
    (java.nio ByteBuffer ByteOrder)
+   (java.nio.file Files)
    (java.util Iterator TimeZone)))
 
 (defn- continuation-marker?
@@ -41,6 +42,31 @@
                                                       "FROM RANGE(0, 3, 1, 2)")))]
       (is (= [[0 "s0" 0.0] [1 "s1" nil] [2 "s2" 3.0]]
              (mapcat read-rows streams))))))
+
+(deftest collect-to-arrow-test
+  (let [dir      (str (tr/create-temp-dir!))
+        streams  #(mapv (fn [path] (Files/readAllBytes (.toPath (io/file path)))) %)]
+    (testing "a file per batch, each a complete Arrow IPC stream, as to-arrow gives them"
+      (let [df    (g/sql @tr/spark "SELECT id, CAST(id AS STRING) s FROM RANGE(0, 6, 1, 3)")
+            paths (g/collect-to-arrow df dir)]
+        (is (= 3 (count paths)))
+        (is (every? continuation-marker? (streams paths)))
+        (is (= (map seq (g/to-arrow df)) (map seq (streams paths))))))
+    (testing "and one file with no rows for an empty result"
+      (is (= 1 (count (g/collect-to-arrow (g/sql @tr/spark "SELECT id FROM RANGE(0)") dir)))))
+    (testing "a chunk size throws, pointing to Spark's conf"
+      (is (thrown-with-msg? ExceptionInfo #"takes no chunk size.*maxRecordsPerBatch"
+                            (g/collect-to-arrow (g/range 3) 10 dir))))))
+
+(deftest ^:classic collect-to-arrow-read-back-test
+  (testing "the files read back with Arrow, a null after the first row too"
+    (let [read-rows (requiring-resolve 'zero-one.geni.arrow-rows/read-rows)
+          paths     (g/collect-to-arrow (g/sql @tr/spark (str "SELECT id, CONCAT('s', id) s, "
+                                                              "IF(id = 1, NULL, id * 1.5D) d "
+                                                              "FROM RANGE(0, 3, 1, 1)"))
+                                        (str (tr/create-temp-dir!)))]
+      (is (= [[0 "s0" 0.0] [1 "s1" nil] [2 "s2" 3.0]]
+             (mapcat #(read-rows (Files/readAllBytes (.toPath (io/file %)))) paths))))))
 
 (deftest ^:classic to-arrow-time-zone-test
   (testing "a TIMESTAMP's time zone is the session's, which is the JVM's when it isn't set"

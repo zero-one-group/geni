@@ -9,13 +9,14 @@
    [zero-one.geni.core.column :refer [->col-array]]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.spark :as spark]
-   [zero-one.geni.utils :refer [class-named]])
+   [zero-one.geni.utils :refer [class-named optional-fn]])
   (:import
    (clojure.lang IReduce Reflector)
+   (java.io File)
+   (java.nio.file Files OpenOption)
    (java.util Iterator NoSuchElementException)
    (org.apache.spark.sql Row)
-   (org.apache.spark.sql.types ArrayType CalendarIntervalType DataType MapType StructField
-                               StructType UserDefinedType)))
+   (org.apache.spark.sql.types CalendarIntervalType StructField StructType UserDefinedType)))
 
 ;; Where the Arrow batches come from
 
@@ -25,12 +26,10 @@
 (defn- reader
   "A function from zero-one.geni.arrow.reader, which needs Apache Arrow."
   [fn-name]
-  (when-not (class-named "org.apache.arrow.vector.VectorSchemaRoot")
-    (throw (ex-info (str "Decoding Arrow batches needs Apache Arrow, which classic Spark brings. "
-                         "Add org.apache.arrow/arrow-vector and arrow-memory-netty to use it with "
-                         "a Spark Connect client.")
-                    {})))
-  (requiring-resolve (symbol "zero-one.geni.arrow.reader" fn-name)))
+  (optional-fn (symbol "zero-one.geni.arrow.reader" fn-name)
+               (str "Decoding Arrow batches needs Apache Arrow, which classic Spark brings. Add "
+                    "org.apache.arrow/arrow-vector and arrow-memory-netty to use it with a Spark "
+                    "Connect client.")))
 
 (defn- concat-bytes ^bytes [chunks]
   (if (= 1 (count chunks))
@@ -103,21 +102,10 @@
   (if (classic? df)
     ;; SQLExecution is in Spark's execution package, which isn't its API.
     (Reflector/invokeInstanceMethod
-     (Reflector/getStaticField "org.apache.spark.sql.execution.SQLExecution$" "MODULE$")
+     (interop/scala-object "org.apache.spark.sql.execution.SQLExecution$")
      "withNewExecutionId"
      (object-array [(.queryExecution df) (scala.Some. fn-name) (interop/->scala-function0 f)]))
     (f)))
-
-(defn- all-streams [df fn-name]
-  (as-sql-execution
-   df fn-name
-   #(let [{:keys [^Iterator iterator close]} (open-streams df :all)]
-      (try
-        (loop [out []]
-          (if (.hasNext iterator)
-            (recur (conj out (.next iterator)))
-            out))
-        (finally (close))))))
 
 ;; The types that a dataset can't hold
 
@@ -129,22 +117,15 @@
 (defn- refused
   "What a value of Spark type `dt` holds when tech.ml.dataset has nothing for
   it, inside arrays, maps and structs too, or nil."
-  [^DataType dt]
-  (cond
-    (instance? CalendarIntervalType dt) "calendar intervals"
-    (instance? ArrayType dt)            (refused (.elementType ^ArrayType dt))
-    (instance? MapType dt)              (or (refused (.keyType ^MapType dt))
-                                            (refused (.valueType ^MapType dt)))
-    (instance? StructType dt)           (some #(refused (.dataType ^StructField %))
-                                              (.fields ^StructType dt))
-    (instance? UserDefinedType dt)      (when-not (= "org.apache.spark.ml.linalg.VectorUDT"
-                                                     (.getName (class dt)))
-                                          (refused (.sqlType ^UserDefinedType dt)))
-    :else                               (some (fn [[class-name what]]
-                                                (when (some-> (class-named class-name)
-                                                              (.isInstance dt))
-                                                  what))
-                                              refused-types)))
+  [dt]
+  (some (fn [dt]
+          (if (instance? CalendarIntervalType dt)
+            "calendar intervals"
+            (some (fn [[class-name what]]
+                    (when (some-> (class-named class-name) (.isInstance dt))
+                      what))
+                  refused-types)))
+        (interop/nested-types dt)))
 
 (defn- check-names!
   "Throws when the result has two columns of one name."
@@ -187,16 +168,12 @@
   "A name that two fields of one struct have, inside a value of Spark type
   `dt`, or nil. A map's struct fields are named by Spark's names, so the
   second would be lost."
-  [^DataType dt]
-  (cond
-    (instance? ArrayType dt)  (twice-named-field (.elementType ^ArrayType dt))
-    (instance? MapType dt)    (or (twice-named-field (.keyType ^MapType dt))
-                                  (twice-named-field (.valueType ^MapType dt)))
-    (instance? StructType dt) (let [fields (.fields ^StructType dt)]
-                                (or (some (fn [[n k]] (when (< 1 k) n))
-                                          (frequencies (map #(.name ^StructField %) fields)))
-                                    (some #(twice-named-field (.dataType ^StructField %)) fields)))
-    :else                     nil))
+  [dt]
+  (some (fn [dt]
+          (when (instance? StructType dt)
+            (some (fn [[n k]] (when (< 1 k) n))
+                  (frequencies (map #(.name ^StructField %) (.fields ^StructType dt))))))
+        (interop/nested-types dt)))
 
 (defn- check-types!
   "Throws when the result has a column of a type that has no tech.ml.dataset
@@ -219,10 +196,8 @@
   "A function from tech.ml.dataset or dtype-next, which it brings. Called
   before a job starts too, so that a missing library fails fast."
   [sym]
-  (or (try (requiring-resolve sym) (catch Exception _ nil))
-      (throw (ex-info (str "This needs tech.ml.dataset, which isn't on the classpath. Add "
-                           "techascent/tech.ml.dataset to your dependencies.")
-                      {}))))
+  (optional-fn sym (str "This needs tech.ml.dataset, which isn't on the classpath. Add "
+                        "techascent/tech.ml.dataset to your dependencies.")))
 
 (defn- typed-array-concat
   "The arrays, which have one component type, as one."
@@ -258,19 +233,6 @@
                                     :missing (when (seq missing) (int-array missing)))))
                          (map :columns batches))})))
 
-(defn- user-defined?
-  "Whether a value of Spark type `dt` holds a user-defined type's, such as an
-  MLlib vector, at the top or inside."
-  [^DataType dt]
-  (cond
-    (instance? UserDefinedType dt) true
-    (instance? ArrayType dt)       (user-defined? (.elementType ^ArrayType dt))
-    (instance? MapType dt)         (or (user-defined? (.keyType ^MapType dt))
-                                       (user-defined? (.valueType ^MapType dt)))
-    (instance? StructType dt)      (boolean (some #(user-defined? (.dataType ^StructField %))
-                                                  (.fields ^StructType dt)))
-    :else                          false))
-
 (defn- tmd-columns
   "Each of the result's columns as a dataset gets it: its name, as `key-fn`
   gives it, and its Spark type as DDL in its metadata, under
@@ -280,7 +242,7 @@
   [fn-name ^StructType schema key-fn]
   (mapv (fn [k ^StructField field]
           {:name     k
-           :metadata (when-not (user-defined? (.dataType field))
+           :metadata (when-not (some #(instance? UserDefinedType %) (interop/nested-types (.dataType field)))
                        {:zero-one.geni/spark-type (.sql (.dataType field))})})
         (output-names fn-name schema key-fn)
         (.fields schema)))
@@ -387,6 +349,12 @@
 (defn- batches [df fn-name mode decode]
   (Batches. df fn-name mode decode (atom #{})))
 
+(defn- all-streams
+  "The result of `df` as Arrow IPC streams, collected in one job on classic
+  Spark."
+  [df fn-name]
+  (into [] (batches df fn-name :all vector)))
+
 ;; The public functions
 
 (defn to-arrow
@@ -401,6 +369,34 @@
   Like `collect`, the whole result comes to the driver."
   [dataframe]
   (all-streams dataframe "to-arrow"))
+
+(defn collect-to-arrow
+  "Writes the result of `dataframe` to Arrow IPC stream files in `out-dir`,
+  one per Arrow batch, as `to-arrow` gives them, and returns their paths in
+  order. Each file is a complete stream, with the schema, one record batch
+  and the end marker. An empty result gives one file with no rows.
+
+  The batches come as `stream` reads them, so only one partition's are on
+  the driver at a time on classic Spark: data larger than the driver's heap
+  makes it through when its largest partition fits. Each file has at most
+  `spark.sql.execution.arrow.maxRecordsPerBatch` rows, 10,000 by default.
+  Over Spark Connect, the files are the batches that the server sends, and
+  the client needs no Arrow jars."
+  ([dataframe out-dir]
+   (let [write! (fn [^bytes stream]
+                  (let [file (File/createTempFile "geni" ".ipc" (File. (str out-dir)))]
+                    (Files/write (.toPath file) stream (make-array OpenOption 0))
+                    (.getPath file)))
+         paths  (into [] (batches dataframe "collect-to-arrow" :lazy (comp vector write!)))]
+     (if (seq paths)
+       paths
+       [(write! (first (to-arrow (.limit dataframe 0))))])))
+  ([_ _ _]
+   (throw (ex-info (str "collect-to-arrow takes no chunk size since Geni 0.5.0: its files are "
+                        "Spark's Arrow batches, of at most spark.sql.execution.arrow.maxRecordsPerBatch "
+                        "rows each. Call (collect-to-arrow dataframe out-dir), and set that conf for "
+                        "smaller files.")
+                   {}))))
 
 (defn to-tmd
   "The result of `dataframe` as one tech.ml.dataset dataset, which needs
@@ -475,15 +471,14 @@
                      (map #(->tmd-dataset % "stream" columns))))))))
 
 (defn- tensor-columns
-  "The result's column names and indices for to-tensors and stream-tensors,
-  which select `columns` first when they're given."
+  "The result and its column names for to-tensors and stream-tensors, which
+  select `columns` first when they're given."
   [fn-name dataframe columns key-fn]
   (let [dataframe (if (seq columns) (.select dataframe (->col-array columns)) dataframe)
         schema    (.schema dataframe)]
     {:dataframe dataframe
      :schema    schema
-     :names     (output-names fn-name schema key-fn)
-     :indices   (vec (range (count (.fields schema))))}))
+     :names     (output-names fn-name schema key-fn)}))
 
 (defn to-tensors
   "The result of `dataframe` as dtype-next tensors, one per column, in a map
@@ -509,11 +504,11 @@
   `arrow-memory-netty`."
   ([dataframe] (to-tensors dataframe {}))
   ([dataframe {:keys [columns key-fn] :or {key-fn keyword}}]
-   (let [{:keys [dataframe schema names indices]} (tensor-columns "to-tensors" dataframe columns key-fn)
+   (let [{:keys [dataframe schema names]} (tensor-columns "to-tensors" dataframe columns key-fn)
          decode  (reader "decode-tensors")
          _       (tmd 'tech.v3.tensor/reshape)
          decoded (->> (all-streams dataframe "to-tensors")
-                      (mapcat #(decode % schema indices "to-tensors"))
+                      (mapcat #(decode % schema "to-tensors"))
                       (filter #(pos? (:row-count %))))]
      (when (empty? decoded)
        (throw (ex-info "to-tensors needs at least one row, and the result is empty." {})))
@@ -544,12 +539,12 @@
   it with `with-open` when reading it as a seq."
   ([dataframe] (stream-tensors dataframe {}))
   ([dataframe {:keys [columns key-fn] :or {key-fn keyword}}]
-   (let [{:keys [dataframe schema names indices]} (tensor-columns "stream-tensors" dataframe columns key-fn)
+   (let [{:keys [dataframe schema names]} (tensor-columns "stream-tensors" dataframe columns key-fn)
          decode (reader "decode-tensors")
          _      (tmd 'tech.v3.tensor/reshape)]
      (batches dataframe "stream-tensors" :lazy
               (fn [ipc]
-                (->> (decode ipc schema indices "stream-tensors")
+                (->> (decode ipc schema "stream-tensors")
                      (filter #(pos? (:row-count %)))
                      (map #(->tensors % "stream-tensors" names))))))))
 

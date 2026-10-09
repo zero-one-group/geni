@@ -138,7 +138,6 @@ Different models have different attributes. In our case, the random forest model
      ml/stages
      last
      ml/feature-importances
-     :values
      (zipmap (ml/input-cols assembler)))
 ; {"housing-median-age" 0.060262475752573055,
 ;  "median-income" 0.7847621702619059,

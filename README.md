@@ -261,7 +261,7 @@ Spark 4 has flags of its own:
 
 A few differences between the setups show up in practice:
 
-- Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21 or newer, so `g/collect-to-arrow` fails there. The Arrow 13 deps in the Spark 3.5 aliases fix that, and do no harm on JDK 17.
+- Spark 3.5 ships Arrow 12, which can't allocate buffers on JDK 21 or newer, so Geni's Arrow functions, such as `g/to-tmd`, fail there. The Arrow 13 deps in the Spark 3.5 aliases fix that, and do no harm on JDK 17.
 - Spark 4 turns ANSI mode on by default, so an invalid cast or an overflow throws instead of returning null.
 - On JDK 25, Spark's sketch functions, such as `g/hll-sketch-agg`, need `spark-catalyst` ahead of `datasketches-memory` on the classpath. Spark 4.2 ships its own copy of datasketches' JDK check, which takes JDK 25, while datasketches' own copy rejects it. Listing `spark-catalyst` in the setup, as above, puts Spark's copy first.
 - On Spark 4, a JDBC write fails when the table doesn't exist yet and Spark has no dialect for the database, as with SQLite. Creating the table first works.
@@ -400,7 +400,6 @@ Geni is licensed under Apache License v2.0, see [LICENSE](LICENSE).
 Some parts of the project have been taken from or inspired by:
 
 * [finagle-clojure](https://github.com/finagle/finagle-clojure) for Scala interop functions.
-* Reddit users [/u/borkdude](https://old.reddit.com/user/borkdude) and [/u/czan](https://old.reddit.com/user/czan) for [with-dynamic-import](src/clojure/zero_one/geni/utils.clj).
 * StackOverflow user [whocaresanyway's answer](https://stackoverflow.com/questions/1696693/clojure-how-to-find-out-the-arity-of-function-at-runtime) for `arg-count`.
 * [Julia Evans'](https://jvns.ca/) [Pandas Cookbook](https://github.com/jvns/pandas-cookbook) for its syllabus.
 * Reddit user [/u/joinr](https://old.reddit.com/user/joinr) for helping with [unit-testing the REPL](cli/test/zero_one/geni/main_test.clj).

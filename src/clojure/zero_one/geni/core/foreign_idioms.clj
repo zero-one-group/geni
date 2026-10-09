@@ -140,39 +140,33 @@
       num-buckets-or-probs)
     (map #(/ (inc %) (double num-buckets-or-probs)) (range (dec num-buckets-or-probs)))))
 
+(defn- binned
+  "The bin, as a label such as \"x[0.0, 0.5]\", that `value-col` falls in,
+  between consecutive `edges`, named `fn-name(col, bins)`."
+  [fn-name col value-col bins edges]
+  (.as (apply polymorphic/coalesce
+              (map (fn [low high]
+                     (sql/when (column/<= low value-col high)
+                       (column/lit (format "%s[%s, %s]" (.toString col) (str low) (str high)))))
+                   edges
+                   (rest edges)))
+       (format "%s(%s, %s)" fn-name (.toString col) (str bins))))
+
 (defn qcut
   "Returns a new Column of discretised `expr` into equal-sized buckets based
   on rank or based on sample quantiles."
   [expr num-buckets-or-probs]
-  (let [probs     (resolve-probs num-buckets-or-probs)
-        col       (column/->column expr)
-        rank-col  (window/windowed {:window-col (sql/percent-rank) :order-by col})
-        qcut-cols (map (fn [low high]
-                         (sql/when (column/<= low rank-col high)
-                           (column/lit (format "%s[%s, %s]"
-                                               (.toString col)
-                                               (str low)
-                                               (str high)))))
-                       (concat [0.0] probs)
-                       (concat probs [1.0]))]
-    (.as (apply polymorphic/coalesce qcut-cols)
-         (format "qcut(%s, %s)" (.toString col) (str probs)))))
+  (let [probs (resolve-probs num-buckets-or-probs)
+        col   (column/->column expr)]
+    (binned "qcut" col (window/windowed {:window-col (sql/percent-rank) :order-by col})
+            probs (concat [0.0] probs [1.0]))))
 
 (defn cut
   "Returns a new Column of discretised `expr` into the intervals of bins."
   [expr bins]
   (assert (apply < bins))
-  (let [col      (column/->column expr)
-        cut-cols (map (fn [low high]
-                        (sql/when (column/<= low col high)
-                          (column/lit (format "%s[%s, %s]"
-                                              (.toString col)
-                                              (str low)
-                                              (str high)))))
-                      (concat [Double/NEGATIVE_INFINITY] bins)
-                      (concat bins [Double/POSITIVE_INFINITY]))]
-    (.as (apply polymorphic/coalesce cut-cols)
-         (format "cut(%s, %s)" (.toString col) (str bins)))))
+  (let [col (column/->column expr)]
+    (binned "cut" col col bins (concat [Double/NEGATIVE_INFINITY] bins [Double/POSITIVE_INFINITY]))))
 
 (defn replace
   "Returns a new Column where `from-value-or-values` is replaced with `to-value`."

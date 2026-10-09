@@ -76,3 +76,11 @@
   session connects to `SPARK_REMOTE`, as `(connect)` does."
   (reify IDeref
     (deref [_] (default-session))))
+
+(defn session-and-args
+  "Splits off a leading SparkSession from `args`, or takes the default
+  session: `[spark more-args]`."
+  [args]
+  (if (instance? SparkSession (first args))
+    [(first args) (rest args)]
+    [@spark args]))

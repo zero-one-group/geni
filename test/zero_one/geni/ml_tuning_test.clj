@@ -2,21 +2,10 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [zero-one.geni.core :as g]
-   [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
    [zero-one.geni.test-resources :refer [libsvm-df]])
   (:import
-   (org.apache.spark.ml.classification LogisticRegressionModel)
-   (org.apache.spark.ml.tuning CrossValidator
-                               TrainValidationSplit)))
-
-(deftest field-reflection-test
-  (let [stage (ml/hashing-tf {})]
-    (testing "should get the correct fields."
-      (is (= (.binary stage) (interop/get-field stage :binary)))
-      (is (= (.inputCol stage) (interop/get-field stage :input-col)))
-      (is (= (.numFeatures stage) (interop/get-field stage :num-features)))
-      (is (= (.outputCol stage) (interop/get-field stage :output-col))))))
+   (org.apache.spark.ml.classification LogisticRegressionModel)))
 
 (deftest param-grid-builder-test
   (testing "should be able to replicate Spark example."
@@ -34,17 +23,23 @@
     (is (= 2 (count (ml/param-grid
                      {(ml/generalized-linear-regression {}) {:offset-col ["a" "b"]}}))))))
 
-(deftest cross-validator-fitting-test
-  (testing "should be able to replicate Spark example."
-    (let [log-reg    (ml/logistic-regression {:max-iter 1})
-          param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
-          cv         (ml/cross-validator
-                      {:estimator log-reg
-                       :estimator-param-maps param-grid
-                       :evaluator (ml/binary-classification-evaluator {})
-                       :num-folds 2})
-          model      (ml/fit (libsvm-df) cv)]
-      (is (instance? LogisticRegressionModel (ml/best-model model))))))
+(deftest tuning-params-test
+  (testing "a typo throws, as for the other stages"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"CrossValidator has no param :num-fold\. Did you mean :num-folds\?"
+                          (ml/cross-validator {:num-fold 3})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"TrainValidationSplit has no param :train-ration\."
+                          (ml/train-validation-split {:train-ration 0.5})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"HashingTF has no param :num-feature\. Did you mean :num-features\?"
+                          (ml/param-grid {(ml/hashing-tf {}) {:num-feature [10]}}))))
+  (testing "and every param reaches the stage, such as :fold-col"
+    (is (= "fold" (.getFoldCol (ml/cross-validator {:fold-col :fold})))))
+  (testing "a grid takes whole numbers for an int param, such as :max-iter"
+    (let [log-reg (ml/logistic-regression {})
+          cv      (ml/cross-validator {:estimator            log-reg
+                                       :estimator-param-maps (ml/param-grid {log-reg {:max-iter [1 2]}})
+                                       :evaluator            (ml/binary-classification-evaluator {})
+                                       :num-folds            2})]
+      (is (= 2 (count (ml/avg-metrics (ml/fit (g/limit (libsvm-df) 40) cv))))))))
 
 (deftest tuning-results-test
   (let [log-reg    (ml/logistic-regression {:max-iter 1})
@@ -56,6 +51,7 @@
         data       (g/limit (libsvm-df) 40)]
     (testing "a cross-validator's metric per param map, and its sub-models, when it keeps them"
       (let [model (ml/fit data (ml/cross-validator (assoc options :num-folds 2 :collect-sub-models true)))]
+        (is (instance? LogisticRegressionModel (ml/best-model model)))
         (is (= 2 (count (ml/avg-metrics model))))
         (is (= [2 2] (map count (ml/sub-models model))))
         (is (every? #(instance? LogisticRegressionModel %) (flatten (ml/sub-models model))))))
@@ -65,8 +61,6 @@
         (is (nil? (ml/sub-models model)))))))
 
 (deftest cross-validator-test
-  (testing "should be instantiatable"
-    (is (instance? CrossValidator (ml/cross-validator {}))))
   (testing "should be able to replicate Spark example."
     (let [log-reg    (ml/logistic-regression {:max-iter 1})
           param-grid (ml/param-grid {log-reg {:reg-param [0.1]}})
@@ -83,8 +77,6 @@
       (is (= 101 (:parallelism cv-params))))))
 
 (deftest train-validation-split-test
-  (testing "should be instantiatable"
-    (is (instance? TrainValidationSplit (ml/train-validation-split {}))))
   (testing "should be able to replicate Spark example."
     (let [split        (ml/train-validation-split
                         {:estimator (ml/logistic-regression {})

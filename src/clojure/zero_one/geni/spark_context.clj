@@ -23,14 +23,13 @@
   ([] (app-name @defaults/spark))
   ([spark] (-> spark java-spark-context .appName)))
 
-(defmulti binary-files (fn [head & _] (class head)))
-(defmethod binary-files :default
-  ([path] (binary-files @defaults/spark path))
-  ([path num-partitions] (binary-files @defaults/spark path num-partitions)))
-(defmethod binary-files SparkSession
-  ([spark path] (.binaryFiles (java-spark-context spark) path))
-  ([spark path num-partitions]
-   (.binaryFiles (java-spark-context spark) path num-partitions)))
+(defn binary-files
+  {:arglists '([path] [path num-partitions] [spark path] [spark path num-partitions])}
+  [& args]
+  (let [[spark [path num-partitions]] (defaults/session-and-args args)]
+    (if num-partitions
+      (.binaryFiles (java-spark-context spark) path num-partitions)
+      (.binaryFiles (java-spark-context spark) path))))
 
 (defn broadcast
   ([value] (broadcast @defaults/spark value))
@@ -112,27 +111,25 @@
   ([] (get-spark-home @defaults/spark))
   ([spark] (-> spark java-spark-context .getSparkHome interop/optional->nillable)))
 
-(defmulti text-file (fn [head & _] (class head)))
-(defmethod text-file :default
-  ([path] (text-file @defaults/spark path))
-  ([path min-partitions] (text-file @defaults/spark path min-partitions)))
-(defmethod text-file SparkSession
-  ([spark path] (-> spark java-spark-context (.textFile path)))
-  ([spark path min-partitions] (-> spark java-spark-context (.textFile path min-partitions))))
+(defn text-file
+  {:arglists '([path] [path min-partitions] [spark path] [spark path min-partitions])}
+  [& args]
+  (let [[spark [path min-partitions]] (defaults/session-and-args args)]
+    (if min-partitions
+      (.textFile (java-spark-context spark) path min-partitions)
+      (.textFile (java-spark-context spark) path))))
 
 (defn version
   ([] (version @defaults/spark))
   ([spark] (.version ^SparkSession spark)))
 
-(defmulti whole-text-files (fn [head & _] (class head)))
-(defmethod whole-text-files :default
-  ([path] (whole-text-files @defaults/spark path))
-  ([path min-partitions] (whole-text-files @defaults/spark path min-partitions)))
-(defmethod whole-text-files SparkSession
-  ([spark path]
-   (.wholeTextFiles (java-spark-context spark) path))
-  ([spark path min-partitions]
-   (.wholeTextFiles (java-spark-context spark) path min-partitions)))
+(defn whole-text-files
+  {:arglists '([path] [path min-partitions] [spark path] [spark path min-partitions])}
+  [& args]
+  (let [[spark [path min-partitions]] (defaults/session-and-args args)]
+    (if min-partitions
+      (.wholeTextFiles (java-spark-context spark) path min-partitions)
+      (.wholeTextFiles (java-spark-context spark) path))))
 
 ;; Broadcast
 (def value

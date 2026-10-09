@@ -2,175 +2,18 @@
   (:require
    [zero-one.geni.docs :as docs]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [coalesce import-fn]])
-  (:import
-   (org.apache.spark.ml.classification DecisionTreeClassifier
-                                       FMClassifier
-                                       GBTClassifier
-                                       LinearSVC
-                                       LogisticRegression
-                                       MultilayerPerceptronClassifier
-                                       NaiveBayes
-                                       OneVsRest
-                                       RandomForestClassifier)))
+   [zero-one.geni.utils :refer [import-fn]]))
 
-(defn logistic-regression [params]
-  (let [defaults {:max-iter           100,
-                  :family             "auto",
-                  :tol                1.0E-6,
-                  :raw-prediction-col "rawPrediction",
-                  :elastic-net-param  0.0,
-                  :reg-param          0.0,
-                  :aggregation-depth  2,
-                  :threshold          0.5,
-                  :fit-intercept      true,
-                  :label-col          "label",
-                  :standardization    true,
-                  :probability-col    "probability",
-                  :prediction-col     "prediction",
-                  :features-col       "features"}
-        std       (coalesce (:standardisation params)
-                            (:standardization params)
-                            (:standardization defaults))
-        params    (-> params
-                      (dissoc :standardisation)
-                      (assoc :standardization std))]
-    (interop/instantiate LogisticRegression defaults params)))
-
-(defn decision-tree-classifier [params]
-  (let [defaults {:max-bins                     32,
-                  :min-info-gain                0.0,
-                  :impurity                     "gini",
-                  :raw-prediction-col           "rawPrediction",
-                  :cache-node-ids               false,
-                  :seed                         159147643,
-                  :label-col                    "label",
-                  :min-weight-fraction-per-node 0.0,
-                  :leaf-col                     ""
-                  :checkpoint-interval          10,
-                  :probability-col              "probability",
-                  :max-depth                    5,
-                  :max-memory-in-mb             256,
-                  :prediction-col               "prediction",
-                  :features-col                 "features",
-                  :min-instances-per-node       1}]
-    (interop/instantiate DecisionTreeClassifier defaults params)))
-
-(defn random-forest-classifier [params]
-  (let [defaults {:max-bins                     32,
-                  :subsampling-rate             1.0,
-                  :min-info-gain                0.0,
-                  :impurity                     "gini",
-                  :raw-prediction-col           "rawPrediction",
-                  :cache-node-ids               false,
-                  :seed                         207336481,
-                  :label-col                    "label",
-                  :leaf-col                     ""
-                  :feature-subset-strategy      "auto",
-                  :min-weight-fraction-per-node 0.0,
-                  :checkpoint-interval          10,
-                  :probability-col              "probability",
-                  :max-depth                    5,
-                  :max-memory-in-mb             256,
-                  :prediction-col               "prediction",
-                  :features-col                 "features",
-                  :min-instances-per-node       1,
-                  :num-trees                    20}]
-    (interop/instantiate RandomForestClassifier defaults params)))
-
-(defn gbt-classifier [params]
-  (let [defaults {:max-bins                     32,
-                  :subsampling-rate             1.0,
-                  :max-iter                     20,
-                  :step-size                    0.1,
-                  :min-info-gain                0.0,
-                  :raw-prediction-col           "rawPrediction",
-                  :cache-node-ids               false,
-                  :seed                         -1287390502,
-                  :label-col                    "label",
-                  :leaf-col                     ""
-                  :min-weight-fraction-per-node 0.0,
-                  :feature-subset-strategy      "all",
-                  :checkpoint-interval          10,
-                  :probability-col              "probability",
-                  :loss-type                    "logistic",
-                  :max-depth                    5,
-                  :max-memory-in-mb             256,
-                  :prediction-col               "prediction",
-                  :features-col                 "features",
-                  :min-instances-per-node       1}]
-    (interop/instantiate GBTClassifier defaults params)))
-
-(defn multilayer-perceptron-classifier [params]
-  (let [defaults {:block-size         128,
-                  :max-iter           100,
-                  :step-size          0.03,
-                  :tol                1.0E-6,
-                  :raw-prediction-col "rawPrediction",
-                  :seed               -763139545,
-                  :label-col          "label",
-                  :probability-col    "probability",
-                  :prediction-col     "prediction",
-                  :features-col       "features",
-                  :solver             "l-bfgs"}]
-    (interop/instantiate MultilayerPerceptronClassifier defaults params)))
-
-(defn linear-svc [params]
-  (let [defaults {:max-iter           100,
-                  :tol                1.0E-6,
-                  :raw-prediction-col "rawPrediction",
-                  :reg-param          0.0,
-                  :aggregation-depth  2,
-                  :threshold          0.0,
-                  :fit-intercept      true,
-                  :label-col          "label",
-                  :standardization    true,
-                  :prediction-col     "prediction",
-                  :features-col       "features"}
-        std       (coalesce (:standardisation params)
-                            (:standardization params)
-                            (:standardization defaults))
-        params    (-> params
-                      (dissoc :standardisation)
-                      (assoc :standardization std))]
-    (interop/instantiate LinearSVC defaults params)))
-
-(defn one-vs-rest [params]
-  (let [defaults {:label-col          "label",
-                  :features-col       "features",
-                  :parallelism        1,
-                  :raw-prediction-col "rawPrediction",
-                  :prediction-col     "prediction"}]
-    (interop/instantiate OneVsRest defaults params)))
-
-(defn naive-bayes [params]
-  (let [defaults {:smoothing          1.0,
-                  :prediction-col     "prediction",
-                  :features-col       "features",
-                  :raw-prediction-col "rawPrediction",
-                  :probability-col    "probability",
-                  :label-col          "label",
-                  :model-type         "multinomial"}]
-    (interop/instantiate NaiveBayes defaults params)))
-
-(defn fm-classifier [params]
-  (let [defaults {:max-iter            100,
-                  :step-size           1.0,
-                  :tol                 1.0E-6,
-                  :raw-prediction-col  "rawPrediction",
-                  :reg-param           0.0,
-                  :seed                -2050267832,
-                  :mini-batch-fraction 1.0,
-                  :fit-intercept       true,
-                  :label-col           "label",
-                  :factor-size         8,
-                  :probability-col     "probability",
-                  :fit-linear          true,
-                  :prediction-col      "prediction",
-                  :init-std            0.01,
-                  :features-col        "features",
-                  :solver              "adamW"}]
-    (interop/instantiate FMClassifier defaults params)))
+(interop/def-stages org.apache.spark.ml.classification
+  [decision-tree-classifier DecisionTreeClassifier]
+  [fm-classifier FMClassifier]
+  [gbt-classifier GBTClassifier]
+  [linear-svc LinearSVC]
+  [logistic-regression LogisticRegression]
+  [multilayer-perceptron-classifier MultilayerPerceptronClassifier]
+  [naive-bayes NaiveBayes]
+  [one-vs-rest OneVsRest]
+  [random-forest-classifier RandomForestClassifier])
 
 ;; Docs
 (docs/alter-docs-in-ns!
