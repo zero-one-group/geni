@@ -123,21 +123,6 @@
       (when (some? value)
         (convert value)))))
 
-(defn- ->data-type
-  "The Spark type for a UDF's return type."
-  ^DataType [return-type]
-  (let [data-type (cond
-                    (instance? DataType return-type) return-type
-                    (keyword? return-type)           (dataset-creation/data-type->spark-type return-type)
-                    (or (vector? return-type)
-                        (map? return-type))          (dataset-creation/->schema return-type))]
-    (if (instance? DataType data-type)
-      data-type
-      (throw (ex-info (str "Unknown UDF return type " (pr-str return-type) ". Pass a type keyword "
-                           "such as :long, a schema such as [:string] or {:a :int}, or a Spark "
-                           "DataType.")
-                      {:return-type return-type})))))
-
 (defn- upload!
   "Over Spark Connect, uploads what the server needs to run `f` to the
   session, once per session."
@@ -248,7 +233,7 @@
   ([f return-type] (udf f return-type {}))
   ([f return-type opts]
    (upload-everywhere! f)
-   (let [data-type (->data-type return-type)
+   (let [data-type (dataset-creation/->data-type return-type)
          udf-fn    (->udf-fn f data-type)]
      (caller f (memoize #(spark-udf udf-fn data-type % opts))))))
 
@@ -273,7 +258,7 @@
                                            (name udf-name) " with, since the function takes "
                                            "more than one number of them.")
                                       {:udf-name udf-name})))
-        data-type (->data-type return-type)
+        data-type (dataset-creation/->data-type return-type)
         udf-fn    (->udf-fn f data-type)
         u         (spark-udf udf-fn data-type arity (assoc opts :name udf-name))]
     (.register (.udf spark) (name udf-name) u)

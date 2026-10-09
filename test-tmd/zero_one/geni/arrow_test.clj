@@ -1,132 +1,60 @@
 (ns ^:classic zero-one.geni.arrow-test
   "g/collect-to-arrow, read back with tech.ml.dataset."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is testing]]
             [tech.v3.dataset :as ds]
             [tech.v3.libs.arrow :as tmd-arrow]
             [zero-one.geni.core :as g]
-            [zero-one.geni.arrow :as arrow]
-            [zero-one.geni.test-resources
+            [zero-one.geni.test-resources :as tr
              :refer
-             [k-means-df libsvm-df melbourne-df ratings-df]]))
+             [k-means-df libsvm-df melbourne-df ratings-df]])
+  (:import
+   (java.nio.file Files)))
 
-(def temp-dir (System/getProperty "java.io.tmpdir"))
+(defn- collect-to-tmd
+  "The result as collect-to-arrow writes it, read back as a dataset per file."
+  [dataframe]
+  (mapv tmd-arrow/read-stream-dataset-copying
+        (g/collect-to-arrow dataframe (str (tr/create-temp-dir!)))))
 
-(deftest typed-action-test
-  (testing "must not allow unknown type"
-    (is (thrown? IllegalArgumentException (arrow/typed-action :get :unknown-type nil nil nil nil))))
-  (testing "must not allow unknown action"
-    (mapv
-     (fn [col-type]
-       (is (thrown? IllegalArgumentException (arrow/typed-action :unknown-action col-type nil nil nil nil))))
-     [:string :double :float :long :integer :boolean :date])))
+(defn- collected-rows
+  "The rows of the files that collect-to-arrow writes, read back with Arrow
+  itself, since tech.ml.dataset can't read a struct, as an MLlib vector is."
+  [dataframe]
+  (let [read-rows (requiring-resolve 'zero-one.geni.arrow-rows/read-rows)]
+    (mapcat #(read-rows (Files/readAllBytes (.toPath (io/file %))))
+            (g/collect-to-arrow dataframe (str (tr/create-temp-dir!))))))
 
-(deftest empty-dataframe-test
-  (testing "writes arrow file with 0 rows and no schema"
-    (is (= 0
-           (-> (g/create-dataframe [] {:long    :long
-                                       :int     :int
-                                       :string  :string
-                                       :float   :float
-                                       :double  :double
-                                       :date    :date
-                                       :boolean :boolean})
-               (g/collect-to-arrow 10 "/tmp")
-               (first)
-               (tmd-arrow/read-stream-dataset-copying)
-               (ds/row-count))))))
+(def ^:private all-types
+  {:long :long :int :int :string :string :float :float :double :double :date :date :boolean :boolean})
 
 (deftest melbourne-df-test
+  (testing "a file per Arrow batch, of at most 10,000 rows by default, which tech.ml.dataset reads"
+    (let [[first-ds :as datasets] (collect-to-tmd (melbourne-df))]
+      (is (= [[21 10000] [21 3580]] (map ds/shape datasets)))
+      (is (= (g/column-names (melbourne-df)) (ds/column-names first-ds)))
+      (is (= "85 Turner St" (str (first (get first-ds "Address")))))
+      (is (= 1480000.0 (first (get first-ds "Price")))))))
 
-  (is (= 2
-         (-> (melbourne-df)
-             (g/select-columns [:Suburb])
-             (g/collect-to-arrow 10000 temp-dir)
-             count))))
-
-(deftest size-of-collect-arrow-files-test
-  (is (= 2
-         (-> (melbourne-df)
-             (g/collect-to-arrow 10000 temp-dir)
-             count))))
-
-(deftest tmd-can-read-it-all-test
-  (let [arrow-files  (g/collect-to-arrow (melbourne-df) 20000 temp-dir)
-        melbourne-ds (tmd-arrow/read-stream-dataset-copying (first arrow-files))]
-    (is (= [21 13580] (ds/shape melbourne-ds)))
-    (is (= (g/column-names (melbourne-df)) (ds/column-names melbourne-ds)))
-    (is (= "85 Turner St" (str (first (get melbourne-ds "Address")))))
-    (is (= 1480000.0 (first (get melbourne-ds "Price"))))))
-
-(deftest split-in-rows-works-ok-test
-  (let [arrow-files    (g/collect-to-arrow (melbourne-df) 10000 temp-dir)
-        melbourne-ds-1 (tmd-arrow/read-stream-dataset-copying (first arrow-files))
-        melbourne-ds-2 (tmd-arrow/read-stream-dataset-copying (second arrow-files))]
-    (is (= [21 10000] (ds/shape melbourne-ds-1)))
-    (is (= [21 3580] (ds/shape melbourne-ds-2)))))
-
-(deftest crashes-and-failures-test
-  (testing "does not crash"
-    (g/collect-to-arrow (ratings-df) 10000 temp-dir)
-    (-> (g/read-csv! "test/resources/boolean_data.csv")
-        (g/collect-to-arrow 10 temp-dir))
-    (-> (g/read-parquet! "test/resources/with_sql_date.parquet")
-        (g/collect-to-arrow 10 temp-dir)))
-  (testing "does fail"
-    (is (thrown? IllegalArgumentException (-> (k-means-df)
-                                              (g/collect-to-arrow 10 temp-dir))))
-    (is (thrown? IllegalArgumentException (-> (libsvm-df)
-                                              (g/collect-to-arrow 10000 temp-dir))))))
-
-(deftest dates-test
-  (testing "dates are corect"
-    (let [with-date  (g/read-parquet! "test/resources/with_sql_date.parquet")
-          ds
-          (-> with-date
-              (g/collect-to-arrow 10 temp-dir)
-              first
-              (tmd-arrow/read-stream-dataset-copying))]
-
-      (is (= (.getTime (first (-> with-date (g/collect-col "date")))) (first (get ds "date")))))))
+(deftest other-types-test
+  (testing "every type that Spark's Arrow batches take, MLlib vectors and dates too"
+    (is (= (g/count (ratings-df)) (reduce + (map ds/row-count (collect-to-tmd (ratings-df))))))
+    (is (= 6 (count (collected-rows (k-means-df)))))
+    (is (= 100 (count (collected-rows (libsvm-df)))))
+    (is (pos? (ds/row-count (first (collect-to-tmd (g/read-csv! "test/resources/boolean_data.csv"))))))
+    (let [with-date (g/read-parquet! "test/resources/with_sql_date.parquet")]
+      (is (= (str (first (g/collect-col with-date "date")))
+             (str (first (get (first (collect-to-tmd with-date)) "date"))))))))
 
 (deftest all-nil-data-frame-test
   (testing "all nils are written into the Arrow file"
-    (let [dataset (-> (g/create-dataframe
-                       [(g/row nil nil nil nil nil nil nil)]
-                       {:long    :long
-                        :int     :int
-                        :string  :string
-                        :float   :float
-                        :double  :double
-                        :date    :date
-                        :boolean :boolean})
-                      (g/collect-to-arrow 10 "/tmp")
-                      (first)
-                      (tmd-arrow/read-stream-dataset-copying))]
+    (let [dataset (apply ds/concat (collect-to-tmd (g/create-dataframe [(g/row nil nil nil nil nil nil nil)] all-types)))]
       (is (= 1 (ds/row-count dataset)))
       (is (= (repeat 7 [nil]) (map vec (vals dataset)))))))
 
-(deftest empty-dataframe-2-test
-  (testing "writes arrow file with 0 rows and no schema"
-    (is (= 0
-           (->
-            (g/create-dataframe [] {:long    :long
-                                    :int     :int
-                                    :string  :string
-                                    :float   :float
-                                    :double  :double
-                                    :date    :date
-                                    :boolean :boolean})
-            (g/collect-to-arrow 10 "/tmp")
-            (first)
-            (tmd-arrow/read-stream-dataset-copying)
-            (ds/row-count))))))
-
 (deftest nulls-after-the-first-row-test
   (testing "a null in a later row leaves the first row's value"
-    (let [dataset (-> (g/create-dataframe [(g/row 1 "a") (g/row nil nil)]
-                                          {:long :long :string :string})
-                      (g/collect-to-arrow 10 temp-dir)
-                      first
-                      tmd-arrow/read-stream-dataset-copying)]
+    (let [dataset (apply ds/concat (collect-to-tmd (g/create-dataframe [(g/row 1 "a") (g/row nil nil)]
+                                                                       {:long :long :string :string})))]
       (is (= [1 nil] (vec (get dataset "long"))))
       (is (= ["a" nil] (map #(some-> % str) (get dataset "string")))))))

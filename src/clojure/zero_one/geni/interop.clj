@@ -1,5 +1,6 @@
 (ns zero-one.geni.interop
   (:require
+   [clojure.set :as set]
    [clojure.string :as string :refer [replace-first]]
    [clojure.walk :as walk]
    [zero-one.geni.docs :as docs]
@@ -9,6 +10,7 @@
    (com.fasterxml.jackson.databind ObjectMapper)
    (java.io ByteArrayOutputStream PrintStream)
    (org.apache.spark.sql Row)
+   (org.apache.spark.sql.types ArrayType MapType StructField StructType UserDefinedType)
    (scala Console
           Function0
           Function1
@@ -23,21 +25,6 @@
 
 (defn ->java-list [coll]
   (java.util.ArrayList. coll))
-
-(defn scala-seq? [value]
-  (instance? Seq value))
-
-(defn iterable? [value]
-  (instance? Iterable value))
-
-(defn scala-map? [value]
-  (instance? Map value))
-
-(defn scala-tuple2? [value]
-  (instance? Tuple2 value))
-
-(defn scala-tuple3? [value]
-  (instance? Tuple3 value))
 
 (defn scala-seq->vec [scala-seq]
   (vec (JavaConverters/seqAsJavaList scala-seq)))
@@ -175,6 +162,12 @@
           (.empty ListMap$/MODULE$)
           pairs))
 
+(defn scala-object
+  "The Scala object that a class such as `\"scala.None$\"` holds, its
+  MODULE$, or nil when the class isn't on the classpath."
+  [class-name]
+  (some-> (class-named class-name) (.getField "MODULE$") (.get nil)))
+
 (defn ->scala-tuple2 [coll]
   (Tuple2. (first coll) (second coll)))
 
@@ -244,6 +237,20 @@
   ^String [x]
   (.writeValueAsString object-mapper (clojure->jackson x)))
 
+(defn nested-types
+  "Spark type `dt` and every type inside it: an array's elements', a map's
+  keys' and values', a struct's fields' and a user-defined type's storage's."
+  [dt]
+  (tree-seq some?
+            (fn [dt]
+              (condp instance? dt
+                ArrayType       [(.elementType ^ArrayType dt)]
+                MapType         [(.keyType ^MapType dt) (.valueType ^MapType dt)]
+                StructType      (map #(.dataType ^StructField %) (.fields ^StructType dt))
+                UserDefinedType [(.sqlType ^UserDefinedType dt)]
+                nil))
+            dt))
+
 (defn spark-conf->map [conf]
   (->> conf
        .getAll
@@ -276,24 +283,18 @@
 
 (defn array? [value] (.isArray (class value)))
 
-(defn spark-row? [value]
-  (instance? Row value))
-
 (defn dense-vector? [value]
   (boolean (some-> ^Class @dense-vector-class (.isInstance value))))
 
 (defn sparse-vector? [value]
   (boolean (some-> ^Class @sparse-vector-class (.isInstance value))))
 
-(defn dense-matrix? [value]
-  (boolean (some-> ^Class @dense-matrix-class (.isInstance value))))
-
 (defn vector->seq
   "An MLlib vector's values, every one of them, a sparse vector's zeros too."
   [spark-vector]
   (-> spark-vector .toArray seq))
 
-(defn sparse-vector->seq [spark-sparse-vector]
+(defn- sparse-vector->seq [spark-sparse-vector]
   {:size (.size spark-sparse-vector)
    :indices (-> spark-sparse-vector .indices seq)
    :values (-> spark-sparse-vector .values seq)})
@@ -301,7 +302,7 @@
 (defn matrix->seqs [matrix]
   (->> matrix .rowIter .toSeq scala-seq->vec (map vector->seq)))
 
-(defn spark-row->map [row]
+(defn- spark-row->map [row]
   (let [cols   (->> row .schema .fieldNames (map keyword))
         values (->> row .toSeq scala-seq->vec (map ->clojure))]
     (zipmap cols values)))
@@ -326,38 +327,39 @@
   `false` itself, which a Boolean that Java deserialised isn't."
   [value]
   (cond
-    (nil? value)            nil
-    (boolean? value)        (Boolean/valueOf (.booleanValue ^Boolean value))
-    (map? value)            (map-vals->clojure value)
-    (vector? value)         (mapv ->clojure value)
-    (set? value)            (into (empty value) (map ->clojure) value)
-    (coll? value)           (map ->clojure value)
-    (array? value)          (map ->clojure (seq value))
-    (scala-seq? value)      (map ->clojure (scala-seq->vec value))
-    (iterable? value)       (map ->clojure (seq value))
-    (scala-map? value)      (scala-map->map value)
-    (spark-row? value)      (spark-row->map value)
-    (dense-vector? value)   (vector->seq value)
-    (sparse-vector? value)  (sparse-vector->seq value)
-    (dense-matrix? value)   (matrix->seqs value)
-    (scala-tuple2? value)   [(->clojure (._1 value)) (->clojure (._2 value))]
-    (scala-tuple3? value)   [(->clojure (._1 value))
-                             (->clojure (._2 value))
-                             (->clojure (._3 value))]
-    :else                   value))
+    (nil? value)               nil
+    (boolean? value)           (Boolean/valueOf (.booleanValue ^Boolean value))
+    (map? value)               (map-vals->clojure value)
+    (vector? value)            (mapv ->clojure value)
+    (set? value)               (into (empty value) (map ->clojure) value)
+    (coll? value)              (map ->clojure value)
+    (array? value)             (map ->clojure (seq value))
+    (instance? Seq value)      (map ->clojure (scala-seq->vec value))
+    (instance? Iterable value) (map ->clojure (seq value))
+    (instance? Map value)      (scala-map->map value)
+    (instance? Row value)      (spark-row->map value)
+    (dense-vector? value)      (vector->seq value)
+    (sparse-vector? value)     (sparse-vector->seq value)
+    (some-> ^Class @dense-matrix-class
+            (.isInstance value))  (matrix->seqs value)
+    (instance? Tuple2 value)   [(->clojure (._1 value)) (->clojure (._2 value))]
+    (instance? Tuple3 value)   [(->clojure (._1 value))
+                                (->clojure (._2 value))
+                                (->clojure (._3 value))]
+    :else                      value))
 
-(defn setter? [^java.lang.reflect.Method method]
+(defn- setter? [^java.lang.reflect.Method method]
   (and (= 1 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method)))
        (re-find #"^set[A-Z]" (.getName method))))
 
-(defn method-keyword [^java.lang.reflect.Method method]
+(defn- method-keyword [^java.lang.reflect.Method method]
   (-> method
       .getName
       (replace-first #"^set" "")
       ->kebab-case
       keyword))
 
-(defn setters-map
+(defn- setters-map
   "The class's setters by param keyword, each a vector of the methods of that
   name, which can be overloads."
   [^Class cls]
@@ -366,7 +368,7 @@
        (filter setter?)
        (group-by method-keyword)))
 
-(defn setter-type [^java.lang.reflect.Method method]
+(defn- setter-type [^java.lang.reflect.Method method]
   (get (.getParameterTypes method) 0))
 
 (def ^:private number-coercions
@@ -377,15 +379,23 @@
    Short/TYPE   short  Short   short
    Byte/TYPE    byte   Byte    byte})
 
+(defn- name-keyword [x]
+  (if (keyword? x) (name x) x))
+
 (defn ->java
   "Converts a Clojure value into an argument for a Java setter that takes
-  `cls`: numbers to the right width, collections to arrays, strings to enums."
+  `cls`: keywords to their names, numbers to the right width, collections to
+  arrays, or to an MLlib vector, and strings to enums."
   [^Class cls value]
-  (let [coerce (number-coercions cls)]
+  (let [value  (name-keyword value)
+        coerce (number-coercions cls)]
     (cond
       (and (.isAssignableFrom Seq cls)
-           (.isAssignableFrom cls List))    (->scala-seq value)
+           (.isAssignableFrom cls List))    (->scala-seq (map name-keyword value))
       (and coerce (number? value))          (coerce value)
+      (and (coll? value)
+           (= "org.apache.spark.ml.linalg.Vector"
+              (.getName cls)))              (->dense-vector value)
       (and (.isArray cls) (coll? value))    (let [component (.getComponentType cls)
                                                   values    (vec value)
                                                   arr       (java.lang.reflect.Array/newInstance component (count values))]
@@ -395,7 +405,7 @@
       (and (.isEnum cls) (string? value))   (Enum/valueOf cls ^String value)
       :else                                 value)))
 
-(defn set-value [^java.lang.reflect.Method method instance value]
+(defn- set-value [^java.lang.reflect.Method method instance value]
   (.invoke method instance (into-array [(->java (setter-type method) value)])))
 
 (defn- takes-many? [^java.lang.reflect.Method method]
@@ -409,13 +419,6 @@
   [methods value]
   (or (first (filter #(= (coll? value) (takes-many? %)) methods))
       (first methods)))
-
-(defn convert-keywords [value]
-  (cond
-    (keyword? value)              (name value)
-    (and (coll? value)
-         (every? keyword? value)) (map name value)
-    :else                         value))
 
 (defn- edit-distance
   "The Levenshtein distance between two strings."
@@ -431,8 +434,8 @@
            (vec (range (inc (count b))))
            (map-indexed vector a))))
 
-(defn- unknown-param! [^Class cls setters k]
-  (let [known   (sort (remove #{:default} (keys setters)))
+(defn- unknown-param! [^Class cls known k]
+  (let [known   (sort (remove #{:default} known))
         closest (first (sort-by #(edit-distance (name k) (name %)) known))
         close?  (and closest
                      (<= (edit-distance (name k) (name closest))
@@ -445,44 +448,47 @@
 (defn set-params!
   "Sets `params` on `instance` through its setters (e.g. `{:input-col
   \"text\"}` through `setInputCol`), and returns the instance. A key in
-  `params` that has no setter throws, with the class's params in the message.
-  The keys in `defaults`, which are Geni's own, are set when the class has a
-  setter for them and skipped when it doesn't, since a default can be missing
-  from one Spark version."
-  ([instance params] (set-params! instance {} params))
-  ([instance defaults params]
-   (let [cls     (class instance)
-         setters (setters-map cls)]
-     (doseq [k (keys params)
-             :when (not (contains? setters k))]
-       (unknown-param! cls setters k))
-     (doseq [[k v] (merge defaults params)
-             :let  [v       (convert-keywords v)
-                    methods (setters k)]
-             :when methods]
-       (set-value (pick-setter methods v) instance v))
-     instance)))
+  `params` that has no setter throws, with the class's params in the message,
+  before any is set."
+  [instance params]
+  (let [cls     (class instance)
+        setters (setters-map cls)]
+    (doseq [k (keys params)
+            :when (not (contains? setters k))]
+      (unknown-param! cls (keys setters) k))
+    (doseq [[k v] params]
+      (set-value (pick-setter (setters k) v) instance v))
+    instance))
 
 (defn instantiate
-  "Creates an instance of `cls`, and sets `params` and `defaults` on it, as
-  `set-params!` does."
-  ([cls params] (instantiate cls {} params))
-  ([^Class cls defaults params]
-   (set-params! (.newInstance cls) defaults params)))
+  "Creates an instance of `cls`, and sets `params` on it, as `set-params!`
+  does."
+  [^Class cls params]
+  (set-params! (.newInstance cls) params))
 
-(defn zero-arity? [^java.lang.reflect.Method method]
-  (= 0 (alength ^"[Ljava.lang.Class;" (.getParameterTypes method))))
+(defmacro def-stages
+  "Defines a function for each row, `[name Class]` or `[name Class doc]`, that
+  makes a `package.Class` with the params given, as `instantiate` does. Spark's
+  defaults hold for the rest. `:standardisation` stands for
+  `:standardization`."
+  [package & rows]
+  `(do
+     ~@(for [[fn-name cls doc] rows]
+         `(defn ~fn-name ~@(when doc [doc]) [~'params]
+            (instantiate ~(symbol (str package "." cls))
+                         (set/rename-keys ~'params {:standardisation :standardization}))))))
 
-(defn fields-map [^Class cls]
-  (->> cls
-       .getMethods
-       (filter zero-arity?)
-       (map #(vector (method-keyword %) %))
-       (into {})))
-
-(defn get-field [instance field-keyword]
-  (let [fields (fields-map (class instance))]
-    (.invoke (fields field-keyword) instance (into-array []))))
+(defn grid-param
+  "The Param of `stage` that `k`, such as `:max-iter`, names, and `values` as
+  its setter takes them, so that whole numbers suit an int param, for a param
+  grid."
+  [stage k values]
+  (let [cls     (class stage)
+        setters (setters-map cls)
+        param   (first (filter #(= k (keyword (->kebab-case (.name %)))) (.params stage)))]
+    (when-not (and param (setters k))
+      (unknown-param! cls (keys setters) k))
+    [param (mapv #(->java (setter-type (pick-setter (setters k) %)) %) values)]))
 
 (defn dense [& values]
   (let [flattened (mapcat ensure-coll values)]

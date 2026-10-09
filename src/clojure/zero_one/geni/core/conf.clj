@@ -8,13 +8,6 @@
    (org.apache.spark.sql RuntimeConfig SparkSession)
    (scala Option)))
 
-(defn- session-and-args
-  "Splits off a leading SparkSession, or takes Geni's default session."
-  [args]
-  (if (instance? SparkSession (first args))
-    [(first args) (rest args)]
-    [@defaults/spark args]))
-
 (defn- runtime-conf ^RuntimeConfig [^SparkSession spark]
   (.conf spark))
 
@@ -39,7 +32,7 @@
   ```"
   {:arglists '([k] [k default] [spark k] [spark k default])}
   [& args]
-  (let [[spark [k & more]] (session-and-args args)
+  (let [[spark [k & more]] (defaults/session-and-args args)
         conf               (runtime-conf spark)]
     (if (seq more)
       (let [default (first more)]
@@ -59,7 +52,7 @@
   ```"
   {:arglists '([k value] [configs] [spark k value] [spark configs])}
   [& args]
-  (let [[spark more] (session-and-args args)
+  (let [[spark more] (defaults/session-and-args args)
         conf         (runtime-conf spark)
         configs      (if (map? (first more)) (first more) {(first more) (second more)})]
     (when-let [unset (seq (keep (fn [[k value]] (when (nil? value) k)) configs))]
@@ -73,7 +66,7 @@
   "Unsets the config `k`, so that it goes back to Spark's own default."
   {:arglists '([k] [spark k])}
   [& args]
-  (let [[spark [k]] (session-and-args args)]
+  (let [[spark [k]] (defaults/session-and-args args)]
     (.unset (runtime-conf spark) (name k))))
 
 (defn conf-modifiable?
@@ -82,5 +75,5 @@
   `conf-set!` still sets it."
   {:arglists '([k] [spark k])}
   [& args]
-  (let [[spark [k]] (session-and-args args)]
+  (let [[spark [k]] (defaults/session-and-args args)]
     (.isModifiable (runtime-conf spark) (name k))))

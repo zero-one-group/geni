@@ -10,21 +10,21 @@
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.core.function-table :as function-table]
-   [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll]])
+   [zero-one.geni.utils :refer [->camel-case ->kebab-case ensure-coll optional-fn]])
   (:import
    (java.text Normalizer Normalizer$Form)
    (org.apache.spark.sql Column Dataset DataFrameWriter Encoders SparkSession)))
 
 (defn- configure-reader-or-writer
-  "Sets each option: a keyword key in camelCase, such as `:infer-schema` as
-  `inferSchema`, and a string key as it is, for options such as Iceberg's
-  `\"snapshot-id\"`. A keyword value goes as its name."
+  "Sets each option but `:kebab-columns`: a keyword key in camelCase, such as
+  `:infer-schema` as `inferSchema`, and a string key as it is, for options
+  such as Iceberg's `\"snapshot-id\"`. A keyword value goes as its name."
   [unconfigured options]
   (reduce
    (fn [r [k v]]
      (.option r (if (string? k) k (->camel-case k)) (if (keyword? v) (name v) v)))
    unconfigured
-   options))
+   (dissoc options :kebab-columns)))
 
 (def default-options
   "Default DataFrameReader options."
@@ -48,114 +48,117 @@
                          (map ->kebab-case))]
     (.toDF dataset (interop/->scala-seq new-columns))))
 
-(defn- read-data! [format-name spark path options]
-  (let [reader-opts (dissoc options :kebab-columns :schema)
-        defaults    (default-options format-name)
-        schema      (:schema options)
-        reader      (-> (.. spark read (format format-name))
-                        (configure-reader-or-writer (merge defaults reader-opts))
-                        (cond-> (not (nil? schema))
-                          (.schema (dataset-creation/->schema schema))))]
-    (-> (.load reader path)
-        (cond-> (:kebab-columns options) ->kebab-columns))))
+(defn- kebab-if-asked
+  "The dataset, with its columns in kebab case when the options say
+  `:kebab-columns`."
+  [dataset options]
+  (cond-> dataset (:kebab-columns options) ->kebab-columns))
 
-(defmulti read-avro!
+(defn read!
+  "Loads a DataFrame from any data source, as Spark's DataFrameReader does.
+  The options map takes `:format`, such as `\"parquet\"` or `\"delta\"`
+  (Spark's `spark.sql.sources.default` without it), `:path` or `:paths`,
+  `:schema`, as for the other readers, and `:kebab-columns`. Every other key is
+  a reader option, as for the other readers: a keyword key in camelCase, such
+  as `:version-as-of`, and a string key as it is, such as `\"snapshot-id\"`.
+  Without a path, it loads what the options name, as a JDBC source does.
+
+  ```clojure
+  (g/read! {:format \"delta\" :path \"/data/events\" :version-as-of 3})
+  (g/read! spark {:format \"csv\" :paths [\"a.csv\" \"b.csv\"] :header true})
+  ```"
+  {:arglists '([options] [spark options])}
+  [& args]
+  (let [[spark [options]]                    (defaults/session-and-args args)
+        {:keys [format path paths schema]} options
+        _      (when (and path paths)
+                 (throw (ex-info "read! takes :path or :paths, not both." {:options options})))
+        reader (-> (.read ^SparkSession spark)
+                   (cond-> format (.format (name format)))
+                   (cond-> schema (.schema (dataset-creation/->schema schema)))
+                   (configure-reader-or-writer (dissoc options :format :path :paths :schema)))
+        loaded (cond
+                 path  (.load reader ^String path)
+                 paths (.load reader ^"[Ljava.lang.String;" (into-array String paths))
+                 :else (.load reader))]
+    (kebab-if-asked loaded options)))
+
+(defn- read-format!
+  "Reads `args`, `[spark] path [options]`, as `read!` does, with
+  `format-name` and its default options."
+  [format-name args]
+  (let [[spark [path options]] (defaults/session-and-args args)]
+    (read! spark (merge (default-options format-name) options {:format format-name :path path}))))
+
+(defn read-avro!
   "Loads an Avro file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  (fn [head & _] (class head)))
-(defmethod read-avro! :default
-  ([path] (read-avro! @defaults/spark path))
-  ([path options] (read-avro! @defaults/spark path options)))
-(defmethod read-avro! SparkSession
-  ([spark path] (read-avro! spark path {}))
-  ([spark path options] (read-data! "avro" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "avro" args))
 
-(defmulti read-parquet!
+(defn read-parquet!
   "Loads a Parquet file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources-parquet.html"
-  (fn [head & _] (class head)))
-(defmethod read-parquet! :default
-  ([path] (read-parquet! @defaults/spark path))
-  ([path options] (read-parquet! @defaults/spark path options)))
-(defmethod read-parquet! SparkSession
-  ([spark path] (read-parquet! spark path {}))
-  ([spark path options] (read-data! "parquet" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "parquet" args))
 
-(defmulti read-binary!
+(defn read-binary!
   "Loads a binary file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources-binaryFile.html"
-  (fn [head & _] (class head)))
-(defmethod read-binary! :default
-  ([path] (read-binary! @defaults/spark path))
-  ([path options] (read-binary! @defaults/spark path options)))
-(defmethod read-binary! SparkSession
-  ([spark path] (read-binary! spark path {}))
-  ([spark path options] (read-data! "binaryFile" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "binaryFile" args))
 
-(defmulti read-csv!
+(defn read-csv!
   "Loads a CSV file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  (fn [head & _] (class head)))
-(defmethod read-csv! :default
-  ([path] (read-csv! @defaults/spark path))
-  ([path options] (read-csv! @defaults/spark path options)))
-(defmethod read-csv! SparkSession
-  ([spark path] (read-csv! spark path {}))
-  ([spark path options] (read-data! "csv" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "csv" args))
 
-(defmulti read-libsvm!
+(defn read-libsvm!
   "Loads a LIBSVM file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  (fn [head & _] (class head)))
-(defmethod read-libsvm! :default
-  ([path] (read-libsvm! @defaults/spark path))
-  ([path options] (read-libsvm! @defaults/spark path options)))
-(defmethod read-libsvm! SparkSession
-  ([spark path] (read-libsvm! spark path {}))
-  ([spark path options] (read-data! "libsvm" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "libsvm" args))
 
-(defmulti read-json!
+(defn read-json!
   "Loads a JSON file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  (fn [head & _] (class head)))
-(defmethod read-json! :default
-  ([path] (read-json! @defaults/spark path))
-  ([path options] (read-json! @defaults/spark path options)))
-(defmethod read-json! SparkSession
-  ([spark path] (read-json! spark path {}))
-  ([spark path options] (read-data! "json" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "json" args))
 
-(defmulti read-text!
+(defn read-text!
   "Loads a text file and returns the results as a DataFrame.
 
    Spark's DataFrameReader options may be passed in as a map of options.
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
-  (fn [head & _] (class head)))
-(defmethod read-text! :default
-  ([path] (read-text! @defaults/spark path))
-  ([path options] (read-text! @defaults/spark path options)))
-(defmethod read-text! SparkSession
-  ([spark path] (read-text! spark path {}))
-  ([spark path options] (read-data! "text" spark path options)))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (read-format! "text" args))
 
 (defn read-jdbc!
   "Loads a database table and returns the results as a DataFrame.
@@ -164,20 +167,13 @@
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   ([options] (read-jdbc! @defaults/spark options))
-  ([spark options]
-   (let [unconfigured-reader (.. spark sqlContext read (format "jdbc"))
-         configured-reader   (configure-reader-or-writer unconfigured-reader
-                                                         (dissoc options :kebab-columns))]
-     (cond-> (.load configured-reader)
-       (:kebab-columns options) ->kebab-columns))))
+  ([spark options] (read! spark (assoc options :format "jdbc"))))
 
-(defn- partition-by-arg [partition-id]
-  (into-array java.lang.String (map name (ensure-coll partition-id))))
-
-(defn- mode-name
-  "A writer's :mode, which can be a keyword, as Spark takes it."
-  [mode]
-  (if (keyword? mode) (name mode) mode))
+(defn- ->option-string
+  "A writer's mode or a table property, which can be a keyword, as Spark
+  takes it."
+  [v]
+  (if (keyword? v) (name v) (str v)))
 
 (defn- ->names [cols]
   (map name (ensure-coll cols)))
@@ -205,8 +201,8 @@
         _      (when cluster-by (spark/require-version! [4 0] ":cluster-by"))
         writer (-> writer
                    (cond-> format (.format (name format)))
-                   (cond-> mode (.mode (mode-name mode)))
-                   (cond-> partition-by (.partitionBy (partition-by-arg partition-by)))
+                   (cond-> mode (.mode (->option-string mode)))
+                   (cond-> partition-by (.partitionBy (into-array String (->names partition-by))))
                    (cond-> bucket-by (bucket-writer bucket-by))
                    (cond-> sort-by (sort-writer sort-by))
                    (cond-> cluster-by (cluster-writer cluster-by)))]
@@ -214,11 +210,26 @@
      writer
      (dissoc options :format :mode :partition-by :bucket-by :sort-by :cluster-by))))
 
+(defn write!
+  "Saves the DataFrame to any data source, as Spark's DataFrameWriter does.
+  The options map takes `:format` (Spark's `spark.sql.sources.default` without
+  it), `:path`, `:mode`, one of `:append`, `:overwrite`, `:error`, the default,
+  and `:ignore`, and `:partition-by`. Every other key is a writer option, as
+  for the other writers. Without a path, it saves to what the options name, as
+  a JDBC source does. `:bucket-by` and `:sort-by` need `write-table!`.
+
+  ```clojure
+  (g/write! dataframe {:format \"delta\" :path \"/data/events\" :mode :append})
+  ```"
+  [dataframe options]
+  (let [path   (:path options)
+        writer (configure-base-writer (.write dataframe) (dissoc options :path))]
+    (if path
+      (.save writer ^String path)
+      (.save writer))))
+
 (defn- write-data! [format dataframe path options]
-  (let [configured-writer (-> (.write dataframe)
-                              (.format format)
-                              (configure-base-writer options))]
-    (.save configured-writer path)))
+  (write! dataframe (assoc options :format format :path path)))
 
 (defn write-parquet!
   "Writes a Parquet file at the specified path.
@@ -285,22 +296,14 @@
 
    See: https://spark.apache.org/docs/latest/sql-data-sources.html"
   [dataframe options]
-  (let [mode                (:mode options)
-        unconfigured-writer (-> dataframe
-                                (.write)
-                                (.format "jdbc")
-                                (cond-> mode (.mode (mode-name mode))))
-        configured-writer   (configure-reader-or-writer
-                             unconfigured-writer
-                             (dissoc options :mode))]
-    (.save configured-writer)))
+  (write! dataframe (assoc options :format "jdbc")))
 
 ;; EDN
 (defn- file-exists? [path]
   (.exists (io/file path)))
 
 (defn- ensure-writable! [path options]
-  (when (and (file-exists? path) (not= (mode-name (:mode options)) "overwrite"))
+  (when (and (file-exists? path) (not= (->option-string (:mode options)) "overwrite"))
     (throw (Exception. (format "path file:%s already exists!" path)))))
 
 (defn write-edn!
@@ -310,32 +313,20 @@
    (ensure-writable! path options)
    (spit path (->> dataframe .toJSON .collect (mapv interop/read-json)))))
 
-(defmulti read-edn!
+(defn read-edn!
   "Loads an EDN file and returns the results as a DataFrame."
-  (fn [head & _] (class head)))
-(defmethod read-edn! :default
-  ([path] (read-edn! @defaults/spark path))
-  ([path options] (read-edn! @defaults/spark path options)))
-(defmethod read-edn! SparkSession
-  ([spark path] (read-edn! spark path {}))
-  ([spark path options]
-   (let [dataset (->> path
-                      slurp
-                      edn/read-string
-                      (dataset-creation/records->dataset spark))]
-     (-> dataset
-         (cond-> (:kebab-columns options) ->kebab-columns)))))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (let [[spark [path options]] (defaults/session-and-args args)]
+    (-> (dataset-creation/records->dataset spark (edn/read-string (slurp path)))
+        (kebab-if-asked options))))
 
 ;; Excel
 (defn- fxl
   "Resolves a function from zero.one/fxl, which Excel support needs."
   [fn-name]
-  (or (try
-        (requiring-resolve (symbol "zero-one.fxl.core" fn-name))
-        (catch Exception _ nil))
-      (throw (ex-info (str "Excel support needs zero.one/fxl. Add it to your "
-                           "dependencies to use read-xlsx! and write-xlsx!.")
-                      {}))))
+  (optional-fn (symbol "zero-one.fxl.core" fn-name)
+               "Excel support needs zero.one/fxl. Add it to your dependencies to use read-xlsx! and write-xlsx!."))
 
 (defn write-xlsx!
   "Writes an Excel file at the specified path. Needs `zero.one/fxl` on the
@@ -349,93 +340,38 @@
      ((fxl "records->cells") (dataset/columns dataframe) (dataset/collect dataframe)))
     path)))
 
-(defmulti read-xlsx!
+(defn read-xlsx!
   "Loads an Excel file and returns the results as a DataFrame. Needs
-   `zero.one/fxl` on the classpath.
+   `zero.one/fxl` on the classpath. Without options, the first row is the
+   header.
 
    Example options:
    ```clojure
    {:header true :sheet \"Sheet2\"}
    ```"
-  (fn [head & _] (class head)))
-(defmethod read-xlsx! :default
-  ([path] (read-xlsx! @defaults/spark path))
-  ([path options] (read-xlsx! @defaults/spark path options)))
-(defmethod read-xlsx! SparkSession
-  ([spark path] (read-xlsx! spark path {:header true}))
-  ([spark path options]
-   (let [cells     ((fxl "read-xlsx!") path)
-         table     ((fxl "cells->table") cells (:sheet options))
-         col-names (if (:header options)
-                     (first table)
-                     (map #(str "_c" %) (-> table first count range)))
-         table     (if (:header options) (rest table) table)
-         dataset   (dataset-creation/table->dataset spark table col-names)]
-     (-> dataset
-         (cond-> (:kebab-columns options) ->kebab-columns)))))
-
-; Any data source
-(defmulti read!
-  "Loads a DataFrame from any data source, as Spark's DataFrameReader does.
-  The options map takes `:format`, such as `\"parquet\"` or `\"delta\"`
-  (Spark's `spark.sql.sources.default` without it), `:path` or `:paths`,
-  `:schema`, as for the other readers, and `:kebab-columns`. Every other key is
-  a reader option, as for the other readers: a keyword key in camelCase, such
-  as `:version-as-of`, and a string key as it is, such as `\"snapshot-id\"`.
-  Without a path, it loads what the options name, as a JDBC source does.
-
-  ```clojure
-  (g/read! {:format \"delta\" :path \"/data/events\" :version-as-of 3})
-  (g/read! spark {:format \"csv\" :paths [\"a.csv\" \"b.csv\"] :header true})
-  ```"
-  (fn [head & _] (class head)))
-(defmethod read! :default
-  [options]
-  (read! @defaults/spark options))
-(defmethod read! SparkSession
-  [spark options]
-  (let [{:keys [format path paths schema kebab-columns]} options
-        _      (when (and path paths)
-                 (throw (ex-info "read! takes :path or :paths, not both." {:options options})))
-        reader (-> (.read spark)
-                   (cond-> format (.format (name format)))
-                   (cond-> schema (.schema (dataset-creation/->schema schema)))
-                   (configure-reader-or-writer
-                    (dissoc options :format :path :paths :schema :kebab-columns)))
-        loaded (cond
-                 path  (.load reader ^String path)
-                 paths (.load reader ^"[Ljava.lang.String;" (into-array String paths))
-                 :else (.load reader))]
-    (cond-> loaded kebab-columns ->kebab-columns)))
-
-(defn write!
-  "Saves the DataFrame to any data source, as Spark's DataFrameWriter does.
-  The options map takes `:format` (Spark's `spark.sql.sources.default` without
-  it), `:path`, `:mode`, one of `:append`, `:overwrite`, `:error`, the default,
-  and `:ignore`, and `:partition-by`. Every other key is a writer option, as
-  for the other writers. Without a path, it saves to what the options name, as
-  a JDBC source does. `:bucket-by` and `:sort-by` need `write-table!`.
-
-  ```clojure
-  (g/write! dataframe {:format \"delta\" :path \"/data/events\" :mode :append})
-  ```"
-  [dataframe options]
-  (let [path   (:path options)
-        writer (configure-base-writer (.write dataframe) (dissoc options :path))]
-    (if path
-      (.save writer ^String path)
-      (.save writer))))
+  {:arglists '([path] [path options] [spark path] [spark path options])}
+  [& args]
+  (let [[spark [path options]] (defaults/session-and-args args)
+        options   (or options {:header true})
+        cells     ((fxl "read-xlsx!") path)
+        table     ((fxl "cells->table") cells (:sheet options))
+        col-names (if (:header options)
+                    (first table)
+                    (map #(str "_c" %) (-> table first count range)))
+        table     (if (:header options) (rest table) table)]
+    (-> (dataset-creation/table->dataset spark table col-names)
+        (kebab-if-asked options))))
 
 (defn- parse-strings [format-name dataframe col-name options]
-  (let [{:keys [schema kebab-columns]} options
+  (let [{:keys [schema]} options
         strings (-> (dataset/select dataframe col-name) (.as (Encoders/STRING)))
         reader  (-> (.. dataframe sparkSession read)
                     (cond-> schema (.schema (dataset-creation/->schema schema)))
-                    (configure-reader-or-writer (dissoc options :schema :kebab-columns)))
+                    (configure-reader-or-writer (dissoc options :schema)))
         parsed  (case format-name
                   :json (.json reader strings)
                   :csv  (.csv reader strings))]
-    (cond-> parsed kebab-columns ->kebab-columns)))
+    (kebab-if-asked parsed options)))
 
 (defn parse-json
   "With a DataFrame, parses the JSON strings in the column `col-name` into a
@@ -467,7 +403,7 @@
   ([dataframe col-name] (parse-csv dataframe col-name {}))
   ([dataframe col-name options] (parse-strings :csv dataframe col-name options)))
 
-(defmulti read-changes!
+(defn read-changes!
   "Reads a table's change feed: the rows that changed between the versions or
   timestamps that the options give, such as `:starting-version` and
   `:ending-version`, as Delta Lake and Iceberg tables have it. Every key is a
@@ -477,18 +413,14 @@
   ```clojure
   (g/read-changes! \"lake.orders\" {:starting-version 3 :ending-version 9})
   ```"
-  (fn [head & _] (class head)))
-(defmethod read-changes! :default
-  ([table-name] (read-changes! @defaults/spark table-name {}))
-  ([table-name options] (read-changes! @defaults/spark table-name options)))
-(defmethod read-changes! SparkSession
-  ([spark table-name] (read-changes! spark table-name {}))
-  ([spark table-name options]
-   (spark/require-version! [4 2] "read-changes!")
-   (-> (.read spark)
-       (configure-reader-or-writer (dissoc options :kebab-columns))
-       (.changes (name table-name))
-       (cond-> (:kebab-columns options) ->kebab-columns))))
+  {:arglists '([table-name] [table-name options] [spark table-name] [spark table-name options])}
+  [& args]
+  (let [[spark [table-name options]] (defaults/session-and-args args)]
+    (spark/require-version! [4 2] "read-changes!")
+    (-> (.read ^SparkSession spark)
+        (configure-reader-or-writer options)
+        (.changes (name table-name))
+        (kebab-if-asked options))))
 
 (defn- table-function-name [fn-name]
   (let [sql-name (string/replace (name fn-name) "-" "_")]
@@ -511,32 +443,28 @@
   (g/table-function :inline [(g/array (g/struct (g/as (g/lit 1) :id)))])
   ```"
   {:arglists '([fn-name] [fn-name args] [spark fn-name] [spark fn-name args])}
-  [& spark-name-and-args]
-  (let [[spark fn-name args] (if (instance? SparkSession (first spark-name-and-args))
-                               spark-name-and-args
-                               (cons @defaults/spark spark-name-and-args))
-        params               (map #(keyword (str "arg" %)) (range (count args)))]
+  [& args]
+  (let [[spark [fn-name args]] (defaults/session-and-args args)
+        params                 (map #(keyword (str "arg" %)) (range (count args)))]
     (spark/sql spark
                (str "SELECT * FROM " (table-function-name fn-name)
                     "(" (string/join ", " (map #(str (keyword %)) params)) ")")
                (zipmap params args))))
 
 ; Hive/Managed Tables
-(defmulti read-table!
+(defn read-table!
   "Reads a managed (hive) table and returns the result as a DataFrame. A map
   of reader options can follow the table's name, and `:kebab-columns` in it
   renames the columns as for the other readers."
-  (fn [head & _] (class head)))
-(defmethod read-table! :default
-  ([table-name] (read-table! @defaults/spark table-name))
-  ([table-name options] (read-table! @defaults/spark table-name options)))
-(defmethod read-table! SparkSession
-  ([spark table-name] (.table spark (name table-name)))
-  ([spark table-name options]
-   (-> (.read spark)
-       (configure-reader-or-writer (dissoc options :kebab-columns))
-       (.table (name table-name))
-       (cond-> (:kebab-columns options) ->kebab-columns))))
+  {:arglists '([table-name] [table-name options] [spark table-name] [spark table-name options])}
+  [& args]
+  (let [[spark [table-name options]] (defaults/session-and-args args)]
+    (if options
+      (-> (.read ^SparkSession spark)
+          (configure-reader-or-writer options)
+          (.table (name table-name))
+          (kebab-if-asked options))
+      (.table ^SparkSession spark (name table-name)))))
 
 (defn write-table!
   "Writes the dataset to a managed (hive) table. The options take `:format`,
@@ -573,9 +501,6 @@
 
 (def ^:private write-to-modes
   #{:create :replace :create-or-replace :append :overwrite :overwrite-partitions})
-
-(defn- ->option-string [v]
-  (if (keyword? v) (name v) (str v)))
 
 (defn write-to!
   "Writes the dataset to a table through Spark's DataFrameWriterV2, the

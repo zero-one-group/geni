@@ -422,10 +422,11 @@
        :shape [n]})))
 
 (defn decode-tensors
-  "The columns at `indices` of each batch in an Arrow IPC stream, as
-  tensor-data gives them, for the function named `caller`."
-  [^bytes stream ^StructType schema indices caller]
+  "The columns of each batch in an Arrow IPC stream, as tensor-data gives
+  them, for the function named `caller`."
+  [^bytes stream ^StructType schema caller]
   (binding [*caller* caller]
     (read-batches stream (fn [^VectorSchemaRoot root]
                            {:row-count (.getRowCount root)
-                            :columns   (mapv #(tensor-data root schema %) indices)}))))
+                            :columns   (mapv #(tensor-data root schema %)
+                                             (range (count (.fields schema))))}))))

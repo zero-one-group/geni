@@ -77,7 +77,7 @@
                             zero?
                             zipmap])
   (:require
-   [zero-one.geni.utils :refer [class-named import-fn import-vars]]
+   [zero-one.geni.utils :refer [import-fn import-vars]]
    [zero-one.geni.core.clojure-idioms]
    [zero-one.geni.core.column]
    [zero-one.geni.core.conf]
@@ -945,6 +945,7 @@
 
 (import-vars
  [zero-one.geni.core.results
+  collect-to-arrow
   glimpse
   stream
   stream-tensors
@@ -1024,27 +1025,6 @@
   select-columns
   shape
   value-counts])
-
-(defn collect-to-arrow
-  "Collects the dataframe on driver and exports it as arrow files.
-  The data gets transfered by partition, and so each partions should be small
-   enough to fit in heap space of the driver. Then the data is saved in chunks
-   of `chunk-size` rows to disk as arrow files.
-
-   `rdd` Spark dataset
-   `chunk-size` Number of rows each arrow file will have. Should be small
-    enoungh to make data fit in heap space of driver.
-   `out-dir` Output dir of arrow files"
-  [rdd chunk-size out-dir]
-  ;; Loaded when it's called, since it needs Apache Arrow, which classic Spark
-  ;; brings and a Spark Connect client only has shaded.
-  (when-not (class-named "org.apache.arrow.vector.VectorSchemaRoot")
-    (throw (ex-info (clojure.core/str
-                     "collect-to-arrow needs Apache Arrow, which classic Spark brings. Add "
-                     "org.apache.arrow/arrow-vector and arrow-memory-netty to use it with a "
-                     "Spark Connect client.")
-                    {})))
-  ((requiring-resolve 'zero-one.geni.arrow/collect-to-arrow) rdd chunk-size out-dir))
 
 (def to-string
   "Coerce to string."

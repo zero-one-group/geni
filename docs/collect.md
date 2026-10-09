@@ -185,19 +185,17 @@ A column of integers (TINYINT, SMALLINT, INT or BIGINT) or floating-point number
 ;; => 4
 ```
 
-`collect-to-arrow` writes Arrow files instead, which can handle data larger than the driver's heap, as long as the **largest partition** fits on the driver, since the data travels one partition at a time. Repartitioning the data first makes sure of that.
-
-It also needs to know how many rows each Arrow file gets, which should be small enough for each file to fit in the heap, and the directory to write the files to. It writes files of `chunk-size` rows each (the last one can be smaller) and returns their paths:
+`collect-to-arrow` writes the same streams to files instead, one per batch, and returns their paths. It reads the batches as `stream` does, so it can handle data larger than the driver's heap, as long as the **largest partition** fits on the driver. Repartitioning the data first makes sure of that:
 
 ```clojure
 (-> dataframe
     (g/repartition 20)  ;; 20 partitions of about the same size
-    (g/collect-to-arrow 1000 "/tmp"))
+    (g/collect-to-arrow "/tmp"))
 ; ["/tmp/geni12331590604347994819.ipc"
 ;  "/tmp/geni2107925719499812901.ipc"
 ;  ...]
 ```
 
-With enough partitions and a small enough chunk size, data of any size can make it to the driver, although slowly when there's a lot of it. tech.ml.dataset reads the files with `tech.v3.libs.arrow/stream->dataset`, which needs `com.cnuernber/jarrow` on the classpath too.
+A file has at most `spark.sql.execution.arrow.maxRecordsPerBatch` rows, as a batch does. tech.ml.dataset reads the files with `tech.v3.libs.arrow/stream->dataset`, which needs `com.cnuernber/jarrow` on the classpath too.
 
-On Spark 3.5 with JDK 21 or newer, the Arrow functions need Arrow 13 or newer on the classpath (see the [installation notes](../README.md#installation)). Over [Spark Connect](spark_connect.md), the functions that read the batches on the client, `to-tmd`, `stream`, `to-tensors` and `stream-tensors`, need Arrow's own jars, `org.apache.arrow/arrow-vector` and `arrow-memory-netty`, as does `collect-to-arrow`, since the client only has Arrow shaded. `to-arrow`, `glimpse` and `to-html` need nothing more.
+On Spark 3.5 with JDK 21 or newer, the Arrow functions need Arrow 13 or newer on the classpath (see the [installation notes](../README.md#installation)). Over [Spark Connect](spark_connect.md), the functions that read the batches on the client, `to-tmd`, `stream`, `to-tensors` and `stream-tensors`, need Arrow's own jars, `org.apache.arrow/arrow-vector` and `arrow-memory-netty`, since the client only has Arrow shaded. `to-arrow`, `collect-to-arrow`, `glimpse` and `to-html` need nothing more.

@@ -77,25 +77,37 @@
   []
   (boolean (some-> (log4j2-config-location) (string/includes? "org/apache/spark/log4j2"))))
 
+(defn- init-spark-logging!
+  "Has Spark initialise its logging, without printing, as it does before it
+  logs, when it hasn't yet: Spark 3.5 does so as it starts, and Spark 4 when
+  the first Column is made. It goes through a companion object with Spark's
+  Logging trait: the Spark Connect client's SparkSession's, or
+  SparkContext's."
+  []
+  (try
+    (Reflector/invokeInstanceMethod (interop/scala-object (if (connect-only?)
+                                                            "org.apache.spark.sql.connect.SparkSession$"
+                                                            "org.apache.spark.SparkContext$"))
+                                    "initializeLogIfNecessary"
+                                    (object-array [false true]))
+    (catch Exception _ nil)))
+
 (defn- quieten-spark-start!
   "Before Geni starts Spark on Spark's own log4j2 profile, which logs at INFO,
   sets the root level to WARN, so that Spark's INFO lines as it starts don't
-  show. It has Spark initialise its logging first, without printing, when it
-  hasn't yet: Spark 3.5 does so as it starts, and Spark 4 when the first Column
-  is made. With a log4j2 config on the classpath, it does nothing."
+  show, having Spark initialise its logging first. With a log4j2 config on
+  the classpath, it does nothing."
   []
   (try
-    (let [module  #(Reflector/getStaticField ^String % "MODULE$")
-          call    #(Reflector/invokeInstanceMethod %1 %2 (object-array %3))
-          logging (module "org.apache.spark.internal.Logging$")]
-      (when (call logging "islog4j2DefaultConfigured" [])
-        ;; SparkContext's companion object has Spark's Logging trait.
-        (call (module "org.apache.spark.SparkContext$") "initializeLogIfNecessary" [false true]))
-      (when (spark-log-profile?)
-        (let [warn (Reflector/getStaticField "org.apache.logging.log4j.Level" "WARN")]
-          (Reflector/invokeStaticMethod "org.apache.logging.log4j.core.config.Configurator"
-                                        "setRootLevel"
-                                        (object-array [warn])))))
+    (when (Reflector/invokeInstanceMethod (interop/scala-object "org.apache.spark.internal.Logging$")
+                                          "islog4j2DefaultConfigured"
+                                          (object-array 0))
+      (init-spark-logging!))
+    (when (spark-log-profile?)
+      (let [warn (Reflector/getStaticField "org.apache.logging.log4j.Level" "WARN")]
+        (Reflector/invokeStaticMethod "org.apache.logging.log4j.core.config.Configurator"
+                                      "setRootLevel"
+                                      (object-array [warn]))))
     (catch Exception _ nil)))
 
 (def ^:private launcher-opens
@@ -155,15 +167,7 @@
   before it logs. Otherwise a Spark Connect client, which hasn't logged yet,
   leaves log4j2 on its own default config, which only shows errors."
   [message]
-  (try
-    (let [companion (if (connect-only?)
-                      "org.apache.spark.sql.connect.SparkSession$"
-                      "org.apache.spark.SparkContext$")]
-      ;; The companion object has Spark's Logging trait.
-      (Reflector/invokeInstanceMethod (Reflector/getStaticField ^String companion "MODULE$")
-                                      "initializeLogIfNecessary"
-                                      (object-array [false true])))
-    (catch Exception _ nil))
+  (init-spark-logging!)
   (.warn (LoggerFactory/getLogger "zero-one.geni.spark") ^String message))
 
 (def ^:private clojure-serializer
@@ -316,9 +320,7 @@
 (def ^:private classpath-version*
   (delay
     (some (fn [[class-name method]]
-            (some-> (class-named class-name)
-                    (.getField "MODULE$")
-                    (.get nil)
+            (some-> (interop/scala-object class-name)
                     (Reflector/invokeInstanceMethod method (object-array 0))))
           [["org.apache.spark.SparkBuildInfo$" "spark_version"]
            ["org.apache.spark.package$" "SPARK_VERSION"]])))

@@ -69,8 +69,6 @@
   (testing "create-spark-session points to g/connect"
     (is (thrown-with-msg? ExceptionInfo #"g/connect"
                           (g/create-spark-session {}))))
-  (testing "MLlib's vectors and Geni's Arrow export name what they need"
+  (testing "MLlib's vectors name what they need"
     (is (thrown-with-msg? ExceptionInfo #"spark-mllib" (g/dense 1.0 2.0)))
-    (is (thrown-with-msg? ExceptionInfo #"spark-mllib" (g/corr (g/range 3) :id)))
-    (is (thrown-with-msg? ExceptionInfo #"arrow-vector"
-                          (g/collect-to-arrow (g/range 3) 10 "target/arrow")))))
+    (is (thrown-with-msg? ExceptionInfo #"spark-mllib" (g/corr (g/range 3) :id)))))

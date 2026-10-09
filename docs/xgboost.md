@@ -1,6 +1,6 @@
 ## Optional XGBoost Support
 
-Geni wraps [XGBoost4J-Spark](https://xgboost.readthedocs.io/en/stable/jvm/xgboost4j_spark_tutorial.html)'s estimators as `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/xgboost-ranker`, and saves a trained model's native booster with `ml/write-native-model!`. XGBoost4J-Spark isn't one of Geni's dependencies: when it's on the classpath as `zero-one.geni.ml` loads, those functions use it, and otherwise they throw an error that says what to add.
+Geni wraps [XGBoost4J-Spark](https://xgboost.readthedocs.io/en/stable/jvm/xgboost4j_spark_tutorial.html)'s estimators as `ml/xgboost-classifier`, `ml/xgboost-regressor` and `ml/xgboost-ranker`, and saves a trained model's native booster with `ml/write-native-model!`. XGBoost4J-Spark isn't one of Geni's dependencies: the estimators find it on the classpath when they're called, and otherwise throw an error that says what to add.
 
 Geni's XGBoost tests use XGBoost4J-Spark 3.4.0, whose jar includes XGBoost4J itself. The artifact is for your Scala version, `_2.12` for Spark 3.5 on Scala 2.12, and `_2.13` otherwise:
 

@@ -198,27 +198,20 @@
    (-> dataframe .stat (.corr (name col-name1) (name col-name2) method))))
 
 ;; Tech ML
-(defmulti assoc
+(defn assoc
   "Column: variadic version of `map-concat`.
 
    Dataset: variadic version of `with-column`."
-  (fn [head & _] (class head)))
-(defmethod assoc :default
-  ([expr k v] (sql/map-concat expr (sql/map k v)))
-  ([expr k v & kvs]
-   (if (even? (clojure.core/count kvs))
-     (let [assoced (assoc expr k v)]
-       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
-     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
-                                            "after map/vector, found odd number"))))))
-(defmethod assoc Dataset
-  ([dataframe k v] (.withColumn dataframe (name k) (->column v)))
-  ([dataframe k v & kvs]
-   (if (even? (clojure.core/count kvs))
-     (let [assoced (assoc dataframe k v)]
-       (reduce (fn [m [k v]] (assoc m k v)) assoced (partition 2 kvs)))
-     (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
-                                            "after map/vector, found odd number"))))))
+  [x k v & kvs]
+  (when (odd? (clojure.core/count kvs))
+    (throw (IllegalArgumentException. (str "assoc expects even number of arguments "
+                                           "after map/vector, found odd number"))))
+  (reduce (fn [acc [k v]]
+            (if (instance? Dataset acc)
+              (.withColumn ^Dataset acc (name k) (->column v))
+              (sql/map-concat acc (sql/map k v))))
+          x
+          (cons [k v] (partition 2 kvs))))
 
 (defmulti dissoc
   "Column: Returns a map whose key is not in `ks`.
@@ -232,18 +225,18 @@
 (defmethod dissoc Dataset [dataframe & col-names]
   (apply dataset/drop dataframe col-names))
 
-(defmulti update'
+(defmulti update
   "Column: `transform-values` with Clojure's `assoc` signature.
 
    Dataset: `with-column` with Clojure's `assoc` signature."
   (fn [head & _] (class head)))
-(defmethod update' :default [expr k f & args]
+(defmethod update :default [expr k f & args]
   (sql/transform-values
    expr
    (fn [k' v] (sql/when (.equalTo (->column k') (->column k))
                 (apply f v args)
                 v))))
-(defmethod update' Dataset [dataframe k f & args]
+(defmethod update Dataset [dataframe k f & args]
   (dataset/with-column dataframe k (apply f k args)))
 
 ;; Pandas
@@ -292,7 +285,6 @@
 (import-fn filter where)
 (import-fn iqr interquartile-range)
 (import-fn mean avg)
-(import-fn update' update)
 
 (comment
   (require '[zero-one.geni.docs :as docs])

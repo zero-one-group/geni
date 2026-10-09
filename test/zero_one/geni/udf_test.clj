@@ -100,7 +100,7 @@
     (is (= [false true] [(.deterministic x) (.deterministic y)]))))
 
 (deftest udf-errors-test
-  (is (thrown-with-msg? ExceptionInfo #"Unknown UDF return type :lonng"
+  (is (thrown-with-msg? ExceptionInfo #":lonng isn't a Spark type"
                         (g/udf inc :lonng)))
   (is (thrown-with-msg? ExceptionInfo #"up to 10 columns"
                         ((g/udf + :long) :a :b :c :d :e :f :g :h :i :j :k))))

@@ -1,30 +1,11 @@
 (ns zero-one.geni.ml.recommendation
   (:require
-   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.interop :as interop])
-  (:import
-   (org.apache.spark.ml.recommendation ALS)))
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [import-fn]]))
 
-(defn als [params]
-  (let [defaults {:implicit-prefs false,
-                  :max-iter 10,
-                  :intermediate-storage-level "MEMORY_AND_DISK",
-                  :cold-start-strategy "nan",
-                  :num-item-blocks 10,
-                  :user-col "user",
-                  :rank 10,
-                  :nonnegative false,
-                  :reg-param 0.1,
-                  :seed 1994790107,
-                  :final-storage-level "MEMORY_AND_DISK",
-                  :checkpoint-interval 10,
-                  :item-col "item",
-                  :alpha 1.0,
-                  :rating-col "rating",
-                  :prediction-col "prediction",
-                  :num-user-blocks 10}]
-    (interop/instantiate ALS defaults params)))
+(interop/def-stages org.apache.spark.ml.recommendation
+  [als ALS])
 
 (defn recommend-for-all-users [model num-items]
   (.recommendForAllUsers model num-items))

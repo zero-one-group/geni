@@ -1,35 +1,30 @@
 (ns zero-one.geni.ml.tuning
   (:require
-   [zero-one.geni.utils :refer [import-fn]]
    [zero-one.geni.docs :as docs]
-   [zero-one.geni.interop :as interop])
+   [zero-one.geni.interop :as interop]
+   [zero-one.geni.utils :refer [import-fn]])
   (:import
-   (org.apache.spark.ml.tuning CrossValidator
-                               ParamGridBuilder
-                               TrainValidationSplit)))
+   (org.apache.spark.ml.tuning ParamGridBuilder)))
 
-(defn param-grid-builder [grids]
+(interop/def-stages org.apache.spark.ml.tuning
+  [cross-validator CrossValidator]
+  [train-validation-split TrainValidationSplit])
+
+(defn param-grid-builder
+  "An array of param maps, the grid's every combination, for a tuning
+  stage's `:estimator-param-maps`, from a map of stages to maps of params to
+  the values to try.
+
+  ```clojure
+  (ml/param-grid {log-reg {:reg-param [0.1 0.01] :max-iter [10 20]}})
+  ```"
+  [grids]
   (let [builder (ParamGridBuilder.)]
-    (doall
-     (for [[stage grid-map] grids]
-       (doall
-        (for [[param-keyword grid] grid-map]
-          (.addGrid
-           builder
-           (interop/get-field stage param-keyword)
-           (interop/->scala-seq grid))))))
+    (doseq [[stage grid] grids
+            [k values]   grid
+            :let         [[param values] (interop/grid-param stage k values)]]
+      (.addGrid builder param (interop/->scala-seq values)))
     (.build builder)))
-
-(defn cross-validator [{:keys [estimator evaluator estimator-param-maps num-folds seed parallelism
-                               collect-sub-models]}]
-  (-> (CrossValidator.)
-      (cond-> (some? collect-sub-models) (.setCollectSubModels (boolean collect-sub-models)))
-      (cond-> estimator (.setEstimator estimator))
-      (cond-> evaluator (.setEvaluator evaluator))
-      (cond-> estimator-param-maps (.setEstimatorParamMaps estimator-param-maps))
-      (cond-> num-folds (.setNumFolds num-folds))
-      (cond-> seed (.setSeed seed))
-      (cond-> parallelism (.setParallelism parallelism))))
 
 (defn avg-metrics
   "A cross-validator model's metric for each of its estimator's param maps,
@@ -51,17 +46,6 @@
   [model]
   (when (.hasSubModels model)
     (mapv #(if (.isArray (class %)) (vec %) %) (.subModels model))))
-
-(defn train-validation-split [{:keys [estimator evaluator estimator-param-maps seed parallelism
-                                      collect-sub-models train-ratio]}]
-  (-> (TrainValidationSplit.)
-      (cond-> train-ratio (.setTrainRatio (double train-ratio)))
-      (cond-> (some? collect-sub-models) (.setCollectSubModels (boolean collect-sub-models)))
-      (cond-> estimator (.setEstimator estimator))
-      (cond-> evaluator (.setEvaluator evaluator))
-      (cond-> estimator-param-maps (.setEstimatorParamMaps estimator-param-maps))
-      (cond-> seed (.setSeed seed))
-      (cond-> parallelism (.setParallelism parallelism))))
 
 ;; Docs
 (docs/alter-docs-in-ns!

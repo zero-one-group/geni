@@ -692,7 +692,7 @@ The following examples are taken from [Apache Spark's MLlib guide](https://spark
 
 (def param-grid
   (ml/param-grid
-    {hashing-tf {:num-features (mapv int [10 100 1000])}
+    {hashing-tf {:num-features [10 100 1000]}
      logistic-reg {:reg-param [0.1 0.01]}}))
 
 (def cross-validator

@@ -58,7 +58,8 @@ Functions that take a schema, such as `g/create-dataframe`, take either kind. Th
 * all fields and types default to nullable;
 * a vector of count one is interpreted as an `ArrayType`;
 * a vector of count two is interpreted as a `MapType`;
-* a map is interpreted as a nested `StructType`; and
-* everything else is left as is.
+* a map is interpreted as a nested `StructType`;
+* a type keyword, such as `:int`, and a DDL string, such as `"DECIMAL(12, 2)"`, are that type; and
+* a Spark DataType is left as is.
 
-In particular, the last rule allows mixing and matching the data-oriented style with the Spark DataType style for specifying nested types.
+In particular, the last two rules allow mixing and matching the data-oriented style with DDL and with the Spark DataType style for specifying nested types. Anything else throws, naming it.

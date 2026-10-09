@@ -1,7 +1,6 @@
 (ns zero-one.geni.ml
   (:refer-clojure :exclude [range])
   (:require
-   [clojure.walk :refer [keywordize-keys]]
    [zero-one.geni.utils :refer [->camel-case ->kebab-case class-named import-fn import-vars]]
    [zero-one.geni.core.column :as column]
    [zero-one.geni.core.polymorphic :as polymorphic]
@@ -19,6 +18,7 @@
    [zero-one.geni.ml.tuning]
    [zero-one.geni.ml.xgb])
   (:import
+   (clojure.lang Reflector)
    (org.apache.spark.ml Pipeline
                         PipelineStage
                         functions)
@@ -197,13 +197,12 @@
   ```clojure
   (g/agg dataframe {:stats (ml/summarizer :features [:mean :variance])})
   ```"
-  ([features-col metrics]
-   (.summary (Summarizer/metrics ^"[Ljava.lang.String;" (into-array String (map ->camel-case metrics)))
-             (column/->column features-col)))
+  ([features-col metrics] (summarizer features-col metrics nil))
   ([features-col metrics weight-col]
-   (.summary (Summarizer/metrics ^"[Ljava.lang.String;" (into-array String (map ->camel-case metrics)))
-             (column/->column features-col)
-             (column/->column weight-col))))
+   (let [builder (Summarizer/metrics ^"[Ljava.lang.String;" (into-array String (map ->camel-case metrics)))]
+     (if weight-col
+       (.summary builder (column/->column features-col) (column/->column weight-col))
+       (.summary builder (column/->column features-col))))))
 
 (defn kolmogorov-smirnov-test [dataframe sample-col dist-name params]
   (KolmogorovSmirnovTest/test dataframe (name sample-col) dist-name (interop/->scala-seq params)))
@@ -256,13 +255,9 @@
   (.evaluate evaluator dataframe))
 
 (defn params [stage]
-  (let [param-pairs (-> stage .extractParamMap .toSeq interop/scala-seq->vec)
-        unpack-pair (fn [p]
-                      [(-> p .param .name ->kebab-case) (interop/->clojure (.value p))])]
-    (->> param-pairs
-         (map unpack-pair)
-         (into {})
-         keywordize-keys)))
+  (into {}
+        (map (fn [pair] [(keyword (->kebab-case (.name (.param pair)))) (interop/->clojure (.value pair))]))
+        (-> stage .extractParamMap .toSeq interop/scala-seq->vec)))
 
 (defn approx-nearest-neighbors
   ([dataset model key-v n-nearest]
@@ -285,7 +280,7 @@
 (defn depth [model] (.depth model))
 (def describe-topics (memfn describeTopics))
 (defn estimated-doc-concentration [model] (interop/->clojure (.estimatedDocConcentration model)))
-(defn feature-importances [model] (interop/->clojure (.featureImportances model)))
+(defn feature-importances [model] (interop/vector->seq (.featureImportances model)))
 (defn find-frequent-sequential-patterns [dataset prefix-span]
   (.findFrequentSequentialPatterns prefix-span dataset))
 
@@ -574,16 +569,10 @@
                                (dissoc options :mode))]
      (.save configured-writer path))))
 
-(defn- read-method [^Class cls]
-  (->> (.getMethods cls)
-       (filter #(and (= "read" (.getName ^java.lang.reflect.Method %))
-                     (zero? (.getParameterCount ^java.lang.reflect.Method %))))
-       first))
-
 (defn read-stage!
   "Load a saved PipelineStage, with Geni's default session."
   [model-cls path]
-  (-> (.invoke ^java.lang.reflect.Method (read-method model-cls) model-cls (object-array 0))
+  (-> (Reflector/invokeStaticMethod ^Class model-cls "read" (object-array 0))
       (.session @defaults/spark)
       (.load path)))
 

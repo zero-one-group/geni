@@ -2,9 +2,24 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- The ML stage functions set only the params given, and Spark's defaults hold for the rest, where Geni set its own copy of them. Three of those differed from Spark's: `ml/binarizer`'s threshold is 0.0, not 0.5, `ml/min-hash-lsh`'s seed is MinHashLSH's own, so its hashes differ, and `ml/stop-words-remover`'s locale follows the JVM's, as Spark's does, unless `:locale` is given.
+- `ml/cross-validator` and `ml/train-validation-split` throw for a key they have no param for, naming the closest, as the other stages do, where they ignored it.
+- `ml/feature-importances` gives every feature's importance, zeros too, as `ml/coefficients` gives its values, where it gave a sparse vector's map.
+- `g/collect-to-arrow` takes the DataFrame and a directory, and writes a file per Arrow batch, as `g/to-arrow` gives them, of at most `spark.sql.execution.arrow.maxRecordsPerBatch` rows. With a chunk size, it throws an error that says so. A DATE column is Arrow's DateDay, where it was TimeStampMilli.
+- `g/+`, `g/*`, `g/&&`, `g/||` and the comparisons fold their columns without a starting literal, so `(g/+ :a :b)` is named `(a + b)`, where it was `((0 + a) + b)`.
+- `zero-one.geni.catalog`'s functions, the readers, such as `g/read-csv!`, `g/read!` and `g/read-table!`, `g/binary-files`, `g/text-file`, `g/whole-text-files` and `g/assoc` are functions rather than multimethods, so a `defmethod` on one no longer extends it. They take the same arguments.
+- `g/->schema` gives a Spark type for a type keyword too, and throws for a type it doesn't know, where it gave the value back.
+- `interop/instantiate` and `interop/set-params!` take no map of defaults. `interop/get-field`, `interop/fields-map`, `interop/zero-arity?`, `interop/convert-keywords`, `utils/with-dynamic-import` and the `zero-one.geni.arrow` namespace are gone, and interop's setter and type-check helpers are private.
+
 New:
 
 - `ml/stage` makes a Spark ML stage of any class from a map of params, as Geni's own stages take one, so that a stage Geni has no function for, such as one of Spark NLP's annotators, goes into `ml/pipeline` without interop. It takes a class, a class name, or a stage made already, such as a pretrained model, whose params it sets in place. The new cookbook part, [text classification with Spark NLP](docs/cookbook/part_13_text_classification_with_spark_nlp.md), uses it (#323).
+- `g/collect-to-arrow` takes every type that Spark's Arrow batches take, such as decimals, arrays, maps, structs and MLlib vectors, where it took seven, and works over Spark Connect without Arrow's jars. On classic Spark, it reads one partition at a time, as `g/stream` does, and runs as one of Spark's SQL executions, so an observation from `g/observe` gets its metrics.
+- A type that a schema takes can be a DDL string at any depth, as in `(g/->schema {:price "DECIMAL(12, 2)"})`, in `g/create-dataframe`'s `:schema`, a reader's `:schema` and a UDF's return type.
+- An ML stage's setter that takes an MLlib vector takes a collection of numbers, as `ml/logistic-regression`'s `:lower-bounds-on-intercepts` does.
+- The XGBoost estimators look for XGBoost4J-Spark when they're called, so it can join the classpath after Geni loads.
 - `zero-one.geni.graph` builds graphs from DataFrames of vertices and edges with GraphFrames, an optional dependency, on classic Spark 3.5 and 4 (#321). It has their degrees and triplets, filters, motif finding with `graph/find`, breadth-first search and shortest paths, PageRank, connected and strongly connected components, label propagation, triangle counts, and message passing with `graph/aggregate-messages` and `graph/pregel`. Each algorithm takes an option map, with GraphFrames' setters in kebab case, and gives a DataFrame, but for PageRank, which gives a graph. Without GraphFrames on the classpath, or over Spark Connect, the functions throw an error that says what's needed. The [graphs guide](docs/graphs.md) has the details.
 
 Fixes:
@@ -19,6 +34,11 @@ Fixes:
 - `g/collect-to-arrow` keeps the first row's value in a column with a null in a later row of the same file, where it wrote a null.
 - `g/lit` has its own docstring again, which Spark 3.0.1's had replaced.
 - `geni --help` exits with status 0.
+- `ml/binarizer` with `:input-cols` and `:thresholds`, and `ml/quantile-discretizer` with `:input-cols` and `:num-buckets-array`, which threw, since Geni set `:threshold` and `:num-buckets` too.
+- `ml/generalized-linear-regression` no longer logs a warning about `variancePower` on each fit of a family other than tweedie.
+- `ml/param-grid` takes whole numbers for an int param, such as `{:max-iter [10 20]}`, which a fit then threw a ClassCastException for.
+- `ml/cross-validator` takes `:fold-col`, which it ignored.
+- An ML stage takes a collection of keywords and strings together, such as `{:input-cols [:a "b"]}`, which threw.
 
 Changes:
 

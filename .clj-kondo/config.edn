@@ -5,12 +5,11 @@
  :hooks {:macroexpand {zero-one.geni.utils/import-fn
                        zero-one.geni.kondo-hooks/import-fn
                        zero-one.geni.core.function-table/def-spark-functions
-                       zero-one.geni.kondo-hooks/def-spark-functions}}
- ;; The with-dynamic-import tests define vars inside the macro on purpose.
- :config-in-ns {zero-one.geni.utils-test {:linters {:inline-def {:level :off}}}}
+                       zero-one.geni.kondo-hooks/def-spark-functions
+                       zero-one.geni.interop/def-stages
+                       zero-one.geni.kondo-hooks/def-stages}}
  :linters
   {:unresolved-symbol
-   {:exclude [(zero-one.geni.utils/with-dynamic-import)
-              (zero-one.geni.rdd.function/gen-function)]}
+   {:exclude [(zero-one.geni.rdd.function/gen-function)]}
    :unresolved-var {:level :off}
    :redundant-expression {:level :off}}}

@@ -427,9 +427,7 @@
              (name value-col))))
 
 (defn- ->struct-type ^StructType [schema]
-  (let [parsed (if (string? schema)
-                 (dataset-creation/parse-ddl schema)
-                 (dataset-creation/->schema schema))]
+  (let [parsed (dataset-creation/->data-type schema)]
     (if (instance? StructType parsed)
       parsed
       (throw (ex-info (str "Expected a schema: a struct type, a map such as {:id :long}, "

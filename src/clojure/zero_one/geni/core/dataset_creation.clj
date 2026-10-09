@@ -26,9 +26,7 @@
 
 (def ^:private variant-type
   "Spark 4's VARIANT type, for a VariantVal, or nil on Spark 3.5."
-  (some-> (class-named "org.apache.spark.sql.types.VariantType$")
-          (.getField "MODULE$")
-          (.get nil)))
+  (interop/scala-object "org.apache.spark.sql.types.VariantType$"))
 
 (def ^:private time-type
   "Spark 4.1's TIME type, at microseconds, for a LocalTime, or nil before 4.1."
@@ -54,21 +52,38 @@
            nil        DataTypes/NullType}
     vector-udt (assoc :vector vector-udt)))
 
-(defn- ->spark-type
-  "The Spark type for a type keyword, or a Spark type as it is. Without
-  spark-mllib, as with a Spark Connect client, :vector says what it needs."
-  [data-type]
-  (if (instance? DataType data-type)
-    data-type
-    (or (data-type->spark-type data-type)
-        (when (= :vector data-type)
-          (interop/mllib-class "org.apache.spark.ml.linalg.VectorUDT")))))
+(defn ->data-type
+  "The Spark type that `spec` gives: a DataType as it is, a type keyword such
+  as `:long`, a DDL string such as `\"ARRAY<STRING>\"` or `\"id BIGINT\"`, a
+  vector of one type for an array, or of two for a map's keys and values, and
+  a map of field names to types for a struct, at any depth. Anything else
+  throws. Without spark-mllib, as with a Spark Connect client, `:vector` says
+  what it needs."
+  ^DataType [spec]
+  (cond
+    (instance? DataType spec)               spec
+    (string? spec)                          (DataType/fromDDL spec)
+    (and (vector? spec) (= 1 (count spec))) (DataTypes/createArrayType (->data-type (first spec)) true)
+    (and (vector? spec) (= 2 (count spec))) (DataTypes/createMapType (->data-type (first spec))
+                                                                     (->data-type (second spec)))
+    (map? spec)                             (DataTypes/createStructType
+                                             ^java.util.List
+                                             (mapv (fn [[k v]] (DataTypes/createStructField (name k) (->data-type v) true))
+                                                   spec))
+    (contains? data-type->spark-type spec)  (data-type->spark-type spec)
+    (= :vector spec)                        (interop/mllib-class "org.apache.spark.ml.linalg.VectorUDT")
+    :else
+    (throw (ex-info (str (pr-str spec) " isn't a Spark type: pass a type keyword such as :long, a DDL "
+                         "string such as \"ARRAY<STRING>\", a vector such as [:string] for an array "
+                         "or [:string :int] for a map, a map such as {:id :long} for a struct, or a "
+                         "DataType.")
+                    {:type spec}))))
 
 (defn struct-field
   "Creates a StructField by specifying the name `col-name`, data type `data-type`
   and whether values of this field can be null values `nullable`."
   [col-name data-type nullable]
-  (DataTypes/createStructField (name col-name) (->spark-type data-type) nullable))
+  (DataTypes/createStructField (name col-name) (->data-type data-type) nullable))
 
 (defn struct-type
   "Creates a StructType with the given list of StructFields `fields`."
@@ -79,23 +94,23 @@
   "Creates an ArrayType by specifying the data type of elements `val-type` and
    whether the array contains null values `nullable`."
   [val-type nullable]
-  (DataTypes/createArrayType (->spark-type val-type) nullable))
+  (DataTypes/createArrayType (->data-type val-type) nullable))
 
 (defn map-type
   "Creates a MapType by specifying the data type of keys `key-type` and the data
    type of values `val-type`."
   [key-type val-type]
-  (DataTypes/createMapType
-   (->spark-type key-type)
-   (->spark-type val-type)))
+  (DataTypes/createMapType (->data-type key-type) (->data-type val-type)))
 
 (defn ->schema
-  "Coerces plain Clojure data structures to a Spark schema.
+  "Coerces plain Clojure data structures to a Spark schema, as `->data-type`
+  does: a map for a struct, a vector of one type for an array and of two for
+  a map, and a type keyword or a DDL string at any depth.
 
   ```clojure
   (-> {:x [:short]
        :y [:string :int]
-       :z {:a :float :b :double}}
+       :z {:a :float :b \"DECIMAL(12, 2)\"}}
       g/->schema
       g/->string)
   => StructType(
@@ -105,27 +120,14 @@
          z,
          StructType(
            StructField(a,FloatType,true),
-           StructField(b,DoubleType,true)
+           StructField(b,DecimalType(12,2),true)
          ),
          true
        )
      )
   ```"
-  [value]
-  (cond
-    (and (vector? value) (= 1 (count value)))
-    (array-type (->schema (first value)) true)
-
-    (and (vector? value) (= 2 (count value)))
-    (map-type (->schema (first value)) (->schema (second value)))
-
-    (map? value)
-    (->> value
-         (map (fn [[k v]] (struct-field k (->schema v) true)))
-         (apply struct-type))
-
-    :else
-    value))
+  ^DataType [value]
+  (->data-type value))
 
 (defn parse-ddl
   "Parses a DDL string into a Spark type: a schema such as
@@ -150,28 +152,12 @@
   "Creates a DataFrame from a tech.ml.dataset dataset, or from rows and a
   schema, on the default session or the one given.
 
-  From a dataset, each column gets its Spark type from, in turn:
-  - the `:schema` option, a map from column names to Spark types, each a
-    DataType, a DDL string such as \"DECIMAL(12, 2)\", or what `->schema`
-    takes;
-  - the Spark type that `to-tmd` keeps in the column's metadata, under
-    `:zero-one.geni/spark-type`, when the column still has the datatype
-    that `to-tmd` gave it, so that a round trip keeps the types;
-  - the column's datatype: `:int32` INT, `:float64` DOUBLE, `:string`
-    STRING, `:local-date` DATE, `:instant` TIMESTAMP, `:local-date-time`
-    TIMESTAMP_NTZ, `:duration` a day-time interval, and so on, packed or
-    not. `:decimal` is a DECIMAL of 38 digits, 18 of them after the point,
-    as Spark has for a BigDecimal, unless the values need more digits
-    before the point or after it;
-  - the values, as `records->dataset` infers them, for columns of other
-    objects, such as vectors and maps.
-
-  A missing value is a null. A float or a double goes into a DECIMAL as its
-  shortest decimal, as Spark's `Decimal` reads a double. A value that its
-  column's type can't hold exactly, such as a number with more digits after
-  the point than its DECIMAL has, throws, naming the column, rather than
-  being rounded or becoming a null. A dataset has no rows without a column, so neither does
-  the DataFrame. `to-tmd` goes the other way.
+  A dataset's columns get their Spark types from the `:schema` option, a map
+  from column names to what `->data-type` takes, such as \"DECIMAL(12, 2)\",
+  then from the types that `to-tmd` keeps in their metadata, and then from
+  their datatypes, or for other objects, their values. A missing value is a
+  null, and a value that its column's type can't hold exactly throws, naming
+  the column. The collecting guide has the details.
 
   ```clojure
   (g/create-dataframe (tech.v3.dataset/->dataset {:a [1 2] :b [\"x\" nil]}))
@@ -287,11 +273,8 @@
 (defn- ->big-decimal
   "A BigDecimal or a whole number as a BigDecimal, or nil for anything else."
   ^BigDecimal [value]
-  (cond
-    (instance? BigDecimal value)           value
-    (instance? clojure.lang.BigInt value)  (BigDecimal. (.toBigInteger ^clojure.lang.BigInt value))
-    (instance? BigInteger value)           (BigDecimal. ^BigInteger value)
-    (integer? value)                       (BigDecimal/valueOf (long value))))
+  (when (or (decimal? value) (integer? value))
+    (bigdec value)))
 
 (defn- digits
   "A BigDecimal's digits before the point and after it, as a DECIMAL needs
@@ -336,16 +319,6 @@
                       {:column col-name :digits [whole fraction]})))
     (DataTypes/createDecimalType max-precision scale)))
 
-(defn- has-decimal? [^DataType dt]
-  (cond
-    (instance? DecimalType dt) true
-    (instance? ArrayType dt)   (has-decimal? (.elementType ^ArrayType dt))
-    (instance? MapType dt)     (or (has-decimal? (.keyType ^MapType dt))
-                                   (has-decimal? (.valueType ^MapType dt)))
-    (instance? StructType dt)  (boolean (some #(has-decimal? (.dataType ^StructField %))
-                                              (.fields ^StructType dt)))
-    :else                      false))
-
 (defn- fit-decimals
   "`dt`, a type that the first values of the column `col-name` gave, with
   each DECIMAL in it, at the top or inside arrays and structs, made to hold
@@ -354,7 +327,7 @@
   they fit."
   ^DataType [col-name ^DataType dt values]
   (cond
-    (not (has-decimal? dt))
+    (not-any? #(instance? DecimalType %) (interop/nested-types dt))
     dt
 
     (instance? DecimalType dt)
@@ -674,19 +647,15 @@
         (->nullable dt)))))
 
 (defn- ->spark-type-of
-  "The Spark type that the :schema option gives a column: a DataType, a DDL
-  string, or what `->schema` takes."
+  "The Spark type that the :schema option gives a column, as `->data-type`
+  takes it."
   ^DataType [col-name spec]
-  (let [dt (cond
-             (instance? DataType spec) spec
-             (string? spec)            (DataType/fromDDL spec)
-             :else                     (let [t (->schema spec)]
-                                         (if (instance? DataType t) t (->spark-type t))))]
-    (or dt
-        (throw (ex-info (str "create-dataframe's :schema gives the column \"" col-name "\" "
-                             (pr-str spec) ", which isn't a Spark type. It takes a DataType, a "
-                             "DDL string such as \"DECIMAL(12, 2)\", or what g/->schema takes.")
-                        {:column col-name :type spec})))))
+  (try
+    (->data-type spec)
+    (catch clojure.lang.ExceptionInfo e
+      (throw (ex-info (str "create-dataframe's :schema for the column \"" col-name "\": "
+                           (ex-message e))
+                      {:column col-name :type spec})))))
 
 ;; Values, as their column's type has them
 
@@ -903,9 +872,7 @@
                [spark start end step]
                [spark start end step num-partitions])}
   [& args]
-  (let [[spark nums] (if (instance? SparkSession (first args))
-                       [(first args) (rest args)]
-                       [@defaults/spark args])
+  (let [[spark nums] (defaults/session-and-args args)
         [a b c d]    nums]
     (when-not (and (<= 1 (count nums) 4) (every? int? nums))
       (throw (IllegalArgumentException.

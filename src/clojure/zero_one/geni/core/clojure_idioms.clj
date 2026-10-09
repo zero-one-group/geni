@@ -52,79 +52,79 @@
 (defn inc
   "Returns an expression one greater than `expr`."
   [expr]
-  (column/+ (column/->column expr) 1))
+  (column/+ expr 1))
 
 (defn dec
   "Returns an expression one less than `expr`."
   [expr]
-  (column/- (column/->column expr) 1))
+  (column/- expr 1))
 
 ;; Casting
 (defn short
   "Casts the column to a short."
   [expr]
-  (column/cast (column/->column expr) "short"))
+  (column/cast expr "short"))
 
 (defn int
   "Casts the column to an int."
   [expr]
-  (column/cast (column/->column expr) "int"))
+  (column/cast expr "int"))
 
 (defn long
   "Casts the column to a long."
   [expr]
-  (column/cast (column/->column expr) "long"))
+  (column/cast expr "long"))
 
 (defn float
   "Casts the column to a float."
   [expr]
-  (column/cast (column/->column expr) "float"))
+  (column/cast expr "float"))
 
 (defn double
   "Casts the column to a double."
   [expr]
-  (column/cast (column/->column expr) "double"))
+  (column/cast expr "double"))
 
 (defn boolean
   "Casts the column to a boolean."
   [expr]
-  (column/cast (column/->column expr) "boolean"))
+  (column/cast expr "boolean"))
 
 (defn byte
   "Casts the column to a byte."
   [expr]
-  (column/cast (column/->column expr) "byte"))
+  (column/cast expr "byte"))
 
 (defn str
   "Casts the column to a str."
   [expr]
-  (column/cast (column/->column expr) "string"))
+  (column/cast expr "string"))
 
 ;; Predicates
 (defn zero?
   "Returns true if `expr` is zero, else false."
   [expr]
-  (column/=== (column/->column expr) 0))
+  (column/=== expr 0))
 
 (defn pos?
   "Returns true if `expr` is greater than zero, else false."
   [expr]
-  (column/< 0 (column/->column expr)))
+  (column/< 0 expr))
 
 (defn neg?
   "Returns true if `expr` is less than zero, else false."
   [expr]
-  (column/< (column/->column expr) 0))
+  (column/< expr 0))
 
 (defn even?
   "Returns true if `expr` is even, else false."
   [expr]
-  (column/=== (column/mod (column/->column expr) 2) 0))
+  (column/=== (column/mod expr 2) 0))
 
 (defn odd?
   "Returns true if `expr` is odd, else false."
   [expr]
-  (column/=== (column/mod (column/->column expr) 2) 1))
+  (column/=== (column/mod expr 2) 1))
 
 (import-fn column/=== =)
 
@@ -169,9 +169,9 @@
   (let [predicates   (take-nth 2 clauses)
         then-cols    (take-nth 2 (rest clauses))
         whenned-cols (map (fn [pred then]
-                            ;; clojure.core/if not available for some reason.
-                            ;; this is a workaround using a map lookup with a default.
-                            ({:else (column/->column then)} pred (sql/when pred then)))
+                            (if (identical? :else pred)
+                              (column/->column then)
+                              (sql/when pred then)))
                           predicates
                           then-cols)]
     (apply polymorphic/coalesce whenned-cols)))

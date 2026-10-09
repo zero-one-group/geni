@@ -5,6 +5,7 @@
    [zero-one.geni.core :as g]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.ml :as ml]
+   [zero-one.geni.utils :refer [class-named]]
    [zero-one.geni.test-resources :refer [create-temp-file!
                                          spark-at-least?
                                          df-20
@@ -83,6 +84,8 @@
                                    IsotonicRegression
                                    LinearRegression
                                    RandomForestRegressor)
+   (org.apache.spark.ml.tuning CrossValidator
+                               TrainValidationSplit)
    (org.apache.spark.sql Dataset)))
 
 (deftest reading-and-writing-test
@@ -127,11 +130,33 @@
   (testing "the instance comes back, whichever param is set last"
     (is (instance? Tokenizer (ml/tokenizer (array-map :input-col :x :output-col :y))))
     (is (instance? Tokenizer (ml/tokenizer (array-map :output-col :y :input-col :x)))))
-  (testing "a default that the class has no setter for is skipped"
-    (is (instance? Tokenizer (interop/instantiate Tokenizer {:no-such-param 1} {:input-col "x"}))))
+  (testing "keywords and strings mix in a collection"
+    (is (= ["a" "b"] (ml/input-cols (ml/vector-assembler {:input-cols [:a "b"]})))))
+  (testing "a setter that takes an MLlib vector takes numbers"
+    (is (= [-1.0] (:lower-bounds-on-intercepts
+                   (ml/params (ml/logistic-regression {:lower-bounds-on-intercepts [-1]})))))
+    (is (= [0.0 2.0] (:scaling-vec (ml/params (ml/elementwise-product {:scaling-vec [0 2]}))))))
   (testing "the British spelling of standardisation still works"
     (is (false? (.getStandardization (ml/logistic-regression {:standardisation false}))))
     (is (false? (.getStandardization (ml/linear-regression {:standardisation false}))))))
+
+(deftest spark-defaults-test
+  (testing "Geni sets only the params given, so Spark's defaults hold"
+    (is (= 0.0 (:threshold (ml/params (ml/binarizer {})))))
+    (is (= (.getSeed (MinHashLSH.)) (.getSeed (ml/min-hash-lsh {}))))
+    (let [glm (ml/glm {})]
+      (is (not (.isSet glm (.variancePower glm))) "so a gaussian fit logs no warning")))
+  (let [df (g/table->dataset @spark [[0.2 3.0] [0.8 1.0] [0.6 2.0]] [:a :b])]
+    (testing "a binariser of several columns takes :thresholds"
+      (is (= [[0.0 1.0] [1.0 0.0] [1.0 1.0]]
+             (-> df
+                 (ml/transform (ml/binarizer {:input-cols [:a :b] :output-cols [:c :d] :thresholds [0.5 1.5]}))
+                 (g/select :c :d)
+                 g/collect-vals))))
+    (testing "and a quantile discretiser of several columns :num-buckets-array"
+      (is (= 2 (count (ml/get-splits-array
+                       (ml/fit df (ml/quantile-discretizer {:input-cols [:a :b] :output-cols [:c :d]
+                                                            :num-buckets-array [2 3]})))))))))
 
 (deftest stage-test
   (testing "a stage from its class, its name as a string or a symbol, with Geni's params"
@@ -353,7 +378,8 @@
   (let [estimator   (ml/random-forest-classifier {:num-trees 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
-      (is (every? double? (:values (ml/feature-importances model))))
+      (is (= 780 (count (ml/feature-importances model))) "every feature's, zero or not")
+      (is (every? double? (ml/feature-importances model)))
       (is (int? (ml/total-num-nodes model)))
       (is (seq? (ml/trees model))))))
 
@@ -361,7 +387,8 @@
   (let [estimator   (ml/gbt-classifier {:max-iter 2 :max-depth 2})
         model       (ml/fit (libsvm-df) estimator)]
     (testing "Attributes are callable"
-      (is (every? double? (:values (ml/feature-importances model))))
+      (is (= 780 (count (ml/feature-importances model))) "every feature's, zero or not")
+      (is (every? double? (ml/feature-importances model)))
       (is (int? (ml/total-num-nodes model)))
       (is (seq? (ml/trees model)))
       (is (int? (ml/get-num-trees model)))
@@ -556,7 +583,8 @@
             idf (ml/fit tf (ml/idf {:input-col :tf :output-col :idf}))]
         (is (= 16 (count (ml/doc-freq idf))))
         (is (= 8 (reduce + (ml/doc-freq idf))))
-        (is (= 3 (ml/num-docs idf))))
+        (is (= 3 (ml/num-docs idf)))
+        (is (= 16 (count (ml/idf-vector idf)))))
       (let [model (ml/fit words (ml/word2vec {:input-col :words :output-col :v :vector-size 3 :min-count 1 :seed 1}))]
         (is (= ["word" "similarity"] (g/column-names (ml/find-synonyms model "a" 2))))
         (is (= 2 (g/count (ml/find-synonyms model [0.1 0.2 0.3] 2))))
@@ -688,226 +716,100 @@
                               [(:mean (:weighted stats)) [6.375 4.4375 0.875]]]]
       (is (every? #(< (Math/abs (double %)) 1e-12) (map - means expected))))))
 
-(deftest instantiation-fpm-test
-  (is (= (:max-pattern-length (ml/params (ml/prefix-span {:max-pattern-length 321}))) 321))
-  (is (instance? PrefixSpan (ml/prefix-span {})))
-
-  (is (= (:min-support (ml/params (ml/frequent-pattern-growth {:min-support 0.12345}))) 0.12345))
-  (is (instance? FPGrowth (ml/fp-growth {}))))
-
-(deftest instantiation-recommendation-test
-  (is (= (:num-user-blocks (ml/params (ml/als {:num-user-blocks 12345}))) 12345))
-  (is (instance? ALS (ml/alternating-least-squares {}))))
-
-(deftest instantiation-clustering-test
-  (is (= (:init-mode (ml/params (ml/power-iteration-clustering {:init-mode "degree"}))) "degree"))
-  (is (instance? PowerIterationClustering (ml/power-iteration-clustering {})))
-
-  (is (= (:features-col (ml/params (ml/gaussian-mixture {:features-col "fts"}))) "fts"))
-  (is (instance? GaussianMixture (ml/gmm {})))
-
-  (is (= (:distance-measure (ml/params (ml/bisecting-k-means {:distance-measure "cosine"}))) "cosine"))
-  (is (instance? BisectingKMeans (ml/bisecting-k-means {})))
-
-  (is (= (:optimizer (ml/params (ml/lda {:optimizer "em"}))) "em"))
-  (is (instance? LDA (ml/latent-dirichlet-allocation {})))
-
-  (is (= (:k (ml/params (ml/k-means {:k 123}))) 123))
-  (is (instance? KMeans (ml/k-means {}))))
-
-(deftest instantiation-evaluator-test
-  (is (= (:k (ml/params (ml/ranking-evaluator {:k 12}))) 12))
-  (is (instance? RankingEvaluator (ml/ranking-evaluator {})))
-
-  (is (= (:label-col (ml/params (ml/multilabel-classification-evaluator {:label-col "xyz"}))) "xyz"))
-  (is (instance? MultilabelClassificationEvaluator (ml/multilabel-classification-evaluator {})))
-
-  (is (= (:raw-prediction-col (ml/params (ml/binary-classification-evaluator {:raw-prediction-col "xyz"}))) "xyz"))
-  (is (instance? BinaryClassificationEvaluator (ml/binary-classification-evaluator {})))
-
-  (is (= (:distance-measure (ml/params (ml/clustering-evaluator {:distance-measure "cosine"}))) "cosine"))
-  (is (instance? ClusteringEvaluator (ml/clustering-evaluator {})))
-
-  (is (= (:label-col (ml/params (ml/multiclass-classification-evaluator {:label-col "weightz"}))) "weightz"))
-  (is (instance? MulticlassClassificationEvaluator (ml/multiclass-classification-evaluator {})))
-
-  (is (= (:metric-name (ml/params (ml/regression-evaluator {:metric-name "r2"}))) "r2"))
-  (is (instance? RegressionEvaluator (ml/regression-evaluator {}))))
-
-(deftest instantiation-regression-test
-  (is (= (:factor-size (ml/params (ml/fm-regressor {:factor-size 12}))) 12))
-  (is (instance? FMRegressor (ml/fm-regressor {})))
-
-  (is (= (:label-col (ml/params (ml/isotonic-regression {:label-col "ABC"}))) "ABC"))
-  (is (instance? IsotonicRegression (ml/isotonic-regression {})))
-
-  (is (= (:quantile-probabilities (ml/params (ml/aft-survival-regression {:quantile-probabilities [0.005 0.995]}))) [0.005 0.995]))
-  (is (instance? AFTSurvivalRegression (ml/aft-survival-regression {})))
-
-  (is (= (:max-bins (ml/params (ml/gbt-regressor {:max-bins 128}))) 128))
-  (is (instance? GBTRegressor (ml/gbt-regressor {})))
-
-  (is (= (:prediction-col (ml/params (ml/random-forest-regressor {:prediction-col "xyz"}))) "xyz"))
-  (is (instance? RandomForestRegressor (ml/random-forest-regressor {})))
-
-  (is (= (:variance-col (ml/params (ml/decision-tree-regressor {:variance-col "abc"}))) "abc"))
-  (is (instance? DecisionTreeRegressor (ml/decision-tree-regressor {})))
-
-  (is (= (:reg-param (ml/params (ml/glm {:reg-param 1.0}))) 1.0))
-  (is (instance? GeneralizedLinearRegression (ml/generalized-linear-regression {})))
-
-  (is (= (:standardization (ml/params (ml/linear-regression {:standardisation false}))) false))
-  (is (instance? LinearRegression (ml/linear-regression {}))))
-
-(deftest instantiation-classification-test
-  (is (= (:init-std (ml/params (ml/fm-classifier {:init-std 10.0}))) 10.0))
-  (is (instance? FMClassifier (ml/fm-classifier {})))
-
-  (is (= (:thresholds (ml/params (ml/logistic-regression {:thresholds [0.0 0.1]}))) [0.0 0.1]))
-  (is (instance? LogisticRegression (ml/logistic-regression {})))
-
-  (is (= (:thresholds (ml/params (ml/naive-bayes {:thresholds [0.0 0.1]}))) [0.0 0.1]))
-  (is (instance? NaiveBayes (ml/naive-bayes {})))
-
-  (let [classifier (ml/logistic-regression {:max-iter 10 :tol 1e-6})]
-    (is (instance? LogisticRegression (:classifier (ml/params (ml/one-vs-rest {:classifier classifier}))))))
-  (is (instance? OneVsRest (ml/one-vs-rest {})))
-
-  (is (= (:standardization (ml/params (ml/linear-svc {:standardisation false}))) false))
-  (is (instance? LinearSVC (ml/linear-svc {})))
-
-  (is (= (:layers (ml/params (ml/mlp-classifier {:layers [1 2 3]}))) [1 2 3]))
-  (is (instance? MultilayerPerceptronClassifier (ml/mlp-classifier {})))
-
-  (is (= (:feature-subset-strategy (ml/params (ml/gbt-classifier {:feature-subset-strategy "auto"}))) "auto"))
-  (is (instance? GBTClassifier (ml/gbt-classifier {})))
-
-  (is (= (:num-trees (ml/params (ml/random-forest-classifier {:num-trees 12}))) 12))
-  (is (instance? RandomForestClassifier (ml/random-forest-classifier {})))
-
-  (is (= (:thresholds (ml/params (ml/decision-tree-classifier {:thresholds [0.0]}))) [0.0]))
-  (is (instance? DecisionTreeClassifier (ml/decision-tree-classifier {}))))
-
-(deftest instantiation-features-test
-  (is (= (:with-centering (ml/params (ml/robust-scaler {:with-centering true}))) true))
-  (is (instance? RobustScaler (ml/robust-scaler {})))
-
-  (is (= (:case-sensitive (ml/params (ml/stop-words-remover {:case-sensitive true}))) true))
-  (is (instance? StopWordsRemover (ml/stop-words-remover {})))
-  (is (= 181 (-> (ml/stop-words-remover {}) ml/params :stop-words count)))
-
-  (is (= (:num-top-features (ml/params (ml/chi-sq-selector {:num-top-features 1122}))) 1122))
-  (is (instance? ChiSqSelector (ml/chi-sq-selector {})))
-
-  (is (= (:handle-invalid (ml/params (ml/vector-assembler {:handle-invalid "skip"}))) "skip"))
-  (is (instance? VectorAssembler (ml/vector-assembler {})))
-
-  (is (= (:input-cols (ml/params (ml/feature-hasher {:input-cols ["real" "bool" "stringNum" "string"]}))) ["real" "bool" "stringNum" "string"]))
-  (is (instance? FeatureHasher (ml/feature-hasher {})))
-
-  (is (= (:input-col (ml/params (ml/n-gram {:input-col "words"}))) "words"))
-  (is (instance? NGram (ml/n-gram {})))
-
-  (is (= (:threshold (ml/params (ml/binariser {:threshold 0.5}))) 0.5))
-  (is (instance? Binarizer (ml/binarizer {})))
-
-  (is (= (:k (ml/params (ml/pca {:k 3}))) 3))
-  (is (instance? PCA (ml/pca {})))
-
-  (is (= (:degree (ml/params (ml/polynomial-expansion {:degree 3}))) 3))
-  (is (instance? PolynomialExpansion (ml/polynomial-expansion {})))
-
-  (is (= (:inverse (ml/params (ml/dct {:inverse true}))) true))
-  (is (instance? DCT (ml/discrete-cosine-transform {})))
-
-  (is (= (:handle-invalid (ml/params (ml/string-indexer {:handle-invalid "skip"}))) "skip"))
-  (is (instance? StringIndexer (ml/string-indexer {})))
-
-  (is (= (:output-col (ml/params (ml/index-to-string {:output-col "categoryIndex"}))) "categoryIndex"))
-  (is (instance? IndexToString (ml/index-to-string {})))
-
-  (is (= (:input-cols (ml/params (ml/one-hot-encoder {:input-cols ["categoryIndex1" "categoryIndex2"]}))) ["categoryIndex1" "categoryIndex2"]))
-  (is (instance? OneHotEncoder (ml/one-hot-encoder {})))
-
-  (is (= (:max-categories (ml/params (ml/vector-indexer {:max-categories 10}))) 10))
-  (is (instance? VectorIndexer (ml/vector-indexer {})))
-
-  (is (= (:output-col (ml/params (ml/interaction {:output-col "indexed"}))) "indexed"))
-  (is (instance? Interaction (ml/interaction {})))
-
-  (is (= (:p (ml/params (ml/normaliser {:p 1.0}))) 1.0))
-  (is (instance? Normalizer (ml/normalizer {})))
-
-  (is (= (:input-col (ml/params (ml/standard-scaler {:input-col "abcdef"}))) "abcdef"))
-  (is (instance? StandardScaler (ml/standard-scaler {})))
-
-  (is (= (:min (ml/params (ml/min-max-scaler {:min -9999}))) -9999.0))
-  (is (instance? MinMaxScaler (ml/min-max-scaler {})))
-
-  (is (= (:output-col (ml/params (ml/max-abs-scaler {:output-col "xyz"}))) "xyz"))
-  (is (instance? MaxAbsScaler (ml/max-abs-scaler {})))
-
-  (is (= (:splits (ml/params (ml/bucketiser {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]}))) [-999.9 -0.5 -0.3 0.0 0.2 999.9]))
-  (is (instance? Bucketizer (ml/bucketiser {})))
-
-  (is (= (:scaling-vec (ml/params (ml/elementwise-product {:scaling-vec [0.0 1.0 2.0]}))) [0.0 1.0 2.0]))
-  (is (instance? ElementwiseProduct (ml/elementwise-product {})))
-
-  (is (= (:statement (ml/params (ml/sql-transformer {:statement "SELECT *, (v1 + v2)"}))) "SELECT *, (v1 + v2)"))
-  (is (instance? SQLTransformer (ml/sql-transformer {})))
-
-  (is (= (:size (ml/params (ml/vector-size-hint {:size 3}))) 3))
-  (is (instance? VectorSizeHint (ml/vector-size-hint {})))
-
-  (is (= (:num-buckets (ml/params (ml/quantile-discretiser {:num-buckets 3}))) 3))
-  (is (instance? QuantileDiscretizer (ml/quantile-discretizer {})))
-
-  (is (= (:input-cols (ml/params (ml/imputer {:input-cols ["a" "b"]}))) ["a" "b"]))
-  (is (instance? Imputer (ml/imputer {})))
-
-  (is (= (:bucket-length (ml/params (ml/bucketed-random-projection-lsh {:bucket-length 2.0}))) 2.0))
-  (is (instance? BucketedRandomProjectionLSH (ml/bucketed-random-projection-lsh {})))
-
-  (is (= (:num-hash-tables (ml/params (ml/min-hash-lsh {:num-hash-tables 55}))) 55))
-  (is (instance? MinHashLSH (ml/min-hash-lsh {})))
-
-  (let [actual (ml/params (ml/count-vectoriser {:min-df 2.0 :min-tf 3.0 :max-df 4.0}))]
-    (is (and (= (:min-df actual) 2.0)
-             (= (:min-tf actual) 3.0)
-             (= (:max-df actual) 4.0))))
-  (is (instance? CountVectorizer (ml/count-vectorizer {})))
-
-  (is (= (:min-doc-freq (ml/params (ml/idf {:min-doc-freq 100}))) 100))
-  (is (instance? IDF (ml/idf {})))
-
-  (is (= (:input-col (ml/params (ml/tokeniser {:input-col "sentence"}))) "sentence"))
-  (is (instance? Tokenizer (ml/tokenizer {})))
-
-  (is (= (:output-col (ml/params (ml/hashing-tf {:output-col "rawFeatures"}))) "rawFeatures"))
-  (is (instance? HashingTF (ml/hashing-tf {})))
-
-  (is (= (:vector-size (ml/params (ml/word2vec {:vector-size 3}))) 3))
-  (is (instance? Word2Vec (ml/word2vec {})))
-
-  (is (= (:pattern (ml/params (ml/regex-tokeniser {:pattern "\\W"}))) "\\W"))
-  (is (instance? RegexTokenizer (ml/regex-tokenizer {})))
-
-  (is (= "y ~ ." (:formula (ml/params (ml/r-formula {:formula "y ~ ."})))))
-  (is (instance? RFormula (ml/r-formula {})))
-
-  (is (= 3.0 (:selection-threshold (ml/params (ml/univariate-feature-selector {:selection-threshold 3})))))
-  (is (instance? UnivariateFeatureSelector (ml/univariate-feature-selector {})))
-
-  (is (= 0.5 (:variance-threshold (ml/params (ml/variance-threshold-selector {:variance-threshold 0.5})))))
-  (is (instance? VarianceThresholdSelector (ml/variance-threshold-selector {})))
-
-  (is (= [1 2] (:indices (ml/params (ml/vector-slicer {:indices [1 2]})))))
-  (is (instance? VectorSlicer (ml/vector-slicer {})))
-
-  (if (spark-at-least? "4.0")
-    (is (= "binary" (:target-type (ml/params (ml/target-encoder {:target-type "binary"})))))
-    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"ml/target-encoder needs Spark 4\.0"
-                          (ml/target-encoder {})))))
+(def ^:private constructors
+  "Each constructor, or an alias of it, its class, and params for it to set,
+  with what `ml/params` gives back for them where that differs."
+  [[ml/prefix-span PrefixSpan {:max-pattern-length 321}]
+   [ml/frequent-pattern-growth FPGrowth {:min-support 0.12345}]
+   [ml/alternating-least-squares ALS {:num-user-blocks 12345}]
+   [ml/power-iteration-clustering PowerIterationClustering {:init-mode "degree"}]
+   [ml/gmm GaussianMixture {:features-col "fts"}]
+   [ml/bisecting-k-means BisectingKMeans {:distance-measure "cosine"}]
+   [ml/latent-dirichlet-allocation LDA {:optimizer "em"}]
+   [ml/k-means KMeans {:k 123}]
+   [ml/ranking-evaluator RankingEvaluator {:k 12}]
+   [ml/multilabel-classification-evaluator MultilabelClassificationEvaluator {:label-col "xyz"}]
+   [ml/binary-classification-evaluator BinaryClassificationEvaluator {:raw-prediction-col "xyz"}]
+   [ml/clustering-evaluator ClusteringEvaluator {:distance-measure "cosine"}]
+   [ml/multiclass-classification-evaluator MulticlassClassificationEvaluator {:label-col "weightz"}]
+   [ml/regression-evaluator RegressionEvaluator {:metric-name "r2"}]
+   [ml/fm-regressor FMRegressor {:factor-size 12}]
+   [ml/isotonic-regression IsotonicRegression {:label-col "ABC"}]
+   [ml/aft-survival-regression AFTSurvivalRegression {:quantile-probabilities [0.005 0.995]}]
+   [ml/gbt-regressor GBTRegressor {:max-bins 128}]
+   [ml/random-forest-regressor RandomForestRegressor {:prediction-col "xyz"}]
+   [ml/decision-tree-regressor DecisionTreeRegressor {:variance-col "abc"}]
+   [ml/glm GeneralizedLinearRegression {:reg-param 1.0}]
+   [ml/linear-regression LinearRegression {:standardisation false} {:standardization false}]
+   [ml/fm-classifier FMClassifier {:init-std 10.0}]
+   [ml/logistic-regression LogisticRegression {:thresholds [0.0 0.1]}]
+   [ml/naive-bayes NaiveBayes {:thresholds [0.0 0.1]}]
+   [ml/one-vs-rest OneVsRest {:classifier (ml/logistic-regression {:max-iter 10})}]
+   [ml/linear-svc LinearSVC {:standardisation false} {:standardization false}]
+   [ml/mlp-classifier MultilayerPerceptronClassifier {:layers [1 2 3]}]
+   [ml/gbt-classifier GBTClassifier {:feature-subset-strategy "auto"}]
+   [ml/random-forest-classifier RandomForestClassifier {:num-trees 12}]
+   [ml/decision-tree-classifier DecisionTreeClassifier {:thresholds [0.0]}]
+   [ml/robust-scaler RobustScaler {:with-centering true}]
+   [ml/stop-words-remover StopWordsRemover {:case-sensitive true}]
+   [ml/chi-sq-selector ChiSqSelector {:num-top-features 1122}]
+   [ml/vector-assembler VectorAssembler {:handle-invalid "skip"}]
+   [ml/feature-hasher FeatureHasher {:input-cols ["real" "bool" "stringNum" "string"]}]
+   [ml/n-gram NGram {:input-col "words"}]
+   [ml/binariser Binarizer {:threshold 0.5}]
+   [ml/pca PCA {:k 3}]
+   [ml/polynomial-expansion PolynomialExpansion {:degree 3}]
+   [ml/discrete-cosine-transform DCT {:inverse true}]
+   [ml/string-indexer StringIndexer {:handle-invalid "skip"}]
+   [ml/index-to-string IndexToString {:output-col "categoryIndex"}]
+   [ml/one-hot-encoder OneHotEncoder {:input-cols ["categoryIndex1" "categoryIndex2"]}]
+   [ml/vector-indexer VectorIndexer {:max-categories 10}]
+   [ml/interaction Interaction {:output-col "indexed"}]
+   [ml/normaliser Normalizer {:p 1.0}]
+   [ml/standard-scaler StandardScaler {:input-col "abcdef"}]
+   [ml/min-max-scaler MinMaxScaler {:min -9999} {:min -9999.0}]
+   [ml/max-abs-scaler MaxAbsScaler {:output-col "xyz"}]
+   [ml/bucketiser Bucketizer {:splits [-999.9 -0.5 -0.3 0.0 0.2 999.9]}]
+   [ml/elementwise-product ElementwiseProduct {:scaling-vec [0.0 1.0 2.0]}]
+   [ml/sql-transformer SQLTransformer {:statement "SELECT *, (v1 + v2)"}]
+   [ml/vector-size-hint VectorSizeHint {:size 3}]
+   [ml/quantile-discretiser QuantileDiscretizer {:num-buckets 3}]
+   [ml/imputer Imputer {:input-cols ["a" "b"]}]
+   [ml/bucketed-random-projection-lsh BucketedRandomProjectionLSH {:bucket-length 2.0}]
+   [ml/min-hash-lsh MinHashLSH {:num-hash-tables 55}]
+   [ml/count-vectoriser CountVectorizer {:min-df 2.0 :min-tf 3.0 :max-df 4.0}]
+   [ml/idf IDF {:min-doc-freq 100}]
+   [ml/tokeniser Tokenizer {:input-col "sentence"}]
+   [ml/hashing-tf HashingTF {:output-col "rawFeatures"}]
+   [ml/word2vec Word2Vec {:vector-size 3}]
+   [ml/regex-tokeniser RegexTokenizer {:pattern "\\W"}]
+   [ml/r-formula RFormula {:formula "y ~ ."}]
+   [ml/univariate-feature-selector UnivariateFeatureSelector {:selection-threshold 3} {:selection-threshold 3.0}]
+   [ml/variance-threshold-selector VarianceThresholdSelector {:variance-threshold 0.5}]
+   [ml/vector-slicer VectorSlicer {:indices [1 2]}]
+   [ml/cross-validator CrossValidator {:num-folds 3}]
+   [ml/train-validation-split TrainValidationSplit {:train-ratio 0.6}]])
+
+(deftest constructors-test
+  (doseq [[make cls params expected] constructors
+          :let [expected (or expected params)]]
+    (testing (.getSimpleName ^Class cls)
+      (let [stage (make {})]
+        (is (instance? cls stage))
+        (is (not-any? #(.isSet stage %) (.params stage)) "no params set, so Spark's defaults hold"))
+      (is (= expected (select-keys (ml/params (make params)) (keys expected))))))
+  (testing "Spark's stop words, by default"
+    (is (= 181 (-> (ml/stop-words-remover {}) ml/params :stop-words count))))
+  (testing "target-encoder, which needs Spark 4"
+    (if (spark-at-least? "4.0")
+      (is (= "binary" (:target-type (ml/params (ml/target-encoder {:target-type "binary"})))))
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"ml/target-encoder needs Spark 4\.0"
+                            (ml/target-encoder {}))))))
+
+(deftest xgboost-missing-test
+  (when-not (class-named "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier")
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"XGBoost4J-Spark 3 isn't on the classpath"
+                          (ml/xgboost-classifier {})))))
 
 (deftest pipeline-test
   (testing "should be able to fit the example stages"
@@ -932,49 +834,7 @@
                           (g/select "probability" "prediction")
                           g/dtypes)]
       (is (includes? (:probability dtypes) "Vector"))
-      (is (= "DoubleType" (:prediction dtypes)))))
-  (testing "should be able to fit the idf example"
-    (let [dataset     (g/table->dataset
-                       @spark
-                       [[0.0 "Hi I heard about Spark"]
-                        [0.0 "I wish Java could use case classes"]
-                        [1.0 "Logistic regression models are neat"]]
-                       [:label :sentence])
-          estimator   (ml/pipeline
-                       (ml/tokenizer {:input-col "sentence"
-                                      :output-col "words"})
-                       (ml/hashing-tf {:num-features 20
-                                       :input-col "words"
-                                       :output-col "raw-features"})
-                       (ml/idf {:input-col "raw-features"
-                                :output-col "features"}))
-          transformer (ml/fit dataset estimator)
-          transformed (-> dataset
-                          (ml/transform transformer)
-                          (g/select "features"))]
-      (let [features (map first (g/collect-vals transformed))]
-        (is (= 3 (count features)))
-        (is (every? #(and (seq (:values %)) (every? double? (:values %))) features)))
-      (is (every? double? (-> transformer ml/stages last ml/idf-vector)))))
-  (testing "should be able to fit the word2vec example"
-    (let [dataset     (g/table->dataset
-                       @spark
-                       [["Hi I heard about Spark"]
-                        ["I wish Java could use case classes"]
-                        ["Logistic regression models are neat"]]
-                       [:sentence])
-          estimator   (ml/pipeline
-                       (ml/tokenizer {:input-col "sentence"
-                                      :output-col "text"})
-                       (ml/word2vec {:vector-size 3
-                                     :min-count 0
-                                     :input-col "text"
-                                     :output-col "result"}))
-          transformer (ml/fit dataset estimator)
-          transformed (-> dataset
-                          (ml/transform transformer)
-                          (g/select "result"))]
-      (is (every? double? (->> transformed g/collect-vals flatten))))))
+      (is (= "DoubleType" (:prediction dtypes))))))
 
 (deftest hypothesis-testing-test
   (let [dataset (g/table->dataset

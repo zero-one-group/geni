@@ -1,9 +1,12 @@
 (ns zero-one.geni.catalog
-  (:require [zero-one.geni.defaults :as defaults])
+  "Spark's catalog of databases, tables, views and their caching. Each
+  function takes the catalog first, as a SparkSession or a Catalog, or
+  leaves it out for the default session's: `(cached? \"tbl\")`,
+  `(cached? spark \"tbl\")`."
+  (:require [clojure.string :as string]
+            [zero-one.geni.defaults :as defaults])
   (:import (org.apache.spark.sql.catalog Catalog)
-           (org.apache.spark.sql Dataset SparkSession)
-           (org.apache.spark.storage StorageLevel)
-           (clojure.lang Keyword)))
+           (org.apache.spark.sql SparkSession)))
 
 (defn table-identifier
   [database name] (str database "." name))
@@ -14,353 +17,132 @@
   ([^SparkSession spark]
    (. spark catalog)))
 
-(defn- catalog-dispatch
-  [& args]
-  (mapv class args))
+(defn- split-catalog
+  "The catalog that `args` start with, a Catalog or a SparkSession's, or the
+  default session's, and the rest of `args`."
+  [args]
+  (let [[x & more] args]
+    (condp instance? x
+      Catalog      [x more]
+      SparkSession [(catalog x) more]
+      [(catalog) args])))
 
-(defmulti cache-table catalog-dispatch)
-(defmethod cache-table [String]
-  [^String table-name]
-  (cache-table @defaults/spark table-name))
-(defmethod cache-table [String StorageLevel]
-  [^String table-name ^StorageLevel storage-level]
-  (cache-table @defaults/spark table-name storage-level))
-(defmethod cache-table [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (cache-table (catalog spark) table-name))
-(defmethod cache-table [SparkSession String StorageLevel]
-  [^SparkSession spark ^String table-name ^StorageLevel storage-level]
-  (cache-table (catalog spark) table-name storage-level))
-(defmethod cache-table [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog cacheTable table-name))
-(defmethod cache-table [Catalog String StorageLevel]
-  [^Catalog catalog ^String table-name ^StorageLevel storage-level]
-  (. catalog cacheTable table-name storage-level))
+(defn cache-table [& args]
+  (let [[^Catalog c [table-name storage-level]] (split-catalog args)]
+    (if storage-level
+      (.cacheTable c table-name storage-level)
+      (.cacheTable c table-name))))
 
-(defmulti clear-cache catalog-dispatch)
-(defmethod clear-cache []
-  []
-  (clear-cache @defaults/spark))
-(defmethod clear-cache [SparkSession]
-  [^SparkSession spark]
-  (clear-cache (catalog spark)))
-(defmethod clear-cache [Catalog]
-  [^Catalog catalog]
-  (. catalog clearCache))
+(defn clear-cache [& args]
+  (.clearCache ^Catalog (first (split-catalog args))))
 
-(defmulti current-database ^String catalog-dispatch)
-(defmethod current-database []
-  []
-  (current-database @defaults/spark))
-(defmethod current-database [SparkSession]
-  [^SparkSession spark]
-  (current-database (catalog spark)))
-(defmethod current-database [Catalog]
-  [^Catalog catalog]
-  (. catalog currentDatabase))
+(defn current-database ^String [& args]
+  (.currentDatabase ^Catalog (first (split-catalog args))))
 
-(defmulti current-catalog
+(defn current-catalog
   "Returns the name of the session's current catalog, such as
   `\"spark_catalog\"`, Spark's built-in one."
-  ^String catalog-dispatch)
-(defmethod current-catalog []
-  []
-  (current-catalog @defaults/spark))
-(defmethod current-catalog [SparkSession]
-  [^SparkSession spark]
-  (current-catalog (catalog spark)))
-(defmethod current-catalog [Catalog]
-  [^Catalog catalog]
-  (. catalog currentCatalog))
+  ^String [& args]
+  (.currentCatalog ^Catalog (first (split-catalog args))))
 
-(defmulti set-current-catalog
+(defn set-current-catalog
   "Makes the catalog `catalog-name` the session's current one, for the table
   names that don't name a catalog. A catalog other than Spark's built-in one
   comes from a `spark.sql.catalog.<name>` config."
-  catalog-dispatch)
-(defmethod set-current-catalog [String]
-  [^String catalog-name]
-  (set-current-catalog @defaults/spark catalog-name))
-(defmethod set-current-catalog [SparkSession String]
-  [^SparkSession spark ^String catalog-name]
-  (set-current-catalog (catalog spark) catalog-name))
-(defmethod set-current-catalog [Catalog String]
-  [^Catalog catalog ^String catalog-name]
-  (. catalog setCurrentCatalog catalog-name))
+  [& args]
+  (let [[^Catalog c [catalog-name]] (split-catalog args)]
+    (.setCurrentCatalog c catalog-name)))
 
-(defmulti list-catalogs
+(defn list-catalogs
   "Returns a Dataset of the session's catalogs, with a `name` and a
   `description` column, or only those whose names match the pattern, where
   `*` matches any characters."
-  ^Dataset catalog-dispatch)
-(defmethod list-catalogs []
-  []
-  (list-catalogs @defaults/spark))
-(defmethod list-catalogs [String]
-  [^String pattern]
-  (list-catalogs @defaults/spark pattern))
-(defmethod list-catalogs [SparkSession]
-  [^SparkSession spark]
-  (list-catalogs (catalog spark)))
-(defmethod list-catalogs [SparkSession String]
-  [^SparkSession spark ^String pattern]
-  (list-catalogs (catalog spark) pattern))
-(defmethod list-catalogs [Catalog]
-  [^Catalog catalog]
-  (. catalog listCatalogs))
-(defmethod list-catalogs [Catalog String]
-  [^Catalog catalog ^String pattern]
-  (. catalog listCatalogs pattern))
+  [& args]
+  (let [[^Catalog c [pattern]] (split-catalog args)]
+    (if pattern (.listCatalogs c pattern) (.listCatalogs c))))
 
-(defmulti database-exists? ^Boolean catalog-dispatch)
-(defmethod database-exists? [String]
-  [^String db-name]
-  (database-exists? @defaults/spark db-name))
-(defmethod database-exists? [SparkSession String]
-  [^SparkSession spark ^String db-name]
-  (database-exists? (catalog spark) db-name))
-(defmethod database-exists? [Catalog String]
-  [^Catalog catalog ^String db-name]
-  (. catalog databaseExists db-name))
+(defn database-exists? [& args]
+  (let [[^Catalog c [db-name]] (split-catalog args)]
+    (.databaseExists c db-name)))
 
-(defmulti drop-temp-view ^Boolean catalog-dispatch)
-(defmethod drop-temp-view [String]
-  [^String view-name]
-  (drop-temp-view @defaults/spark view-name))
-(defmethod drop-temp-view [SparkSession String]
-  [^SparkSession spark ^String view-name]
-  (drop-temp-view (catalog spark) view-name))
-(defmethod drop-temp-view [Catalog String]
-  [^Catalog catalog ^String view-name]
-  (. catalog dropTempView view-name))
+(defn drop-temp-view [& args]
+  (let [[^Catalog c [view-name]] (split-catalog args)]
+    (.dropTempView c view-name)))
 
-(defmulti drop-global-temp-view ^Boolean catalog-dispatch)
-(defmethod drop-global-temp-view [String]
-  [^String view-name]
-  (drop-global-temp-view @defaults/spark view-name))
-(defmethod drop-global-temp-view [SparkSession String]
-  [^SparkSession spark ^String view-name]
-  (drop-global-temp-view (catalog spark) view-name))
-(defmethod drop-global-temp-view [Catalog String]
-  [^Catalog catalog ^String view-name]
-  (. catalog dropGlobalTempView view-name))
+(defn drop-global-temp-view [& args]
+  (let [[^Catalog c [view-name]] (split-catalog args)]
+    (.dropGlobalTempView c view-name)))
 
-(defmulti cached? ^Boolean catalog-dispatch)
-(defmethod cached? [String]
-  [^String table-name]
-  (cached? @defaults/spark table-name))
-(defmethod cached? [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (cached? (catalog spark) table-name))
-(defmethod cached? [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog isCached table-name))
+(defn cached? [& args]
+  (let [[^Catalog c [table-name]] (split-catalog args)]
+    (.isCached c table-name)))
 
-(defmulti list-columns ^Dataset catalog-dispatch)
-(defmethod list-columns [String]
-  [^String table-name]
-  (list-columns @defaults/spark table-name))
-(defmethod list-columns [String String]
-  [^String db-name ^String table-name]
-  (list-columns @defaults/spark db-name table-name))
-(defmethod list-columns [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (list-columns (catalog spark) table-name))
-(defmethod list-columns [SparkSession String String]
-  [^SparkSession spark ^String db-name ^String table-name]
-  (list-columns (catalog spark) db-name table-name))
-(defmethod list-columns [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog listColumns table-name))
-(defmethod list-columns [Catalog String String]
-  [^Catalog catalog ^String db-name ^String table-name]
-  (. catalog listColumns db-name table-name))
+(defn list-columns
+  "The columns of a table, by name or by database and name."
+  [& args]
+  (let [[^Catalog c [x table-name]] (split-catalog args)]
+    (if table-name (.listColumns c x table-name) (.listColumns c x))))
 
-(defmulti list-databases ^Dataset catalog-dispatch)
-(defmethod list-databases []
-  []
-  (list-databases @defaults/spark))
-(defmethod list-databases [SparkSession]
-  [^SparkSession spark]
-  (list-databases (catalog spark)))
-(defmethod list-databases [Catalog]
-  [^Catalog catalog]
-  (. catalog listDatabases))
+(defn list-databases [& args]
+  (.listDatabases ^Catalog (first (split-catalog args))))
 
-(defmulti list-tables ^Dataset catalog-dispatch)
-(defmethod list-tables []
-  []
-  (list-tables @defaults/spark))
-(defmethod list-tables [SparkSession]
-  [^SparkSession spark]
-  (list-tables (catalog spark)))
-(defmethod list-tables [Catalog]
-  [^Catalog catalog]
-  (. catalog listTables))
-(defmethod list-tables [String]
-  [^String db-name]
-  (list-tables @defaults/spark db-name))
-(defmethod list-tables [SparkSession String]
-  [^SparkSession spark ^String db-name]
-  (list-tables (catalog spark) db-name))
-(defmethod list-tables [Catalog String]
-  [^Catalog catalog ^String db-name]
-  (. catalog listTables db-name))
+(defn list-tables
+  "The tables of the current database, or of `db-name`."
+  [& args]
+  (let [[^Catalog c [db-name]] (split-catalog args)]
+    (if db-name (.listTables c db-name) (.listTables c))))
 
-(defmulti recover-partitions catalog-dispatch)
-(defmethod recover-partitions [String]
-  [^String table-name]
-  (recover-partitions @defaults/spark table-name))
-(defmethod recover-partitions [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (recover-partitions (catalog spark) table-name))
-(defmethod recover-partitions [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog recoverPartitions table-name))
+(defn recover-partitions [& args]
+  (let [[^Catalog c [table-name]] (split-catalog args)]
+    (.recoverPartitions c table-name)))
 
-(defmulti refresh-by-path catalog-dispatch)
-(defmethod refresh-by-path [String]
-  [^String path]
-  (refresh-by-path @defaults/spark path))
-(defmethod refresh-by-path [SparkSession String]
-  [^SparkSession spark ^String path]
-  (refresh-by-path (catalog spark) path))
-(defmethod refresh-by-path [Catalog String]
-  [^Catalog catalog ^String path]
-  (. catalog refreshByPath path))
+(defn refresh-by-path [& args]
+  (let [[^Catalog c [path]] (split-catalog args)]
+    (.refreshByPath c path)))
 
-(defmulti refresh-table catalog-dispatch)
-(defmethod refresh-table [String]
-  [^String table-name]
-  (refresh-table @defaults/spark table-name))
-(defmethod refresh-table [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (refresh-table (catalog spark) table-name))
-(defmethod refresh-table [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog refreshTable table-name))
+(defn refresh-table [& args]
+  (let [[^Catalog c [table-name]] (split-catalog args)]
+    (.refreshTable c table-name)))
 
-(defmulti set-current-database catalog-dispatch)
-(defmethod set-current-database [String]
-  [^String db-name]
-  (set-current-database @defaults/spark db-name))
-(defmethod set-current-database [SparkSession String]
-  [^SparkSession spark ^String db-name]
-  (set-current-database (catalog spark) db-name))
-(defmethod set-current-database [Catalog String]
-  [^Catalog catalog ^String db-name]
-  (. catalog setCurrentDatabase db-name))
+(defn set-current-database [& args]
+  (let [[^Catalog c [db-name]] (split-catalog args)]
+    (.setCurrentDatabase c db-name)))
 
-(defmulti table-exists? ^Boolean catalog-dispatch)
-(defmethod table-exists? [String]
-  [^String table-name]
-  (table-exists? @defaults/spark table-name))
-(defmethod table-exists? [String String]
-  [^String db-name ^String table-name]
-  (table-exists? @defaults/spark db-name table-name))
-(defmethod table-exists? [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (table-exists? (catalog spark) table-name))
-(defmethod table-exists? [SparkSession String String]
-  [^SparkSession spark ^String db-name ^String table-name]
-  (table-exists? (catalog spark) db-name table-name))
-(defmethod table-exists? [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog tableExists table-name))
-(defmethod table-exists? [Catalog String String]
-  [^Catalog catalog ^String db-name ^String table-name]
-  (. catalog tableExists db-name table-name))
+(defn table-exists?
+  "Whether a table or a view exists, by name or by database and name."
+  [& args]
+  (let [[^Catalog c [x table-name]] (split-catalog args)]
+    (if table-name (.tableExists c x table-name) (.tableExists c x))))
 
-(defmulti uncache-table catalog-dispatch)
-(defmethod uncache-table [String]
-  [^String table-name]
-  (uncache-table @defaults/spark table-name))
-(defmethod uncache-table [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (uncache-table (catalog spark) table-name))
-(defmethod uncache-table [Catalog String]
-  [^Catalog catalog ^String table-name]
-  (. catalog uncacheTable table-name))
+(defn uncache-table [& args]
+  (let [[^Catalog c [table-name]] (split-catalog args)]
+    (.uncacheTable c table-name)))
 
-(defmulti drop-relation catalog-dispatch)
-(defmethod drop-relation [Keyword String]
-  [^Keyword relation-type ^String table-name]
-  (drop-relation @defaults/spark relation-type table-name false))
-(defmethod drop-relation [Keyword String Boolean]
-  [^Keyword relation-type ^String table-name ^Boolean if-exists]
-  (drop-relation @defaults/spark relation-type table-name if-exists))
-(defmethod drop-relation [Keyword String String]
-  [^Keyword relation-type ^String db-name ^String table-name]
-  (drop-relation @defaults/spark relation-type db-name table-name false))
-(defmethod drop-relation [Keyword String String Boolean]
-  [^Keyword relation-type ^String db-name ^String table-name ^Boolean if-exists]
-  (drop-relation @defaults/spark relation-type db-name table-name if-exists))
-(defmethod drop-relation [SparkSession Keyword String]
-  [^SparkSession spark ^Keyword relation-type ^String table-name]
-  (drop-relation spark relation-type table-name false))
-(defmethod drop-relation [SparkSession Keyword String Boolean]
-  [^SparkSession spark ^Keyword relation-type ^String table-name ^Boolean if-exists]
-  (-> spark
-      (. sql (str "DROP "
-                  (name relation-type) " "
-                  (when if-exists "IF EXISTS ")
-                  table-name))))
-(defmethod drop-relation [SparkSession Keyword String String]
-  [^SparkSession spark ^Keyword relation-type ^String db-name ^String table-name]
-  (drop-relation spark relation-type (table-identifier db-name table-name) false))
-(defmethod drop-relation [SparkSession Keyword String String Boolean]
-  [^SparkSession spark ^Keyword relation-type ^String db-name ^String table-name ^Boolean if-exists]
-  (drop-relation spark relation-type (table-identifier db-name table-name) if-exists))
+(defn drop-relation
+  "Drops a relation of `relation-type`, `:TABLE` or `:VIEW`, by name or by
+  database and name, and with `if-exists` true, only when it exists. A
+  SparkSession can come first."
+  [& args]
+  (let [[spark [relation-type & names]] (defaults/session-and-args args)
+        [names if-exists]               (if (boolean? (last names))
+                                          [(butlast names) (last names)]
+                                          [names false])]
+    (.sql ^SparkSession spark (str "DROP " (name relation-type) " "
+                                   (when if-exists "IF EXISTS ")
+                                   (string/join "." names)))))
 
-(defmulti drop-table catalog-dispatch)
-(defmethod drop-table [String]
-  [^String table-name]
-  (drop-table @defaults/spark table-name false))
-(defmethod drop-table [String Boolean]
-  [^String table-name ^Boolean if-exists]
-  (drop-table @defaults/spark table-name if-exists))
-(defmethod drop-table [String String]
-  [^String db-name ^String table-name]
-  (drop-table @defaults/spark db-name table-name false))
-(defmethod drop-table [String String Boolean]
-  [^String db-name ^String table-name ^Boolean if-exists]
-  (drop-table @defaults/spark db-name table-name if-exists))
-(defmethod drop-table [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (drop-relation spark :TABLE table-name false))
-(defmethod drop-table [SparkSession String Boolean]
-  [^SparkSession spark ^String table-name ^Boolean if-exists]
-  (drop-relation spark :TABLE table-name if-exists))
-(defmethod drop-table [SparkSession String String]
-  [^SparkSession spark ^String db-name ^String table-name]
-  (drop-relation spark :TABLE db-name table-name false))
-(defmethod drop-table [SparkSession String String Boolean]
-  [^SparkSession spark ^String db-name ^String table-name ^Boolean if-exists]
-  (drop-relation spark :TABLE db-name table-name if-exists))
+(defn- drop-of-type [relation-type args]
+  (let [[spark args] (defaults/session-and-args args)]
+    (apply drop-relation spark relation-type args)))
 
-(defmulti drop-view catalog-dispatch)
-(defmethod drop-view [String]
-  [^String table-name]
-  (drop-view @defaults/spark table-name false))
-(defmethod drop-view [String Boolean]
-  [^String table-name ^Boolean if-exists]
-  (drop-view @defaults/spark table-name if-exists))
-(defmethod drop-view [String String]
-  [^String db-name ^String table-name]
-  (drop-view @defaults/spark db-name table-name false))
-(defmethod drop-view [String String Boolean]
-  [^String db-name ^String table-name ^Boolean if-exists]
-  (drop-view @defaults/spark db-name table-name if-exists))
-(defmethod drop-view [SparkSession String]
-  [^SparkSession spark ^String table-name]
-  (drop-relation spark :VIEW table-name false))
-(defmethod drop-view [SparkSession String Boolean]
-  [^SparkSession spark ^String table-name ^Boolean if-exists]
-  (drop-relation spark :VIEW table-name if-exists))
-(defmethod drop-view [SparkSession String String]
-  [^SparkSession spark ^String db-name ^String table-name]
-  (drop-relation spark :VIEW db-name table-name false))
-(defmethod drop-view [SparkSession String String Boolean]
-  [^SparkSession spark ^String db-name ^String table-name ^Boolean if-exists]
-  (drop-relation spark :VIEW db-name table-name if-exists))
+(defn drop-table
+  "Drops a table, by name or by database and name, and with `if-exists`
+  true, only when it exists. A SparkSession can come first."
+  [& args]
+  (drop-of-type :TABLE args))
+
+(defn drop-view
+  "Drops a view, by name or by database and name, and with `if-exists` true,
+  only when it exists. A SparkSession can come first."
+  [& args]
+  (drop-of-type :VIEW args))
