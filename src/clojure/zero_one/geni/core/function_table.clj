@@ -10,7 +10,7 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as string]
-   [zero-one.geni.core.column :refer [->col-array ->column]]
+   [zero-one.geni.core.column :refer [->col-array ->col-seq ->column]]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.spark :as spark])
@@ -53,16 +53,18 @@
 (defn- convert-arg
   "`value` for a parameter of class `t`, with a score for how well it fits, or
   nil when it doesn't. A keyword names a column, a string is a literal where
-  Spark takes a string and a column name where it takes only a column, and a
-  number goes as a primitive where Spark takes one, and as a literal column
-  otherwise, an INT one when it fits."
+  Spark takes a string, a type where it takes a DataType and the string is
+  DDL, and a column name where it takes only a column, and a number goes as a
+  primitive where Spark takes one, and as a literal column otherwise, an INT
+  one when it fits."
   [^Class t value]
   (let [column-ish? (or (instance? Column value) (keyword? value) (symbol? value))]
     (cond
       (= t Column)
       (cond
         column-ish?     [(->column value) 4]
-        (string? value) [(->column value) 1]
+        ;; Spark 4 parses a column name at once, so "." doesn't fit.
+        (string? value) (try [(->column value) 1] (catch Exception _ nil))
         (map? value)    nil
         :else           [(->column (int-sized value)) 2])
 
@@ -106,7 +108,9 @@
       (.isAssignableFrom DataType t)
       (cond
         (instance? t value)                  [value 4]
-        (or (map? value) (vector? value))    (let [schema (dataset-creation/->schema value)]
+        (or (map? value) (vector? value)
+            (string? value))                 (let [schema (try (dataset-creation/->data-type value)
+                                                               (catch Exception _ nil))]
                                                (when (instance? t schema) [schema 3])))
 
       (instance? t value)
@@ -130,12 +134,24 @@
         (when (every? some? converted)
           [(into-array component (map first converted)) (reduce + (map second converted))])))))
 
+(defn- columns-only?
+  "Whether `params` are all columns, the last one a column array, as for
+  `count_distinct`, whose arguments can then be maps of aliases to columns,
+  as `select` takes them."
+  [params varargs?]
+  (and varargs?
+       (every? #(= Column %) (pop params))
+       (= Column (.getComponentType ^Class (peek params)))))
+
 (defn- fit
   "How the arguments fit `method`: their converted values and a score, or nil
   when they don't."
   [^Method method args]
   (let [params     (vec (.getParameterTypes method))
         varargs?   (.isVarArgs method)
+        args       (if (columns-only? params varargs?)
+                     (mapcat #(if (map? %) (->col-seq %) [%]) args)
+                     args)
         n-fixed    (if varargs? (dec (count params)) (count params))
         n-args     (count args)]
     (when (if varargs? (<= n-fixed n-args) (= n-fixed n-args))

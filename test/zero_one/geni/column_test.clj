@@ -12,13 +12,6 @@
   (is (clojure.string/includes? (interop/with-scala-out-str (g/explain (g/lead :Suburb 2) true))
                                 "lead")))
 
-(deftest hash-code-test
-  (is (int?
-       (-> (df-1)
-           (g/select (g/hash-code :Suburb))
-           g/collect-vals
-           ffirst))))
-
 (deftest get-field-and-get-item-test
   (is (= [["Biggin" 1480000.0 -2.0]]
          (-> (df-1)

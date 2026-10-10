@@ -15,10 +15,11 @@
    [zero-one.geni.core.column :refer [->col-array ->column]]
    [zero-one.geni.core.dataset :as dataset]
    [zero-one.geni.core.dataset-creation :as dataset-creation]
+   [zero-one.geni.core.function-table :as function-table]
    [zero-one.geni.core.functions :as sql]
    [zero-one.geni.defaults :as defaults]
    [zero-one.geni.interop :as interop]
-   [zero-one.geni.utils :refer [->string-map arg-count ensure-coll import-fn]])
+   [zero-one.geni.utils :refer [arg-count ensure-coll import-fn]])
   (:import
    (clojure.lang Reflector)
    (org.apache.spark.sql Dataset
@@ -158,9 +159,8 @@
   (fn [head & _] (class head)))
 (defmethod to-json Dataset [dataframe] (.toJSON dataframe))
 (defmethod to-json :default
-  ([expr] (functions/to_json (->column expr) {}))
-  ([expr options]
-   (functions/to_json (->column expr) (->string-map options))))
+  ([expr] (functions/to_json (->column expr)))
+  ([expr options] (function-table/invoke "to_json" nil 'to-json [expr options])))
 
 (defmulti to-df
   "Collection: alias for `table->dataset`.

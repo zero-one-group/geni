@@ -170,7 +170,6 @@
   ends-with
   get-field
   get-item
-  hash-code
   ilike
   is-in-collection
   is-nan

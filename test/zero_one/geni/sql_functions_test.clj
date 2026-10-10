@@ -166,7 +166,7 @@
              (g/select
               (g/shift-right 2 1)
               (g/shift-left 2 1)
-              (g/shift-right-unsigned -2 1)
+              (g/shift-right-unsigned (g/lit -2) 1)
               (g/bitwise-not -123)
               (g/bround -123.456))
              g/collect-vals)))

@@ -220,9 +220,6 @@
 (defn between [expr lower-bound upper-bound]
   (.between (col expr) lower-bound upper-bound))
 
-;; Support Functions
-(defn hash-code [expr] (.hashCode (col expr)))
-
 ;; Shortcut Functions
 (defn null-rate
   "Aggregate function: returns the null rate of a column."

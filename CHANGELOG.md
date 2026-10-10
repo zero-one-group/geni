@@ -12,11 +12,15 @@ Breaking changes:
 - `zero-one.geni.catalog`'s functions, the readers, such as `g/read-csv!`, `g/read!` and `g/read-table!`, `g/binary-files`, `g/text-file`, `g/whole-text-files` and `g/assoc` are functions rather than multimethods, so a `defmethod` on one no longer extends it. They take the same arguments.
 - `g/->schema` gives a Spark type for a type keyword too, and throws for a type it doesn't know, where it gave the value back.
 - `interop/instantiate` and `interop/set-params!` take no map of defaults. `interop/get-field`, `interop/fields-map`, `interop/zero-arity?`, `interop/convert-keywords`, `utils/with-dynamic-import` and the `zero-one.geni.arrow` namespace are gone, and interop's setter and type-check helpers are private.
+- The 156 functions that Geni wrote by hand, from `g/abs` to `g/year`, come from Spark's function table now, as the others do since 0.4.0: a whole number that fits an int goes to them as an INT literal, as from Spark's Scala and Python APIs, where it went as a BIGINT one, so `(g/shift-right-unsigned -2 1)` shifts an INT. Their docstrings are Spark 4.2's, and their arglists take Spark's names. The higher-order functions, such as `g/transform`, and `g/when`, `g/pi` and `g/sqr` keep their own code.
+- `g/hash-code` is gone. It gave the JVM's hash of the Column object, not a column; `g/hash` is Spark's.
 
 New:
 
 - `ml/stage` makes a Spark ML stage of any class from a map of params, as Geni's own stages take one, so that a stage Geni has no function for, such as one of Spark NLP's annotators, goes into `ml/pipeline` without interop. It takes a class, a class name, or a stage made already, such as a pretrained model, whose params it sets in place. The new cookbook part, [text classification with Spark NLP](docs/cookbook/part_13_text_classification_with_spark_nlp.md), uses it (#323).
 - `g/collect-to-arrow` takes every type that Spark's Arrow batches take, such as decimals, arrays, maps, structs and MLlib vectors, where it took seven, and works over Spark Connect without Arrow's jars. On classic Spark, it reads one partition at a time, as `g/stream` does, and runs as one of Spark's SQL executions, so an observation from `g/observe` gets its metrics.
+- `g/atan2`, `g/base64`, `g/crc32`, `g/expm1`, `g/log10`, `g/log1p`, `g/log2`, `g/md5`, `g/sha1`, `g/sha2`, `g/unbase64` and `g/xxhash64` are spelled as Spark spells them, and the old names, such as `g/atan-2`, stay as aliases. `g/shift-left`, `g/shift-right`, `g/shift-right-unsigned`, `g/bitwise-not`, `g/sum-distinct` and `g/count-distinct` call Spark's names since 3.2, rather than the deprecated ones.
+- A function from Spark's table takes a DDL string where Spark takes a type, as in `(g/from-json :j "a INT, b ARRAY<INT>")`, and `g/from-csv` takes one as its schema.
 - A type that a schema takes can be a DDL string at any depth, as in `(g/->schema {:price "DECIMAL(12, 2)"})`, in `g/create-dataframe`'s `:schema`, a reader's `:schema` and a UDF's return type.
 - An ML stage's setter that takes an MLlib vector takes a collection of numbers, as `ml/logistic-regression`'s `:lower-bounds-on-intercepts` does.
 - The XGBoost estimators look for XGBoost4J-Spark when they're called, so it can join the classpath after Geni loads.
@@ -39,6 +43,8 @@ Fixes:
 - `ml/param-grid` takes whole numbers for an int param, such as `{:max-iter [10 20]}`, which a fit then threw a ClassCastException for.
 - `ml/cross-validator` takes `:fold-col`, which it ignored.
 - An ML stage takes a collection of keywords and strings together, such as `{:input-cols [:a "b"]}`, which threw.
+- On Spark 4, a function from Spark's table takes a string that can't name a column, such as the `"."` in `(g/split :s ".")`, which threw while Geni chose among Spark's overloads.
+- `g/regexp-replace` takes a string pattern and replacement as text, where it took them as column names, and `g/element-at` takes a map's key of any type, where it took only a whole number.
 
 Changes:
 

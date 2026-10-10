@@ -62,7 +62,7 @@ On a pull request, the CI runs `:spark` and `:spark-4` on JDK 21, split into two
 
 ## Spark's functions
 
-Most of Spark's SQL functions are rows of the table at the end of `src/clojure/zero_one/geni/core/functions.clj`: a name, its argument lists, and `:since` for one that Spark 4.0 or later added. A new one also needs an example in `test/zero_one/geni/spark_functions_test.clj`, which runs each function against the same call in SQL, and its docstring in `resources/spark-function-docs.edn`, which `zero-one.geni.function-docs` writes from Spark's `functions.scala` at the tag that `:spark-4` pins:
+Spark's SQL functions are rows of the table at the end of `src/clojure/zero_one/geni/core/functions.clj`, but for the few above it that need code, such as the higher-order functions: a name, its argument lists, and `:since` for one that Spark 4.0 or later added. A new one also needs an example in `test/zero_one/geni/spark_functions_test.clj`, which runs each function against the same call in SQL, and its docstring in `resources/spark-function-docs.edn`, which `zero-one.geni.function-docs` writes from Spark's `functions.scala` at the tag that `:spark-4` pins:
 
 ```bash
 clojure -X:spark:test zero-one.geni.function-docs/write! :scala '"../spark/sql/api/src/main/scala/org/apache/spark/sql/functions.scala"'

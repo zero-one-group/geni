@@ -21,34 +21,29 @@
                             struct
                             when])
   (:require
-   [zero-one.geni.core.column :refer [->col-array ->column]]
-   [zero-one.geni.core.function-table :refer [def-spark-functions]]
-   [zero-one.geni.docs :as docs]
+   [zero-one.geni.core.column :refer [->column]]
+   [zero-one.geni.core.function-table :as function-table :refer [def-spark-functions]]
    [zero-one.geni.interop :as interop]
    [zero-one.geni.spark :as spark]
-   [zero-one.geni.utils :refer [->string-map import-fn]])
+   [zero-one.geni.utils :refer [import-fn]])
   (:import
-   (org.apache.spark.sql Column functions)))
+   (org.apache.spark.sql functions)))
 
-;;;; Agg Functions
-(defn approx-count-distinct
-  ([expr] (functions/approx_count_distinct (->column expr)))
-  ([expr rsd] (functions/approx_count_distinct (->column expr) rsd)))
-(defn count-distinct [& exprs]
-  (let [[head & tail] (->col-array exprs)]
-    (functions/countDistinct head (into-array Column tail))))
-(defn grouping [expr] (functions/grouping (->column expr)))
-(defn grouping-id [& exprs]
-  (functions/grouping_id (interop/->scala-seq (->col-array exprs))))
-
-;;;; Collection Functions
 (defn aggregate
+  "Folds the array column `expr` from `init`: `merge-fn` takes the
+  accumulator and an element as columns, and `finish-fn`, `identity` by
+  default, turns the result into the final value. `reduce` does the same.
+
+  ```clojure
+  (g/aggregate :scores (g/lit 0) g/+)
+  ```"
   ([expr init merge-fn] (aggregate expr init merge-fn identity))
   ([expr init merge-fn finish-fn]
    (functions/aggregate (->column expr)
                         (->column init)
                         (interop/->scala-function2 merge-fn)
                         (interop/->scala-function1 finish-fn))))
+
 (defn reduce
   "Folds the array column `expr` from `init`: `merge-fn` takes the
   accumulator and an element as columns, and `finish-fn`, when given, turns
@@ -64,41 +59,7 @@
                      (->column init)
                      (interop/->scala-function2 merge-fn)
                      (interop/->scala-function1 finish-fn))))
-(defn array-contains [expr value]
-  (functions/array_contains (->column expr) value))
-(defn array-distinct [expr]
-  (functions/array_distinct (->column expr)))
-(defn array-except [left right]
-  (functions/array_except (->column left) (->column right)))
-(defn array-intersect [left right]
-  (functions/array_intersect (->column left) (->column right)))
-(defn array-join
-  ([expr delimiter] (functions/array_join (->column expr) delimiter))
-  ([expr delimiter null-replacement]
-   (functions/array_join (->column expr) delimiter null-replacement)))
-(defn array-max [expr]
-  (functions/array_max (->column expr)))
-(defn array-min [expr]
-  (functions/array_min (->column expr)))
-(defn array-position [expr value]
-  (functions/array_position (->column expr) value))
-(defn array-remove [expr element]
-  (functions/array_remove (->column expr) element))
-(defn array-repeat [left right]
-  (if (nat-int? right)
-    (functions/array_repeat (->column left) right)
-    (functions/array_repeat (->column left) (->column right))))
-(defn array-sort [expr]
-  (functions/array_sort (->column expr)))
-(defn array-union [left right]
-  (functions/array_union (->column left) (->column right)))
-(defn arrays-overlap [left right]
-  (functions/arrays_overlap (->column left) (->column right)))
-(defn arrays-zip [& exprs]
-  (functions/arrays_zip (->col-array exprs)))
-(defn collect-list [expr] (functions/collect_list (->column expr)))
-(defn collect-set [expr] (functions/collect_set (->column expr)))
-(defn concat [& exprs] (functions/concat (->col-array exprs)))
+
 (defn exists
   "With a column and a predicate, returns whether the predicate holds for any
   element of the array column. With a Dataset, returns a column for an EXISTS
@@ -113,249 +74,90 @@
    (.exists dataframe))
   ([expr predicate]
    (functions/exists (->column expr) (interop/->scala-function1 predicate))))
-(defn explode [expr] (functions/explode (->column expr)))
-(defn element-at [expr value]
-  (functions/element_at (->column expr) (int value)))
-(defn flatten [expr] (functions/flatten (->column expr)))
-(defn forall [expr predicate]
+
+(defn forall
+  "Whether `predicate`, a function of a column, holds for every element of
+  the array column `expr`.
+
+  ```clojure
+  (g/forall :scores #(g/> % 50))
+  ```"
+  [expr predicate]
   (functions/forall (->column expr) (interop/->scala-function1 predicate)))
-(defn from-csv
-  ([expr schema] (functions/from_csv (->column expr) (->column schema) {}))
-  ([expr schema options]
-   (functions/from_csv (->column expr) (->column schema) (->string-map options))))
-(defn from-json
-  ([expr schema] (functions/from_json (->column expr) (->column schema) {}))
-  ([expr schema options]
-   (functions/from_json (->column expr) (->column schema) (->string-map options))))
-(defn map-concat [& exprs] (functions/map_concat (->col-array exprs)))
-(defn map-entries [expr] (functions/map_entries (->column expr)))
-(defn map-filter [expr predicate]
+
+(defn map-filter
+  "The entries of the map column `expr` for which `predicate`, a function of
+  the key and the value as columns, holds."
+  [expr predicate]
   (functions/map_filter (->column expr) (interop/->scala-function2 predicate)))
-(defn map-from-entries [expr] (functions/map_from_entries (->column expr)))
-(defn map-keys [expr] (functions/map_keys (->column expr)))
-(defn map-values [expr] (functions/map_values (->column expr)))
-(defn map-zip-with [left right merge-fn]
+
+(defn map-zip-with
+  "A map of the keys of the map columns `left` and `right`, each with what
+  `merge-fn` gives from the key and the two values, as columns, one of them
+  null where only one map has the key."
+  [left right merge-fn]
   (functions/map_zip_with (->column left) (->column right) (interop/->scala-function3 merge-fn)))
-(defn posexplode [expr] (functions/posexplode (->column expr)))
-(defn reverse [expr]
-  (functions/reverse (->column expr)))
-(defn schema-of-csv
-  ([expr] (functions/schema_of_csv (->column expr)))
-  ([expr options] (functions/schema_of_csv (->column expr) (->string-map options))))
-(defn schema-of-json
-  ([expr] (functions/schema_of_json (->column expr)))
-  ([expr options] (functions/schema_of_json (->column expr) (->string-map options))))
-(defn size [expr]
-  (functions/size (->column expr)))
-(defn slice [expr start length]
-  (functions/slice (->column expr) start length))
-(defn sort-array
-  ([expr] (functions/sort_array (->column expr)))
-  ([expr asc] (functions/sort_array (->column expr) asc)))
-(defn to-csv
-  ([expr] (functions/to_csv (->column expr) {}))
-  ([expr options]
-   (functions/to_csv (->column expr) (->string-map options))))
-(defn transform [expr xform-fn]
+
+(defn transform
+  "The array column `expr` with `xform-fn`, a function of a column, applied
+  to each element.
+
+  ```clojure
+  (g/transform :scores #(g/* % 2))
+  ```"
+  [expr xform-fn]
   (functions/transform (->column expr) (interop/->scala-function1 xform-fn)))
-(defn transform-keys [expr key-fn]
+
+(defn transform-keys
+  "The map column `expr` with each key replaced by what `key-fn`, a function
+  of the key and the value as columns, gives."
+  [expr key-fn]
   (functions/transform_keys (->column expr) (interop/->scala-function2 key-fn)))
-(defn transform-values [expr key-fn]
-  (functions/transform_values (->column expr) (interop/->scala-function2 key-fn)))
-(defn zip-with [left right merge-fn]
+
+(defn transform-values
+  "The map column `expr` with each value replaced by what `value-fn`, a
+  function of the key and the value as columns, gives."
+  [expr value-fn]
+  (functions/transform_values (->column expr) (interop/->scala-function2 value-fn)))
+
+(defn zip-with
+  "An array of what `merge-fn` gives from the elements of the array columns
+  `left` and `right` at each position, as columns, with nulls for the
+  shorter one's missing elements."
+  [left right merge-fn]
   (functions/zip_with (->column left)
                       (->column right)
                       (interop/->scala-function2 merge-fn)))
 
-;;;; Date and Time Functions
-(defn add-months [expr months]
-  (functions/add_months (->column expr) months))
-(defn current-date [] (functions/current_date))
-(defn current-timestamp [] (functions/current_timestamp))
-(defn date-add [expr days]
-  (functions/date_add (->column expr) days))
-(defn date-format [expr date-fmt]
-  (functions/date_format (->column expr) date-fmt))
-(defn date-sub [expr days]
-  (functions/date_sub (->column expr) days))
-(defn date-trunc [fmt expr]
-  (functions/date_trunc fmt (->column expr)))
-(defn datediff [l-expr r-expr]
-  (functions/datediff (->column l-expr) (->column r-expr)))
-(defn dayofmonth [expr] (functions/dayofmonth (->column expr)))
-(defn dayofweek [expr] (functions/dayofweek (->column expr)))
-(defn dayofyear [expr] (functions/dayofyear (->column expr)))
-(defn from-unixtime
-  ([expr] (functions/from_unixtime (->column expr)))
-  ([expr fmt] (functions/from_unixtime (->column expr) fmt)))
-(defn hour [expr] (functions/hour (->column expr)))
-(defn last-day [expr] (functions/last_day (->column expr)))
-(defn minute [expr] (functions/minute (->column expr)))
-(defn month [expr] (functions/month (->column expr)))
-(defn next-day [expr day-of-week]
-  (functions/next_day (->column expr) day-of-week))
-(defn quarter [expr] (functions/quarter (->column expr)))
-(defn second [expr] (functions/second (->column expr)))
-(defn to-date
-  ([expr] (functions/to_date (->column expr)))
-  ([expr date-format] (functions/to_date (->column expr) date-format)))
-(defn to-timestamp
-  ([expr] (functions/to_timestamp (->column expr)))
-  ([expr date-format] (functions/to_timestamp (->column expr) date-format)))
-(defn unix-timestamp
-  ([] (functions/unix_timestamp))
-  ([expr] (functions/unix_timestamp (->column expr)))
-  ([expr pattern] (functions/unix_timestamp (->column expr) pattern)))
-(defn window
-  ([time-expr duration] (functions/window (->column time-expr) duration))
-  ([time-expr duration slide] (functions/window (->column time-expr) duration slide))
-  ([time-expr duration slide start] (functions/window (->column time-expr) duration slide start)))
-(defn weekofyear [expr] (functions/weekofyear (->column expr)))
-(defn year [expr] (functions/year (->column expr)))
+(defn from-csv
+  "Parses the column `expr` of CSV lines into structs, by `schema`, a DDL
+  string such as `\"a INT, b STRING\"` or a column such as `schema-of-csv`
+  gives, with Spark's CSV `options`.
 
-;;;; Maths Functions
-(def pi
-  "The double value that is closer than any other to pi, the ratio of the circumference of a circle to its diameter."
-  (functions/lit Math/PI))
-(defn abs [expr] (functions/abs (->column expr)))
-(defn acos [expr] (functions/acos (->column expr)))
-(defn asin [expr] (functions/asin (->column expr)))
-(defn atan [expr] (functions/atan (->column expr)))
-(defn atan-2 [expr-x expr-y] (functions/atan2 (->column expr-x) (->column expr-y)))
-(defn bin [expr] (functions/bin (->column expr)))
-(defn cbrt [expr] (functions/cbrt (->column expr)))
-(defn conv [expr from-base to-base] (functions/conv (->column expr) from-base to-base))
-(defn cos [expr] (functions/cos (->column expr)))
-(defn cosh [expr] (functions/cosh (->column expr)))
-(defn degrees [expr] (functions/degrees (->column expr)))
-(defn exp [expr] (functions/exp (->column expr)))
-(defn expm-1 [expr] (functions/expm1 (->column expr)))
-(defn factorial [expr] (functions/factorial (->column expr)))
-(defn hex [expr] (functions/hex (->column expr)))
-(defn hypot [left-expr right-expr] (functions/hypot (->column left-expr) (->column right-expr)))
-(defn log-10 [expr] (functions/log10 (->column expr)))
-(defn log-1p [expr] (functions/log1p (->column expr)))
-(defn log-2 [expr] (functions/log2 (->column expr)))
-(defn pmod [left-expr right-expr] (functions/pmod (->column left-expr) (->column right-expr)))
-(defn pow [base exponent] (functions/pow (->column base) (->column exponent)))
-(defn radians [expr] (functions/radians (->column expr)))
-(defn rint [expr] (functions/rint (->column expr)))
-(defn shift-left [expr num-bits] (functions/shiftLeft (->column expr) num-bits))
-(defn shift-right [expr num-bits] (functions/shiftRight (->column expr) num-bits))
-(defn shift-right-unsigned [expr num-bits] (functions/shiftRightUnsigned (->column expr) num-bits))
-(defn signum [expr] (functions/signum (->column expr)))
-(defn sin [expr] (functions/sin (->column expr)))
-(defn sinh [expr] (functions/sinh (->column expr)))
-(defn sqr
-  "Returns the value of the first argument raised to the power of two."
-  [expr]
-  (.multiply (->column expr) (->column expr)))
-(defn sqrt [expr] (functions/sqrt (->column expr)))
-(defn tan [expr] (functions/tan (->column expr)))
-(defn tanh [expr] (functions/tanh (->column expr)))
-(defn unhex [expr] (functions/unhex (->column expr)))
+  ```clojure
+  (g/from-csv :line \"id INT, name STRING\" {:sep \";\"})
+  ```"
+  ([expr schema] (from-csv expr schema {}))
+  ([expr schema options]
+   (function-table/invoke "from_csv" nil 'from-csv
+                          [expr (if (string? schema) (functions/lit schema) schema) options])))
 
-;;;; Misc Functions
-(defn crc-32 [expr] (functions/crc32 (->column expr)))
-(defn hash [& exprs] (functions/hash (->col-array exprs)))
-(defn md-5 [expr] (functions/md5 (->column expr)))
-(defn sha-1 [expr] (functions/sha1 (->column expr)))
-(defn sha-2 [expr n-bits] (functions/sha2 (->column expr) n-bits))
-(defn xxhash-64 [& exprs] (functions/xxhash64 (->col-array exprs)))
-
-;;;; Non-Agg Functions
-(defn array [& exprs]
-  (functions/array (->col-array exprs)))
-(defn bitwise-not [expr] (functions/bitwiseNOT (->column expr)))
-(defn broadcast [dataframe] (functions/broadcast dataframe))
-(defn expr [s] (functions/expr s))
-(defn greatest [& exprs] (functions/greatest (->col-array exprs)))
-(defn input-file-name [] (functions/input_file_name))
-(defn least [& exprs] (functions/least (->col-array exprs)))
-(defn map [& exprs] (functions/map (->col-array exprs)))
-(defn map-from-arrays [key-expr val-expr]
-  (functions/map_from_arrays (->column key-expr) (->column val-expr)))
-(defn monotonically-increasing-id [] (functions/monotonically_increasing_id))
-(defn nanvl [left-expr right-expr] (functions/nanvl (->column left-expr) (->column right-expr)))
-(defn negate [expr] (functions/negate (->column expr)))
-(defn not [expr] (functions/not (->column expr)))
-(defn randn
-  ([] (functions/randn))
-  ([seed] (functions/randn seed)))
-(defn rand
-  ([] (functions/rand))
-  ([seed] (functions/rand seed)))
-(defn spark-partition-id [] (functions/spark-partition-id))
-(defn struct [& exprs] (functions/struct (->col-array exprs)))
 (defn when
+  "A column of `if-expr` where `condition` holds, and else of `else-expr`, or
+  null without it. `g/cond` takes more branches."
   ([condition if-expr]
    (functions/when (->column condition) (->column if-expr)))
   ([condition if-expr else-expr]
    (-> (when condition if-expr) (.otherwise (->column else-expr)))))
 
-;;;; String Functions
-(defn ascii [expr] (functions/ascii (->column expr)))
-(defn base-64 [expr] (functions/base64 (->column expr)))
-(defn concat-ws [sep & exprs] (functions/concat_ws sep (->col-array exprs)))
-(defn decode [expr charset] (functions/decode (->column expr) charset))
-(defn encode [expr charset] (functions/encode (->column expr) charset))
-(defn format-number [expr decimal-places]
-  (functions/format_number (->column expr) decimal-places))
-(defn format-string [fmt & exprs]
-  (functions/format_string fmt (->col-array exprs)))
-(defn initcap [expr] (functions/initcap (->column expr)))
-(defn instr [expr substr] (functions/instr (->column expr) substr))
-(defn length [expr] (functions/length (->column expr)))
-(defn lower [expr] (functions/lower (->column expr)))
-(defn lpad [expr length pad] (functions/lpad (->column expr) length pad))
-(defn ltrim
-  ([expr] (functions/ltrim (->column expr)))
-  ([expr trim-string] (functions/ltrim (->column expr) trim-string)))
-(defn overlay
-  ([src rep pos] (functions/overlay (->column src) (->column rep) (->column pos)))
-  ([src rep pos len] (functions/overlay (->column src) (->column rep) (->column pos) (->column len))))
-(defn regexp-extract [expr regex idx]
-  (functions/regexp_extract (->column expr) regex idx))
-(defn regexp-replace [expr pattern-expr replacement-expr]
-  (functions/regexp_replace
-   (->column expr)
-   (->column pattern-expr)
-   (->column replacement-expr)))
-(defn rpad [expr length pad] (functions/rpad (->column expr) length pad))
-(defn rtrim
-  ([expr] (functions/rtrim (->column expr)))
-  ([expr trim-string] (functions/rtrim (->column expr) trim-string)))
-(defn soundex [expr] (functions/soundex (->column expr)))
-(defn substring [expr pos len] (functions/substring (->column expr) pos len))
-(defn substring-index [expr delim cnt]
-  (functions/substring-index (->column expr) delim cnt))
-(defn translate [expr match replacement]
-  (functions/translate (->column expr) match replacement))
-(defn trim
-  ([expr] (functions/trim (->column expr)))
-  ([expr trim-string] (functions/trim (->column expr) trim-string)))
-(defn unbase-64 [expr] (functions/unbase64 (->column expr)))
-(defn upper [expr] (functions/upper (->column expr)))
+(def pi
+  "The double value that is closer than any other to pi, the ratio of the circumference of a circle to its diameter."
+  (functions/lit Math/PI))
 
-;;;; Window Functions
-(defn cume-dist [] (functions/cume_dist))
-(defn dense-rank [] (functions/dense_rank))
-(defn ntile [n] (functions/ntile n))
-(defn percent-rank [] (functions/percent_rank))
-(defn rank [] (functions/rank))
-(defn row-number [] (functions/row_number))
-
-;;;; Stats Functions
-(defn covar-samp [l-expr r-expr]
-  (functions/covar_samp (->column l-expr) (->column r-expr)))
-(defn covar-pop [l-expr r-expr] (functions/covar_pop (->column l-expr) (->column r-expr)))
-(defn kurtosis [expr] (functions/kurtosis (->column expr)))
-(defn skewness [expr] (functions/skewness (->column expr)))
-(defn stddev [expr] (functions/stddev (->column expr)))
-(defn stddev-pop [expr] (functions/stddev_pop (->column expr)))
-(defn sum-distinct [expr] (functions/sumDistinct (->column expr)))
-(defn var-pop [expr] (functions/var_pop (->column expr)))
-(defn variance [expr] (functions/variance (->column expr)))
+(defn sqr
+  "Returns the value of the first argument raised to the power of two."
+  [expr]
+  (.multiply (->column expr) (->column expr)))
 
 ;;;; Spark's functions, from a table
 ;; A row per function: its name, its argument lists, and then :since for the
@@ -365,21 +167,46 @@
 ;; the Geni name in snake case. See zero-one.geni.core.function-table, and
 ;; zero-one.geni.function-docs in dev/ for the docstrings.
 (def-spark-functions
+  [abs [e]]
+  [acos [e]]
   [acosh [e]]
+  [add-months [start-date num-months]]
   [aes-decrypt [input key] [input key mode] [input key mode padding] [input key mode padding aad]]
   [aes-encrypt [input key] [input key mode] [input key mode padding] [input key mode padding iv] [input key mode padding iv aad]]
   [any [e]]
   [any-value [e] [e ignore-nulls]]
+  [approx-count-distinct [e] [e rsd]]
   [approx-percentile [e percentage accuracy]]
+  [array [& cols]]
   [array-agg [e]]
   [array-append [column element]]
   [array-compact [column]]
+  [array-contains [column value]]
+  [array-distinct [e]]
+  [array-except [col1 col2]]
   [array-insert [arr pos value]]
+  [array-intersect [col1 col2]]
+  [array-join [column delimiter] [column delimiter null-replacement]]
+  [array-max [e]]
+  [array-min [e]]
+  [array-position [column value]]
   [array-prepend [column element]]
+  [array-remove [column element]]
+  [array-repeat [e count]]
   [array-size [e]]
+  [array-sort [e]]
+  [array-union [col1 col2]]
+  [arrays-overlap [a1 a2]]
+  [arrays-zip [& e]]
+  [ascii [e]]
+  [asin [e]]
   [asinh [e]]
   [assert-true [c] [c e]]
+  [atan [e]]
+  [atan2 [y x]]
   [atanh [e]]
+  [base64 [e]]
+  [bin [e]]
   [bit-and [e]]
   [bit-count [e]]
   [bit-get [e pos]]
@@ -392,14 +219,17 @@
   [bitmap-construct-agg [col]]
   [bitmap-count [col]]
   [bitmap-or-agg [col]]
+  [bitwise-not [e]]
   [bool-and [e]]
   [bool-or [e]]
+  [broadcast [df]]
   [bround [e] [e scale] :columns-since "4.0"]
   [btrim [str] [str trim]]
   [bucket [num-buckets e]]
   [call-function [func-name & cols]]
   [call-udf [udf-name & cols]]
   [cardinality [e]]
+  [cbrt [e]]
   [ceil [e] [e scale]]
   [ceiling [e] [e scale]]
   [char [n]]
@@ -408,51 +238,98 @@
   [chr [n]]
   [collate [e collation] :since "4.0"]
   [collation [e] :since "4.0"]
+  [collect-list [e]]
+  [collect-set [e]]
+  [concat [& exprs]]
+  [concat-ws [sep & exprs]]
+  [conv [num from-base to-base]]
   [convert-timezone [target-tz source-ts] [source-tz target-tz source-ts]]
+  [cos [e]]
+  [cosh [e]]
   [cot [e]]
+  [count-distinct [expr & exprs]]
   [count-if [e]]
+  [covar-pop [column1 column2]]
+  [covar-samp [column1 column2]]
+  [crc32 [e]]
   [csc [e]]
+  [cume-dist []]
   [curdate []]
   [current-catalog []]
   [current-database []]
+  [current-date []]
   [current-path [] :since "4.2"]
   [current-schema []]
   [current-time [] [precision] :since "4.1"]
+  [current-timestamp []]
   [current-timezone []]
   [current-user []]
+  [date-add [start days]]
+  [date-format [date-expr format]]
   [date-from-unix-date [days]]
   [date-part [field source]]
+  [date-sub [start days]]
+  [date-trunc [format timestamp]]
   [dateadd [start days]]
+  [datediff [end start]]
   [datepart [field source]]
   [day [e]]
   [dayname [time-exp] :since "4.0"]
+  [dayofmonth [e]]
+  [dayofweek [e]]
+  [dayofyear [e]]
   [days [e]]
+  [decode [value charset]]
+  [degrees [e]]
+  [dense-rank []]
   [e []]
+  [element-at [column value]]
   [elt [& inputs]]
+  [encode [value charset]]
   [endswith [str suffix]]
   [equal-null [col1 col2]]
   [every [e]]
+  [exp [e]]
+  [explode [e]]
   [explode-outer [e]]
+  [expm1 [e]]
+  [expr [expr]]
   [extract [field source]]
+  [factorial [e]]
   [find-in-set [str str-array]]
   [first-value [e] [e ignore-nulls]]
+  [flatten [e]]
   [floor [e] [e scale]]
+  [format-number [x d]]
+  [format-string [format & arguments]]
+  [from-json [e schema] [e schema options]]
+  [from-unixtime [ut] [ut f]]
   [from-utc-timestamp [ts tz]]
   [from-xml [e schema] :since "4.0"]
   [get [column index]]
   [get-json-object [e path]]
   [getbit [e pos]]
+  [greatest [& exprs]]
+  [grouping [e]]
+  [grouping-id [& cols]]
+  [hash [& cols]]
+  [hex [column]]
   [histogram-numeric [e n-bins]]
   [hll-sketch-agg [e] [e lg-config-k]]
   [hll-sketch-estimate [c]]
   [hll-union [c1 c2] [c1 c2 allow-different-lg-config-k]]
   [hll-union-agg [e] [e allow-different-lg-config-k]]
+  [hour [e]]
   [hours [e]]
+  [hypot [l r]]
   [ifnull [col1 col2]]
+  [initcap [e]]
   [inline [e]]
   [inline-outer [e]]
   [input-file-block-length []]
   [input-file-block-start []]
+  [input-file-name []]
+  [instr [str substring]]
   [is-valid-utf8 [str] :since "4.0"]
   [is-valid-variant [v] :since "4.2"]
   [is-variant-null [v] :since "4.0"]
@@ -484,12 +361,16 @@
   [kll-sketch-to-string-bigint [e] :since "4.1"]
   [kll-sketch-to-string-double [e] :since "4.1"]
   [kll-sketch-to-string-float [e] :since "4.1"]
+  [kurtosis [e]]
   [lag [e offset] [e offset default-value] [e offset default-value ignore-nulls]]
+  [last-day [e]]
   [last-value [e] [e ignore-nulls]]
   [lcase [str]]
   [lead [e offset] [e offset default-value] [e offset default-value ignore-nulls]]
+  [least [& exprs]]
   [left [str len]]
   [len [e]]
+  [length [e]]
   [levenshtein [l r] [l r threshold]]
   [listagg [e] [e delimiter] :since "4.0"]
   [listagg-distinct [e] [e delimiter] :since "4.0"]
@@ -497,6 +378,12 @@
   [localtimestamp []]
   [locate [substr str] [substr str pos]]
   [log [e] [base a]]
+  [log10 [e]]
+  [log1p [e]]
+  [log2 [expr]]
+  [lower [e]]
+  [lpad [str len pad]]
+  [ltrim [e] [e trim]]
   [make-date [year month day]]
   [make-dt-interval [] [days] [days hours] [days hours mins] [days hours mins secs]]
   [make-interval [] [years] [years months] [years months weeks] [years months weeks days] [years months weeks days hours] [years months weeks days hours mins] [years months weeks days hours mins secs]]
@@ -506,42 +393,70 @@
   [make-timestamp-ntz [date time] [years months days hours mins secs] :arity-since {2 "4.1"}]
   [make-valid-utf8 [str] :since "4.0"]
   [make-ym-interval [] [years] [years months]]
+  [map [& cols]]
+  [map-concat [& cols]]
   [map-contains-key [column key]]
+  [map-entries [e]]
+  [map-from-arrays [keys values]]
+  [map-from-entries [e]]
+  [map-keys [e]]
+  [map-values [e]]
   [mask [input] [input upper-char] [input upper-char lower-char] [input upper-char lower-char digit-char] [input upper-char lower-char digit-char other-char]]
   [max-by [e ord] [e ord k] :arity-since {3 "4.2"}]
+  [md5 [e]]
   [min-by [e ord] [e ord k] :arity-since {3 "4.2"}]
+  [minute [e]]
   [mode [e] [e deterministic] :arity-since {2 "4.0"}]
+  [monotonically-increasing-id []]
+  [month [e]]
   [monthname [time-exp] :since "4.0"]
   [months [e]]
   [months-between [end start] [end start round-off]]
   [named-struct [& cols]]
+  [nanvl [col1 col2]]
+  [negate [e]]
   [negative [e]]
+  [next-day [date day-of-week]]
+  [not [e]]
   [now []]
   [nth-value [e offset] [e offset ignore-nulls]]
+  [ntile [n]]
   [nullif [col1 col2]]
   [nullifzero [col] :since "4.0"]
   [nvl [col1 col2]]
   [nvl2 [col1 col2 col3]]
   [octet-length [e]]
+  [overlay [src replace pos] [src replace pos len]]
   [parse-url [url part-to-extract] [url part-to-extract key]]
+  [percent-rank []]
   [percentile [e percentage] [e percentage frequency]]
   [percentile-approx [e percentage accuracy]]
+  [pmod [dividend divisor]]
+  [posexplode [e]]
   [posexplode-outer [e]]
   [position [substr str] [substr str start]]
   [positive [e]]
+  [pow [l r]]
   [power [l r]]
   [printf [format & arguments]]
   [product [e]]
+  [quarter [e]]
   [quote [str] :since "4.1"]
+  [radians [e]]
   [raise-error [c]]
+  [rand [] [seed]]
+  [randn [] [seed]]
   [random [] [seed]]
   [randstr [length] [length seed] :since "4.0"]
+  [rank []]
   [reflect [& cols]]
   [regexp [str regexp]]
   [regexp-count [str regexp]]
+  [regexp-extract [e exp group-idx]]
   [regexp-extract-all [str regexp] [str regexp idx]]
   [regexp-instr [str regexp] [str regexp idx]]
   [regexp-like [str regexp]]
+  [regexp-replace [e pattern replacement]]
   [regexp-substr [str regexp]]
   [regr-avgx [y x]]
   [regr-avgy [y x]]
@@ -554,24 +469,44 @@
   [regr-syy [y x]]
   [repeat [str n] :columns-since "4.0"]
   [replace-substring [src search] [src search replace] :spark "replace"]
+  [reverse [e]]
   [right [str len]]
+  [rint [e]]
   [round [e] [e scale] :columns-since "4.0"]
+  [row-number []]
+  [rpad [str len pad]]
+  [rtrim [e] [e trim]]
+  [schema-of-csv [csv] [csv options]]
+  [schema-of-json [json] [json options]]
   [schema-of-variant [v] :since "4.0"]
   [schema-of-variant-agg [v] :since "4.0"]
   [schema-of-xml [xml] :since "4.0"]
   [sec [e]]
+  [second [e]]
   [sentences [string] [string language] [string language country] :arity-since {2 "4.0"}]
   [sequence [start stop] [start stop step]]
   [session-user [] :since "4.0"]
   [session-window [time-column gap-duration]]
   [sha [col]]
+  [sha1 [e]]
+  [sha2 [e num-bits]]
   [shiftleft [e num-bits]]
   [shiftright [e num-bits]]
   [shiftrightunsigned [e num-bits]]
   [sign [e]]
+  [signum [e]]
+  [sin [e]]
+  [sinh [e]]
+  [size [e]]
+  [skewness [e]]
+  [slice [x start length]]
   [some [e]]
+  [sort-array [e] [e asc]]
+  [soundex [e]]
+  [spark-partition-id []]
   [split [str pattern] [str pattern limit] :columns-since "4.0"]
   [split-part [str delimiter part-num]]
+  [sqrt [e]]
   [st-asbinary [geo] [geo endianness] :since "4.1" :arity-since {2 "4.2"}]
   [st-geogfromwkb [wkb] :since "4.1"]
   [st-geomfromwkb [wkb] [wkb srid] :since "4.1" :arity-since {2 "4.2"}]
@@ -579,10 +514,18 @@
   [st-srid [geo] :since "4.1"]
   [stack [& cols]]
   [startswith [str prefix]]
+  [stddev [e]]
+  [stddev-pop [e]]
   [str-to-map [text] [text pair-delim] [text pair-delim key-value-delim]]
   [string-agg [e] [e delimiter] :since "4.0"]
   [string-agg-distinct [e] [e delimiter] :since "4.0"]
+  [struct [& cols]]
   [substr [str pos] [str pos len]]
+  [substring [str pos len]]
+  [substring-index [str delim count]]
+  [sum-distinct [e]]
+  [tan [e]]
+  [tanh [e]]
   [theta-difference [c1 c2] :since "4.1"]
   [theta-intersection [c1 c2] :since "4.1"]
   [theta-intersection-agg [e] :since "4.1"]
@@ -606,8 +549,11 @@
   [timestamp-seconds [e]]
   [to-binary [e] [e f]]
   [to-char [e format]]
+  [to-csv [e] [e options]]
+  [to-date [e] [e fmt]]
   [to-number [e format]]
   [to-time [str] [str format] :since "4.1"]
+  [to-timestamp [s] [s fmt]]
   [to-timestamp-ltz [timestamp] [timestamp format]]
   [to-timestamp-ntz [timestamp] [timestamp format]]
   [to-unix-timestamp [time-exp] [time-exp format]]
@@ -615,6 +561,8 @@
   [to-varchar [e format]]
   [to-variant-object [col] :since "4.0"]
   [to-xml [e] :since "4.0"]
+  [translate [src matching-string replace-string]]
+  [trim [e] [e trim]]
   [trunc [date format]]
   [try-add [left right]]
   [try-aes-decrypt [input key] [input key mode] [input key mode padding] [input key mode padding aad]]
@@ -666,20 +614,28 @@
   [tuple-union-theta-integer [c1 c2] [c1 c2 lg-nom-entries] [c1 c2 lg-nom-entries mode] :since "4.2"]
   [typeof [col]]
   [ucase [str]]
+  [unbase64 [e]]
+  [unhex [column]]
   [uniform [min max] [min max seed] :since "4.0"]
   [unix-date [e]]
   [unix-micros [e]]
   [unix-millis [e]]
   [unix-seconds [e]]
+  [unix-timestamp [] [s] [s p]]
   [unwrap-udt [column]]
+  [upper [e]]
   [url-decode [str]]
   [url-encode [str]]
   [user []]
   [uuid [] [seed] :arity-since {1 "4.1"}]
   [validate-utf8 [str] :since "4.0"]
+  [var-pop [e]]
+  [variance [e]]
   [variant-get [v path target-type] :since "4.0"]
   [weekday [e]]
+  [weekofyear [e]]
   [width-bucket [v min max num-bucket]]
+  [window [time-column window-duration] [time-column window-duration slide-duration] [time-column window-duration slide-duration start-time]]
   [window-time [window-column]]
   [xpath [xml path]]
   [xpath-boolean [xml path]]
@@ -690,41 +646,40 @@
   [xpath-number [xml path]]
   [xpath-short [xml path]]
   [xpath-string [xml path]]
+  [xxhash64 [& cols]]
+  [year [e]]
   [years [e]]
   [zeroifnull [col] :since "4.0"])
 
-;; Docs
-(docs/alter-docs-in-ns!
- 'zero-one.geni.core.functions
- [(-> docs/spark-docs :methods :core :functions)])
-
 ;; Aliases
-(import-fn atan-2 atan2)
-(import-fn base-64 base64)
+(import-fn atan2 atan-2)
+(import-fn base64 base-64)
 (import-fn cbrt cube-root)
 (import-fn covar-samp covar)
-(import-fn crc-32 crc32)
+(import-fn crc32 crc-32)
 (import-fn datediff date-diff)
 (import-fn dayofmonth day-of-month)
 (import-fn dayofweek day-of-week)
 (import-fn dayofyear day-of-year)
-(import-fn expm-1 expm1)
-(import-fn log-10 log10)
-(import-fn log-1p log1p)
-(import-fn log-2 log2)
-(import-fn md-5 md5)
+(import-fn expm1 expm-1)
+(import-fn log10 log-10)
+(import-fn log1p log-1p)
+(import-fn log2 log-2)
+(import-fn md5 md-5)
 (import-fn not !)
 (import-fn pow **)
-(import-fn sha-1 sha1)
-(import-fn sha-2 sha2)
+(import-fn sha1 sha-1)
+(import-fn sha2 sha-2)
+(import-fn shiftleft shift-left)
+(import-fn shiftright shift-right)
+(import-fn shiftrightunsigned shift-right-unsigned)
 (import-fn stddev std)
 (import-fn stddev stddev-samp)
 (import-fn to-date ->date-col)
 (import-fn to-timestamp ->timestamp-col)
 (import-fn to-utc-timestamp ->utc-timestamp)
-(import-fn unbase-64 unbase64)
+(import-fn unbase64 unbase-64)
 (import-fn variance var-samp)
 (import-fn weekofyear week-of-year)
 (import-fn window time-window)
-(import-fn xxhash-64 xxhash64)
-
+(import-fn xxhash64 xxhash-64)
